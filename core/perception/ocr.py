@@ -1,0 +1,214 @@
+# core/perception/ocr.py
+from __future__ import annotations
+
+import importlib
+import os
+import re
+from typing import Any, Iterable, List, Optional, Tuple, Union
+
+import cv2
+import numpy as np
+from PIL import Image
+import os
+# Disable if facing multi-process error
+os.environ["OMP_NUM_THREADS"]="4"
+os.environ["MKL_NUM_THREADS"]="4"
+
+from paddleocr import PaddleOCR
+import paddle
+
+from core.settings import Settings
+from core.utils.img import draw_overlay, to_bgr
+from core.utils.logger import logger_uma
+
+# Type aliases
+_Box = List[List[float]]  # 4 points [[x1,y1],[x2,y2],[x3,y3],[x4,y4]]
+_OCRItem = Tuple[_Box, str, float]  # (box, text, score)
+
+class OCREngine:
+    """
+    Minimal PaddleOCR wrapper:
+      - raw(...) -> normalized [(box, text, score), ...]
+      - text(...) -> single string of concatenated words
+      - digits(...) -> digits-only string (handy for counters)
+    """
+    def __init__(
+            self,
+            text_detection_model_name="PP-OCRv5_mobile_det",
+            text_recognition_model_name="en_PP-OCRv5_mobile_rec",
+            use_doc_orientation_classify=False,
+            use_doc_unwarping=False,
+            use_textline_orientation=False,
+            return_word_box=False,
+        ):
+        lang = "en"
+        gpu = False
+        # enable_hpi = False
+        # TODO: split environments (zero conflicts)
+        # env_paddle (GPU): PaddlePaddle + PaddleOCR/PaddleX + modelscope, no Torch (or Torch CPU).
+        # env_torch (GPU): Torch + Ultralytics + friends, no Paddle.
+        # For Paddle gpu install: paddlepaddle-gpu
+        # Coerce language
+        if isinstance(lang, (list, tuple)):
+            lang = lang[0] if len(lang) > 0 else "en"
+        self.lang = str(lang)
+
+        requested_gpu = bool(gpu)
+        device_str = f"gpu:{int(0)}" if requested_gpu else "cpu"
+
+        # Try to warn/auto-fallback if CUDA isn’t available
+        try:
+            has_cuda = bool(getattr(paddle, "is_compiled_with_cuda", lambda: False)())
+            if requested_gpu and not has_cuda:
+                logger_uma.warning("OCREngine: GPU requested but PaddlePaddle is not CUDA-enabled → falling back to CPU.")
+                device_str = "cpu"
+        except Exception as e:
+            # If Paddle import check fails, we’ll still try device=... below and catch errors there.
+            logger_uma.warning(f"Error while checking GPU in Paddle")
+
+        self.device = device_str
+
+        # Instantiate PaddleOCR, turning off unneeded subpipelines and using the mobile detector.
+        # Also shrink det input and bump rec batch for small crops.
+        self.reader = None
+        init_kwargs = dict(
+            lang=self.lang,
+            # speed: disable extras you don't need for tiny stat crops
+            # use_doc_orientation_classify: Disables the document-level orientation classifier (the thing that decides if a whole page/photo is rotated 90°/180°/270°). You saw it as PP-LCNet_x1_0_doc_ori in the logs. Useful for scanned pages; unnecessary for small screen snippets that are already upright.
+            use_doc_orientation_classify=use_doc_orientation_classify,
+            # Disables document unwarping/dewarping (the UVDoc model). That corrects perspective/curvature in camera photos of paper. Again, great for scans—wasted cycles for flat game UI crops.
+            use_doc_unwarping=use_doc_unwarping,
+            # Disables the text-line orientation classifier (per-line rotation check; you saw PP-LCNet_x1_0_textline_ori). It helps when lines might be upside-down or vertical. If your segments are consistently horizontal/upright, you can skip it (faster, less model load).
+            use_textline_orientation=use_textline_orientation,
+            # Tells the pipeline not to return word-level boxes in the output (fewer boxes/fields to compute and serialize). You still get the recognized text; you just don’t get fine-grained per-word bounding boxes. That trims a bit of post-processing and reduces payload size.
+            return_word_box=return_word_box,
+            # speed: mobile detector instead of server
+            text_detection_model_name=text_detection_model_name,
+            text_recognition_model_name=text_recognition_model_name,
+            # PP-OCRv4 Server model: ~85% accuracy on English text, but around 36.9 ms per image on CPU (model size ~173 MB)
+            # PP-OCRv4 Mobile model: ~78–79% accuracy, but only ~17.5 ms per image on CPU (model size ~10.5 MB)
+            # throughput when you benchmark many small images
+            text_recognition_batch_size=16,
+        )
+        try:
+            # Newer API (device=...)
+            self.reader = PaddleOCR(device=self.device, enable_hpi=False, **init_kwargs)
+        except TypeError:
+            # Older API style (use_gpu flag)
+            use_gpu = self.device.startswith("gpu")
+            try:
+                self.reader = PaddleOCR(lang=self.lang, use_gpu=use_gpu)
+            except Exception as e:
+                logger_uma.exception("OCREngine: failed to initialize PaddleOCR (use_gpu=%s). Error: %s", use_gpu, e)
+                raise
+        except Exception as e:
+            # If 'device' fails for any other reason, try CPU as last resort
+            logger_uma.warning("OCREngine: device='%s' failed (%s). Retrying with CPU.", self.device, e)
+            try:
+                self.reader = PaddleOCR(lang=self.lang, device="cpu", enable_hpi=False)
+                self.device = "cpu"
+            except Exception as e2:
+                # Helpful guidance if it's the well-known Paddle/PaddleX mismatch
+                msg = str(e2)
+                if "set_optimization_level" in msg or "AnalysisConfig" in msg:
+                    try:
+                        paddle_ver = importlib.import_module("paddle").__version__
+                    except Exception:
+                        paddle_ver = "unknown"
+                    try:
+                        paddlex_ver = importlib.import_module("paddlex").__version__
+                    except Exception:
+                        paddlex_ver = "unknown"
+                    try:
+                        import paddleocr as _pocr
+                        paddleocr_ver = getattr(_pocr, "__version__", "unknown")
+                    except Exception:
+                        paddleocr_ver = "unknown"
+                    logger_uma.error(
+                        "Paddle/PaddleOCR/PaddleX possible version mismatch. "
+                        "Installed: paddle=%s, paddleocr=%s, paddlex=%s. "
+                        "PaddleOCR 3.x + PaddleX 3.x require PaddlePaddle >= 3.0.",
+                        paddle_ver, paddleocr_ver, paddlex_ver
+                    )
+                logger_uma.exception("OCREngine: CPU fallback also failed: %s", e2)
+                raise
+
+        logger_uma.info("OCREngine initialized | lang=%s device=%s", self.lang, self.device)
+
+    # ---- Core inference ----
+    def raw(self, img: Any) -> List[_OCRItem]:
+        """
+        Return normalized OCR list: [(box, text, score), ...]
+        """
+        bgr = to_bgr(img)
+        out = self.reader.predict(bgr)
+        raw_items = out[0] if isinstance(out, list) and out else []
+        raw_items_json = raw_items._to_json()
+        return raw_items_json
+
+    def text(self, img: Any, joiner: str = " ", min_conf=0.2) -> str:
+        """
+        Convenience: run OCR and return a whitespace-joined string of texts.
+        """
+        ocr_res = self.raw(img).get("res", {})
+        rec_texts = ocr_res.get("rec_texts", [])
+        rec_scores = ocr_res.get("rec_scores", [])
+        items = []
+
+        for i, rec_text in enumerate(rec_texts):
+            if len(rec_scores) > i:
+
+                if rec_scores[i] >= min_conf:
+                    items.append(rec_text)
+                elif rec_text.strip() != '':
+                    logger_uma.debug(f"Low rec score for: {rec_scores[i]} | {rec_text}")
+
+        return joiner.join(items).strip()
+
+    def digits(self, img: Any) -> str:
+        """
+        Convenience: OCR then keep only digits 0-9.
+        """
+        s = self.text(img)
+        res = re.sub(r"[^\d]", "", s).strip()
+
+        if res == "":
+            return -1
+        try:
+            return int(res)
+        except Exception as e:
+            logger_uma.warning(f"Couldn't parse digits: {res}. {e}")
+            return -1
+
+    # -------- Batch APIs (list-in, list-out) --------
+    def batch_text(self, imgs: List[Any], *, joiner: str = " ", min_conf: float = 0.2) -> List[str]:
+        """
+        Run OCR over a list of images in one call. Returns a list of strings aligned to input order.
+        """
+        if not imgs:
+            return []
+        bgr_list = [to_bgr(im) for im in imgs]
+        # Predict can yield results; force a list for consistent handling
+        outs = list(self.reader.predict(bgr_list))
+        texts: List[str] = []
+        for o in outs:
+            # Each item can be either a single result object or [result]
+            if isinstance(o, list) and o:
+                o = o[0]
+            j = o._to_json() if hasattr(o, "_to_json") else (o if isinstance(o, dict) else {})
+            res = j.get("res", {})
+            rec_texts = res.get("rec_texts", []) or []
+            rec_scores = res.get("rec_scores", []) or []
+            kept = []
+            for i, t in enumerate(rec_texts):
+                if i < len(rec_scores) and rec_scores[i] >= min_conf:
+                    kept.append(t)
+            texts.append((joiner.join(kept)).strip())
+        return texts
+
+    def batch_digits(self, imgs: List[Any]) -> List[str]:
+        """
+        Run OCR over a list of images, returning digits-only strings for each.
+        """
+        outs = self.batch_text(imgs)
+        return [re.sub(r"[^\d]", "", s or "") for s in outs]
