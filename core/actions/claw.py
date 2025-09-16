@@ -74,8 +74,8 @@ class ClawConfig:
 
     # Alignment / timing
     # IMPORTANT: right bias defaults to the SAME fraction as tolerance
-    align_tol_frac_of_claw: float = 0.20         # tolerance band = 0.20 × claw_w
-    right_bias_frac_of_claw: float = 0.20        # bias the target = +0.20 × claw_w
+    align_tol_frac_of_claw: float = -0.20         # tolerance band = 0.20 × claw_w
+    right_bias_frac_of_claw: float = -0.20        # bias the target = +0.20 × claw_w
     max_hold_s: float = 6.5                     # hard stop
     poll_interval_s: float = 0.015              # ~60 FPS
     # Prediction to compensate capture+inference latency

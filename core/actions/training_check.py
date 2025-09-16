@@ -453,7 +453,7 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
         if any_bluegreen_hint:
             hint_value = 0.5
             if Settings.HINT_IS_IMPORTANT:
-                hint_value *= 2
+                hint_value *= 4
             sv_total += hint_value
             sv_by_type["hint_bluegreen"] = sv_by_type.get("hint_bluegreen", 0.0) + hint_value
             notes.append(f"Hint on blue/green (tile-capped): +{hint_value}. Settings.HINT_IS_IMPORTANT={Settings.HINT_IS_IMPORTANT}")
@@ -461,7 +461,7 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
         if any_orange_max_hint:
             hint_value = 0.5
             if Settings.HINT_IS_IMPORTANT:
-                hint_value *= 2
+                hint_value *= 4
             sv_total += hint_value
             sv_by_type["hint_orange_max"] = sv_by_type.get("hint_orange_max", 0.0) + hint_value
             notes.append(f"Hint on orange/max (tile-capped): +{hint_value}. Settings.HINT_IS_IMPORTANT={Settings.HINT_IS_IMPORTANT}")

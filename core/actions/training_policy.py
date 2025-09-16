@@ -437,9 +437,9 @@ def decide_action_training(
     reference_stats={
         "SPD": 1150,
         "STA": 1000,
-        "PWR": 600,
+        "PWR": 530,
         "GUTS": 270,
-        "WIT": 350,
+        "WIT": 250,
     },
     # Tie-break context
     tile_to_type: Optional[Dict[int, str]] = None,

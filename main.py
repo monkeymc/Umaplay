@@ -54,7 +54,14 @@ class BotState:
                 prioritize_g1=False,
                 auto_rest_minimum=26,
                 plan_races = {
-                    # ... put your races here
+                    "Y1-12-1": "Asahi Hai Futurity Stakes",
+                    "Y2-05-1": "NHK Mile Cup",
+                    "Y2-05-2": "Japanese Oaks",
+                    # "Y2-06-1": "Japanese Oaks",
+                    # "Y2-06-2": "Queen Elizabeth II Cup",
+                    "Y3-05-1": "Osaka Hai",
+                    "Y3-11-1": "Victoria Mile",
+                    # "Y3-06-2": "Takarazuka Kinen",
                     "Y3-11-2": "Japan Cup",
                 },
                 skill_list=[
@@ -72,7 +79,14 @@ class BotState:
                     "Pace Chaser Corners",
                     "Pace Chaser Straightaways",
                     "Pace Chaser Savvy",
-                    "Slipstream"
+                    "Slipstream",
+                    "Mile Corners",
+                    "Left-Handed",
+                    "Concentration",
+                    "Early Lead",
+                    "Final Push",
+                    "Fast-Paced",
+                    "Updrafters"
                 ],
                 select_style=None  # front
             )
