@@ -19,7 +19,7 @@ I take no responsibility for bans, issues, or account losses that may result fro
 
 ## ✨ Features
 
-* **Smart Training**: Chooses the best option using a point system (rainbows, Etsuko, director, hints, etc.), not just “most faces”.
+* **Smart Training**: Chooses the best option using a point system (rainbows, Etsuko, director, hints, etc.), the decision depends on all collected status and state; not most faces only.
 * **Status Tracking**: Collects mood, stats, skill points, goals, and energy %.
 * **Health & Energy**: Rests or goes to the infirmary automatically when needed.
 * **Race Scheduling**: Plan races ahead of time (for fan farming or goals).
