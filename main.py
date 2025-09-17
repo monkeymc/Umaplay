@@ -49,15 +49,15 @@ class BotState:
             self.player = Player(
                 ctrl=ctrl,
                 ocr=ocr,
-                interval_stats_refresh=4,
+                interval_stats_refresh=3,
                 minimum_skill_pts=800,
                 prioritize_g1=False,
                 auto_rest_minimum=26,
                 plan_races = {
-                    "Y2-11-1": "Queen Elizabeth II Cup",
-                    "Y3-03-2": "Osaka Hai",
-                    "Y3-06-2": "Takarazuka Kinen",
-                    "Y3-10-2": "Tenno Sho (Autumn)",
+                    # "Y2-11-1": "Queen Elizabeth II Cup",
+                    # "Y3-03-2": "Osaka Hai",
+                    # "Y3-06-2": "Takarazuka Kinen",
+                    # "Y3-10-2": "Tenno Sho (Autumn)",
                     # "Y1-12-1": "Asahi Hai Futurity Stakes",
                     # "Y2-05-1": "NHK Mile Cup",
                     # "Y2-05-2": "Japanese Oaks",
@@ -80,19 +80,18 @@ class BotState:
                     "Homestretch Haste",
                     "Straightaway Acceleration",
                     "Firm Conditions",
-                    "Pace Chaser Corners",
-                    "Pace Chaser Straightaways",
-                    "Pace Chaser Savvy",
+                    # "Pace Chaser Corners",
+                    # "Pace Chaser Straightaways",
+                    # "Pace Chaser Savvy",
                     "Slipstream",
-                    "Mile Corners",
-                    "Left-Handed",
-                    "Concentration",
-                    "Early Lead",
-                    "Final Push",
-                    "Fast-Paced",
-                    "Updrafters"
+                    # "Mile Corners",
+                    # "Left-Handed",
+                    # "Early Lead",
+                    # "Final Push",
+                    # "Fast-Paced",
+                    # "Updrafters"
                 ],
-                select_style="front"  # front
+                select_style=None  # "end", "late", "pace", "front"
             )
             # SKILLs Pace
             
