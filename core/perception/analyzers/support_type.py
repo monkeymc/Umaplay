@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Tuple, Optional, List
+from typing import Dict, Tuple, Optional
 from dataclasses import dataclass
 
 import cv2
@@ -10,30 +10,37 @@ import numpy as np
 def _to_hsv(bgr: np.ndarray) -> np.ndarray:
     return cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
 
+
 def _edge_im(gray_or_mask: np.ndarray) -> np.ndarray:
     g = cv2.GaussianBlur(gray_or_mask, (3, 3), 0)
     return cv2.Canny(g, 40, 120)
 
+
 def _white_glyph_mask(hsv: np.ndarray, s_max=80, v_min=180) -> np.ndarray:
     # "white-ish" parts (the glyph itself). Be permissive on S, strict on V.
-    S, V = hsv[...,1], hsv[...,2]
+    S, V = hsv[..., 1], hsv[..., 2]
     return ((S <= s_max) & (V >= v_min)).astype(np.uint8) * 255
+
 
 def _color_mask(hsv: np.ndarray, s_min=70, v_min=90) -> np.ndarray:
     # "colored" parts (tile background) for hue estimation / sanity checks
-    S, V = hsv[...,1], hsv[...,2]
+    S, V = hsv[..., 1], hsv[..., 2]
     return ((S >= s_min) & (V >= v_min)).astype(np.uint8) * 255
 
+
 def _circ_med(h: np.ndarray) -> Optional[float]:
-    if h.size == 0: return None
+    if h.size == 0:
+        return None
     ang = h.astype(np.float32) * (np.pi / 90.0)  # 180 -> 2π
     v = np.exp(1j * ang)
     mu = np.mean(v)
     if np.abs(mu) < 1e-6:
         return float(np.median(h))
     a = np.angle(mu)
-    if a < 0: a += 2*np.pi
+    if a < 0:
+        a += 2 * np.pi
     return a * 90.0 / np.pi  # back to [0..179]
+
 
 def _circ_dist(h1: float, h2: float) -> float:
     d = abs(h1 - h2)
@@ -43,14 +50,16 @@ def _circ_dist(h1: float, h2: float) -> float:
 # ---------- template bundle ----------
 @dataclass
 class _Template:
-    key: str                  # 'spd','sta','pwr','guts','wit','friend'
-    glyph_edge: np.ndarray    # edges of white glyph mask
+    key: str  # 'spd','sta','pwr','guts','wit','friend'
+    glyph_edge: np.ndarray  # edges of white glyph mask
     hue_med: Optional[float]  # median hue of the colored tile in the icon
+
 
 class FixedRoiTypeClassifier:
     """
     Classifies the support-card type symbol using a fixed top-left ROI + glyph-edge template matching.
     """
+
     def __init__(self, icons_dir: str):
         self.fmap: Dict[str, str] = {
             "SPD": "support_card_type_spd.png",
@@ -64,9 +73,9 @@ class FixedRoiTypeClassifier:
         self._load_templates(icons_dir)
 
         # Matching knobs
-        self.accept_thresh = 0.38           # accept TM_CCOEFF_NORMED >= this
+        self.accept_thresh = 0.38  # accept TM_CCOEFF_NORMED >= this
         self.template_scales = [0.6, 0.75, 0.9, 1.0, 1.2, 1.4]  # scale template to ROI
-        self.pad_frac = 0.02                # small padding around ROI
+        self.pad_frac = 0.02  # small padding around ROI
         self.debug = False
 
     def _load_templates(self, icons_dir: str):
@@ -79,10 +88,12 @@ class FixedRoiTypeClassifier:
 
             # Composite over white if alpha present
             if icon.shape[2] == 4:
-                a = icon[...,3:4].astype(np.float32) / 255.0
-                bgr = (icon[...,:3].astype(np.float32)*a + 255.0*(1.0-a)).astype(np.uint8)
+                a = icon[..., 3:4].astype(np.float32) / 255.0
+                bgr = (icon[..., :3].astype(np.float32) * a + 255.0 * (1.0 - a)).astype(
+                    np.uint8
+                )
             else:
-                bgr = icon[...,:3]
+                bgr = icon[..., :3]
 
             hsv = _to_hsv(bgr)
             # white glyph from template
@@ -95,13 +106,15 @@ class FixedRoiTypeClassifier:
 
             # hue median from colored part (for soft fallback)
             color_mask = _color_mask(hsv, s_min=70, v_min=90)
-            H = hsv[...,0]
-            hue_med = _circ_med(H[color_mask > 0]) if cv2.countNonZero(color_mask) else None
+            H = hsv[..., 0]
+            hue_med = (
+                _circ_med(H[color_mask > 0]) if cv2.countNonZero(color_mask) else None
+            )
 
             self.templates[key] = _Template(key, glyph_edge, hue_med)
 
     # ----- fixed ROI in top-left quadrant -----
-    def _fixed_roi(self, card_bgr: np.ndarray) -> Tuple[int,int,int,int]:
+    def _fixed_roi(self, card_bgr: np.ndarray) -> Tuple[int, int, int, int]:
         H, W = card_bgr.shape[:2]
         # first quadrant with a bit of margin: x∈[2%, 48%], y∈[2%, 48%]
         px = int(self.pad_frac * W)
@@ -116,7 +129,7 @@ class FixedRoiTypeClassifier:
         cmask = _color_mask(hsv, s_min=70, v_min=90)
         if cv2.countNonZero(cmask) == 0:
             return None
-        h_med = _circ_med(hsv[...,0][cmask > 0])
+        h_med = _circ_med(hsv[..., 0][cmask > 0])
         if h_med is None:
             return None
         bestk, bestd = None, 999
@@ -145,8 +158,13 @@ class FixedRoiTypeClassifier:
         x1, y1, x2, y2 = self._fixed_roi(card_bgr)
         roi = card_bgr[y1:y2, x1:x2]
         if roi.size == 0:
-            return {"type": "unknown", "score": 0.0, "roi_xyxy": (x1, y1, x2, y2),
-                    "hue_med": None, "coverage": 0.0}
+            return {
+                "type": "unknown",
+                "score": 0.0,
+                "roi_xyxy": (x1, y1, x2, y2),
+                "hue_med": None,
+                "coverage": 0.0,
+            }
 
         # ---------- HSV + colored mask ----------
         hsv = _to_hsv(roi)
@@ -155,8 +173,13 @@ class FixedRoiTypeClassifier:
         n_colored = int(colored.sum())
         coverage = n_colored / float(max(1, roi.shape[0] * roi.shape[1]))
         if n_colored < 10:
-            return {"type": "unknown", "score": 0.0, "roi_xyxy": (x1, y1, x2, y2),
-                    "hue_med": None, "coverage": float(coverage)}
+            return {
+                "type": "unknown",
+                "score": 0.0,
+                "roi_xyxy": (x1, y1, x2, y2),
+                "hue_med": None,
+                "coverage": float(coverage),
+            }
 
         # robust circular median hue for diagnostics / distance scoring
         hue_med = _circ_med(Hh[colored])
@@ -164,21 +187,21 @@ class FixedRoiTypeClassifier:
         # ---------- Hue bands (OpenCV hue 0..179) ----------
         # Reference centers (HSB/2):
         REF = {
-            "SPD": 202 // 2,   # ~101 (blue)
-            "STA": 7   // 2,   # ~3   (red)
-            "PWR": 38  // 2,   # ~19  (orange)
+            "SPD": 202 // 2,  # ~101 (blue)
+            "STA": 7 // 2,  # ~3   (red)
+            "PWR": 38 // 2,  # ~19  (orange)
             "GUTS": 337 // 2,  # ~168 (pink/magenta)
-            "WIT": 163 // 2,   # ~82  (green/teal)
+            "WIT": 163 // 2,  # ~82  (green/teal)
         }
 
         # Band definitions: slightly narrower for STA vs GUTS so they don't overlap.
         # STA spans around 0 with wrap; GUTS stays in magenta range.
         BANDS = {
-            "SPD":  [(REF["SPD"] - 12, REF["SPD"] + 12)],
-            "WIT":  [(REF["WIT"] - 12, REF["WIT"] + 12)],
-            "PWR":  [(REF["PWR"] - 12, REF["PWR"] + 12)],
-            "STA":  [(0, 10), (170, 179)],      # tight red
-            "GUTS": [(158, 176)],               # magenta / pink
+            "SPD": [(REF["SPD"] - 12, REF["SPD"] + 12)],
+            "WIT": [(REF["WIT"] - 12, REF["WIT"] + 12)],
+            "PWR": [(REF["PWR"] - 12, REF["PWR"] + 12)],
+            "STA": [(0, 10), (170, 179)],  # tight red
+            "GUTS": [(158, 176)],  # magenta / pink
         }
 
         def _band_mask(H, band):
@@ -204,7 +227,9 @@ class FixedRoiTypeClassifier:
         # ---------- STA vs GUTS tie-breaker ----------
         # If winner is one of {STA,GUTS} or they are close, use Lab 'b' channel.
         close_margin = 0.05
-        if (top_type in ("STA", "GUTS")) or (cov["STA"] > 0 and abs(cov["STA"] - cov["GUTS"]) < close_margin):
+        if (top_type in ("STA", "GUTS")) or (
+            cov["STA"] > 0 and abs(cov["STA"] - cov["GUTS"]) < close_margin
+        ):
             # compute Lab 'b' for colored pixels (OpenCV Lab has b∈[0..255], 128 neutral)
             lab = cv2.cvtColor(roi, cv2.COLOR_BGR2LAB)
             b_chan = lab[..., 2]

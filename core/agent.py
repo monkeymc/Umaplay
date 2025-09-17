@@ -14,7 +14,8 @@ from core.actions.training_policy import (
     check_training
 )
 from core.controllers.base import IController
-from core.perception.detection import classify_screen
+from core.perception.analyzers.screen import classify_screen
+from core.perception.detection import recognize
 from core.perception.extractors.state import extract_goal_text, extract_skill_points, find_best
 from core.perception.ocr import OCREngine
 from core.settings import Settings
@@ -23,7 +24,6 @@ from typing import Optional
 from core.utils.text import fuzzy_contains
 from core.utils.waiter import PollConfig, Waiter
 
-from core.utils.yolo_objects import filter_by_classes as det_filter
 
 class Player:
     def __init__(
@@ -125,7 +125,7 @@ class Player:
 
         while self.is_running:
             sleep(delay)
-            img, _, dets = self.ctrl.recognize_objects_in_screen(
+            img, _, dets = recognize(self.ctrl,
                 imgsz=self.imgsz, conf=self.conf, iou=self.iou, tag="screen"
             )
 
@@ -135,7 +135,6 @@ class Player:
                 require_infirmary=True,
                 training_conf=0.50,
                 names_map=None,
-                debug=True,
             )
 
             is_lobby_summer = screen == "LobbySummer"
@@ -172,7 +171,7 @@ class Player:
                         pass
                     pat = int(delay * 100)
                     if self.patience >= pat:
-                        logger_uma.warning(f"Stopping the algorithm just for safeness, nothing happened in 20 iterations")
+                        logger_uma.warning("Stopping the algorithm just for safeness, nothing happened in 20 iterations")
                         self.is_running = False
                         break
                 continue
@@ -237,14 +236,12 @@ class Player:
 
                 if race_predebut:
                     # Enter or confirm race, then run RaceFlow
-                    self.lobby._go_race(reason="Clicking race Pre debut (race day)...")
-                    if not self.race.run(prioritize_g1=False, select_style=self.select_style):  # select whatever is in the goal
+                    # Run RaceFlow; it will ensure navigation into Raceday if needed
+                    if not self.race.run(prioritize_g1=False, select_style=self.select_style, reason="Pre-debut (race day)"):
                         raise RuntimeError("Couldn't race")
                     continue
                 else:
-                    # Enter or confirm race, then run RaceFlow
-                    self.lobby._go_race(reason="Clicking race normal, no style select (race day)...")
-                    if not self.race.run(prioritize_g1=False, select_style=None):  # select whatever is in the goal
+                    if not self.race.run(prioritize_g1=False, select_style=None, reason="Normal (race day)"):
                         raise RuntimeError("Couldn't race")
                     continue
 
@@ -258,14 +255,12 @@ class Player:
                 if outcome == "TO_RACE":
                     if "G1" in reason.upper():
                         logger_uma.info(reason)
-                        if self.lobby._go_race(reason=self.lobby.state.goal):
-                            ok = self.race.run(prioritize_g1=True, is_g1_goal=True)
-                            if not ok:
-                                logger_uma.error("[lobby] Couldn't race (G1 target). Backing out; set skip guard.")
-                                self.lobby._go_back()
-                                self.lobby._skip_race_once = True
-                                # TODO: smart Continue with training instead of continue
-                                continue
+                        ok = self.race.run(prioritize_g1=True, is_g1_goal=True, reason=self.lobby.state.goal)
+                        if not ok:
+                            logger_uma.error("[lobby] Couldn't race (G1 target). Backing out; set skip guard.")
+                            self.lobby._go_back()
+                            self.lobby._skip_race_once = True
+                            continue
                     elif "PLAN" in reason.upper():
                         desired_race_name = self._desired_race_today()
                         if desired_race_name:
@@ -275,6 +270,7 @@ class Player:
                                 is_g1_goal=False,
                                 desired_race_name=desired_race_name,
                                 date_key=self._today_date_key(),
+                                reason=f"Planned race: {desired_race_name}",
                             )
                             if not ok:
                                 logger_uma.error(f"[race] Couldn't race {desired_race_name}")
@@ -288,14 +284,12 @@ class Player:
 
                     elif "FANS" in reason.upper():
                         logger_uma.info(reason)
-                        if self.lobby._go_race(reason=self.lobby.state.goal):
-                            ok = self.race.run(prioritize_g1=self.prioritize_g1, is_g1_goal=False)
-                            if not ok:
-                                logger_uma.error("[lobby] Couldn't race (fans target). Backing out; set skip guard.")
-                                self.lobby._go_back()
-                                self.lobby._skip_race_once = True
-                                # TODO: smart Continue with training instead of continue
-                                continue
+                        ok = self.race.run(prioritize_g1=self.prioritize_g1, is_g1_goal=False, reason=self.lobby.state.goal)
+                        if not ok:
+                            logger_uma.error("[lobby] Couldn't race (fans target). Backing out; set skip guard.")
+                            self.lobby._go_back()
+                            self.lobby._skip_race_once = True
+                            continue
 
                 if outcome == "TO_TRAINING":
                     logger_uma.info(
@@ -408,10 +402,9 @@ class Player:
                 return
 
             if action.value == TrainAction.RACE.value:
-                # Try to race from lobby
-                if self.lobby._go_race(reason="Racing..."):
-                    if self.race.run(prioritize_g1=self.prioritize_g1):
-                        return
+                # Try to race from lobby (RaceFlow will navigate into Raceday)
+                if self.race.run(prioritize_g1=self.prioritize_g1, reason="Training policy → race"):
+                    return
 
                 # Race failed → go back, revisit training once with skip_race=True
                 logger_uma.warning("[training] Couldn't race from training policy; retrying decision without racing (Also, suitable G1 probably wasn't found).")

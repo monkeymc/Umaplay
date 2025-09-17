@@ -14,21 +14,21 @@ class HintConfig:
     y_hi: float = 0.40
 
     # Target pink color: HSB ~ (339, 71, 100)  → OpenCV HSV (H in 0..179, S,V in 0..255)
-    hint_h_center: int = 170              # ≈ 339° / 2
-    h_tol_strict: int = 8                 # narrow band for high precision
-    h_tol_wide: int = 16                  # wider band for purity check
-    s_min_strict: int = 140               # be strict on saturation/value to avoid skin/orange
+    hint_h_center: int = 170  # ≈ 339° / 2
+    h_tol_strict: int = 8  # narrow band for high precision
+    h_tol_wide: int = 16  # wider band for purity check
+    s_min_strict: int = 140  # be strict on saturation/value to avoid skin/orange
     v_min_strict: int = 140
     s_min_wide: int = 100
     v_min_wide: int = 110
 
     # Morphology
-    morph_frac: float = 0.02              # kernel radius = morph_frac * min(W,H)
+    morph_frac: float = 0.02  # kernel radius = morph_frac * min(W,H)
 
     # Decision thresholds
-    min_coverage_frac: float = 0.25       # strict pink coverage in ROI (area ratio)
-    min_purity: float = 0.65              # strict_pixels / wide_pixels  (color purity)
-    min_cc_area_frac: float = 0.01        # (optional) largest CC area over ROI area for viz
+    min_coverage_frac: float = 0.25  # strict pink coverage in ROI (area ratio)
+    min_purity: float = 0.65  # strict_pixels / wide_pixels  (color purity)
+    min_cc_area_frac: float = 0.01  # (optional) largest CC area over ROI area for viz
 
 
 class HintDetector:
@@ -50,8 +50,10 @@ class HintDetector:
         x2 = np.clip(x2, 1, W)
         y1 = np.clip(y1, 0, max(H - 1, 0))
         y2 = np.clip(y2, 1, H)
-        if x2 <= x1: x2 = min(W, x1 + 1)
-        if y2 <= y1: y2 = min(H, y1 + 1)
+        if x2 <= x1:
+            x2 = min(W, x1 + 1)
+        if y2 <= y1:
+            y2 = min(H, y1 + 1)
         return x1, y1, x2, y2
 
     @staticmethod
@@ -95,20 +97,24 @@ class HintDetector:
 
         # 2) strict + wide pink masks
         h_strict = self._h_in_band(h, cfg.hint_h_center, cfg.h_tol_strict)
-        h_wide   = self._h_in_band(h, cfg.hint_h_center, cfg.h_tol_wide)
+        h_wide = self._h_in_band(h, cfg.hint_h_center, cfg.h_tol_wide)
 
-        strict = (h_strict & (s >= cfg.s_min_strict) & (v >= cfg.v_min_strict)).astype(np.uint8) * 255
-        wide   = (h_wide   & (s >= cfg.s_min_wide)   & (v >= cfg.v_min_wide)).astype(np.uint8) * 255
+        strict = (h_strict & (s >= cfg.s_min_strict) & (v >= cfg.v_min_strict)).astype(
+            np.uint8
+        ) * 255
+        wide = (h_wide & (s >= cfg.s_min_wide) & (v >= cfg.v_min_wide)).astype(
+            np.uint8
+        ) * 255
 
         strict = self._clean(strict, Wroi, Hroi)
-        wide   = self._clean(wide,   Wroi, Hroi)
+        wide = self._clean(wide, Wroi, Hroi)
 
         # 3) coverage & purity gates
         n_strict = int(np.count_nonzero(strict))
-        n_wide   = int(np.count_nonzero(wide))
+        n_wide = int(np.count_nonzero(wide))
 
         coverage = n_strict / area_roi
-        purity   = n_strict / max(1.0, n_wide)  # ∈ (0..1]
+        purity = n_strict / max(1.0, n_wide)  # ∈ (0..1]
 
         if (coverage < cfg.min_coverage_frac) or (purity < cfg.min_purity):
             return {
@@ -137,7 +143,7 @@ class HintDetector:
             "roi_xyxy_local": (rx1, ry1, rx2, ry2),
             "hint_xyxy_local": hint_box,
             "has_hint": True,
-            "score": float(coverage),   # keep your print format
+            "score": float(coverage),  # keep your print format
             "coverage": float(coverage),
             "purity": float(purity),
         }

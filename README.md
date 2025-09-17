@@ -128,7 +128,7 @@ self.player = Player(
 python main.py
 ```
 
-* Press **F4** to **start/stop** the bot.
+* Press **F2** to **start/stop** the bot.
 
 ---
 

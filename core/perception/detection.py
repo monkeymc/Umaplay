@@ -1,15 +1,17 @@
 # core/perception/detection.py
-from __future__ import annotations
 
-from typing import List, Dict, Tuple, Optional
-from collections import Counter
+from typing import List, Tuple, Optional
+
+from PIL import Image, ImageDraw
+
+from core.controllers.base import IController, RegionXYWH
+from core.controllers.steam import SteamController
+from core.settings import Settings
+from core.types import DetectionDict
 
 import numpy as np
-from PIL import Image
 from ultralytics import YOLO
 
-from core.settings import Settings
-from core.types import DetectionDict, ScreenName, ScreenInfo
 from core.utils.img import pil_to_bgr
 from core.utils.logger import logger_uma
 
@@ -17,11 +19,8 @@ from core.utils.logger import logger_uma
 _YOLO_MODEL: Optional[YOLO] = None
 
 
-def load_yolo(weights: Optional[str] = None) -> YOLO:
-    """
-    Initialize and cache the Ultralytics YOLO model.
-    If no path is provided, uses Settings.YOLO_WEIGHTS.
-    """
+def get_model(weights=None) -> YOLO:
+    """Return a ready YOLO model (load lazily on first use)."""
     global _YOLO_MODEL
     if _YOLO_MODEL is not None:
         return _YOLO_MODEL
@@ -29,18 +28,13 @@ def load_yolo(weights: Optional[str] = None) -> YOLO:
     weights_path = str(weights or Settings.YOLO_WEIGHTS)
     logger_uma.info(f"Loading YOLO weights from: {weights_path}")
     _YOLO_MODEL = YOLO(weights_path)
-    
+
     if Settings.USE_GPU:
         try:
-            _YOLO_MODEL.to('cuda:0')
+            _YOLO_MODEL.to("cuda:0")
         except Exception as e:
             logger_uma.error(f"Couldn't set YOLO model to CUDA: {e}")
     return _YOLO_MODEL
-
-
-def get_model() -> YOLO:
-    """Return a ready YOLO model (load lazily on first use)."""
-    return load_yolo()
 
 
 def extract_dets(res, conf_min: float = 0.25) -> List[DetectionDict]:
@@ -52,21 +46,27 @@ def extract_dets(res, conf_min: float = 0.25) -> List[DetectionDict]:
     if boxes is None or len(boxes) == 0:
         return []
 
-    names = res.names if isinstance(res.names, dict) else {i: n for i, n in enumerate(res.names)}
+    names = (
+        res.names
+        if isinstance(res.names, dict)
+        else {i: n for i, n in enumerate(res.names)}
+    )
     xyxy = boxes.xyxy.cpu().numpy()
-    cls  = boxes.cls.cpu().numpy().astype(int)
+    cls = boxes.cls.cpu().numpy().astype(int)
     conf = boxes.conf.cpu().numpy()
 
     out: List[DetectionDict] = []
     for i in range(len(cls)):
         if conf[i] < conf_min:
             continue
-        out.append({
-            "idx": i,
-            "name": names.get(int(cls[i]), str(cls[i])),
-            "conf": float(conf[i]),
-            "xyxy": tuple(map(float, xyxy[i])),
-        })
+        out.append(
+            {
+                "idx": i,
+                "name": names.get(int(cls[i]), str(cls[i])),
+                "conf": float(conf[i]),
+                "xyxy": tuple(map(float, xyxy[i])),
+            }
+        )
     return out
 
 
@@ -86,8 +86,8 @@ def detect_on_bgr(
     """
     # Defaults from Settings unless explicitly overridden
     imgsz = imgsz if imgsz is not None else Settings.YOLO_IMGSZ
-    conf  = conf  if conf  is not None else Settings.YOLO_CONF
-    iou   = iou   if iou   is not None else Settings.YOLO_IOU
+    conf = conf if conf is not None else Settings.YOLO_CONF
+    iou = iou if iou is not None else Settings.YOLO_IOU
 
     model = get_model()
     res_list = model.predict(source=bgr, imgsz=imgsz, conf=conf, iou=iou, verbose=False)
@@ -111,110 +111,93 @@ def detect_on_pil(
     bgr = pil_to_bgr(pil_img)
     return detect_on_bgr(bgr, imgsz=imgsz, conf=conf, iou=iou)
 
-def classify_screen(
+
+def recognize(
+    ctrl: IController,
+    *,
+    region: Optional[RegionXYWH] = None,
+    imgsz: Optional[int] = None,
+    conf: Optional[float] = None,
+    iou: Optional[float] = None,
+    tag: str = "general",
+) -> Tuple[Image.Image, object, List[DetectionDict]]:
+    """
+    Capture via controller and run YOLO detection.
+    Returns (image, yolo_result, dets).
+    """
+    if isinstance(ctrl, SteamController):
+        img = ctrl.screenshot_left_half()
+    else:
+        img = ctrl.screenshot(region=region)
+
+    result, dets = detect_on_pil(img, imgsz=imgsz, conf=conf, iou=iou)
+    _maybe_store_debug(img, dets, tag=tag, thr=Settings.STORE_FOR_TRAINING_THRESHOLD)
+    return img, result, dets
+
+
+def _maybe_store_debug(
+    pil_img: Image.Image,
     dets: List[DetectionDict],
     *,
-    lobby_conf: float = 0.70,
-    require_infirmary: bool = True,
-    training_conf: float = 0.50,
-    event_conf: float = 0.60,
-    race_conf: float = 0.80,
-    names_map: Optional[Dict[str, str]] = None,
-    debug: bool = True,
-) -> Tuple[ScreenName, ScreenInfo]:
-    """
-    Decide which screen we're on.
+    tag: str,
+    thr: float,
+) -> None:
+    """Optional training dumps, kept here to keep controllers clean."""
+    import os
+    import time
+    from core.utils.logger import logger_uma
 
-    Rules (priority order):
-      - 'Event'       → ≥1 'event_choice' @ ≥ event_conf
-      - 'Inspiration' -> has_inspiration button
-      - 'Raceday' → detect 'lobby_tazuna' @ ≥ lobby_conf AND 'race_race_day' @ ≥ race_conf
-      - 'Training'    → exactly 5 'training_button' @ ≥ training_conf
-      - 'LobbySummer' → has 'lobby_tazuna' AND 'lobby_rest_summer'
-                         AND NOT 'lobby_rest' AND NOT 'lobby_recreation'
-      - 'Lobby'       → has 'lobby_tazuna' AND (has 'lobby_infirmary' or not require_infirmary)
-      - else 'Unknown'
-    """
-    names_map = names_map or {
-        "tazuna":            "lobby_tazuna",
-        "infirmary":         "lobby_infirmary",
-        "training_button":   "training_button",
-        "event":             "event_choice",
-        "rest":              "lobby_rest",
-        "rest_summer":       "lobby_rest_summer",
-        "recreation":        "lobby_recreation",
-        "race_day": "race_race_day",
-        "event_inspiration": "event_inspiration",
-        "race_after_next": "race_after_next",
-        "lobby_skills": "lobby_skills",
-        "button_claw_action": "button_claw_action",
-        "claw": "claw",
-    }
+    if not Settings.STORE_FOR_TRAINING or not dets:
+        return
+    lows = [d for d in dets if float(d.get("conf", 0.0)) <= float(thr)]
+    if not lows:
+        return
+    try:
+        out_dir = Settings.DEBUG_DIR / "training"
+        out_dir_raw = out_dir / tag / "raw"
+        out_dir_overlay = out_dir / tag / "overlay"
+        os.makedirs(out_dir_raw, exist_ok=True)
+        os.makedirs(out_dir_overlay, exist_ok=True)
 
-    counts = Counter(d["name"] for d in dets)
+        ts = time.strftime("%Y%m%d-%H%M%S") + f"_{int((time.time() % 1) * 1000):03d}"
 
-    n_event_choices = sum(
-        1 for d in dets if d["name"] == names_map["event"] and d["conf"] >= event_conf
-    )
-    n_train = sum(
-        1 for d in dets if d["name"] == names_map["training_button"] and d["conf"] >= training_conf
-    )
+        ov = pil_img.copy()
+        draw = ImageDraw.Draw(ov)
+        conf_line = "0"
+        for d in lows:
+            x1, y1, x2, y2 = [int(v) for v in d.get("xyxy", (0, 0, 0, 0))]
+            name = str(d.get("name", "?"))
+            conf = float(d.get("conf", 0.0))
+            conf_line = f"{conf:.2f}"
 
-    has_tazuna      = any(d["name"] == names_map["tazuna"]      and d["conf"] >= lobby_conf for d in dets)
-    has_infirmary   = any(d["name"] == names_map["infirmary"]   and d["conf"] >= lobby_conf for d in dets)
-    has_rest        = any(d["name"] == names_map["rest"]        and d["conf"] >= lobby_conf for d in dets)
-    has_rest_summer = any(d["name"] == names_map["rest_summer"] and d["conf"] >= lobby_conf for d in dets)
-    has_recreation  = any(d["name"] == names_map["recreation"]  and d["conf"] >= lobby_conf for d in dets)
-    has_race_day  = any(d["name"] == names_map["race_day"]  and d["conf"] >= race_conf  for d in dets)
-    has_inspiration = any(d["name"] == names_map["event_inspiration"]  and d["conf"] >= race_conf  for d in dets)
-    has_lobby_skills = any(d["name"] == names_map["lobby_skills"]  and d["conf"] >= lobby_conf  for d in dets)
-    race_after_next = any(d["name"] == names_map["race_after_next"]  and d["conf"] >= 0.5  for d in dets)
-    has_button_claw_action = any(d["name"] == names_map["button_claw_action"]  and d["conf"] >= lobby_conf  for d in dets)
-    has_claw = any(d["name"] == names_map["claw"]  and d["conf"] >= lobby_conf  for d in dets)
-    
-    # 1) Event
-    if n_event_choices >= 1:
-        return "Event", {"event_choices": n_event_choices}
+            draw.rectangle([x1, y1, x2, y2], outline=(255, 0, 0), width=2)
+            name_line = name
+            pad, gap = 3, 2
+            try:
+                nb = draw.textbbox((0, 0), name_line)
+                cb = draw.textbbox((0, 0), conf_line)
+                w1, h1 = nb[2] - nb[0], nb[3] - nb[1]
+                w2, h2 = cb[2] - cb[0], cb[3] - cb[1]
+            except Exception:
+                w1 = int(draw.textlength(name_line))
+                h1 = 12
+                w2 = int(draw.textlength(conf_line))
+                h2 = 12
+            tw = max(w1, w2)
+            th = h1 + gap + h2
+            total_h = th + 2 * pad
+            by1 = y1 - total_h - 2 if (y1 - total_h - 2) >= 0 else (y1 + 2)
+            bx2 = x1 + tw + 2 * pad
+            draw.rectangle([x1, by1, bx2, by1 + total_h], fill=(255, 0, 0))
+            draw.text((x1 + pad, by1 + pad), name_line, fill=(255, 255, 255))
+            draw.text((x1 + pad, by1 + pad + h1 + gap), conf_line, fill=(255, 255, 255))
 
-    if has_inspiration:
-        return "Inspiration", {"has_inspiration": has_inspiration}
-    if has_tazuna and has_race_day:
-        return "Raceday", {"tazuna": has_tazuna, "race_day": has_race_day}
+        raw_path = out_dir_raw / f"{tag}_{ts}_{conf_line}.png"
+        pil_img.save(raw_path)
+        ov_path = out_dir_overlay / f"{tag}_{ts}_{conf_line}.png"
+        ov.save(ov_path)
+        logger_uma.debug("saved low-conf training debug -> %s | %s", raw_path, ov_path)
+    except Exception as e:
+        from core.utils.logger import logger_uma
 
-    # 2) Training
-    if n_train == 5:
-        return "Training", {"training_buttons": n_train}
-
-    # 3) LobbySummer
-    if has_tazuna and has_rest_summer and (not has_rest) and (not has_recreation):
-        return "LobbySummer", {
-            "tazuna": has_tazuna,
-            "rest_summer": has_rest_summer,
-            "infirmary": has_infirmary,
-            "recreation_present": has_recreation,
-        }
-
-    # 4) Regular Lobby
-    if has_tazuna and (has_infirmary or not require_infirmary) and has_lobby_skills:
-        return "Lobby", {"tazuna": has_tazuna, "infirmary": has_infirmary, "has_lobby_skills": has_lobby_skills}
-
-    if (
-        (len(dets) == 2 and has_lobby_skills and race_after_next)
-        or (len(dets) <= 2 and has_lobby_skills)
-    ):
-        return "FinalScreen", {"has_lobby_skills": has_lobby_skills, "race_after_next": race_after_next}
-
-    if has_button_claw_action and has_claw:
-        return "ClawMachine", {"has_button_claw_action": has_button_claw_action, "has_claw": has_claw}
-    
-    # 5) Fallback
-    return "Unknown", {
-        "training_buttons": n_train,
-        "tazuna": has_tazuna,
-        "infirmary": has_infirmary,
-        "rest": has_rest,
-        "rest_summer": has_rest_summer,
-        "recreation": has_recreation,
-        "race_day": has_race_day,
-        "counts": dict(counts),
-    }
+        logger_uma.debug("failed saving training debug: %s", e)

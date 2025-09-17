@@ -16,24 +16,23 @@ from core.perception.extractors.state import (
     extract_stats,
     extract_turns
 )
-from core.settings import Settings
-from core.utils.geometry import crop_pil
 from core.utils.logger import logger_uma
 from core.utils.race_index import RaceIndex, date_key_from_dateinfo
-from core.utils.text import fuzzy_contains, _fuzzy_ratio
-from core.utils.waiter import Waiter, PollConfig
+from core.utils.text import fuzzy_contains
+from core.utils.waiter import Waiter
 from core.utils.yolo_objects import collect
-from core.actions.training_policy import (
+
+from core.utils.date_uma import (
     DateInfo,
-    _date_cmp,
-    _date_index,
-    _date_is_pre_debut,
-    _date_is_regular_year,
-    _date_is_terminal,
-    _date_merge,
+    date_cmp,
+    date_index,
+    date_is_pre_debut,
+    date_is_regular_year,
+    date_is_terminal,
+    date_merge,
     is_summer_in_two_or_less_turns,
     is_summer,
-    parse_career_date,
+    parse_career_date
 )
 
 @dataclass
@@ -140,8 +139,7 @@ class LobbyFlow:
             )
             if not is_first_junior_date and not self._skip_race_once:
                 reason = f"Planned race: {self.state.planned_race_name}"
-                if self._go_race(reason=reason):
-                    return "TO_RACE", reason
+                return "TO_RACE", reason
             else:
                 logger_uma.debug("[lobby] Planned race suppressed by first-junior-day/skip flag.")
 
@@ -185,7 +183,7 @@ class LobbyFlow:
             self.state.mood = extract_mood(self.ocr, img, dets, conf_min=0.3)
         
         if self.state.mood[-1] < 0:
-            logger_uma.warning(f"UNKNOWN mood!")
+            logger_uma.warning("UNKNOWN mood!")
         # --- Mood (for training policy)---
         # Navigate to Training if nothing else
 
@@ -338,7 +336,7 @@ class LobbyFlow:
             return
 
         # If we already reached Final Season, only accept Final→Final
-        if _date_is_terminal(prev):
+        if date_is_terminal(prev):
             if cand.year_code == 4:
                 self.state.date_info = cand
                 self.state.is_summer = is_summer(cand)
@@ -347,7 +345,7 @@ class LobbyFlow:
             return
 
         # Pre-debut handling: allow 0→(1..3/4), but never accept (1..3)→0
-        if prev and _date_is_regular_year(prev) and _date_is_pre_debut(cand):
+        if prev and date_is_regular_year(prev) and date_is_pre_debut(cand):
             logger_uma.debug(f"Ignoring backward date {cand.as_key()} after {prev.as_key()}.")
             return
 
@@ -357,15 +355,15 @@ class LobbyFlow:
             accepted = cand
             reason = "initial"
         else:
-            cmp = _date_cmp(cand, prev)
+            cmp = date_cmp(cand, prev)
             if cmp < 0:
                 # candidate is earlier -> reject
                 logger_uma.debug(f"Rejecting earlier date: {cand.as_key()} < {prev.as_key()}")
                 return
 
             # (Optional) sanity guard against gigantic jumps in one frame
-            idx_prev = _date_index(prev)
-            idx_new  = _date_index(cand)
+            idx_prev = date_index(prev)
+            idx_new  = date_index(cand)
             if (idx_prev is not None and idx_new is not None) and (idx_new - idx_prev > 6):
                 
                 if str(prev.as_key()).strip() == 'Y3-Dec-2' and str(cand.year_code) == 'Y4':
@@ -382,7 +380,7 @@ class LobbyFlow:
                     return
             # If we stored a pending jump and it repeats, accept now
             if hasattr(self, "_pending_date_jump") and self._pending_date_jump:
-                if _date_cmp(cand, self._pending_date_jump) == 0:
+                if date_cmp(cand, self._pending_date_jump) == 0:
                     reason = "confirmed jump"
                     accepted = cand
                     self._pending_date_jump = None
@@ -395,7 +393,7 @@ class LobbyFlow:
                 accepted = cand
 
         # Merge missing fields with previous when compatible (keeps half when month unchanged)
-        merged = _date_merge(prev, accepted)
+        merged = date_merge(prev, accepted)
 
         # Commit to state
         self.state.date_info = merged
@@ -551,30 +549,6 @@ class LobbyFlow:
         if click:
             time.sleep(3)
         return click
-
-    def _go_race(self, *, reason: str) -> bool:
-        logger_uma.info(f"[lobby] Go Race: {reason}")
-        # Either "lobby_races" (normal) or "race_race_day" (entry on race-day)
-        clicked = self.waiter.click_when(
-            classes=("lobby_races", "race_race_day"),
-            prefer_bottom=True,
-            timeout_s=1.5,
-            tag="lobby_races",
-        )
-        if clicked:
-            # Consecutive click check
-            if self.waiter.click_when(
-                classes=("button_green",),
-                texts=("OK", ),
-                prefer_bottom=False,
-                threshold=0.7,
-                # Only accept if exact text
-                allow_greedy_click=False,
-                timeout_s=1.4,
-                tag="lobby_races_consecutive",
-            ):
-                logger_uma.info("Accepting consecutive race penalization")
-        return clicked
 
     def _go_skills(self) -> bool:
         logger_uma.info("[lobby] Opening Skills")

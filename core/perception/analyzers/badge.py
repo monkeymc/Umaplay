@@ -8,7 +8,7 @@ from PIL import Image
 from core.perception.ocr import OCREngine
 from core.types import XYXY
 from core.utils.geometry import crop_pil
-from core.utils.text import _fuzzy_ratio
+from core.utils.text import fuzzy_ratio
 
 
 BADGE_PRIORITY = {"EX": 5, "G1": 4, "G2": 3, "G3": 2, "OP": 1, "UNK": 0}
@@ -19,7 +19,7 @@ def _badge_label_by_ocr(ocr: OCREngine, img: Image.Image, xyxy: XYXY) -> Tuple[s
     cand = ["G1", "G2", "G3", "OP", "EX"]
     best, sc = "", 0.0
     for c in cand:
-        r = _fuzzy_ratio(txt, c)
+        r = fuzzy_ratio(txt, c)
         if r > sc:
             best, sc = c, r
     return (best if sc >= 0.60 else "UNK", sc)
@@ -50,7 +50,7 @@ def _badge_label_by_color(img: Image.Image, xyxy: XYXY) -> Tuple[str, float]:
         "EX":  36/2,   # gold (close to OP)
     }
     def circ_dist(a, b):
-        d = abs(a-b); 
+        d = abs(a-b) 
         return min(d, 180-d)
     best_lab, best_d = "UNK", 999.0
     for lab, c in centers.items():

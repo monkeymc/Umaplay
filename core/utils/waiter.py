@@ -8,11 +8,12 @@ from typing import List, Optional, Sequence, Tuple
 from PIL import Image
 
 from core.controllers.base import IController
+from core.perception.detection import recognize
 from core.perception.ocr import OCREngine
 from core.utils.geometry import crop_pil
 from core.utils.logger import logger_uma
-from core.utils.text import _fuzzy_ratio
-from core.utils.yolo_objects import bottom_most, filter_by_classes as det_filter
+from core.utils.text import fuzzy_ratio
+from core.utils.yolo_objects import filter_by_classes as det_filter
 
 DetectionDict = dict
 XYXY = Tuple[float, float, float, float]
@@ -144,7 +145,7 @@ class Waiter:
     # ---------------------------
 
     def _snap(self, *, tag: str) -> Tuple[Image.Image, List[DetectionDict]]:
-        img, _, dets = self.ctrl.recognize_objects_in_screen(
+        img, _, dets = recognize(self.ctrl,
             imgsz=self.cfg.imgsz, conf=self.cfg.conf, iou=self.cfg.iou, tag=tag
         )
         return img, dets
@@ -168,7 +169,7 @@ class Waiter:
         if not txt:
             return False
         for ft in forbid_texts:
-            if _fuzzy_ratio(txt, ft) >= forbid_threshold:
+            if fuzzy_ratio(txt, ft) >= forbid_threshold:
                 return True
         return False
 
@@ -197,7 +198,7 @@ class Waiter:
             if not txt:
                 continue
             # Skip forbidden
-            if forbid_texts and any(_fuzzy_ratio(txt.lower(), ft) >= forbid_threshold for ft in forbid_texts):
+            if forbid_texts and any(fuzzy_ratio(txt.lower(), ft) >= forbid_threshold for ft in forbid_texts):
                 continue
             txt_split = txt.split(" ")
             for t in texts:
@@ -208,7 +209,7 @@ class Waiter:
                         if s > best_s:
                             best_d, best_s = d, s
 
-            s = max(_fuzzy_ratio(txt, t) for t in texts)
+            s = max(fuzzy_ratio(txt, t) for t in texts)
             if s > best_s:
                 best_d, best_s = d, s
 

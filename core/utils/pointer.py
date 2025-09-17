@@ -1,15 +1,11 @@
 # core/utils/pointer.py
 from __future__ import annotations
 
-import random
 import time
-from typing import Iterable, Optional, Tuple
 
 from core.controllers.android import ScrcpyController  # type check only
 from core.controllers.base import IController
 from core.utils.logger import logger_uma
-
-XYXY = Tuple[float, float, float, float]
 
 
 def smart_scroll_small(
@@ -56,33 +52,3 @@ def smart_scroll_small(
             time.sleep(max(0.0, delay_pc))
 
     time.sleep(settle_post_s)
-
-
-def burst_click_center(
-    ctrl: IController,
-    xyxy: XYXY,
-    *,
-    clicks_range: Tuple[int, int] = (2, 3),
-    pause_after_s: Optional[float] = None,
-) -> None:
-    """
-    Perform a short burst of clicks at the center of `xyxy`.
-    Useful for things like 'View Results' or 'Skip' where multiple taps help.
-    """
-    lo, hi = clicks_range
-    n = random.randint(max(1, lo), max(lo, hi))
-    ctrl.click_xyxy_center(xyxy, clicks=n)
-    if pause_after_s is not None:
-        time.sleep(max(0.0, float(pause_after_s)))
-
-
-def nudge_focus_to_center(ctrl: IController, xyxy: XYXY, *, pause_s: float = 0.10) -> None:
-    """
-    Move cursor to the center of `xyxy` with the controller's human-ish move,
-    then wait briefly to let hover-driven UI settle.
-    """
-    try:
-        ctrl.move_xyxy_center(xyxy)
-        time.sleep(max(0.0, pause_s))
-    except Exception as e:
-        logger_uma.debug("[pointer] nudge_focus_to_center failed: %s", e)

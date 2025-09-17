@@ -10,6 +10,7 @@ from core.utils.logger import logger_uma
 
 DateKey = str  # "Y{year}-{MM}-{half}"
 
+
 # ------------ helpers to build the in-game card title ------------
 def _abbr_distance_category(cat: Optional[str]) -> str:
     """
@@ -28,6 +29,7 @@ def _abbr_distance_category(cat: Optional[str]) -> str:
         return "Sprint"
     return (cat or "").title()
 
+
 def _norm_distance(entry: Dict) -> str:
     """
     Prefer integer meters (e.g., 2000m). Fallback to distance_text with spaces removed.
@@ -41,6 +43,7 @@ def _norm_distance(entry: Dict) -> str:
     txt = str(entry.get("distance_text") or "")
     return txt.replace(" ", "").replace("ｍ", "m")
 
+
 def build_display_title(entry: Dict) -> str:
     """
     What the race card prints on the left side, e.g.
@@ -52,7 +55,7 @@ def build_display_title(entry: Dict) -> str:
     loc = str(entry.get("location") or "").strip()
     surf = str(entry.get("surface") or "").strip()
     dist = _norm_distance(entry)
-    cat  = _abbr_distance_category(entry.get("distance_category"))
+    cat = _abbr_distance_category(entry.get("distance_category"))
     base = f"{loc} {surf} {dist}"
     if cat:
         base += f" ({cat})"
@@ -83,6 +86,7 @@ class RaceIndex:
       • date_key -> [ {name, rank, ...}, ... ]
       • race_name -> [date_key, ...]
     """
+
     _loaded: bool = False
     _date_to_entries: Dict[DateKey, List[Dict]] = {}
     _name_to_dates: Dict[str, List[DateKey]] = {}
@@ -127,8 +131,11 @@ class RaceIndex:
                     continue
 
         cls._loaded = True
-        logger_uma.debug("[RaceIndex] Loaded races: %d dates, %d names",
-                         len(cls._date_to_entries), len(cls._name_to_dates))
+        logger_uma.debug(
+            "[RaceIndex] Loaded races: %d dates, %d names",
+            len(cls._date_to_entries),
+            len(cls._name_to_dates),
+        )
 
     @classmethod
     def by_date(cls, key: DateKey) -> List[Dict]:
@@ -175,7 +182,7 @@ class RaceIndex:
     def valid_date_for_race(cls, race_name: str, key: DateKey) -> bool:
         cls._ensure_loaded()
         return key in cls._name_to_dates.get((race_name or "").lower(), [])
-    
+
     @classmethod
     def expected_titles_for_race(cls, race_name: str) -> List[Tuple[str, str]]:
         """
@@ -187,7 +194,7 @@ class RaceIndex:
         out: List[Tuple[str, str]] = []
         for e in cls._name_to_entries.get(low, []) or []:
             title = str(e.get("display_title") or "").strip()
-            rank  = str(e.get("rank") or "").strip().upper() or "UNK"
+            rank = str(e.get("rank") or "").strip().upper() or "UNK"
             if title:
                 out.append((title, rank))
         # de-duplicate while keeping order

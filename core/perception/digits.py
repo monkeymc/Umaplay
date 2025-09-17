@@ -102,8 +102,10 @@ def split_digit_boxes(pil_img: Image.Image, max_digits: int = 2) -> List[np.ndar
     crops = []
     for (x, y, w, h) in boxes:
         pad = 4
-        x1 = max(0, x - pad); y1 = max(0, y - pad)
-        x2 = min(W, x + w + pad); y2 = min(H, y + h + pad)
+        x1 = max(0, x - pad)
+        y1 = max(0, y - pad)
+        x2 = min(W, x + w + pad)
+        y2 = min(H, y + h + pad)
         crops.append(bgr[y1:y2, x1:x2])
     return crops
 
@@ -145,7 +147,8 @@ class TorchClassifier:
                 
                 # TODO: debug. print("cls", cls)
                 return -1, p
-            digits.append(cls); confs.append(p)
+            digits.append(cls)
+            confs.append(p)
 
         if len(digits) == 1:
             val = clamp_valid_or_neg1(digits[0], ALLOW_RANGE)

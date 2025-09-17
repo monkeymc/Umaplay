@@ -1,5 +1,5 @@
 import re
-from typing import Sequence, Tuple
+from typing import Optional, Sequence, Tuple
 import unicodedata
 from difflib import SequenceMatcher
 
@@ -17,7 +17,7 @@ def _normalize_ocr(s: str) -> str:
         "Ⅰ": "1", "Ⅱ": "2", "Ⅲ": "3", "Ⅳ": "4", "Ⅴ": "5",
         "Ｉ": "1", "ｌ": "1", "l": "1", "I": "1", "|": "1", "!": "1",
         "０": "0", "Ｏ": "0", "○": "0", "o": "0", "O": "0", "0": "0",
-        "５": "5", "Ｓ": "s", "s": "s", "S": "s", "5": "s", "O": "0",
+        "５": "5", "Ｓ": "s", "s": "s", "S": "s", "5": "s", 
         "８": "8", "Ｂ": "b", "b": "b", "B": "b", "8": "b",
     })
     s = s.translate(trans)
@@ -73,13 +73,13 @@ def fuzzy_contains(haystack: str, needle: str, threshold: float = 0.80, return_r
         return False, 0
     return False
 
-def _fuzzy_ratio(a: str, b: str) -> float:
+def fuzzy_ratio(a: str, b: str) -> float:
     return SequenceMatcher(None, (a or "").lower(), (b or "").lower()).ratio()
 
-def _best_fuzzy(text: str, targets: Sequence[str]) -> Tuple[str, float]:
-    best, score = "", 0.0
+def fuzzy_best_match(text: str, targets: Sequence[str]) -> Tuple[Optional[str], float]:
+    best, score = None, 0.0
     for t in targets:
-        r = _fuzzy_ratio(text, t)
+        r = fuzzy_ratio(text, t)
         if r > score:
             best, score = t, r
     return best, score

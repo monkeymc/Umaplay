@@ -9,14 +9,12 @@ Keep this file small and focused on:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Literal, Optional, Tuple, TypedDict, Set
-
+from typing import Dict, List, Literal, Tuple, TypedDict
 
 # ---------- Basic geometric aliases ----------
 
 XYXY = Tuple[float, float, float, float]       # (x1, y1, x2, y2)
 XYWH = Tuple[int, int, int, int]               # (x, y, w, h) integers (screen/client coords)
-DetectionDict = Dict[str, object]
 
 # ---------- Detection & screen classification ----------
 
@@ -101,33 +99,10 @@ class ScanTileEnriched:
     failure_pct: int
     skipped_click: bool
 
-
-# ---------- Domain constants ----------
-
-# Official names used by the detector for frequently accessed classes.
-CLASS_TRAINING_BUTTON: str = "training_button"
-CLASS_UI_STATS: str = "ui_stats"
-CLASS_UI_TURNS: str = "ui_turns"
-CLASS_UI_MOOD: str = "ui_mood"
-CLASS_UI_GOAL: str = "ui_goal"
-CLASS_UI_SKILLS_PTS: str = "ui_skills_pts"
-CLASS_LOBBY_TAZUNA: str = "lobby_tazuna"
-CLASS_LOBBY_INFIRMARY: str = "lobby_infirmary"
-
-SUPPORT_CLASS_NAMES: Set[str] = {
-    "support_card",
-    "support_card_rainbow",
-    "support_etsuko",
-    "support_director",
-}
-
 # Mood categories and a simple numeric mapping used for downstream logic.
 MoodName = Literal["AWFUL", "BAD", "NORMAL", "GOOD", "GREAT", "UNKNOWN"]
-MOOD_MAP: Dict[MoodName, int] = {
-    "AWFUL": 1,
-    "BAD": 2,
-    "NORMAL": 3,
-    "GOOD": 4,
-    "GREAT": 5,
-    "UNKNOWN": -1,
-}
+
+_Box = List[List[float]]  # 4 points [[x1,y1],[x2,y2],[x3,y3],[x4,y4]]
+OCRItem = Tuple[_Box, str, float]  # (box, text, score)
+
+RegionXYWH = Tuple[int, int, int, int]

@@ -10,7 +10,7 @@ from PIL import Image
 from core.perception.ocr import OCREngine
 from core.types import XYXY
 from core.utils.geometry import crop_pil
-from core.utils.text import _fuzzy_ratio
+from core.utils.text import fuzzy_ratio
 
 
 # Public labels and (optional) priority if you ever need ranking
@@ -121,7 +121,7 @@ def mood_label_by_ocr(ocr: OCREngine, img: Image.Image, xyxy: XYXY) -> Tuple[str
 
     best, sc = "UNK", 0.0
     for k in MOOD_LABELS:
-        r = _fuzzy_ratio(txt, k)
+        r = fuzzy_ratio(txt, k)
         if r > sc:
             best, sc = k, r
     return (best if sc >= 0.60 else "UNK", sc)

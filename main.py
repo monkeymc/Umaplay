@@ -54,15 +54,19 @@ class BotState:
                 prioritize_g1=False,
                 auto_rest_minimum=26,
                 plan_races = {
-                    "Y1-12-1": "Asahi Hai Futurity Stakes",
-                    "Y2-05-1": "NHK Mile Cup",
-                    "Y2-05-2": "Japanese Oaks",
-                    # "Y2-06-1": "Japanese Oaks",
-                    # "Y2-06-2": "Queen Elizabeth II Cup",
-                    "Y3-05-1": "Osaka Hai",
-                    "Y3-11-1": "Victoria Mile",
-                    # "Y3-06-2": "Takarazuka Kinen",
-                    "Y3-11-2": "Japan Cup",
+                    "Y2-11-1": "Queen Elizabeth II Cup",
+                    "Y3-03-2": "Osaka Hai",
+                    "Y3-06-2": "Takarazuka Kinen",
+                    "Y3-10-2": "Tenno Sho (Autumn)",
+                    # "Y1-12-1": "Asahi Hai Futurity Stakes",
+                    # "Y2-05-1": "NHK Mile Cup",
+                    # "Y2-05-2": "Japanese Oaks",
+                    # # "Y2-06-1": "Japanese Oaks",
+                    # # "Y2-06-2": "Queen Elizabeth II Cup",
+                    # "Y3-05-1": "Osaka Hai",
+                    # "Y3-11-1": "Victoria Mile",
+                    # # "Y3-06-2": "Takarazuka Kinen",
+                    # "Y3-11-2": "Japan Cup",
                 },
                 skill_list=[
                     "Concentration",
@@ -88,7 +92,7 @@ class BotState:
                     "Fast-Paced",
                     "Updrafters"
                 ],
-                select_style=None  # front
+                select_style="front"  # front
             )
             # SKILLs Pace
             
@@ -131,9 +135,9 @@ class BotState:
 # Hotkey loop (keyboard lib + polling fallback)
 # ---------------------------
 def hotkey_loop(state: BotState, ctrl: IController, ocr: OCREngine):
-    # We’ll support both the configured hotkey and F4 as a backup
-    configured = str(getattr(Settings, "HOTKEY", "F1")).upper()
-    keys = sorted(set([configured, "F4"]))  # e.g. ["F1","F4"] (no duplicates)
+    # We’ll support both the configured hotkey and F2 as a backup
+    configured = str(getattr(Settings, "HOTKEY", "F2")).upper()
+    keys = sorted(set([configured, "F2"]))  # e.g. ["F1","F2"] (no duplicates)
     logger_uma.info(f"[HOTKEY] Press {', '.join(keys)} to start/stop the bot.")
 
     # Debounce across both hook & poll paths
@@ -197,10 +201,14 @@ if __name__ == "__main__":
     setup_uma_logging(debug=Settings.DEBUG)
 
     # Controller + OCR singletons
+
+    if Settings.MODE == "steam":
+        window_title = "Umamusume"
+        ctrl = SteamController(window_title)
+    else:
+        window_title = Settings.ANDROID_WINDOW_TITLE  # change by your own windows title in SCRCPY
+        ctrl = ScrcpyController(window_title)
     
-    window_title = "23117RA68G"  # change by your own windows title in SCRCPY
-    # ctrl = ScrcpyController(window_title)
-    ctrl = SteamController("Umamusume")
 
     if Settings.USE_FAST_OCR:
         ocr = OCREngine(

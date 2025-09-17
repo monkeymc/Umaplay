@@ -1,14 +1,15 @@
 # core/utils/yolo_objects.py
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 from PIL import Image
 from core.controllers.base import IController
+from core.perception.detection import recognize
 from core.types import XYXY, DetectionDict
 
 def collect(ctrl: IController, *, imgsz=832, conf=0.51, iou=0.45, tag="general") -> Tuple[Image.Image, List[DetectionDict]]:
-    img, _, dets = ctrl.recognize_objects_in_screen(imgsz=imgsz, conf=conf, iou=iou, tag=tag)
+    img, _, dets = recognize(ctrl,imgsz=imgsz, conf=conf, iou=iou, tag=tag)
     return img, dets
 
 # ---------- Basic geometry helpers ----------
@@ -54,51 +55,24 @@ def find(dets: List[DetectionDict], name: str | Sequence[str], *, conf_min: floa
 def filter_by_classes(dets: List[DetectionDict], classes: Sequence[str], *, conf_min: float = 0.0) -> List[DetectionDict]:
     return find(dets, classes, conf_min=conf_min)
 
-def find_one(dets: List[DetectionDict], name: str | Sequence[str], *, conf_min: float = 0.0) -> Optional[DetectionDict]:
-    items = find(dets, name, conf_min=conf_min)
-    return items[0] if items else None
-
-
-# ---------- Sorting & selectors ----------
-
-def sort_ltr(dets: List[DetectionDict]) -> List[DetectionDict]:
-    return sorted(dets, key=lambda d: center_x(d["xyxy"]))
-
-def sort_ttb(dets: List[DetectionDict]) -> List[DetectionDict]:
-    return sorted(dets, key=lambda d: center_y(d["xyxy"]))
-
 def bottom_most(dets: List[DetectionDict]) -> Optional[DetectionDict]:
     if not dets:
         return None
     # prefer larger center-Y (lower on screen); tie-break by left-most (smaller center-X)
     return max(dets, key=lambda d: (center_y(d["xyxy"]), -center_x(d["xyxy"])))
 
-def top_most(dets: List[DetectionDict]) -> Optional[DetectionDict]:
-    if not dets:
-        return None
-    return min(dets, key=lambda d: (center_y(d["xyxy"]), center_x(d["xyxy"])))
 
-def left_most(dets: List[DetectionDict]) -> Optional[DetectionDict]:
-    if not dets:
-        return None
-    return min(dets, key=lambda d: (center_x(d["xyxy"]), center_y(d["xyxy"])))
-
-def right_most(dets: List[DetectionDict]) -> Optional[DetectionDict]:
-    if not dets:
-        return None
-    return max(dets, key=lambda d: (center_x(d["xyxy"]), -center_y(d["xyxy"])))
-
-
-# ---------- Spatial queries ----------
-
-def count_inside(inner_dets: List[DetectionDict], outer: XYXY, *, pad: int = 0) -> int:
-    return sum(1 for d in inner_dets if inside(tuple(d["xyxy"]), outer, pad=pad))
-
-def find_inside(dets: List[DetectionDict], outer: XYXY, *, pad: int = 0) -> List[DetectionDict]:
-    return [d for d in dets if inside(tuple(d["xyxy"]), outer, pad=pad)]
-
-def nearest_by_center(dets: List[DetectionDict], target_xyxy: XYXY) -> Optional[DetectionDict]:
-    if not dets:
-        return None
-    tx, ty = center(target_xyxy)
-    return min(dets, key=lambda d: (center_x(d["xyxy"]) - tx) ** 2 + (center_y(d["xyxy"]) - ty) ** 2)
+def yolo_signature(dets: List[DetectionDict]) -> List[Tuple[str, int, int]]:
+    """
+    Summarize the scene for early-stop:
+    [(name, cx_8px, cy_8px), ...] sorted.
+    """
+    sig = []
+    for d in dets:
+        name = str(d.get("name"))
+        x1, y1, x2, y2 = d.get("xyxy", (0, 0, 0, 0))
+        cx = int((x1 + x2) / 2) // 8
+        cy = int((y1 + y2) / 2) // 8
+        sig.append((name, cx, cy))
+    sig.sort()
+    return sig

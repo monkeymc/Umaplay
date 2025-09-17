@@ -1,0 +1,8 @@
+extend-exclude = [
+  "dev_play.ipynb",
+  "runs",
+  "debug",
+]
+
+[lint]
+per-file-ignores = { "dev_play.ipynb" = ["F821", "F841"] }
