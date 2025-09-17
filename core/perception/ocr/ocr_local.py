@@ -1,10 +1,12 @@
 # core/perception/ocr.py
 from __future__ import annotations
-
+import cv2
+import numpy as np
 import importlib
 import os
 import re
 from typing import Any, List
+from core.perception.ocr.interface import OCRInterface
 from core.types import OCRItem
 
 # Disable if facing multi-process error
@@ -17,7 +19,7 @@ import paddle
 from core.utils.img import to_bgr
 from core.utils.logger import logger_uma
 
-class OCREngine:
+class LocalOCREngine(OCRInterface):
     """
     Minimal PaddleOCR wrapper:
       - raw(...) -> normalized [(box, text, score), ...]
@@ -52,7 +54,7 @@ class OCREngine:
         try:
             has_cuda = bool(getattr(paddle, "is_compiled_with_cuda", lambda: False)())
             if requested_gpu and not has_cuda:
-                logger_uma.warning("OCREngine: GPU requested but PaddlePaddle is not CUDA-enabled → falling back to CPU.")
+                logger_uma.warning("OCRInterface: GPU requested but PaddlePaddle is not CUDA-enabled → falling back to CPU.")
                 device_str = "cpu"
         except Exception:
             # If Paddle import check fails, we’ll still try device=... below and catch errors there.
@@ -91,11 +93,11 @@ class OCREngine:
             try:
                 self.reader = PaddleOCR(lang=self.lang, use_gpu=use_gpu)
             except Exception as e:
-                logger_uma.exception("OCREngine: failed to initialize PaddleOCR (use_gpu=%s). Error: %s", use_gpu, e)
+                logger_uma.exception("OCRInterface: failed to initialize PaddleOCR (use_gpu=%s). Error: %s", use_gpu, e)
                 raise
         except Exception as e:
             # If 'device' fails for any other reason, try CPU as last resort
-            logger_uma.warning("OCREngine: device='%s' failed (%s). Retrying with CPU.", self.device, e)
+            logger_uma.warning("OCRInterface: device='%s' failed (%s). Retrying with CPU.", self.device, e)
             try:
                 self.reader = PaddleOCR(lang=self.lang, device="cpu", enable_hpi=False)
                 self.device = "cpu"
@@ -122,79 +124,73 @@ class OCREngine:
                         "PaddleOCR 3.x + PaddleX 3.x require PaddlePaddle >= 3.0.",
                         paddle_ver, paddleocr_ver, paddlex_ver
                     )
-                logger_uma.exception("OCREngine: CPU fallback also failed: %s", e2)
+                logger_uma.exception("OCRInterface: CPU fallback also failed: %s", e2)
                 raise
 
-        logger_uma.info("OCREngine initialized | lang=%s device=%s", self.lang, self.device)
+        logger_uma.info("OCRInterface initialized | lang=%s device=%s", self.lang, self.device)
+
+
+    @staticmethod
+    def _ensure_bgr3(img: Any) -> np.ndarray:
+        """Return a 3-channel BGR image without double-swapping channels."""
+        if isinstance(img, np.ndarray):
+            bgr = img
+        else:
+            bgr = to_bgr(img)  # handles PIL/path/etc.
+        if bgr.ndim == 2:
+            bgr = cv2.cvtColor(bgr, cv2.COLOR_GRAY2BGR)
+        elif bgr.shape[2] == 4:
+            bgr = cv2.cvtColor(bgr, cv2.COLOR_BGRA2BGR)
+        return bgr
 
     # ---- Core inference ----
-    def raw(self, img: Any) -> List[OCRItem]:
-        """
-        Return normalized OCR list: [(box, text, score), ...]
-        """
-        bgr = to_bgr(img)
+    def raw(self, img: Any) -> dict:
+        """Return normalized Paddle JSON: {'res': {...}}"""
+        bgr = self._ensure_bgr3(img)
         out = self.reader.predict(bgr)
         raw_items = out[0] if isinstance(out, list) and out else []
-        raw_items_json = raw_items._to_json()
-        return raw_items_json
+        return raw_items._to_json()
 
-    def text(self, img: Any, joiner: str = " ", min_conf=0.2) -> str:
-        """
-        Convenience: run OCR and return a whitespace-joined string of texts.
-        """
-        ocr_res = self.raw(img).get("res", {})
-        rec_texts = ocr_res.get("rec_texts", [])
-        rec_scores = ocr_res.get("rec_scores", [])
-        items = []
-
-        for i, rec_text in enumerate(rec_texts):
-            if len(rec_scores) > i:
-
+    def text(self, img: Any, joiner: str = " ", min_conf: float = 0.2) -> str:
+        j = self.raw(img)
+        res = j.get("res", {})
+        rec_texts = res.get("rec_texts", []) or []
+        rec_scores = res.get("rec_scores", []) or []
+        kept = []
+        for i, t in enumerate(rec_texts):
+            if i < len(rec_scores):
                 if rec_scores[i] >= min_conf:
-                    items.append(rec_text)
-                elif rec_text.strip() != '':
-                    logger_uma.debug(f"Low rec score for: {rec_scores[i]} | {rec_text}")
+                    kept.append(t)
+                elif t.strip():
+                    logger_uma.debug(f"Low rec score for: {rec_scores[i]:.3f} | {t}")
+        return (joiner.join(kept)).strip()
 
-        return joiner.join(items).strip()
-
-    def digits(self, img: Any) -> str:
-        """
-        Convenience: OCR then keep only digits 0-9.
-        """
+    def digits(self, img: Any) -> int:
         s = self.text(img)
-        res = re.sub(r"[^\d]", "", s).strip()
-
-        if res == "":
+        only = re.sub(r"[^\d]", "", s).strip()
+        if not only:
             return -1
         try:
-            return int(res)
+            return int(only)
         except Exception as e:
-            logger_uma.warning(f"Couldn't parse digits: {res}. {e}")
+            logger_uma.warning(f"Couldn't parse digits: {only}. {e}")
             return -1
 
-    # -------- Batch APIs (list-in, list-out) --------
+    # -------- Batch APIs --------
     def batch_text(self, imgs: List[Any], *, joiner: str = " ", min_conf: float = 0.2) -> List[str]:
-        """
-        Run OCR over a list of images in one call. Returns a list of strings aligned to input order.
-        """
         if not imgs:
             return []
-        bgr_list = [to_bgr(im) for im in imgs]
-        # Predict can yield results; force a list for consistent handling
+        bgr_list = [self._ensure_bgr3(im) for im in imgs]
         outs = list(self.reader.predict(bgr_list))
         texts: List[str] = []
         for o in outs:
-            # Each item can be either a single result object or [result]
             if isinstance(o, list) and o:
                 o = o[0]
             j = o._to_json() if hasattr(o, "_to_json") else (o if isinstance(o, dict) else {})
             res = j.get("res", {})
             rec_texts = res.get("rec_texts", []) or []
             rec_scores = res.get("rec_scores", []) or []
-            kept = []
-            for i, t in enumerate(rec_texts):
-                if i < len(rec_scores) and rec_scores[i] >= min_conf:
-                    kept.append(t)
+            kept = [t for i, t in enumerate(rec_texts) if i < len(rec_scores) and rec_scores[i] >= min_conf]
             texts.append((joiner.join(kept)).strip())
         return texts
 

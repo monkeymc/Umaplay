@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 from PIL import Image
 
-from core.perception.ocr import OCREngine
+from core.perception.ocr.interface import OCRInterface
 from core.utils.logger import logger_uma
 
 
@@ -82,7 +82,7 @@ def extract_failure_pct_for_tile(
     left_img: Image.Image,
     objs: List[Dict],
     tile_xyxy: Tuple[float, float, float, float],
-    ocr: OCREngine,
+    ocr: OCRInterface,
     conf_btn_min: float = 0.65,
     conf_stats_min: float = 0.50,
 ) -> int:

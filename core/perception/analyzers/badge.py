@@ -5,7 +5,7 @@ import cv2
 import numpy as np
 from PIL import Image
 
-from core.perception.ocr import OCREngine
+from core.perception.ocr.interface import OCRInterface
 from core.types import XYXY
 from core.utils.geometry import crop_pil
 from core.utils.text import fuzzy_ratio
@@ -14,7 +14,7 @@ from core.utils.text import fuzzy_ratio
 BADGE_PRIORITY = {"EX": 5, "G1": 4, "G2": 3, "G3": 2, "OP": 1, "UNK": 0}
 BADGE_PRIORITY_REVERSE = {5: "EX", 4: "G1", 3: "G2", 2: "G3", 1: "OP", 0: "UNK"}
 
-def _badge_label_by_ocr(ocr: OCREngine, img: Image.Image, xyxy: XYXY) -> Tuple[str, float]:
+def _badge_label_by_ocr(ocr: OCRInterface, img: Image.Image, xyxy: XYXY) -> Tuple[str, float]:
     txt = ocr.text(crop_pil(img, xyxy, pad=0)).upper()
     cand = ["G1", "G2", "G3", "OP", "EX"]
     best, sc = "", 0.0

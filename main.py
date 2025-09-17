@@ -7,7 +7,8 @@ import uvicorn
 from core.controllers.android import ScrcpyController
 from core.controllers.base import IController
 from core.controllers.steam import SteamController
-from core.perception.ocr import OCREngine
+from core.perception.ocr.interface import OCRInterface
+from core.perception.yolo.interface import IDetector
 from core.settings import Settings
 from core.utils.logger import logger_uma, setup_uma_logging
 from server.main import app
@@ -33,7 +34,7 @@ class BotState:
         self.running: bool = False
         self._lock = threading.Lock()
 
-    def start(self, ctrl: IController, ocr: OCREngine):
+    def start(self, ctrl: IController, ocr: OCRInterface, yolo_engine: IDetector):
         with self._lock:
             if self.running:
                 logger_uma.info("[BOT] Already running.")
@@ -49,24 +50,25 @@ class BotState:
             self.player = Player(
                 ctrl=ctrl,
                 ocr=ocr,
+                yolo_engine=yolo_engine,
                 interval_stats_refresh=3,
                 minimum_skill_pts=800,
                 prioritize_g1=False,
                 auto_rest_minimum=26,
                 plan_races = {
-                    # "Y2-11-1": "Queen Elizabeth II Cup",
-                    # "Y3-03-2": "Osaka Hai",
+                    "Y2-11-1": "Queen Elizabeth II Cup",
+                    "Y3-03-2": "Osaka Hai",
+                    "Y3-06-2": "Takarazuka Kinen",
+                    "Y3-10-2": "Tenno Sho (Autumn)",
+                    "Y1-12-1": "Asahi Hai Futurity Stakes",
+                    "Y2-05-1": "NHK Mile Cup",
+                    "Y2-05-2": "Japanese Oaks",
+                    # "Y2-06-1": "Japanese Oaks",
+                    # "Y2-06-2": "Queen Elizabeth II Cup",
+                    "Y3-05-1": "Osaka Hai",
+                    "Y3-11-1": "Victoria Mile",
                     # "Y3-06-2": "Takarazuka Kinen",
-                    # "Y3-10-2": "Tenno Sho (Autumn)",
-                    # "Y1-12-1": "Asahi Hai Futurity Stakes",
-                    # "Y2-05-1": "NHK Mile Cup",
-                    # "Y2-05-2": "Japanese Oaks",
-                    # # "Y2-06-1": "Japanese Oaks",
-                    # # "Y2-06-2": "Queen Elizabeth II Cup",
-                    # "Y3-05-1": "Osaka Hai",
-                    # "Y3-11-1": "Victoria Mile",
-                    # # "Y3-06-2": "Takarazuka Kinen",
-                    # "Y3-11-2": "Japan Cup",
+                    "Y3-11-2": "Japan Cup",
                 },
                 skill_list=[
                     "Concentration",
@@ -80,16 +82,16 @@ class BotState:
                     "Homestretch Haste",
                     "Straightaway Acceleration",
                     "Firm Conditions",
-                    # "Pace Chaser Corners",
-                    # "Pace Chaser Straightaways",
-                    # "Pace Chaser Savvy",
+                    "Pace Chaser Corners",
+                    "Pace Chaser Straightaways",
+                    "Pace Chaser Savvy",
                     "Slipstream",
-                    # "Mile Corners",
-                    # "Left-Handed",
-                    # "Early Lead",
-                    # "Final Push",
-                    # "Fast-Paced",
-                    # "Updrafters"
+                    "Mile Corners",
+                    "Left-Handed",
+                    "Early Lead",
+                    "Final Push",
+                    "Fast-Paced",
+                    "Updrafters"
                 ],
                 select_style=None  # "end", "late", "pace", "front"
             )
@@ -122,18 +124,18 @@ class BotState:
             logger_uma.info("[BOT] Stopping… (signal loop to exit)")
             self.player.is_running = False
 
-    def toggle(self, ctrl: IController, ocr: OCREngine, source: str = "hotkey"):
+    def toggle(self, ctrl: IController, ocr: OCRInterface, yolo_engine: IDetector, source: str = "hotkey"):
         logger_uma.debug(f"[BOT] toggle() called from {source}. running={self.running}")
         if self.running:
             self.stop()
         else:
-            self.start(ctrl, ocr)
+            self.start(ctrl, ocr, yolo_engine)
 
 
 # ---------------------------
 # Hotkey loop (keyboard lib + polling fallback)
 # ---------------------------
-def hotkey_loop(state: BotState, ctrl: IController, ocr: OCREngine):
+def hotkey_loop(state: BotState, ctrl: IController, ocr: OCRInterface, yolo_engine: IDetector):
     # We’ll support both the configured hotkey and F2 as a backup
     configured = str(getattr(Settings, "HOTKEY", "F2")).upper()
     keys = sorted(set([configured, "F2"]))  # e.g. ["F1","F2"] (no duplicates)
@@ -148,7 +150,7 @@ def hotkey_loop(state: BotState, ctrl: IController, ocr: OCREngine):
             logger_uma.debug(f"[HOTKEY] Debounced toggle from {source}.")
             return
         last_ts = now
-        state.toggle(ctrl, ocr, source=source)
+        state.toggle(ctrl, ocr, yolo_engine, source=source)
 
     # Try to register hooks
     handlers = []
@@ -210,22 +212,37 @@ if __name__ == "__main__":
     
 
     if Settings.USE_FAST_OCR:
-        ocr = OCREngine(
-            text_detection_model_name="PP-OCRv5_mobile_det",
-            text_recognition_model_name="en_PP-OCRv5_mobile_rec",
-        )
+        text_detection_model_name="PP-OCRv5_mobile_det"
+        text_recognition_model_name="en_PP-OCRv5_mobile_rec"
     else:
-        ocr = OCREngine(
-            text_detection_model_name="PP-OCRv5_server_det",
-            text_recognition_model_name="en_PP-OCRv5_server_rec",
+        text_detection_model_name="PP-OCRv5_server_det"
+        text_recognition_model_name="en_PP-OCRv5_server_rec"
+        
+
+    # If you run in Laptop but want to use your desktop PC GPU / Cores, or
+    # If you have a Virtual machine running with bridge adapter and you want to use your host machine as processor
+    if Settings.USE_EXTERNAL_PROCESSOR:
+        logger_uma.info(f"Using external processor at: {Settings.EXTERNAL_PROCESSOR_URL}")
+        from core.perception.ocr.ocr_remote import RemoteOCREngine
+        from core.perception.yolo.yolo_remote import RemoteYOLOEngine
+        ocr = RemoteOCREngine(base_url=Settings.EXTERNAL_PROCESSOR_URL)
+        yolo_engine = RemoteYOLOEngine(ctrl=ctrl, base_url=Settings.EXTERNAL_PROCESSOR_URL)
+    else:
+        logger_uma.info("Using internal processors")
+        from core.perception.ocr.ocr_local import LocalOCREngine
+        from core.perception.yolo.yolo_local import LocalYOLOEngine
+        ocr = LocalOCREngine(
+            text_detection_model_name=text_detection_model_name,
+            text_recognition_model_name=text_recognition_model_name,
         )
+        yolo_engine = LocalYOLOEngine(ctrl=ctrl)
 
     state = BotState()
 
     logger_uma.info(f"[INIT] Using scrcpy window title: '{window_title}'")
     # Launch hotkey listener and server
     logger_uma.debug("[INIT] Spawning hotkey thread…")
-    threading.Thread(target=hotkey_loop, args=(state, ctrl, ocr), daemon=True).start()
+    threading.Thread(target=hotkey_loop, args=(state, ctrl, ocr, yolo_engine), daemon=True).start()
 
     try:
         boot_server()

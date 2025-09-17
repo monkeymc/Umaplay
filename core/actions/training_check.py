@@ -8,8 +8,8 @@ import cv2
 import numpy as np
 from PIL import Image
 
-from core.perception.detection import recognize
 from core.perception.extractors.training_metrics import extract_failure_pct_for_tile
+from core.perception.yolo.interface import IDetector
 from core.settings import Settings
 from core.utils.analyzers import analyze_support_crop
 from core.utils.geometry import calculate_jitter
@@ -103,7 +103,8 @@ def _center_x(xyxy):
 
 def scan_training_screen(
     ctrl,
-    ocr,  # OCREngine
+    ocr,  # OCRInterface
+    yolo_engine: IDetector,
     energy,
     *,
     pause_after_click_range: list = [0.3, 0.4],
@@ -274,7 +275,7 @@ def scan_training_screen(
 
     # -------- 1) Initial capture, wait for button training animations --------
     time.sleep(0.3)
-    cur_img, _, cur_parsed = recognize(ctrl,
+    cur_img, _, cur_parsed = yolo_engine.recognize(
         imgsz=param_imgsz, conf=param_conf, iou=param_iou, tag="training"
     )
 
@@ -283,7 +284,7 @@ def scan_training_screen(
     if btns and len(btns) != 5:
         time.sleep(0.5)
         # try again
-        cur_img, _, cur_parsed = recognize(ctrl,
+        cur_img, _, cur_parsed = yolo_engine.recognize(
             imgsz=param_imgsz, conf=param_conf, iou=param_iou, tag="training"
         )
 
@@ -338,7 +339,7 @@ def scan_training_screen(
         time.sleep(_jitter_delay())
 
         # Recapture once
-        cur_img, _, cur_parsed = recognize(ctrl,
+        cur_img, _, cur_parsed = yolo_engine.recognize(
             imgsz=param_imgsz, conf=param_conf, iou=param_iou, tag="training"
         )
 

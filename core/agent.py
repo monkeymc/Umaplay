@@ -15,9 +15,9 @@ from core.actions.training_policy import (
 )
 from core.controllers.base import IController
 from core.perception.analyzers.screen import classify_screen
-from core.perception.detection import recognize
 from core.perception.extractors.state import extract_goal_text, extract_skill_points, find_best
-from core.perception.ocr import OCREngine
+from core.perception.ocr.interface import OCRInterface
+from core.perception.yolo.interface import IDetector
 from core.settings import Settings
 from core.utils.logger import logger_uma
 from typing import Optional
@@ -29,7 +29,8 @@ class Player:
     def __init__(
         self,
         ctrl: IController,
-        ocr: OCREngine,
+        ocr: OCRInterface,
+        yolo_engine: IDetector,
         *,
         minimum_skill_pts: int = 700,
         prioritize_g1: bool = False,
@@ -59,6 +60,7 @@ class Player:
     ) -> None:
         self.ctrl = ctrl
         self.ocr = ocr
+        self.yolo_engine = yolo_engine
         self.is_running = False
         self.imgsz = Settings.YOLO_IMGSZ
         self.conf = Settings.YOLO_CONF
@@ -73,13 +75,14 @@ class Player:
         self.auto_rest_minimum = auto_rest_minimum
 
         # Shared Waiter for the whole agent
-        self.waiter = Waiter(self.ctrl, self.ocr, waiter_config)
+        self.waiter = Waiter(self.ctrl, self.ocr, self.yolo_engine, waiter_config)
 
         # Flows
-        self.race = RaceFlow(self.ctrl, self.ocr, self.waiter)
+        self.race = RaceFlow(self.ctrl, self.ocr, self.yolo_engine, self.waiter)
         self.lobby = LobbyFlow(
             self.ctrl,
             self.ocr,
+            self.yolo_engine,
             self.waiter,
             minimum_skill_pts=minimum_skill_pts,
             auto_rest_minimum=auto_rest_minimum,
@@ -87,7 +90,7 @@ class Player:
             interval_stats_refresh=interval_stats_refresh,
             plan_races=self.plan_races,
         )
-        self.claw_game = ClawGame(self.ctrl)
+        self.claw_game = ClawGame(self.ctrl, self.yolo_engine)
         self.claw_turn = 0
 
         self._iterations_turn = 0
@@ -125,7 +128,7 @@ class Player:
 
         while self.is_running:
             sleep(delay)
-            img, _, dets = recognize(self.ctrl,
+            img, _, dets = self.yolo_engine.recognize(
                 imgsz=self.imgsz, conf=self.conf, iou=self.iou, tag="screen"
             )
 
@@ -215,6 +218,7 @@ class Player:
                     bought = auto_buy_skills(
                         self.ctrl,
                         self.ocr,
+                        yolo_engine=self.yolo_engine,
                         skill_list=self.skill_list,
                         imgsz=self.imgsz,
                         conf=self.conf,
@@ -311,6 +315,7 @@ class Player:
                     bought = auto_buy_skills(
                         self.ctrl,
                         self.ocr,
+                        yolo_engine=self.yolo_engine,
                         skill_list=self.skill_list,
                         imgsz=self.imgsz,
                         conf=self.conf,
