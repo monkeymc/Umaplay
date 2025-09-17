@@ -1,8 +1,5 @@
 # core/perception/extractors/training_metrics.py
 from __future__ import annotations
-import os, time
-from pathlib import Path
-import re
 from typing import Dict, List, Optional, Tuple
 
 import cv2
@@ -10,7 +7,6 @@ import numpy as np
 from PIL import Image
 
 from core.perception.ocr import OCREngine
-from core.settings import Settings
 from core.utils.logger import logger_uma
 
 

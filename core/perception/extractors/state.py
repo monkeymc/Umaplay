@@ -1,21 +1,16 @@
 # core/perception/extractors.py
 from __future__ import annotations
 
-import difflib
 import re
 from typing import Dict, List, Optional, Tuple
-import os, time
-from pathlib import Path
-import cv2
-import numpy as np
 from PIL import Image
 
 from core.perception.analyzers.mood import mood_label
 from core.perception.ocr import OCREngine
 from core.perception.analyzers.energy_bar import energy_from_bar_crop
 from core.settings import Settings
-from core.types import (
-    DetectionDict,
+from core.types import DetectionDict
+from core.constants import (
     MOOD_MAP,
     CLASS_UI_MOOD,
     CLASS_UI_TURNS,
@@ -27,7 +22,7 @@ from core.types import (
 from core.utils.geometry import crop_pil, xyxy_int
 from core.utils.logger import logger_uma
 from core.perception.is_button_active import ActiveButtonClassifier
-from PIL import Image, ImageStat
+from PIL import ImageStat
 
 from core.utils.text import fuzzy_contains
 
@@ -35,11 +30,15 @@ from core.utils.text import fuzzy_contains
 # ------------------------------
 # Common helper
 # ------------------------------
-def find_best(parsed_objects_screen: List[DetectionDict], name: str, conf_min: float = 0.50) -> Optional[DetectionDict]:
+def find_best(
+    parsed_objects_screen: List[DetectionDict], name: str, conf_min: float = 0.50
+) -> Optional[DetectionDict]:
     """
     Pick the highest-confidence detection of a given class name.
     """
-    cands = [d for d in parsed_objects_screen if d["name"] == name and d["conf"] >= conf_min]
+    cands = [
+        d for d in parsed_objects_screen if d["name"] == name and d["conf"] >= conf_min
+    ]
     if not cands:
         return None
     return max(cands, key=lambda d: d["conf"])
@@ -54,7 +53,7 @@ def extract_mood(
     parsed_objects_screen: List[DetectionDict],
     *,
     conf_min: float = 0.20,
-    pad: int = 1
+    pad: int = 1,
 ) -> Tuple[str, int]:
     """
     Returns (mood_text, mood_score). If missing, returns ("UNKNOWN", -1).
@@ -129,6 +128,7 @@ def extract_turns(
         logger_uma.warning("Unrecognized turns")
     return turns_left
 
+
 # ------------------------------
 # Turns
 # ------------------------------
@@ -148,8 +148,8 @@ def extract_career_date(
 
     # Career date: box immediately above the turns widget
     W, H = game_img.size
-    x1, y1, x2, y2 = xyxy_int(d["xyxy"])
-    tw, th = x2 - x1, y2 - y1
+    x1, y1, x2, _ = xyxy_int(d["xyxy"])
+    tw = x2 - x1
     width = int(round(2.5 * tw))
     half_gap = min(y1 // 2, y1)
     rx1 = x1
@@ -160,6 +160,7 @@ def extract_career_date(
     career_date_raw = (ocr.text(career_crop) or "").strip()
 
     return career_date_raw
+
 
 # ------------------------------
 # Stats (SPD/STA/PWR/GUTS/WIT)
@@ -174,7 +175,7 @@ def _parse_stat_segment(ocr: OCREngine, seg_img: Image.Image) -> int:
       - If a trailing letter remains unmapped, replace it with '0' (warn).
       - Clamp to [90, 1200]; if <90 and there was no trailing letter, clamp to 90.
     """
-    raw = (ocr.text(seg_img) or "")
+    raw = ocr.text(seg_img) or ""
     # Normalize and remove the capacity part (tolerant to whitespace)
     t = re.sub(r"[\s,.:;]+", "", raw)
     t = re.sub(r"/\s*1200", "", t, flags=re.IGNORECASE)
@@ -195,13 +196,23 @@ def _parse_stat_segment(ocr: OCREngine, seg_img: Image.Image) -> int:
 
     # Common OCR confusions -> digits
     MAP = {
-        "O": "0", "o": "0", "D": "0", "Q": "0",
-        "I": "1", "l": "1", "|": "1", "!": "1",
+        "O": "0",
+        "o": "0",
+        "D": "0",
+        "Q": "0",
+        "I": "1",
+        "l": "1",
+        "|": "1",
+        "!": "1",
         "Z": "2",
-        "S": "5", "s": "5",
-        "E": "6", "e": "6", "G": "6",
+        "S": "5",
+        "s": "5",
+        "E": "6",
+        "e": "6",
+        "G": "6",
         "B": "8",
-        "g": "9", "q": "9",
+        "g": "9",
+        "q": "9",
         "A": "4",
     }
 
@@ -221,8 +232,9 @@ def _parse_stat_segment(ocr: OCREngine, seg_img: Image.Image) -> int:
     # If we had a trailing letter and it didn't map, force '0'
     if trailing_letter and (not out or not out[-1].isdigit()):
         out[-1:] = ["0"]
-        logger_uma.warning("Stat OCR had trailing letter '%s' → using 0 (raw='%s')",
-                           trailing_char, raw)
+        logger_uma.warning(
+            "Stat OCR had trailing letter '%s' → using 0 (raw='%s')", trailing_char, raw
+        )
 
     digits = "".join(out)
     if not digits:
@@ -243,8 +255,11 @@ def _parse_stat_segment(ocr: OCREngine, seg_img: Image.Image) -> int:
     if val < 90:
         if not trailing_letter:
             # No letter to “fix”; clamp to the known minimum
-            logger_uma.debug("Stat %s < 90 without trailing letter; clamping to 90 (raw='%s')",
-                             val, raw)
+            logger_uma.debug(
+                "Stat %s < 90 without trailing letter; clamping to 90 (raw='%s')",
+                val,
+                raw,
+            )
         val = -1  # not recognized
 
     return val
@@ -307,7 +322,7 @@ def extract_infirmary_on(
     threshold: float = 0.55,
 ) -> bool:
     """
-    If a joblib classifier exists (Settings.IS_BUTTON_ACTIVE_CLF_PATH) and Settings.USE_INFIRMARY_CLF is True,
+    If a joblib classifier exists (Settings.IS_BUTTON_ACTIVE_CLF_PATH),
     use it; otherwise fall back to a HSV heuristic.
     """
     d = find_best(parsed_objects_screen, CLASS_LOBBY_INFIRMARY, conf_min=conf_min)
@@ -317,9 +332,8 @@ def extract_infirmary_on(
     crop = crop_pil(game_img, d["xyxy"], pad=0)
 
     # Try model first
-    if Settings.USE_INFIRMARY_CLF and Settings.IS_BUTTON_ACTIVE_CLF_PATH.exists():
+    if Settings.IS_BUTTON_ACTIVE_CLF_PATH.exists():
         try:
-            import joblib  # lazy import
             clf = ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH)
             p = float(clf.predict_proba(crop))
             return p >= threshold
@@ -330,6 +344,7 @@ def extract_infirmary_on(
     gray = crop.convert("L")
     avg = ImageStat.Stat(gray).mean[0]
     return avg > 150
+
 
 # ------------------------------
 # Skill points

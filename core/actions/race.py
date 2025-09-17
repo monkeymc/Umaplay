@@ -3,10 +3,9 @@ from __future__ import annotations
 
 import random
 import time
-from dataclasses import dataclass
 from core.controllers.android import ScrcpyController
 from core.utils.waiter import Waiter
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Tuple
 from core.utils.race_index import RaceIndex
 
 from PIL import Image
@@ -18,7 +17,7 @@ from core.settings import Settings
 from core.types import DetectionDict
 from core.utils.geometry import crop_pil
 from core.utils.logger import logger_uma
-from core.utils.text import _fuzzy_ratio, _normalize_ocr
+from core.utils.text import _normalize_ocr, fuzzy_ratio
 from core.utils.yolo_objects import collect, find, bottom_most, inside
 from core.utils.pointer import smart_scroll_small
 
@@ -26,15 +25,58 @@ from core.utils.pointer import smart_scroll_small
 class RaceFlow:
     """
     Clean, modular Race flow:
-      - One Waiter instance (no ad-hoc loops for waiting)
-      - YOLO helpers & pointer utilities are reused
-      - OCR is used only when texts=... is provided
+      - Self-contained: can start from Lobby and drive to Raceday, run, and exit.
+      - One Waiter instance (no ad-hoc loops for waiting).
+      - YOLO helpers & pointer utilities are reused.
+      - OCR is used only when texts=... is provided.
     """
 
     def __init__(self, ctrl: IController, ocr, waiter: Waiter) -> None:
         self.ctrl = ctrl
         self.ocr = ocr
         self.waiter = waiter
+
+    def _ensure_in_raceday(self, *, reason: str | None = None) -> bool:
+        """
+        Idempotent. If we're still in the Lobby, click the lobby 'RACES' tile (or the
+        'race_race_day' entry) to enter Raceday; tolerate the consecutive OK popup.
+        """
+        # Quick probe: do we already see race squares?
+        try:
+            img, dets = self._collect("race_nav_probe")
+            squares = find(dets, "race_square")
+            if squares:
+                return True
+        except Exception:
+            # If detection fails for any reason, try to navigate anyway.
+            pass
+        if reason:
+            logger_uma.debug(f"Looking for race buttons: {reason}")
+        # Try to enter race screen from lobby (idempotent)
+        clicked = self.waiter.click_when(
+            classes=("lobby_races", "race_race_day"),
+            prefer_bottom=True,
+            timeout_s=1.5,
+            tag="race_nav_from_lobby",
+        )
+        if clicked:
+            logger_uma.debug("Clicked button, waiting for consecutive race...")
+            time.sleep(1.0)
+            # Some careers show a penalty/OK popup; accept it if present.
+            if self.waiter.click_when(
+                classes=("button_green",),
+                texts=("OK",),
+                prefer_bottom=False,
+                threshold=0.7,
+                allow_greedy_click=False,
+                timeout_s=1.4,
+                tag="race_nav_penalty_ok",
+            ):
+                logger_uma.debug("Consecutive race. Accepted penalization")
+            # Give UI a moment to render squares
+            time.sleep(0.8)
+            return True
+        return False
     # --------------------------
     # Internal helpers
     # --------------------------
@@ -51,8 +93,8 @@ class RaceFlow:
         best_d, best_s = None, 0.0
         for d in whites:
             txt = (self.ocr.text(crop_pil(img, d["xyxy"])) or "").strip()
-            score = max(_fuzzy_ratio(txt, "VIEW RESULTS"), _fuzzy_ratio(txt, "VIEW RESULT"))
-            if score > best_s:
+            score = max(fuzzy_ratio(txt, "VIEW RESULTS"), fuzzy_ratio(txt, "VIEW RESULT"))
+            if score > best_s and score > 0.01:
                 best_d, best_s = d, score
         return best_d
 
@@ -214,7 +256,7 @@ class RaceFlow:
                             # score against any of the expected cards; boost if badge matches rank
                             for expected_title, expected_rank in expected_cards:
                                 expected_title_n = clean_race_name(expected_title)
-                                s = _fuzzy_ratio(txt, expected_title_n.upper())
+                                s = fuzzy_ratio(txt, expected_title_n.upper())
                                 if expected_rank in ("G1","G2","G3","OP","EX"):
                                     if badge_label.upper() == expected_rank.upper():
                                         s += 0.10  # reward correct badge
@@ -347,8 +389,8 @@ class RaceFlow:
         if is_view_active and view_btn is not None:
             # Tap 'View Results' a couple times to clear residual screens
             self.ctrl.click_xyxy_center(view_btn["xyxy"], clicks=random.randint(2, 3))
-            time.sleep(random.uniform(1.8, 2.6))
-            self.ctrl.click_xyxy_center(view_btn["xyxy"], clicks=random.randint(2, 4))
+            time.sleep(random.uniform(2, 2.8))
+            self.ctrl.click_xyxy_center(view_btn["xyxy"], clicks=random.randint(3, 5))
             time.sleep(random.uniform(0.2, 0.3))
         else:
             # Click green 'RACE' (prefer bottom-most; OCR disambiguation if needed)
@@ -403,7 +445,7 @@ class RaceFlow:
         ):
             logger_uma.debug("[race] Lost the race, trying again.")
             # DANGER -> recursion:
-            time.sleep(2)
+            time.sleep(3)
             return self.lobby()
         else:
             # After the race/UI flow → 'NEXT' / 'OK' / 'PROCEED'
@@ -474,11 +516,10 @@ class RaceFlow:
 
         # Confirm button: pick bottom-most green if present
         confirm_btn = bottom_most(greens)
-        confirm_y1 = confirm_btn["xyxy"][1] if confirm_btn else float("inf")
 
         # Cancel button: bottom-most white (y center biggest)
         def y_center(d): 
-            x1, y1, x2, y2 = d["xyxy"]; 
+            x1, y1, x2, y2 = d["xyxy"] 
             return 0.5 * (y1 + y2)
         cancel_btn = max(whites, key=y_center)
 
@@ -515,7 +556,7 @@ class RaceFlow:
             for b in style_btns:
                 t = read_label(b)
                 # be permissive: compare against canonical label
-                sc = _fuzzy_ratio(t, select_style)
+                sc = fuzzy_ratio(t, select_style)
                 if sc > best_sc:
                     best_sc, best_btn = sc, b
             # accept if somewhat confident; else fall back to order
@@ -553,15 +594,23 @@ class RaceFlow:
         is_g1_goal: bool = False,
         desired_race_name: Optional[str] = None,
         date_key: Optional[str] = None,
-        select_style = None
+        select_style = None,
+        ensure_navigation: bool = True,
+        reason: str | None = None,
     ) -> bool:
         """
-        End-to-end race-day routine. Assumes you're already in the 'Raceday' flow.
+        End-to-end race-day routine. If called from Lobby, set ensure_navigation=True
+        (default) and we will enter the Raceday list ourselves. This allows running
+        RaceFlow without involving LobbyFlow/Agent orchestration.
         """
         logger_uma.info(
-            "[race] RaceDay begin (prioritize_g1=%s, is_g1_goal=%s)",
-            prioritize_g1, is_g1_goal
+            "[race] RaceDay begin (prioritize_g1=%s, is_g1_goal=%s)%s",
+            prioritize_g1,
+            is_g1_goal,
+            f" | reason='{reason}'" if reason else "",
         )
+        if ensure_navigation:
+            _ = self._ensure_in_raceday(reason=reason)
 
         time.sleep(2)
         # 1) Pick race card; scroll if needed
@@ -574,7 +623,7 @@ class RaceFlow:
         )
         if square is None:
             
-            logger_uma.debug(f"race square not found")
+            logger_uma.debug("race square not found")
             return False
 
         # 2) Click the race square
@@ -604,9 +653,8 @@ class RaceFlow:
         )
 
         if isinstance(self.ctrl, ScrcpyController):
-            time.sleep(7)
-        else:
-            time.sleep(4)
+            time.sleep(5)
+        time.sleep(7)  # TODO: tune for phone/desktop
         # 5) Proceed with lobby handling
         if select_style:  # front, pace, late, end
             logger_uma.debug(f"Setting style: {select_style}")

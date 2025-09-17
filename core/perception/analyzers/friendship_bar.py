@@ -142,9 +142,7 @@ class FriendshipBarAnalyzer:
     # Public API
     # -----------------------------
     def analyze(self,
-                card_bgr: np.ndarray,
-                debug_dir: Optional[str] = None,
-                debug_tag: str = "card") -> Dict:
+                card_bgr: np.ndarray) -> Dict:
 
         # 1) ROI & bar strip localization (pure geometry, no contours)
         x1r, y1r, x2r, y2r = self._bottom_roi_xyxy(card_bgr)
@@ -166,7 +164,7 @@ class FriendshipBarAnalyzer:
         # small safety: drop the right gray cap from evaluation
         drop_cols = int(self.cfg.cap_ignore_frac * bar.shape[1])
         hsv = self._to_hsv(bar)
-        H, S, V = hsv[..., 0], hsv[..., 1], hsv[..., 2]
+        _, S, V = hsv[..., 0], hsv[..., 1], hsv[..., 2]
 
         # 2) voting for dominant color (blue/green/orange/yellow)
         covers = self._vote_dominant_color(hsv, drop_right_cols=drop_cols)
@@ -209,38 +207,6 @@ class FriendshipBarAnalyzer:
                 else:
                     color_state = "orange"
 
-        # 6) optional debugging artifacts
-        if debug_dir:
-            self._ensure_dir(debug_dir)
-            # original card crop
-            cv2.imwrite(os.path.join(debug_dir, f"{debug_tag}_01_card.png"), card_bgr)
-            # ROI only
-            cv2.imwrite(os.path.join(debug_dir, f"{debug_tag}_02_roi.png"), roi)
-            # bar strip
-            cv2.imwrite(os.path.join(debug_dir, f"{debug_tag}_03_strip.png"), bar)
-
-            # pseudo-visualization of hue votes (stack bars)
-            W = bar.shape[1]
-            vis = (bar.copy() * 0).astype(np.uint8) + 255
-            bar_w = max(1, W - drop_cols)
-            # draw simple colored bands proportional to cover
-            h_rows = 12
-            def draw_band(y0, frac, bgr):
-                w = int(round(frac * bar_w))
-                cv2.rectangle(vis, (0, y0), (max(0, w - 1), y0 + h_rows - 1), bgr, -1)
-
-            draw_band(0, covers["blue"],   (255, 140, 0))   # BGR-ish for blue
-            draw_band(14, covers["green"], (60, 180, 60))
-            draw_band(28, covers["orange"],(0, 160, 255))
-            draw_band(42, covers["yellow"],(0, 255, 255))
-            cv2.imwrite(os.path.join(debug_dir, f"{debug_tag}_04_votes.png"), vis)
-
-            # overlay rectangle on the card (for quick visual check)
-            card_vis = card_bgr.copy()
-            cv2.rectangle(card_vis, (x1r, y1r), (x2r, y2r), (0, 255, 255), 2)  # ROI (yellow)
-            cv2.rectangle(card_vis, (bx1, by1), (bx2, by2), (0, 200, 0), 3)    # bar (green)
-            cv2.imwrite(os.path.join(debug_dir, f"{debug_tag}_05_overlay.png"), card_vis)
-
         return {
             "roi_xyxy": (x1r, y1r, x2r, y2r),
             "bar_xyxy": (bx1, by1, bx2, by2),
@@ -272,7 +238,7 @@ class FriendshipBarAnalyzer:
 
         # small safety: drop right “cap”
         drop_cols = int(cfg.cap_ignore_frac * bar_bgr.shape[1])
-        H, S, V = hsv[..., 0], hsv[..., 1], hsv[..., 2]
+        _, S, V = hsv[..., 0], hsv[..., 1], hsv[..., 2]
         covers = self._vote_dominant_color(hsv, drop_right_cols=drop_cols)
         colored_mask = (S[:, :bar_bgr.shape[1] - drop_cols] >= cfg.colored_S_min) & \
                        (V[:, :bar_bgr.shape[1] - drop_cols] >= cfg.colored_V_min)

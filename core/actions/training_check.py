@@ -1,39 +1,41 @@
 from __future__ import annotations
 
 import time
-from typing import List, Dict, Optional, Sequence, Tuple
+from typing import List, Dict, Optional, Tuple
 import random
 
 import cv2
 import numpy as np
 from PIL import Image
 
+from core.perception.detection import recognize
 from core.perception.extractors.training_metrics import extract_failure_pct_for_tile
 from core.settings import Settings
 from core.utils.analyzers import analyze_support_crop
 from core.utils.geometry import calculate_jitter
 from core.utils.logger import logger_uma
-from typing import Dict, List, Tuple, Any
+from typing import Any
 from dataclasses import dataclass, asdict
 
 # ---- knobs you may want to tweak later (kept here for clarity) ----
-BASE_MAX_FAILURE = 20          # default risk cap (%) if not provided elsewhere
-GREEDY_THRESHOLD = 3.0         # "pick immediately" threshold (if you use it)
-HIGH_SV_THRESHOLD = 3.5        # when SV >= this, allow risk up to ×RISK_RELAX_FACTOR
-RISK_RELAX_FACTOR = 1.5        # e.g., 20% -> 30% when SV is high
+BASE_MAX_FAILURE = 20  # default risk cap (%) if not provided elsewhere
+GREEDY_THRESHOLD = 3.0  # "pick immediately" threshold (if you use it)
+HIGH_SV_THRESHOLD = 3.5  # when SV >= this, allow risk up to ×RISK_RELAX_FACTOR
+RISK_RELAX_FACTOR = 1.5  # e.g., 20% -> 30% when SV is high
 
 # Director scoring by bar color (latest rule you wrote)
 DIRECTOR_SCORE_BY_COLOR = {
-    "blue":   0.25,   # "blue or less"
-    "green":  0.15,
+    "blue": 0.25,  # "blue or less"
+    "green": 0.15,
     "orange": 0.10,
-    "yellow": 0.00,   # max (or treat is_max as yellow)
-    "max":    0.00,   # alias
+    "yellow": 0.00,  # max (or treat is_max as yellow)
+    "max": 0.00,  # alias
 }
 
 # What counts as blue/green vs orange/max for the standard supports
 BLUE_GREEN = {"blue", "green"}
 ORANGE_MAX = {"orange", "yellow"}
+
 
 @dataclass
 class TileSV:
@@ -53,13 +55,23 @@ class TileSV:
         d["sv_by_type"] = {k: float(f"{v:.2f}") for k, v in d["sv_by_type"].items()}
         return d
 
-SUPPORT_NAMES = {"support_card", "support_card_rainbow", "support_etsuko", "support_director"}
+
+SUPPORT_NAMES = {
+    "support_card",
+    "support_card_rainbow",
+    "support_etsuko",
+    "support_director",
+}
+
 
 def _center(xyxy: Tuple[float, float, float, float]) -> Tuple[float, float]:
     x1, y1, x2, y2 = xyxy
     return (0.5 * (x1 + x2), 0.5 * (y1 + y2))
 
-def _raised_training_ltr_index(parsed_objects_screen: List[Dict], tol_px: int = 3, tol_frac_h: float = 0.06) -> Optional[int]:
+
+def _raised_training_ltr_index(
+    parsed_objects_screen: List[Dict], tol_px: int = 3, tol_frac_h: float = 0.06
+) -> Optional[int]:
     """
     Return the left-to-right index of the 'raised' training tile if one clearly stands out,
     else None. 'Raised' = top y noticeably smaller than the others.
@@ -84,22 +96,14 @@ def _raised_training_ltr_index(parsed_objects_screen: List[Dict], tol_px: int = 
 
     return None
 
+
 def _center_x(xyxy):
     x1, y1, x2, y2 = xyxy
     return 0.5 * (x1 + x2)
 
-def _sorted_training_buttons(objs: List[Dict]) -> List[Dict]:
-    """
-    Return training_button detections sorted left-to-right by center X.
-    """
-    btns = [d for d in objs if d["name"] == "training_button"]
-    btns.sort(key=lambda d: _center(d["xyxy"]))
-    return btns
-
-
 def scan_training_screen(
     ctrl,
-    ocr,                    # OCREngine
+    ocr,  # OCREngine
     energy,
     *,
     pause_after_click_range: list = [0.3, 0.4],
@@ -118,8 +122,8 @@ def scan_training_screen(
     """
     # -------- detector params --------
     param_imgsz = 832
-    param_conf  = 0.60   # lower than 0.8 so we don't miss support cards
-    param_iou   = 0.45
+    param_conf = 0.60  # lower than 0.8 so we don't miss support cards
+    param_iou = 0.45
 
     # -------- helpers --------
     def _center_x(xyxy):
@@ -131,18 +135,22 @@ def scan_training_screen(
         btns.sort(key=lambda d: _center_x(d["xyxy"]))
         return btns
 
-    def _raised_training_ltr_index(parsed: List[Dict], tol_px: int = 3, tol_frac_h: float = 0.06) -> Optional[int]:
+    def _raised_training_ltr_index(
+        parsed: List[Dict], tol_px: int = 3, tol_frac_h: float = 0.06
+    ) -> Optional[int]:
         btns = [d for d in parsed if d["name"] == "training_button"]
         if len(btns) < 2:
             return None
-        tops    = np.array([d["xyxy"][1] for d in btns], dtype=float)
+        tops = np.array([d["xyxy"][1] for d in btns], dtype=float)
         heights = np.array([d["xyxy"][3] - d["xyxy"][1] for d in btns], dtype=float)
         med_top = float(np.median(tops))
         min_top = float(np.min(tops))
         thr = max(float(tol_px), float(tol_frac_h) * float(np.median(heights)))
         if (med_top - min_top) > thr:
-            xs       = np.array([(d["xyxy"][0] + d["xyxy"][2]) * 0.5 for d in btns], dtype=float)
-            order    = np.argsort(xs)
+            xs = np.array(
+                [(d["xyxy"][0] + d["xyxy"][2]) * 0.5 for d in btns], dtype=float
+            )
+            order = np.argsort(xs)
             btns_ltr = [btns[i] for i in order]
             tops_ltr = [b["xyxy"][1] for b in btns_ltr]
             return int(np.argmin(tops_ltr))
@@ -155,19 +163,31 @@ def scan_training_screen(
             return max(0.0, random.uniform(lo, hi))
         return 0.6
 
-    def _collect_supports_enriched(cur_img: Image.Image, cur_parsed: List[Dict]) -> Tuple[List[Dict], bool]:
+    def _collect_supports_enriched(
+        cur_img: Image.Image, cur_parsed: List[Dict]
+    ) -> Tuple[List[Dict], bool]:
         """
         Take *all* supports visible in this capture — they correspond to the currently raised tile.
         Enrich each with bar/type pieces, hint, rainbow, etc.
         """
-        frame_bgr  = cv2.cvtColor(np.array(cur_img), cv2.COLOR_RGB2BGR)
-        supports   = [d for d in cur_parsed if d["name"] in SUPPORT_NAMES and d.get("conf", 0.0) >= conf_support]
-        parts_bar  = [d for d in cur_parsed if d["name"] == "support_bar"]
+        frame_bgr = cv2.cvtColor(np.array(cur_img), cv2.COLOR_RGB2BGR)
+        supports = [
+            d
+            for d in cur_parsed
+            if d["name"] in SUPPORT_NAMES and d.get("conf", 0.0) >= conf_support
+        ]
+        parts_bar = [d for d in cur_parsed if d["name"] == "support_bar"]
         parts_type = [d for d in cur_parsed if d["name"] == "support_type"]
 
         def _inside(inner, outer, pad=2):
-            ix1, iy1, ix2, iy2 = inner; ox1, oy1, ox2, oy2 = outer
-            return (ix1 >= ox1 - pad and iy1 >= oy1 - pad and ix2 <= ox2 + pad and iy2 <= oy2 + pad)
+            ix1, iy1, ix2, iy2 = inner
+            ox1, oy1, ox2, oy2 = outer
+            return (
+                ix1 >= ox1 - pad
+                and iy1 >= oy1 - pad
+                and ix2 <= ox2 + pad
+                and iy2 <= oy2 + pad
+            )
 
         enriched: List[Dict] = []
         any_rainbow = False
@@ -177,7 +197,7 @@ def scan_training_screen(
             crop = frame_bgr[y1:y2, x1:x2].copy()
 
             # parts within this support
-            bar_xyxy  = None
+            bar_xyxy = None
             type_xyxy = None
             for pb in parts_bar:
                 bx1, by1, bx2, by2 = [int(v) for v in pb["xyxy"]]
@@ -190,8 +210,20 @@ def scan_training_screen(
                     type_xyxy = (tx1, ty1, tx2, ty2)
                     break
 
-            bar_crop  = None if bar_xyxy  is None else frame_bgr[bar_xyxy[1]:bar_xyxy[3], bar_xyxy[0]:bar_xyxy[2]].copy()
-            type_crop = None if type_xyxy is None else frame_bgr[type_xyxy[1]:type_xyxy[3], type_xyxy[0]:type_xyxy[2]].copy()
+            bar_crop = (
+                None
+                if bar_xyxy is None
+                else frame_bgr[
+                    bar_xyxy[1] : bar_xyxy[3], bar_xyxy[0] : bar_xyxy[2]
+                ].copy()
+            )
+            type_crop = (
+                None
+                if type_xyxy is None
+                else frame_bgr[
+                    type_xyxy[1] : type_xyxy[3], type_xyxy[0] : type_xyxy[2]
+                ].copy()
+            )
 
             attrs = analyze_support_crop(
                 s["name"],
@@ -200,57 +232,59 @@ def scan_training_screen(
                 piece_type_bgr=type_crop,
             )
 
-            has_rainbow = s["name"].endswith("_rainbow") or (s["name"] == "support_card_rainbow")
+            has_rainbow = s["name"].endswith("_rainbow") or (
+                s["name"] == "support_card_rainbow"
+            )
             any_rainbow |= has_rainbow
 
-            enriched.append({
-                **s,
-                "name": s["name"].replace("_rainbow", ""),  # normalize
-                "support_type": attrs["support_type"],
-                "support_type_score": attrs["support_type_score"],
-                "friendship_bar": attrs["friendship_bar"],
-                "has_hint": attrs["has_hint"],
-                "has_rainbow": bool(has_rainbow),
-            })
+            enriched.append(
+                {
+                    **s,
+                    "name": s["name"].replace("_rainbow", ""),  # normalize
+                    "support_type": attrs["support_type"],
+                    "support_type_score": attrs["support_type_score"],
+                    "friendship_bar": attrs["friendship_bar"],
+                    "has_hint": attrs["has_hint"],
+                    "has_rainbow": bool(has_rainbow),
+                }
+            )
 
         return enriched, any_rainbow
 
-
     ENERGY_TO_IGNORE_FAILURE = 45
+
     def _failure_pct(cur_img, cur_parsed, tile_xyxy):
         if energy >= ENERGY_TO_IGNORE_FAILURE:
             return 0
-        
-        failure_predict = extract_failure_pct_for_tile(cur_img, cur_parsed, tile_xyxy, ocr)
+
+        failure_predict = extract_failure_pct_for_tile(
+            cur_img, cur_parsed, tile_xyxy, ocr
+        )
         if failure_predict == -1:
             # try again
             time.sleep(0.2)
-            failure_predict = extract_failure_pct_for_tile(cur_img, cur_parsed, tile_xyxy, ocr)
-            
+            failure_predict = extract_failure_pct_for_tile(
+                cur_img, cur_parsed, tile_xyxy, ocr
+            )
+
             if failure_predict == -1:
                 failure_predict = Settings.MAX_FAILURE + 1
-        
+
         return failure_predict
 
     # -------- 1) Initial capture, wait for button training animations --------
     time.sleep(0.3)
-    cur_img, _, cur_parsed = ctrl.recognize_objects_in_screen(
-        imgsz=param_imgsz,
-        conf=param_conf,
-        iou=param_iou,
-        tag="training"
+    cur_img, _, cur_parsed = recognize(ctrl,
+        imgsz=param_imgsz, conf=param_conf, iou=param_iou, tag="training"
     )
 
     btns = _get_buttons_ltr(cur_parsed)
-    
+
     if btns and len(btns) != 5:
         time.sleep(0.5)
         # try again
-        cur_img, _, cur_parsed = ctrl.recognize_objects_in_screen(
-            imgsz=param_imgsz,
-            conf=param_conf,
-            iou=param_iou,
-            tag="training"
+        cur_img, _, cur_parsed = recognize(ctrl,
+            imgsz=param_imgsz, conf=param_conf, iou=param_iou, tag="training"
         )
 
         btns = _get_buttons_ltr(cur_parsed)
@@ -259,12 +293,15 @@ def scan_training_screen(
         return [], cur_img, cur_parsed
 
     # Fixed LTR scaffold
-    scan = [{
-        "tile_idx": j,
-        "tile_xyxy": btns[j]["xyxy"],
-        "tile_center_x": float(_center_x(btns[j]["xyxy"])),
-        "supports": [],
-    } for j in range(len(btns))]
+    scan = [
+        {
+            "tile_idx": j,
+            "tile_xyxy": btns[j]["xyxy"],
+            "tile_center_x": float(_center_x(btns[j]["xyxy"])),
+            "supports": [],
+        }
+        for j in range(len(btns))
+    ]
 
     processed: set = set()
     results: List[Dict] = []
@@ -274,13 +311,15 @@ def scan_training_screen(
     if ridx is not None and 0 <= ridx < len(scan):
         tile = scan[ridx]
         supps, any_rainbow = _collect_supports_enriched(cur_img, cur_parsed)
-        results.append({
-            **tile,
-            "supports": supps,
-            "has_any_rainbow": any_rainbow,
-            "failure_pct": _failure_pct(cur_img, cur_parsed, tile["tile_xyxy"]),
-            "skipped_click": True,
-        })
+        results.append(
+            {
+                **tile,
+                "supports": supps,
+                "has_any_rainbow": any_rainbow,
+                "failure_pct": _failure_pct(cur_img, cur_parsed, tile["tile_xyxy"]),
+                "skipped_click": True,
+            }
+        )
         processed.add(ridx)
 
     # -------- 3) Visit remaining tiles exactly once --------
@@ -293,28 +332,28 @@ def scan_training_screen(
         ctrl.click_xyxy_center(
             tile["tile_xyxy"],
             clicks=1,
-            jitter=calculate_jitter(tile["tile_xyxy"], percentage_offset=0.20)
+            jitter=calculate_jitter(tile["tile_xyxy"], percentage_offset=0.20),
         )
-        
+
         time.sleep(_jitter_delay())
 
         # Recapture once
-        cur_img, _, cur_parsed = ctrl.recognize_objects_in_screen(
-            imgsz=param_imgsz,
-            conf=param_conf,
-            iou=param_iou,
-            tag="training"
+        cur_img, _, cur_parsed = recognize(ctrl,
+            imgsz=param_imgsz, conf=param_conf, iou=param_iou, tag="training"
         )
 
         # Refresh geometry (LTR) to keep tile_xyxy up-to-date
         btns_now = _get_buttons_ltr(cur_parsed)
         if len(btns_now) == len(scan):
             for j, b in enumerate(btns_now):
-                scan[j]["tile_xyxy"]     = b["xyxy"]
+                scan[j]["tile_xyxy"] = b["xyxy"]
                 scan[j]["tile_center_x"] = float(_center_x(b["xyxy"]))
         else:
-            logger_uma.warning("Button count changed during scan: expected %d, got %d; keeping previous geometry",
-                               len(scan), len(btns_now))
+            logger_uma.warning(
+                "Button count changed during scan: expected %d, got %d; keeping previous geometry",
+                len(scan),
+                len(btns_now),
+            )
 
         # Whichever tile is raised after the click is the effective index
         ridx = _raised_training_ltr_index(cur_parsed)
@@ -323,19 +362,19 @@ def scan_training_screen(
 
         supps, any_rainbow = _collect_supports_enriched(cur_img, cur_parsed)
 
-        results.append({
-            **eff_tile,
-            "supports": supps,
-            "has_any_rainbow": any_rainbow,
-            "failure_pct": _failure_pct(cur_img, cur_parsed, eff_tile["tile_xyxy"]),
-            "skipped_click": False,
-        })
+        results.append(
+            {
+                **eff_tile,
+                "supports": supps,
+                "has_any_rainbow": any_rainbow,
+                "failure_pct": _failure_pct(cur_img, cur_parsed, eff_tile["tile_xyxy"]),
+                "skipped_click": False,
+            }
+        )
         processed.add(eff_idx)
 
     results.sort(key=lambda r: r["tile_idx"])
     return results, cur_img, cur_parsed
-
-
 
 
 def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
@@ -409,16 +448,22 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
             # --- special cameos ---
             if sname == "support_etsuko":  # reporter
                 sv_total += 0.1
-                sv_by_type["special_reporter"] = sv_by_type.get("special_reporter", 0.0) + 0.1
+                sv_by_type["special_reporter"] = (
+                    sv_by_type.get("special_reporter", 0.0) + 0.1
+                )
                 notes.append("Reporter: +0.1")
                 continue
 
             if sname == "support_director":
                 # director score depends on color (blue/green/orange/yellow)
-                score = DIRECTOR_SCORE_BY_COLOR.get(color, DIRECTOR_SCORE_BY_COLOR.get("yellow", 0.0))
+                score = DIRECTOR_SCORE_BY_COLOR.get(
+                    color, DIRECTOR_SCORE_BY_COLOR.get("yellow", 0.0)
+                )
                 if score > 0:
                     sv_total += score
-                    sv_by_type["special_director"] = sv_by_type.get("special_director", 0.0) + score
+                    sv_by_type["special_director"] = (
+                        sv_by_type.get("special_director", 0.0) + score
+                    )
                     notes.append(f"Director ({color}): +{score:.2f}")
                 else:
                     notes.append(f"Director ({color}): +0.00")
@@ -428,7 +473,7 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
             # Rainbow counts as +1 baseline
             if has_rainbow:
                 sv_total += 1.0
-                notes.append(f"rainbow: +1.00")
+                notes.append("rainbow: +1.00")
                 rainbow_count = rainbow_count + 1
                 # Rainbow hint does not add extra beyond standard tile-capped hint rules;
                 # we still let hint rules below consider color buckets if needed.
@@ -451,39 +496,57 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
 
         # ---- 2) tile-capped hint bonuses ----
         if any_bluegreen_hint:
-            hint_value = 0.5
+            hint_value = 0.75
             if Settings.HINT_IS_IMPORTANT:
-                hint_value *= 2
+                hint_value *= 4
             sv_total += hint_value
-            sv_by_type["hint_bluegreen"] = sv_by_type.get("hint_bluegreen", 0.0) + hint_value
-            notes.append(f"Hint on blue/green (tile-capped): +{hint_value}. Settings.HINT_IS_IMPORTANT={Settings.HINT_IS_IMPORTANT}")
+            sv_by_type["hint_bluegreen"] = (
+                sv_by_type.get("hint_bluegreen", 0.0) + hint_value
+            )
+            notes.append(
+                f"Hint on blue/green (tile-capped): +{hint_value}. Settings.HINT_IS_IMPORTANT={Settings.HINT_IS_IMPORTANT}"
+            )
 
         if any_orange_max_hint:
-            hint_value = 0.5
+            hint_value = 0.75
             if Settings.HINT_IS_IMPORTANT:
-                hint_value *= 2
+                hint_value *= 4
             sv_total += hint_value
-            sv_by_type["hint_orange_max"] = sv_by_type.get("hint_orange_max", 0.0) + hint_value
-            notes.append(f"Hint on orange/max (tile-capped): +{hint_value}. Settings.HINT_IS_IMPORTANT={Settings.HINT_IS_IMPORTANT}")
+            sv_by_type["hint_orange_max"] = (
+                sv_by_type.get("hint_orange_max", 0.0) + hint_value
+            )
+            notes.append(
+                f"Hint on orange/max (tile-capped): +{hint_value}. Settings.HINT_IS_IMPORTANT={Settings.HINT_IS_IMPORTANT}"
+            )
 
         # ---- 3) rainbow combo bonus (per type) ----
-        
+
         if rainbow_count >= 2:
             # +0.5 for each *type* that has ≥2 rainbow cards
             combo_bonus = 0.5
             sv_total += combo_bonus
-            sv_by_type["rainbow_combo"] = sv_by_type.get("rainbow_combo", 0.0) + combo_bonus
+            sv_by_type["rainbow_combo"] = (
+                sv_by_type.get("rainbow_combo", 0.0) + combo_bonus
+            )
             notes.append(f"Rainbow combo +{combo_bonus}")
 
         # ---- 4) risk gating with “good SV” relax ----
         base_limit = BASE_MAX_FAILURE
-        risk_limit = int(min(100, base_limit * (RISK_RELAX_FACTOR if sv_total >= HIGH_SV_THRESHOLD else 1.0)))
-        allowed = (failure_pct <= risk_limit)
+        risk_limit = int(
+            min(
+                100,
+                base_limit
+                * (RISK_RELAX_FACTOR if sv_total >= HIGH_SV_THRESHOLD else 1.0),
+            )
+        )
+        allowed = failure_pct <= risk_limit
 
         # ---- 5) greedy mark (optional early exit logic can use this) ----
         greedy_hit = (sv_total >= GREEDY_THRESHOLD) and allowed
         if greedy_hit:
-            notes.append(f"Greedy hit: SV {sv_total:.2f} ≥ {GREEDY_THRESHOLD} and failure {failure_pct}% ≤ {risk_limit}%")
+            notes.append(
+                f"Greedy hit: SV {sv_total:.2f} ≥ {GREEDY_THRESHOLD} and failure {failure_pct}% ≤ {risk_limit}%"
+            )
 
         out.append(
             TileSV(

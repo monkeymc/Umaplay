@@ -1,6 +1,6 @@
 # core/utils/img.py
 from __future__ import annotations
-from typing import Any, Iterable
+from typing import Any
 
 import cv2
 import numpy as np
@@ -65,15 +65,3 @@ def to_bgr(img: Any) -> np.ndarray:
             return arr
 
     raise ValueError(f"Unrecognized image array shape: {arr.shape}")
-
-def draw_overlay(img_bgr: np.ndarray, items: Iterable) -> np.ndarray:
-    """Draw light-weight boxes for visualization."""
-    out = img_bgr.copy()
-    for box, txt, score in items:
-        try:
-            pts = np.array(box, dtype=np.int32).reshape(-1, 1, 2)
-            cv2.polylines(out, [pts], True, (0, 255, 0), 1)
-        except Exception:
-            # Skip malformed boxes; keep going
-            continue
-    return out

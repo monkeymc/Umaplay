@@ -4,12 +4,9 @@ from __future__ import annotations
 import importlib
 import os
 import re
-from typing import Any, Iterable, List, Optional, Tuple, Union
+from typing import Any, List
+from core.types import OCRItem
 
-import cv2
-import numpy as np
-from PIL import Image
-import os
 # Disable if facing multi-process error
 os.environ["OMP_NUM_THREADS"]="4"
 os.environ["MKL_NUM_THREADS"]="4"
@@ -17,13 +14,8 @@ os.environ["MKL_NUM_THREADS"]="4"
 from paddleocr import PaddleOCR
 import paddle
 
-from core.settings import Settings
-from core.utils.img import draw_overlay, to_bgr
+from core.utils.img import to_bgr
 from core.utils.logger import logger_uma
-
-# Type aliases
-_Box = List[List[float]]  # 4 points [[x1,y1],[x2,y2],[x3,y3],[x4,y4]]
-_OCRItem = Tuple[_Box, str, float]  # (box, text, score)
 
 class OCREngine:
     """
@@ -62,9 +54,9 @@ class OCREngine:
             if requested_gpu and not has_cuda:
                 logger_uma.warning("OCREngine: GPU requested but PaddlePaddle is not CUDA-enabled → falling back to CPU.")
                 device_str = "cpu"
-        except Exception as e:
+        except Exception:
             # If Paddle import check fails, we’ll still try device=... below and catch errors there.
-            logger_uma.warning(f"Error while checking GPU in Paddle")
+            logger_uma.warning("Error while checking GPU in Paddle")
 
         self.device = device_str
 
@@ -136,7 +128,7 @@ class OCREngine:
         logger_uma.info("OCREngine initialized | lang=%s device=%s", self.lang, self.device)
 
     # ---- Core inference ----
-    def raw(self, img: Any) -> List[_OCRItem]:
+    def raw(self, img: Any) -> List[OCRItem]:
         """
         Return normalized OCR list: [(box, text, score), ...]
         """

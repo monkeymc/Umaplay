@@ -1,18 +1,16 @@
 from __future__ import annotations
 from dataclasses import dataclass
-import os, glob
+import os
+import glob
 import numpy as np
 from PIL import Image
 import cv2
 from sklearn.linear_model import LogisticRegression
 import joblib
 from typing import List, Tuple
-import os, glob
 from sklearn.model_selection import StratifiedKFold, cross_val_score
 from sklearn.metrics import classification_report
 
-from sklearn.linear_model import LogisticRegression
-import joblib
 
 # -----------------
 # Feature extraction
@@ -28,7 +26,6 @@ def _hsv_feats(bgr: np.ndarray) -> np.ndarray:
 
     # mask: "colored" pixels (ignore gray/white text/border)
     colored = (S >= 60) & (V >= 70)
-    total = max(1, int(np.count_nonzero(colored)))
 
     # hue histogram (on colored)
     h_col = H[colored]
@@ -117,14 +114,18 @@ def _load_labeled_images(data_dir: str) -> Tuple[List[Image.Image], List[int]]:
         for p in files:
             low = os.path.basename(p).lower()
             if low.endswith("_on.png") or low.endswith("_on.jpg") or "_on" in low:
-                imgs.append(Image.open(p).convert("RGB")); ys.append(1)
+                imgs.append(Image.open(p).convert("RGB"))
+                ys.append(1)
             elif low.endswith("_off.png") or low.endswith("_off.jpg") or "_off" in low:
-                imgs.append(Image.open(p).convert("RGB")); ys.append(0)
+                imgs.append(Image.open(p).convert("RGB"))
+                ys.append(0)
     else:
         for p in on_globs:
-            imgs.append(Image.open(p).convert("RGB")); ys.append(1)
+            imgs.append(Image.open(p).convert("RGB"))
+            ys.append(1)
         for p in off_globs:
-            imgs.append(Image.open(p).convert("RGB")); ys.append(0)
+            imgs.append(Image.open(p).convert("RGB"))
+            ys.append(0)
 
     return imgs, ys
 

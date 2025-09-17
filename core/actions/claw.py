@@ -28,6 +28,7 @@ XYXY = Tuple[float, float, float, float]
 # Small bbox helpers
 # ---------------------------
 
+
 def _center(xyxy: XYXY) -> Tuple[float, float]:
     x1, y1, x2, y2 = xyxy
     return (x1 + x2) * 0.5, (y1 + y2) * 0.5
@@ -60,6 +61,7 @@ def _iou(a: XYXY, b: XYXY) -> float:
 # Config
 # ---------------------------
 
+
 @dataclass
 class ClawConfig:
     # YOLO thresholds forwarded to captures
@@ -68,25 +70,29 @@ class ClawConfig:
     iou: float = 0.45
 
     # Plushie selection constraints
-    tall_ratio_min: float = 1.05                # H/W must be ≥ this to be “vertical”
-    max_plushie_width_vs_claw: float = 0.80      # plushie_w ≤ 0.80 × claw_w
-    thin_ratio_vs_claw: float = 0.50             # “great” = plushie_w ≤ 0.50 × claw_w (locks forever)
+    tall_ratio_min: float = 1.05  # H/W must be ≥ this to be “vertical”
+    max_plushie_width_vs_claw: float = 0.80  # plushie_w ≤ 0.80 × claw_w
+    thin_ratio_vs_claw: float = (
+        0.50  # “great” = plushie_w ≤ 0.50 × claw_w (locks forever)
+    )
 
     # Alignment / timing
     # IMPORTANT: right bias defaults to the SAME fraction as tolerance
-    align_tol_frac_of_claw: float = 0.20         # tolerance band = 0.20 × claw_w
-    right_bias_frac_of_claw: float = 0.20        # bias the target = +0.20 × claw_w
-    max_hold_s: float = 6.5                     # hard stop
-    poll_interval_s: float = 0.015              # ~60 FPS
+    align_tol_frac_of_claw: float = -0.45  # tolerance band = 0.20 × claw_w
+    right_bias_frac_of_claw: float = -0.45  # bias the target = +0.20 × claw_w
+    max_hold_s: float = 6.5  # hard stop
+    poll_interval_s: float = 0.015  # ~60 FPS
     # Prediction to compensate capture+inference latency
-    latency_comp_s: float = 0.12                 # seconds to look ahead when checking release
-    ema_alpha: float = 0.60                       # smoothing for velocity EMA
-    max_pred_px: float = 120.0                    # clamp prediction jump per check (safety)
-    stickiness_frames: int = 5                    # keep chosen stable this many polls before reconsidering
+    latency_comp_s: float = 0.12  # seconds to look ahead when checking release
+    ema_alpha: float = 0.60  # smoothing for velocity EMA
+    max_pred_px: float = 120.0  # clamp prediction jump per check (safety)
+    stickiness_frames: int = (
+        5  # keep chosen stable this many polls before reconsidering
+    )
 
     # Strategy
-    reconsider_until_seen: int = 2              # allow early target re-picks until this many seen
-    prefer_taller_margin: float = 0.10          # +10% ratio to switch when still reconsidering
+    reconsider_until_seen: int = 2  # allow early target re-picks until this many seen
+    prefer_taller_margin: float = 0.10  # +10% ratio to switch when still reconsidering
 
     # Anti-stall safety
     min_dx_to_consider_moving_px: float = 0.7
@@ -98,7 +104,7 @@ class ClawConfig:
     near_button_center_px: float = 40.0
 
     # Debug
-    debug_every_n_polls: int = 2                # save every Nth poll frame
+    debug_every_n_polls: int = 2  # save every Nth poll frame
     debug_dir_name: str = "claw_test"
 
 
@@ -159,7 +165,9 @@ class ClawGame:
     # Selection & filtering
     # ---------------------------
 
-    def _exclude_near_button(self, plushies: List[Detection], btn_xyxy: XYXY) -> List[Detection]:
+    def _exclude_near_button(
+        self, plushies: List[Detection], btn_xyxy: XYXY
+    ) -> List[Detection]:
         bx1, by1, bx2, by2 = btn_xyxy
         bcx, bcy = (bx1 + bx2) * 0.5, (by1 + by2) * 0.5
         out: List[Detection] = []
@@ -168,18 +176,26 @@ class ClawGame:
             cx, cy = (x1 + x2) * 0.5, (y1 + y2) * 0.5
             if _iou(d["xyxy"], btn_xyxy) > self.cfg.near_button_iou_thr:
                 continue
-            if abs(cx - bcx) < self.cfg.near_button_center_px and abs(cy - bcy) < self.cfg.near_button_center_px:
+            if (
+                abs(cx - bcx) < self.cfg.near_button_center_px
+                and abs(cy - bcy) < self.cfg.near_button_center_px
+            ):
                 continue
             out.append(d)
         return out
 
-    def _filter_viable(self, plushies: List[Detection], claw_xyxy: XYXY) -> List[Detection]:
+    def _filter_viable(
+        self, plushies: List[Detection], claw_xyxy: XYXY
+    ) -> List[Detection]:
         """Keep plushies that are vertical enough and not wider than the claw."""
         cw, _ = _wh(claw_xyxy)
         good: List[Detection] = []
         for p in plushies:
             pw, ph = _wh(p["xyxy"])
-            if (ph / pw) >= self.cfg.tall_ratio_min and pw <= self.cfg.max_plushie_width_vs_claw * cw:
+            if (
+                (ph / pw) >= self.cfg.tall_ratio_min
+                and pw <= self.cfg.max_plushie_width_vs_claw * cw
+            ):
                 good.append(p)
         return _ltr_sort(good)
 
@@ -277,19 +293,22 @@ class ClawGame:
 
             # Lines for numeric reasoning (predictions / thresholds)
             def _vline(x, color, w=2):
-                if x is None: return
+                if x is None:
+                    return
                 X = int(x)
                 draw.line([(X, 0), (X, img.height)], fill=color, width=w)
 
-            _vline(cx_claw,  (135, 206, 250), 2)   # light blue: current claw center
-            _vline(cx_pred,  (30, 144, 255),  2)   # dodger blue: predicted claw center
-            _vline(target_x,(255, 165, 0),    2)   # orange: biased target x
-            _vline(release_x,(124, 252, 0),   2)   # lawn green: release threshold
+            _vline(cx_claw, (135, 206, 250), 2)  # light blue: current claw center
+            _vline(cx_pred, (30, 144, 255), 2)  # dodger blue: predicted claw center
+            _vline(target_x, (255, 165, 0), 2)  # orange: biased target x
+            _vline(release_x, (124, 252, 0), 2)  # lawn green: release threshold
 
             if notes:
                 draw.text((10, 10), notes, fill=(255, 255, 255))
 
-            fname = f"claw_{self._dbg_counter:03d}{('_' + suffix) if suffix else ''}.png"
+            fname = (
+                f"claw_{self._dbg_counter:03d}{('_' + suffix) if suffix else ''}.png"
+            )
             img.save(self._dbg_dir / fname)
         except Exception as e:
             logger_uma.debug("[claw] debug save failed: %s", e)
@@ -312,8 +331,11 @@ class ClawGame:
         """
         # -------------------- initial capture --------------------
         img, dets = collect(
-            self.ctrl, imgsz=self.cfg.imgsz, conf=self.cfg.conf, iou=self.cfg.iou,
-            tag=f"{tag_prefix}_init"
+            self.ctrl,
+            imgsz=self.cfg.imgsz,
+            conf=self.cfg.conf,
+            iou=self.cfg.iou,
+            tag=f"{tag_prefix}_init",
         )
         btns = det_find(dets, "button_claw_action")
         claws = det_find(dets, "claw")
@@ -331,23 +353,29 @@ class ClawGame:
 
         # -------------------- state --------------------
         seen_plushies: List[Detection] = []
-        min_target_x = _center(claw_xyxy)[0]   # Never consider targets left of the starting claw X
+        min_target_x = _center(claw_xyxy)[
+            0
+        ]  # Never consider targets left of the starting claw X
         last_cx = min_target_x
         last_move_ts = t0
         last_ts = t0
-        vx_ema = 0.0                            # EMA of horizontal velocity (px/s)
-        loop_dt_ema = self.cfg.latency_comp_s   # EMA of loop latency (sec), seeds with cfg
+        vx_ema = 0.0  # EMA of horizontal velocity (px/s)
+        loop_dt_ema = (
+            self.cfg.latency_comp_s
+        )  # EMA of loop latency (sec), seeds with cfg
 
-        locked_best: Optional[Detection] = None # Width ≤ thin_ratio_vs_claw × claw_w
-        chosen: Optional[Detection] = None      # Current candidate (can change until locked)
-        sticky_left = 0                         # Avoid rapid flicker (frames)
+        locked_best: Optional[Detection] = None  # Width ≤ thin_ratio_vs_claw × claw_w
+        chosen: Optional[Detection] = (
+            None  # Current candidate (can change until locked)
+        )
+        sticky_left = 0  # Avoid rapid flicker (frames)
 
         # Try-aware tuning: later tries release a bit earlier
         # - more look-ahead, bigger tolerance, slightly smaller right-bias
         try_idx = max(1, min(3, int(try_idx)))
         lookahead_scale = {1: 1.00, 2: 1.25, 3: 1.50}[try_idx]
-        tol_scale       = {1: 1.00, 2: 1.10, 3: 1.20}[try_idx]
-        bias_scale      = {1: 1.00, 2: 0.90, 3: 0.80}[try_idx]
+        tol_scale = {1: 1.00, 2: 1.10, 3: 1.20}[try_idx]
+        bias_scale = {1: 1.00, 2: 0.90, 3: 0.80}[try_idx]
 
         # Rail safety (if controller exposes client bbox)
         rail_right_limit: Optional[float] = None
@@ -355,12 +383,18 @@ class ClawGame:
             client = self.ctrl.client_bbox()
             if client:
                 _, _, w, _ = client
-                rail_right_limit = last_cx + self.cfg.rail_release_at_frac_of_width * float(w)
+                rail_right_limit = (
+                    last_cx + self.cfg.rail_release_at_frac_of_width * float(w)
+                )
 
         # First debug frame
         self._save_debug(
-            img, btn=btn, claw=claws[0], plushies=det_find(dets, "claw_plushie"),
-            notes=f"INIT (try={try_idx})", suffix="init"
+            img,
+            btn=btn,
+            claw=claws[0],
+            plushies=det_find(dets, "claw_plushie"),
+            notes=f"INIT (try={try_idx})",
+            suffix="init",
         )
 
         # -------------------- main loop --------------------
@@ -371,16 +405,25 @@ class ClawGame:
                 now = time.time()
                 if (now - t0) >= self.cfg.max_hold_s:
                     logger_uma.info("[claw] Max hold reached; releasing.")
-                    self._save_debug(img, btn=btn, claw={"xyxy": claw_xyxy},
-                                    chosen=chosen, locked=locked_best,
-                                    notes="TIMEOUT", suffix="timeout")
+                    self._save_debug(
+                        img,
+                        btn=btn,
+                        claw={"xyxy": claw_xyxy},
+                        chosen=chosen,
+                        locked=locked_best,
+                        notes="TIMEOUT",
+                        suffix="timeout",
+                    )
                     break
 
                 # Capture + detect (measure loop latency)
                 t_snap = time.time()
                 img, dets = collect(
-                    self.ctrl, imgsz=self.cfg.imgsz, conf=self.cfg.conf, iou=self.cfg.iou,
-                    tag=f"{tag_prefix}_poll"
+                    self.ctrl,
+                    imgsz=self.cfg.imgsz,
+                    conf=self.cfg.conf,
+                    iou=self.cfg.iou,
+                    tag=f"{tag_prefix}_poll",
                 )
                 loop_dt = max(1e-3, time.time() - t_snap)
                 loop_dt_ema = 0.6 * loop_dt + 0.4 * loop_dt_ema  # smooth loop latency
@@ -390,7 +433,11 @@ class ClawGame:
                 if not claws:
                     # Brief loss: keep holding; log every once in a while
                     if (poll_idx % 10) == 0:
-                        logger_uma.debug("[claw] claw not detected at poll=%d; loop_dt=%.3f", poll_idx, loop_dt)
+                        logger_uma.debug(
+                            "[claw] claw not detected at poll=%d; loop_dt=%.3f",
+                            poll_idx,
+                            loop_dt,
+                        )
                     time.sleep(self.cfg.poll_interval_s)
                     poll_idx += 1
                     continue
@@ -403,7 +450,10 @@ class ClawGame:
                 dt = max(1e-3, now - last_ts)
                 vx_inst = (cx_claw - last_cx) / dt
                 if abs(vx_inst) < 3000.0:  # guard against spikes
-                    vx_ema = self.cfg.ema_alpha * vx_inst + (1.0 - self.cfg.ema_alpha) * vx_ema
+                    vx_ema = (
+                        self.cfg.ema_alpha * vx_inst
+                        + (1.0 - self.cfg.ema_alpha) * vx_ema
+                    )
                 last_ts = now
 
                 # Movement / stall
@@ -411,12 +461,21 @@ class ClawGame:
                     last_move_ts = now
                     last_cx = cx_claw
                 elif (now - last_move_ts) >= self.cfg.stall_release_after_s:
-                    logger_uma.info("[claw] Movement stall (vx≈%.1f px/s, dt=%.2fs); releasing.",
-                                    vx_ema, now - last_move_ts)
-                    self._save_debug(img, btn=btn, claw={"xyxy": claw_xyxy},
-                                    chosen=chosen, locked=locked_best,
-                                    notes="STALL", suffix="stall",
-                                    cx_claw=cx_claw)
+                    logger_uma.info(
+                        "[claw] Movement stall (vx≈%.1f px/s, dt=%.2fs); releasing.",
+                        vx_ema,
+                        now - last_move_ts,
+                    )
+                    self._save_debug(
+                        img,
+                        btn=btn,
+                        claw={"xyxy": claw_xyxy},
+                        chosen=chosen,
+                        locked=locked_best,
+                        notes="STALL",
+                        suffix="stall",
+                        cx_claw=cx_claw,
+                    )
                     break
 
                 # Plushies (exclude those near/over the button)
@@ -426,7 +485,9 @@ class ClawGame:
                 # Track unique by center X
                 for p in plush_all:
                     cx_p, _ = _center(p["xyxy"])
-                    if not any(abs(cx_p - _center(q["xyxy"])[0]) < 6.0 for q in seen_plushies):
+                    if not any(
+                        abs(cx_p - _center(q["xyxy"])[0]) < 6.0 for q in seen_plushies
+                    ):
                         seen_plushies.append(p)
 
                 # Viable vs. fallback candidates
@@ -440,38 +501,68 @@ class ClawGame:
                         if pw <= self.cfg.thin_ratio_vs_claw * cw:
                             locked_best = p
                             sticky_left = max(sticky_left, self.cfg.stickiness_frames)
-                            logger_uma.info("[claw] LOCK thin target: cx=%.1f  pw=%.1f  cw=%.1f  (vx≈%.1f px/s)",
-                                            _center(p["xyxy"])[0], pw, cw, vx_ema)
-                            self._save_debug(img, btn=btn, claw={"xyxy": claw_xyxy},
-                                            plushies=plush_all, viable=candidates,
-                                            chosen=p, locked=p, notes="LOCK THIN", suffix="lock",
-                                            cx_claw=cx_claw)
+                            logger_uma.info(
+                                "[claw] LOCK thin target: cx=%.1f  pw=%.1f  cw=%.1f  (vx≈%.1f px/s)",
+                                _center(p["xyxy"])[0],
+                                pw,
+                                cw,
+                                vx_ema,
+                            )
+                            self._save_debug(
+                                img,
+                                btn=btn,
+                                claw={"xyxy": claw_xyxy},
+                                plushies=plush_all,
+                                viable=candidates,
+                                chosen=p,
+                                locked=p,
+                                notes="LOCK THIN",
+                                suffix="lock",
+                                cx_claw=cx_claw,
+                            )
                             break
 
                 # Choose/refresh target (respects lock)
                 new_choice = self._choose_best_target(
-                    candidates, claw_xyxy, min_target_x, seen_count=len(seen_plushies), locked=locked_best
+                    candidates,
+                    claw_xyxy,
+                    min_target_x,
+                    seen_count=len(seen_plushies),
+                    locked=locked_best,
                 )
                 if chosen is None and new_choice is not None:
                     chosen = new_choice
                     sticky_left = self.cfg.stickiness_frames
-                    logger_uma.info("[claw] CHOOSE target: cx=%.1f  (seen=%d, vx≈%.1f)",
-                                    _center(chosen["xyxy"])[0], len(seen_plushies), vx_ema)
-                elif new_choice is not None and sticky_left <= 0 and locked_best is None:
+                    logger_uma.info(
+                        "[claw] CHOOSE target: cx=%.1f  (seen=%d, vx≈%.1f)",
+                        _center(chosen["xyxy"])[0],
+                        len(seen_plushies),
+                        vx_ema,
+                    )
+                elif (
+                    new_choice is not None and sticky_left <= 0 and locked_best is None
+                ):
                     # Allow switching only after the sticky window expires
                     prev_cx = _center(chosen["xyxy"])[0] if chosen else None
                     chosen = new_choice
                     sticky_left = self.cfg.stickiness_frames
-                    logger_uma.info("[claw] SWITCH target: prev_cx=%s → cx=%.1f (seen=%d)",
-                                    f"{prev_cx:.1f}" if prev_cx is not None else "None",
-                                    _center(chosen["xyxy"])[0], len(seen_plushies))
+                    logger_uma.info(
+                        "[claw] SWITCH target: prev_cx=%s → cx=%.1f (seen=%d)",
+                        f"{prev_cx:.1f}" if prev_cx is not None else "None",
+                        _center(chosen["xyxy"])[0],
+                        len(seen_plushies),
+                    )
                 else:
                     sticky_left = max(0, sticky_left - 1)
 
                 # Rebind chosen to the nearest current detection by center-X (fight flicker/offset)
                 if chosen is not None and plush_all:
                     cx_ref, _ = _center(chosen["xyxy"])
-                    nearest = min(plush_all, key=lambda d: abs(_center(d["xyxy"])[0] - cx_ref), default=None)
+                    nearest = min(
+                        plush_all,
+                        key=lambda d: abs(_center(d["xyxy"])[0] - cx_ref),
+                        default=None,
+                    )
                     if nearest is not None:
                         chosen = nearest
 
@@ -486,82 +577,158 @@ class ClawGame:
                     target_x = cx_target + right_bias
 
                     # Look-ahead time = max(loop latency EMA, cfg latency) * try-scale
-                    look_ahead = max(loop_dt_ema, self.cfg.latency_comp_s) * lookahead_scale
-                    cx_pred = cx_claw + max(-self.cfg.max_pred_px,
-                                            min(self.cfg.max_pred_px, vx_ema * look_ahead))
+                    look_ahead = (
+                        max(loop_dt_ema, self.cfg.latency_comp_s) * lookahead_scale
+                    )
+                    cx_pred = cx_claw + max(
+                        -self.cfg.max_pred_px,
+                        min(self.cfg.max_pred_px, vx_ema * look_ahead),
+                    )
 
                     release_x = target_x - align_tol
-                    decision = (cx_pred >= release_x)
+                    decision = cx_pred >= release_x
 
                     logger_uma.debug(
                         "[claw] chk poll=%d | cx=%.1f cx_pred=%.1f vx≈%.1f | tx=%.1f tol=%.1f bias=%.1f "
                         "| look=%.3fs (loop=%.3fs) | decide=%s",
-                        poll_idx, cx_claw, cx_pred, vx_ema, target_x, align_tol, right_bias,
-                        look_ahead, loop_dt_ema, decision
+                        poll_idx,
+                        cx_claw,
+                        cx_pred,
+                        vx_ema,
+                        target_x,
+                        align_tol,
+                        right_bias,
+                        look_ahead,
+                        loop_dt_ema,
+                        decision,
                     )
 
                     if decision:
                         self._save_debug(
-                            img, btn=btn, claw={"xyxy": claw_xyxy},
-                            plushies=plush_all, viable=candidates, chosen=chosen, locked=locked_best,
-                            notes=(f"RELEASE align try={try_idx} (cx={cx_claw:.1f}, cxp={cx_pred:.1f}, "
-                                f"tx={target_x:.1f}, tol={align_tol:.1f})"),
+                            img,
+                            btn=btn,
+                            claw={"xyxy": claw_xyxy},
+                            plushies=plush_all,
+                            viable=candidates,
+                            chosen=chosen,
+                            locked=locked_best,
+                            notes=(
+                                f"RELEASE align try={try_idx} (cx={cx_claw:.1f}, cxp={cx_pred:.1f}, "
+                                f"tx={target_x:.1f}, tol={align_tol:.1f})"
+                            ),
                             suffix="release_align",
-                            cx_claw=cx_claw, cx_pred=cx_pred, target_x=target_x, release_x=release_x
+                            cx_claw=cx_claw,
+                            cx_pred=cx_pred,
+                            target_x=target_x,
+                            release_x=release_x,
                         )
                         released = True
 
                 # ------------- fallbacks -------------
                 if not released:
                     # Only if we never locked/selected a target
-                    if locked_best is None and chosen is None and len(candidates) > 0 and len(seen_plushies) >= 3:
+                    if (
+                        locked_best is None
+                        and chosen is None
+                        and len(candidates) > 0
+                        and len(seen_plushies) >= 3
+                    ):
                         x1_l, _, x2_l, _ = candidates[-1]["xyxy"]
                         align_tol = (self.cfg.align_tol_frac_of_claw * tol_scale) * cw
-                        right_bias = (self.cfg.right_bias_frac_of_claw * bias_scale) * cw
+                        right_bias = (
+                            self.cfg.right_bias_frac_of_claw * bias_scale
+                        ) * cw
 
-                        look_ahead = max(loop_dt_ema, self.cfg.latency_comp_s) * lookahead_scale
-                        cx_pred = cx_claw + max(-self.cfg.max_pred_px,
-                                                min(self.cfg.max_pred_px, vx_ema * look_ahead))
+                        look_ahead = (
+                            max(loop_dt_ema, self.cfg.latency_comp_s) * lookahead_scale
+                        )
+                        cx_pred = cx_claw + max(
+                            -self.cfg.max_pred_px,
+                            min(self.cfg.max_pred_px, vx_ema * look_ahead),
+                        )
 
                         release_x = (x2_l + right_bias) - align_tol
                         if cx_pred >= release_x:
                             logger_uma.info("[claw] RELEASE last plushie fallback.")
                             self._save_debug(
-                                img, btn=btn, claw={"xyxy": claw_xyxy},
-                                plushies=plush_all, viable=candidates, chosen=None, locked=None,
-                                notes=(f"RELEASE last (cx={cx_claw:.1f}, cxp={cx_pred:.1f}, rx={release_x:.1f})"),
+                                img,
+                                btn=btn,
+                                claw={"xyxy": claw_xyxy},
+                                plushies=plush_all,
+                                viable=candidates,
+                                chosen=None,
+                                locked=None,
+                                notes=(
+                                    f"RELEASE last (cx={cx_claw:.1f}, cxp={cx_pred:.1f}, rx={release_x:.1f})"
+                                ),
                                 suffix="fallback_last",
-                                cx_claw=cx_claw, cx_pred=cx_pred, release_x=release_x
+                                cx_claw=cx_claw,
+                                cx_pred=cx_pred,
+                                release_x=release_x,
                             )
                             released = True
 
                 # Rail safety
-                if not released and rail_right_limit is not None and cx_claw >= rail_right_limit:
+                if (
+                    not released
+                    and rail_right_limit is not None
+                    and cx_claw >= rail_right_limit
+                ):
                     logger_uma.info("[claw] Near right rail; releasing.")
-                    self._save_debug(img, btn=btn, claw={"xyxy": claw_xyxy},
-                                    chosen=chosen, locked=locked_best,
-                                    notes="RAIL", suffix="rail",
-                                    cx_claw=cx_claw)
+                    self._save_debug(
+                        img,
+                        btn=btn,
+                        claw={"xyxy": claw_xyxy},
+                        chosen=chosen,
+                        locked=locked_best,
+                        notes="RAIL",
+                        suffix="rail",
+                        cx_claw=cx_claw,
+                    )
                     released = True
 
                 # Periodic debug frame
                 if (poll_idx % max(1, self.cfg.debug_every_n_polls)) == 0:
-                    cx_target_dbg = _center(chosen["xyxy"])[0] if chosen is not None else None
-                    align_tol_dbg = (self.cfg.align_tol_frac_of_claw * tol_scale) * cw if chosen else None
-                    right_bias_dbg = (self.cfg.right_bias_frac_of_claw * bias_scale) * cw if chosen else None
+                    cx_target_dbg = (
+                        _center(chosen["xyxy"])[0] if chosen is not None else None
+                    )
+                    align_tol_dbg = (
+                        (self.cfg.align_tol_frac_of_claw * tol_scale) * cw
+                        if chosen
+                        else None
+                    )
+                    right_bias_dbg = (
+                        (self.cfg.right_bias_frac_of_claw * bias_scale) * cw
+                        if chosen
+                        else None
+                    )
                     target_x_dbg = (cx_target_dbg + right_bias_dbg) if chosen else None
-                    cx_pred_dbg = cx_claw + max(-self.cfg.max_pred_px,
-                                                min(self.cfg.max_pred_px, vx_ema * max(loop_dt_ema, self.cfg.latency_comp_s) * lookahead_scale))
+                    cx_pred_dbg = cx_claw + max(
+                        -self.cfg.max_pred_px,
+                        min(
+                            self.cfg.max_pred_px,
+                            vx_ema
+                            * max(loop_dt_ema, self.cfg.latency_comp_s)
+                            * lookahead_scale,
+                        ),
+                    )
                     self._save_debug(
-                        img, btn=btn, claw={"xyxy": claw_xyxy},
-                        plushies=plush_all, viable=candidates, chosen=chosen, locked=locked_best,
-                        notes=(f"poll {poll_idx} | seen={len(seen_plushies)} | vx≈{vx_ema:.1f} | "
-                            f"loop_dt={loop_dt:.3f}/{loop_dt_ema:.3f}"),
+                        img,
+                        btn=btn,
+                        claw={"xyxy": claw_xyxy},
+                        plushies=plush_all,
+                        viable=candidates,
+                        chosen=chosen,
+                        locked=locked_best,
+                        notes=(
+                            f"poll {poll_idx} | seen={len(seen_plushies)} | vx≈{vx_ema:.1f} | "
+                            f"loop_dt={loop_dt:.3f}/{loop_dt_ema:.3f}"
+                        ),
                         suffix="poll",
                         cx_claw=cx_claw,
                         cx_pred=cx_pred_dbg,
                         target_x=target_x_dbg,
-                        release_x=(target_x_dbg - align_tol_dbg) if chosen else None
+                        release_x=(target_x_dbg - align_tol_dbg) if chosen else None,
                     )
 
                 if released:
@@ -578,9 +745,14 @@ class ClawGame:
         ok = chosen is not None
         if ok:
             cx, _ = _center(chosen["xyxy"])
-            logger_uma.debug("[claw] Released over target (cx=%.1f, seen=%d, try=%d).",
-                            cx, len(seen_plushies), try_idx)
+            logger_uma.debug(
+                "[claw] Released over target (cx=%.1f, seen=%d, try=%d).",
+                cx,
+                len(seen_plushies),
+                try_idx,
+            )
         else:
-            logger_uma.debug("[claw] Released without a confirmed target (timeout/stall/fallback).")
+            logger_uma.debug(
+                "[claw] Released without a confirmed target (timeout/stall/fallback)."
+            )
         return ok
-
