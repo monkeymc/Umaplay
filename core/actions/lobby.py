@@ -16,6 +16,7 @@ from core.perception.extractors.state import (
     extract_stats,
     extract_turns
 )
+from core.perception.yolo.interface import IDetector
 from core.utils.logger import logger_uma
 from core.utils.race_index import RaceIndex, date_key_from_dateinfo
 from core.utils.text import fuzzy_contains
@@ -67,6 +68,7 @@ class LobbyFlow:
         self,
         ctrl: IController,
         ocr,
+        yolo_engine: IDetector,
         waiter: Waiter,
         *,
         minimum_skill_pts: int = 500,
@@ -79,6 +81,7 @@ class LobbyFlow:
     ) -> None:
         self.ctrl = ctrl
         self.ocr = ocr
+        self.yolo_engine = yolo_engine
         self.minimum_skill_pts = int(minimum_skill_pts)
         self.auto_rest_minimum = int(auto_rest_minimum)
         self.prioritize_g1 = bool(prioritize_g1)
@@ -110,7 +113,7 @@ class LobbyFlow:
 
         optional extra message
         """
-        img, dets = collect(self.ctrl, imgsz=self.waiter.cfg.imgsz, conf=self.waiter.cfg.conf, iou=self.waiter.cfg.iou, tag="lobby_state")
+        img, dets = collect(self.yolo_engine, imgsz=self.waiter.cfg.imgsz, conf=self.waiter.cfg.conf, iou=self.waiter.cfg.iou, tag="lobby_state")
 
         if not self.process_on_demand:
             self._update_state(img, dets)  # -> Very expensive, calculate as you need better

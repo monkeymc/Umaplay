@@ -67,7 +67,7 @@ class Settings:
 
     # --------- Detection (YOLO) ---------
     YOLO_IMGSZ: int = _env_int("YOLO_IMGSZ", default=832)
-    YOLO_CONF: float = _env_float("YOLO_CONF", default=0.6)  # should be 0.7 in general
+    YOLO_CONF: float = _env_float("YOLO_CONF", default=0.65)  # should be 0.7 in general
     YOLO_IOU: float = _env_float("YOLO_IOU", default=0.45)
 
     # --------- Logging ---------
@@ -83,6 +83,8 @@ class Settings:
     STORE_FOR_TRAINING_THRESHOLD = 0.71  # YOLO baseline to say is accurate will be 0.7
 
     ANDROID_WINDOW_TITLE = "23117RA68G"
+    USE_EXTERNAL_PROCESSOR = True
+    EXTERNAL_PROCESSOR_URL = "http://127.0.0.1:8001"
 
 class Constants:
     map_tile_idx_to_type = {

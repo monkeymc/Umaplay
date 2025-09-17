@@ -6,7 +6,7 @@ from typing import Dict, List, Optional, Tuple
 from PIL import Image
 
 from core.perception.analyzers.mood import mood_label
-from core.perception.ocr import OCREngine
+from core.perception.ocr.interface import OCRInterface
 from core.perception.analyzers.energy_bar import energy_from_bar_crop
 from core.settings import Settings
 from core.types import DetectionDict
@@ -48,7 +48,7 @@ def find_best(
 # Mood
 # ------------------------------
 def extract_mood(
-    ocr: OCREngine,
+    ocr: OCRInterface,
     game_img: Image.Image,
     parsed_objects_screen: List[DetectionDict],
     *,
@@ -92,7 +92,7 @@ def extract_mood(
 # Turns
 # ------------------------------
 def extract_turns(
-    ocr: OCREngine,
+    ocr: OCRInterface,
     game_img: Image.Image,
     parsed_objects_screen: List[DetectionDict],
     *,
@@ -133,7 +133,7 @@ def extract_turns(
 # Turns
 # ------------------------------
 def extract_career_date(
-    ocr: OCREngine,
+    ocr: OCRInterface,
     game_img: Image.Image,
     parsed_objects_screen: List[DetectionDict],
     *,
@@ -165,7 +165,7 @@ def extract_career_date(
 # ------------------------------
 # Stats (SPD/STA/PWR/GUTS/WIT)
 # ------------------------------
-def _parse_stat_segment(ocr: OCREngine, seg_img: Image.Image) -> int:
+def _parse_stat_segment(ocr: OCRInterface, seg_img: Image.Image) -> int:
     """
     Segment typically looks like `C 416 / 1200`.
     Robust parsing rules:
@@ -266,7 +266,7 @@ def _parse_stat_segment(ocr: OCREngine, seg_img: Image.Image) -> int:
 
 
 def extract_stats(
-    ocr: OCREngine,
+    ocr: OCRInterface,
     game_img: Image.Image,
     parsed_objects_screen: List[DetectionDict],
     *,
@@ -350,7 +350,7 @@ def extract_infirmary_on(
 # Skill points
 # ------------------------------
 def extract_skill_points(
-    ocr: OCREngine,
+    ocr: OCRInterface,
     game_img: Image.Image,
     parsed_objects_screen: List[DetectionDict],
     *,
@@ -371,7 +371,7 @@ def extract_skill_points(
 # Goal text
 # ------------------------------
 def extract_goal_text(
-    ocr: OCREngine,
+    ocr: OCRInterface,
     game_img: Image.Image,
     parsed_objects_screen: List[DetectionDict],
     *,

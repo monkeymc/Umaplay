@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 from PIL import Image
 
-from core.perception.ocr import OCREngine
+from core.perception.ocr.interface import OCRInterface
 from core.types import XYXY
 from core.utils.geometry import crop_pil
 from core.utils.text import fuzzy_ratio
@@ -112,7 +112,7 @@ def mood_label_by_color(img: Image.Image, xyxy: XYXY) -> Tuple[str, float]:
     return best_lab, conf
 
 
-def mood_label_by_ocr(ocr: OCREngine, img: Image.Image, xyxy: XYXY) -> Tuple[str, float]:
+def mood_label_by_ocr(ocr: OCRInterface, img: Image.Image, xyxy: XYXY) -> Tuple[str, float]:
     """
     OCR fallback. Returns (label, fuzzy_score).
     """
@@ -127,7 +127,7 @@ def mood_label_by_ocr(ocr: OCREngine, img: Image.Image, xyxy: XYXY) -> Tuple[str
     return (best if sc >= 0.60 else "UNK", sc)
 
 
-def mood_label(ocr: OCREngine | None, img: Image.Image, xyxy: XYXY) -> str:
+def mood_label(ocr: OCRInterface | None, img: Image.Image, xyxy: XYXY) -> str:
     """
     Unified mood classifier:
       1) Try color.

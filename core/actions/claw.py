@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, Tuple
 from PIL import Image, ImageDraw
 
 from core.controllers.base import IController
+from core.perception.yolo.interface import IDetector
 from core.settings import Settings
 from core.utils.logger import logger_uma
 from core.utils.yolo_objects import collect, find as det_find
@@ -78,8 +79,8 @@ class ClawConfig:
 
     # Alignment / timing
     # IMPORTANT: right bias defaults to the SAME fraction as tolerance
-    align_tol_frac_of_claw: float = -0.45  # tolerance band = 0.20 × claw_w
-    right_bias_frac_of_claw: float = -0.45  # bias the target = +0.20 × claw_w
+    align_tol_frac_of_claw: float = -0.55  # tolerance band = 0.20 × claw_w
+    right_bias_frac_of_claw: float = -0.55  # bias the target = +0.20 × claw_w
     max_hold_s: float = 6.5  # hard stop
     poll_interval_s: float = 0.015  # ~60 FPS
     # Prediction to compensate capture+inference latency
@@ -121,8 +122,9 @@ class ClawGame:
     Debug frames are saved to <Settings.DEBUG_DIR>/claw_test/ (or ./debug/claw_test).
     """
 
-    def __init__(self, ctrl: IController, cfg: Optional[ClawConfig] = None) -> None:
+    def __init__(self, ctrl: IController, yolo_engine: IDetector, cfg: Optional[ClawConfig] = None) -> None:
         self.ctrl = ctrl
+        self.yolo_engine = yolo_engine
         self.cfg = cfg or ClawConfig()
         self._dbg_counter = 0
         # Build debug directory once
@@ -331,7 +333,7 @@ class ClawGame:
         """
         # -------------------- initial capture --------------------
         img, dets = collect(
-            self.ctrl,
+            self.yolo_engine,
             imgsz=self.cfg.imgsz,
             conf=self.cfg.conf,
             iou=self.cfg.iou,
@@ -419,7 +421,7 @@ class ClawGame:
                 # Capture + detect (measure loop latency)
                 t_snap = time.time()
                 img, dets = collect(
-                    self.ctrl,
+                    self.yolo_engine,
                     imgsz=self.cfg.imgsz,
                     conf=self.cfg.conf,
                     iou=self.cfg.iou,

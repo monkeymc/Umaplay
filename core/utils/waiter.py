@@ -8,8 +8,8 @@ from typing import List, Optional, Sequence, Tuple
 from PIL import Image
 
 from core.controllers.base import IController
-from core.perception.detection import recognize
-from core.perception.ocr import OCREngine
+from core.perception.ocr.interface import OCRInterface
+from core.perception.yolo.interface import IDetector
 from core.utils.geometry import crop_pil
 from core.utils.logger import logger_uma
 from core.utils.text import fuzzy_ratio
@@ -47,9 +47,11 @@ class Waiter:
       4) Else: keep polling until resolved or timeout.
     """
 
-    def __init__(self, ctrl: IController, ocr: Optional[OCREngine], config: PollConfig):
+    def __init__(self, ctrl: IController, ocr: Optional[OCRInterface], 
+    yolo_engine: IDetector, config: PollConfig):
         self.ctrl = ctrl
         self.ocr = ocr
+        self.yolo_engine = yolo_engine
         self.cfg = config
 
     # ---------------------------
@@ -145,7 +147,7 @@ class Waiter:
     # ---------------------------
 
     def _snap(self, *, tag: str) -> Tuple[Image.Image, List[DetectionDict]]:
-        img, _, dets = recognize(self.ctrl,
+        img, _, dets = self.yolo_engine.recognize(
             imgsz=self.cfg.imgsz, conf=self.cfg.conf, iou=self.cfg.iou, tag=tag
         )
         return img, dets

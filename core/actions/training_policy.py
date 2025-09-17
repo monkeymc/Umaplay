@@ -633,6 +633,7 @@ def check_training(player, *, skip_race: bool = False) -> Optional[TrainingDecis
     training_state, last_img, last_parsed = scan_training_screen(
         player.ctrl,
         player.ocr,
+        yolo_engine=player.yolo_engine,
         energy=(
             player.lobby.state.energy if player.lobby and player.lobby.state else None
         ),
