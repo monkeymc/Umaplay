@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "general": {
+    "mode": "steam",
+    "windowTitle": "Umamusume",
+    "fastMode": false,
+    "tryAgainOnFailedGoal": true,
+    "prioritizeHint": false,
+    "maxFailure": 20,
+    "skillPtsCheck": 600,
+    "acceptConsecutiveRace": true,
+    "advanced": {
+      "hotkey": "F2",
+      "debugMode": true,
+      "useExternalProcessor": false,
+      "externalProcessorUrl": "http://127.0.0.1:8001",
+      "autoRestMinimum": 26
+    }
+  },
+  "presets": [
+    {
+      "id": "default",
+      "name": "default",
+      "priorityStats": [
+        "SPD",
+        "STA",
+        "WIT",
+        "PWR",
+        "GUTS"
+      ],
+      "targetStats": {
+        "SPD": 1150,
+        "STA": 1000,
+        "PWR": 530,
+        "GUTS": 270,
+        "WIT": 250
+      },
+      "minimalMood": "NORMAL",
+      "juniorStyle": null,
+      "skillsToBuy": [
+        "Corner Adept \u25cb",
+        "Corner Acceleration \u25cb",
+        "Homestretch Haste",
+        "Swinging Maestro",
+        "Corner Recovery \u25cb",
+        "Focus",
+        "Concentration",
+        "Professor of Curvature"
+      ],
+      "plannedRaces": {
+
+      }
+    }
+  ]
+}

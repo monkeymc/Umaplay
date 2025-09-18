@@ -40,6 +40,9 @@ datasets/uma/*
 datasets/uma/raw/*
 models/base/*
 
-README.gpu.md
 README.ai.md
 README.train.md
+
+config.json
+build
+dist

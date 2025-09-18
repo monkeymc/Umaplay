@@ -14,6 +14,19 @@ It’s based on and improved from:
 ![Screenshot](assets/doc/screenshot.png)
 
 ---
+## 💬 Discord
+Wanna drop a quick thought, idea, or just hang out? Come say hi either in Issues section or in discord:
+
+<p align="left">
+  <a href="https://discord.gg/JtJfuADDYz" target="_blank">
+    <img src="assets/doc/discord.jpg" alt="Discord" width="40" style="vertical-align:middle; margin-right:10px;" />
+  </a>
+  <a href="https://discord.gg/JtJfuADDYz" target="_blank">
+    https://discord.gg/JtJfuADDYz
+  </a>
+</p>
+
+---
 
 ## ⚠️ Disclaimer
 
@@ -24,28 +37,51 @@ I take no responsibility for bans, issues, or account losses that may result fro
 
 ## ✨ Features
 
-* **Smart Training**: Chooses the best option using a point system (rainbows, Etsuko, director, hints, etc.), the decision depends on all collected status and state; not most faces only. In my main account my Ura finale completion rate is 100% for about 60 automatic runs I did; Although in my free-to-play account without MLB or good parents my win rate is around 90% on 30 automatic runs I did. 
-* **Organic and human movements**: In order to avoid any anti-cheat stuff I implemented a module that uses random numbers to emulate human behaviour when doing clicks and movements (jitter delays also).
-* **Status Tracking**: Collects mood, stats, skill points, goals, and energy %. It also checks if a stat is 'undertrained' and prioritizes it.
-* **Health & Energy**: Rests or goes to the infirmary automatically when needed.
-* **Race Scheduling**: Plan races ahead of time (for fan farming or goals).
+Here’s a reduced and clearer version of your features list, with the **Web UI** part expanded to highlight its capabilities (like race scheduling presets, presets management, etc.):
+
+---
+
+## ✨ Features
+
+* **Smart Training**: Uses a point system (rainbows, Etsuko, director, hints, etc.) to choose the best option based on full status and state, not just faces.
+* **Human-like Movements**: Randomized clicks, delays, and jitters to mimic natural input and avoid anti-cheat detection.
+* **Status Tracking**: Monitors mood, stats, skill points, goals, and energy, prioritizing undertrained stats.
+* **Health & Energy**: Automatically rests or visits the infirmary when needed.
+* **Race Scheduling**: Plan and schedule races in advance for fan farming or goals.
 * **Skill Management**: Auto-purchases and prioritizes selected skills.
-* **Race Selection**: Picks optimal races with smart decision logic.
-* **Auto handle goals**: Included Oguri Cap G1 goal
-* **Flexible Style**: Set your starting racing style (front, pace, late, end).
-* **Screen Resolution Independent**: Works on almost any screen resolution using a custom YOLO model trained with 1000+ images. I tested in 1980x1080 and 1377x720 and Android with Scrcpy in Redmi 13 Pro
-* **Claw Machine Event**: Can trigger the claw mini-game (improvements planned).
-* **Hint hunting**: If you set in Settings the HINT_IS_IMPORTANT to True, then the bot will prioritize the hints.
+* **Race Selection**: Picks optimal races with adaptive logic.
+* **Goal Handling**: Supports event-specific goals (e.g., Oguri Cap G1).
+* **Flexible Styles**: Choose starting racing style (front, pace, late, end).
+* **Resolution Independent**: Works across different screen resolutions (tested on PC 1920x1080 + 1377x720 and Android via scrcpy) with a custom YOLO model trained on 300+ images.
+* **Claw Machine Event**: Supports triggering the claw mini-game (improvements planned).
+* **Hint Hunting**: Prioritizes hints when enabled in settings.
+* **Web UI**:
+  * Manage presets (stat caps, training priorities, minimal mood, racing style).
+  * Race scheduling presets (select and save favorite races for multiple runs).
+  * Toggle advanced settings (failure %, fast mode, hints priority, etc.).
+  * Switch modes easily (Steam, scrcpy, Bluestacks).
+  * Update bot directly from GitHub with a single click.
+
+---
+
+### Before You Start
+
+Make sure you meet these conditions:
+
+* Disable all in-game confirmation pop-ups in settings.
+* Start from the **career lobby screen** (the one with the Tazuna hint icon).
+
 ---
 
 ## 🚀 Getting Started
 
-### Requirements
+### Installation
 
+#### Installation with Python and Conda
+
+Requirements:
 * [Python 3.10+](https://www.python.org/downloads/)
 * (Optional but recommended) [Conda](https://docs.conda.io/en/latest/)
-
-### Installation
 
 ```bash
 git clone https://github.com/Magody/Umaplay.git
@@ -68,76 +104,7 @@ python -m pip install "paddleocr[all]"
 python -m pip install paddlex
 ```
 
----
-
-### Before You Start
-
-Make sure you meet these conditions:
-
-* Disable all in-game confirmation pop-ups in settings.
-* Start from the **career lobby screen** (the one with the Tazuna hint icon).
-
-### Android
-Scrcpy is a tool to 'mirror' your Android screen, and emulate 'touchs' over it and it requires developer mode.
-- Download Scrcpy [Official Repo scrcpy](https://github.com/Genymobile/scrcpy/releases).
-- You MUST enable the USB debugging (Security Settings), so the program can emulate the input; making this solution 99.9% undetectable by any anti-cheat (Although I also set a kind of human behaviour when clicking).
-- Follow the instructions in [scrcpy readme](https://github.com/Genymobile/scrcpy)
-
----
-
-### Configuration
-
-Open `main.py` and choose your controller:
-
-* **Steam** (PC):
-
-  ```python
-  ctrl = SteamController("Umamusume")
-  ```
-
-* **Android via scrcpy**:
-
-  ```python
-  window_title = "23117RA68G"  # Replace with your scrcpy device ID
-  ctrl = ScrcpyController(window_title)
-  ```
-
-Then configure your player setup, including race plan, skills, and style (I'm still working on a WEB UI to provide a experience similar to GameTora).
-
-For now for races please use the same text name defined in [races.json](datasets/in_game/races.json) which is inside 'datasets/ingame' in this repo:
-
-```python
-self.player = Player(
-    ctrl=ctrl,
-    ocr=ocr,
-    interval_stats_refresh=3,
-    minimum_skill_pts=800,
-    auto_rest_minimum=26,
-    # Plan races MUST follow this format for <YEAR>-<MONTH>-<HALF> (half can only be 1 or 2)
-    plan_races={
-        "Y1-12-1": "Asahi Hai Futurity Stakes",
-        "Y2-05-1": "NHK Mile Cup",
-        "Y2-05-2": "Japanese Oaks",
-        "Y3-03-2": "Osaka Hai",
-        "Y3-05-1": "Victoria Mile",
-        "Y3-11-2": "Japan Cup",
-    },
-    skill_list=[
-        "Groundwork", "Focus", "Leader's Pride", "Professor of Curvature",
-        "Homestretch Haste", "Summer Runner", "Left Handed",
-        "Front Runner Corners", "Front Runner Straightaways",
-        "Front Runner Savvy", "Sunny Days", "Wet Conditions",
-        "Tokyo Racecourse", "Standard Distance"
-    ],
-    # Set None if not needed
-    select_style="front"
-)
-```
-
----
-
-### Running the Bot
-
+Then run:
 ```bash
 python main.py
 ```
@@ -146,13 +113,94 @@ python main.py
 
 ---
 
-### Known Issues
+#### (experimental) Installation with pre-created script
+
+Clone the repo and just open/run the file: **run_uma.bat**. No Conda stuff, everything should be automatically installed in 'venv'. Very straightforward but it can fail. So better follow the previous instructions.
+
+---
+
+#### Future: Working on creating releases when versioning
+
+I'm trying to precompile everything in a Windows executable, but I still recommend you to use the first option with python and Conda; this will allow you to easily have the last version.
+
+(Because I'm not able to reduce the size of this exe yet; specially for 'torch')
+
+![Failed EXE export](assets/doc/umaplayexe.png)
+
+---
+
+
+### Android
+
+#### Scrcpy (Recommended)
+Scrcpy is a tool to 'mirror' your Android screen, and emulate 'touchs' over it and it requires developer mode.
+- Download Scrcpy [Official Repo scrcpy](https://github.com/Genymobile/scrcpy/releases).
+- You MUST enable the USB debugging (Security Settings), so the program can emulate the input; making this solution 99.9% undetectable by any anti-cheat (Although I also set a kind of human behaviour when clicking).
+- Follow the instructions in [scrcpy readme](https://github.com/Genymobile/scrcpy)
+
+Once it is installed, you only need to set 'scrcpy' option and save config in http://127.0.0.1:8000/ (read WEB UI section)
+**Important**: Don't forget to set the window title, in my case for Redmi 13 Pro the title is '23117RA68G'
+
+![Window Title](assets/doc/window_title_scrcpy.png)
+
+#### BlueStacks
+I created a version for Bluestacks, you only need to set 'bluestacks' option and save config in http://127.0.0.1:8000/ (read WEB UI section). But I didn't tested enough here, I recommend you to use Scrcpy is lighter and more "native".
+
+---
+
+## WEB UI
+You can change the configuration at http://127.0.0.1:8000/
+![UI](assets/doc/UI.png)
+
+You can set:
+- **General configurations** (window title, modes, fast mode, advanced settings)
+- **Presets** (target stats, priority stats, moods, skills, race scheduler)
+- **Responsive layout**: left = General, right = Presets (collapsible)
+- **Save config**: persists changes to `config.json` in the repo root (via backend API)
+- **Schedule races**:
+![UI](assets/doc/UI-races.png)
+---
+
+## Known Issues
 
 I tested it in Laptop without GPU and only 8GB RAM and worked, but a little bit slower. Hardware shouldn't be a problem though; of course it works better if you have a GPU. Nevertheless I found some problems when:
 - Choosing a character very different from my training dataset (It will be solved later retraining YOLO model with more data)
 - Using a slow internet connection: specially in RACES; if internet is very slow the sleep counter will break all the syncronization
 - Sometimes is unable to select a race even if there is only one race (goal). It happens because race may not have enough starts (Haru Urara Arima Kinen for example, or one where you have 'B' aptitude)
 - Gold Ship restricted training may not work yet.
+
+## Running as 'client' only
+
+Ideal for running on other machines that may be *slow* or *outdated* (such as my laptop and my Vitual Machine in Virtual Box).
+
+The `server\main_inference.py` file is designed to **offload all graphical processing**. This means that whether you’re using an older laptop or running from a virtual machine, you can simply run the following command on your main (powerful) machine:
+
+```bash
+uvicorn server.main_inference:app --host 0.0.0.0 --port 8001
+```
+
+Then, from your laptop or virtual machine (on the same network), you just need to enable the **Use external processor** option in the Web UI (set it to `True`) and provide your host URL (e.g., `http://192.168.1.5:8001`).
+
+On the *client* side, you only need the dependencies listed in `requirements_client_only.txt`—no need to install heavy libraries like Torch or YOLO—because all processing is redirected to the `server.main_inference:app` backend running on a separate machine.
+
+This feature is still experimental, but in my experience, it works quite well.
+
+
+## Running in GPU
+Follow the instructions in [README.gpu.md](README.gpu.md)
+
+---
+
+## Running inside Virtual Box
+
+When running inside a **virtual machine** (in the background so you can still use your mouse on the host), it is recommended to limit resources for smoother performance.
+
+Follow the instructions in [README.virtual_machine.md](README.virtual_machine.md)
+
+![VM Screenshot](assets/doc/VM.png)
+
+
+---
 
 ## 🧠 AI Behind the Bot
 
@@ -191,11 +239,6 @@ The bot uses multiple AI components to make decisions:
 All contributions are welcome!
 
 ---
-
-## 📌 Notes
-
-* Works best with characters included in the training dataset (Oguri, Daiwa, McQueen, Taiki, Haru Urara, etc.).
-* For others, detection accuracy may vary — feel free to report issues.
 
 ## Tags
 
