@@ -45,4 +45,4 @@ README.train.md
 
 config.json
 build
-dist
+/dist/
