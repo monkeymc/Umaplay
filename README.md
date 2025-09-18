@@ -151,7 +151,7 @@ python main.py
 I tested it in Laptop without GPU and only 8GB RAM and worked, but a little bit slower. Hardware shouldn't be a problem though; of course it works better if you have a GPU. Nevertheless I found some problems when:
 - Choosing a character very different from my training dataset (It will be solved later retraining YOLO model with more data)
 - Using a slow internet connection: specially in RACES; if internet is very slow the sleep counter will break all the syncronization
-- Sometimes is unable to select a race even if there is only one race (goal). It happens because race may not have enough starts (Haru Urara Arima Kinen for example, or one where you have 'B' aptitude)
+- Sometimes is unable to select a race even if there is only one race (goal). It happens because race may not have enough stars (Haru Urara Arima Kinen for example, or one where you have 'B' aptitude)
 - Gold Ship restricted training may not work yet.
 
 ## 🧠 AI Behind the Bot
