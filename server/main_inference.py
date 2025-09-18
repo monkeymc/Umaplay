@@ -18,6 +18,7 @@ from core.perception.yolo.yolo_local import LocalYOLOEngine
 app = FastAPI()
 engine = LocalOCREngine()  # load once; keeps models on CPU/GPU as configured
 
+# run: uvicorn server.main_inference:app --host 0.0.0.0 --port 8001
 
 @app.get("/health")
 def health():

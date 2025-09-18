@@ -13,7 +13,7 @@ from core.actions.training_check import compute_support_values, scan_training_sc
 from core.constants import DEFAULT_TILE_TO_TYPE, MOOD_MAP
 from core.utils.date_uma import DateInfo, is_final_season, is_junior_year, is_pre_debut, is_summer, is_summer_in_next_turn, is_summer_in_two_or_less_turns, near_mood_up_event, parse_career_date
 from core.utils.logger import logger_uma
-from core.settings import Constants
+from core.settings import Constants, Settings
 from core.utils.race_index import RaceIndex, date_key_from_dateinfo
 
 # ---------- Action Enum ----------
@@ -672,8 +672,9 @@ def check_training(player, *, skip_race: bool = False) -> Optional[TrainingDecis
         prioritize_g1=player.prioritize_g1,
         stats=stats,
         tile_to_type=Constants.map_tile_idx_to_type,
-        priority_stats=["SPD", "STA", "WIT", "PWR", "GUTS"],
-        minimal_mood="NORMAL",
+        reference_stats=Settings.REFERENCE_STATS,
+        priority_stats=Settings.PRIORITY_STATS,
+        minimal_mood=Settings.MINIMAL_MOOD,
         skip_race=bool(skip_race),
     )
     logger_uma.info(
