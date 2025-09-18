@@ -6,8 +6,8 @@ from typing import Optional
 
 
 def _env(name: str, default: Optional[str] = None) -> Optional[str]:
-    """Return environment variable (UMABOT_* has priority), else default."""
-    return os.getenv(f"UMABOT_{name}", os.getenv(name, default))
+    """Return environment variable (Umaplay_* has priority), else default."""
+    return os.getenv(f"Umaplay_{name}", os.getenv(name, default))
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -36,7 +36,7 @@ def _env_float(name: str, default: float) -> float:
 class Settings:
     """
     Class-style config holder (easy to import as `Settings.*` without instantiation).
-    Adjust values below or override via environment variables prefixed with UMABOT_.
+    Adjust values below or override via environment variables prefixed with Umaplay_.
     """
     HOTKEY = "F2"
     DEBUG = _env_bool("DEBUG", default=True)
@@ -67,7 +67,7 @@ class Settings:
 
     # --------- Detection (YOLO) ---------
     YOLO_IMGSZ: int = _env_int("YOLO_IMGSZ", default=832)
-    YOLO_CONF: float = _env_float("YOLO_CONF", default=0.6)  # should be 0.7 in general
+    YOLO_CONF: float = _env_float("YOLO_CONF", default=0.65)  # should be 0.7 in general
     YOLO_IOU: float = _env_float("YOLO_IOU", default=0.45)
 
     # --------- Logging ---------
@@ -83,6 +83,94 @@ class Settings:
     STORE_FOR_TRAINING_THRESHOLD = 0.71  # YOLO baseline to say is accurate will be 0.7
 
     ANDROID_WINDOW_TITLE = "23117RA68G"
+    WINDOW_TITLE = "Umamusume"
+    USE_EXTERNAL_PROCESSOR = False
+    EXTERNAL_PROCESSOR_URL = "http://127.0.0.1:8001"
+
+    REFERENCE_STATS = {
+        "SPD": 1150,
+        "STA": 1000,
+        "PWR": 530,
+        "GUTS": 270,
+        "WIT": 250,
+    }
+
+    MINIMUM_SKILL_PTS = 600
+    ACCEPT_CONSECUTIVE_RACE = True
+    AUTO_REST_MINIMUM = 26
+
+    PRIORITY_STATS = ["SPD", "STA", "WIT", "PWR", "GUTS"]
+
+    MINIMAL_MOOD = "normal"
+
+    @classmethod
+    def resolve_window_title(cls, mode: str) -> str:
+        if mode == "steam":
+            return "Umamusume"
+        elif mode == "bluestack":
+            return "BlueStacks App Player"
+        else:  # scrcpy
+            return cls.ANDROID_WINDOW_TITLE
+
+    @classmethod
+    def apply_config(cls, cfg: dict) -> None:
+        """
+        Apply values coming from the web UI config.json into process Settings.
+        Only the keys we care about on the Python side are mapped here.
+        """
+        g = (cfg or {}).get('general', {}) or {}
+        adv = g.get('advanced', {}) or {}
+
+        # General
+        cls.MODE = g.get('mode', cls.MODE)
+        # One windowTitle for both Steam and scrcpy (Steam still uses it)
+        wt = g.get('windowTitle')
+        if wt:
+            cls.WINDOW_TITLE = wt
+            cls.ANDROID_WINDOW_TITLE = wt
+        cls.FAST_MODE = bool(g.get('fastMode', cls.FAST_MODE))
+        cls.TRY_AGAIN_ON_FAILED_GOAL = bool(g.get('tryAgainOnFailedGoal', cls.TRY_AGAIN_ON_FAILED_GOAL))
+        cls.HINT_IS_IMPORTANT = bool(g.get('prioritizeHint', cls.HINT_IS_IMPORTANT))
+        cls.MAX_FAILURE = int(g.get('maxFailure', cls.MAX_FAILURE))
+        cls.MINIMUM_SKILL_PTS = int(g.get('skillPtsCheck', cls.MINIMUM_SKILL_PTS))
+        cls.ACCEPT_CONSECUTIVE_RACE = bool(g.get('acceptConsecutiveRace', cls.ACCEPT_CONSECUTIVE_RACE))
+
+        presets = (cfg or {}).get('presets') or []
+        active_id = (cfg or {}).get('activePresetId')
+        preset = next((p for p in presets if p.get('id') == active_id), None) or (presets[0] if presets else None)
+
+        cls.MINIMAL_MOOD = str(preset.get('minimalMood', cls.MINIMAL_MOOD))
+        cls.REFERENCE_STATS = preset.get('targetStats', cls.REFERENCE_STATS)
+        cls.PRIORITY_STATS = preset.get('priorityStats', cls.PRIORITY_STATS)
+        # Advanced
+        hk = adv.get('hotkey')
+        if hk:
+            cls.HOTKEY = hk
+        cls.DEBUG = bool(adv.get('debugMode', cls.DEBUG))
+        cls.USE_EXTERNAL_PROCESSOR = bool(adv.get('useExternalProcessor', cls.USE_EXTERNAL_PROCESSOR))
+        url = adv.get('externalProcessorUrl')
+        if url:
+            cls.EXTERNAL_PROCESSOR_URL = url
+        cls.AUTO_REST_MINIMUM = int(adv.get('autoRestMin', cls.AUTO_REST_MINIMUM))
+
+    @classmethod
+    def extract_runtime_preset(cls, cfg: dict) -> dict:
+        """
+        Pick the active preset (or first), and return a slim dict with things
+        the Python runtime cares about: plan_races, select_style, skill_list.
+        """
+        presets = (cfg or {}).get('presets') or []
+        active_id = (cfg or {}).get('activePresetId')
+        preset = next((p for p in presets if p.get('id') == active_id), None) or (presets[0] if presets else None)
+        if not preset:
+            return {'plan_races': {}, 'skill_list': [], 'select_style': None}
+
+        plan_races = preset.get('plannedRaces', {}) or {}
+        # skillsToBuy may be array of names or objects with {name}
+        raw_skills = preset.get('skillsToBuy', []) or []
+        skill_list = [s['name'] if isinstance(s, dict) else s for s in raw_skills]
+        select_style = preset.get('selectStyle') or preset.get('juniorStyle') or None  # 'end'|'late'|'pace'|'front'|null
+        return {'plan_races': plan_races, 'skill_list': skill_list, 'select_style': select_style}
 
 class Constants:
     map_tile_idx_to_type = {

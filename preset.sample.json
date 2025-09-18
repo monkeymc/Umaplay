@@ -1,0 +1,42 @@
+{
+  "id": "a09728b0-a3ce-494c-bde7-ebe7f2d6d127",
+  "name": "ElCondorPasa",
+  "priorityStats": [
+    "SPD",
+    "STA",
+    "WIT",
+    "PWR",
+    "GUTS"
+  ],
+  "targetStats": {
+    "SPD": 1150,
+    "STA": 800,
+    "PWR": 530,
+    "GUTS": 270,
+    "WIT": 250
+  },
+  "minimalMood": "NORMAL",
+  "juniorStyle": "front",
+  "skillsToBuy": [
+    "Swinging Maestro",
+    "Professor of Curvature",
+    "Corner Acceleration \u25cb",
+    "Corner Connoisseur",
+    "Corner Recovery \u25cb",
+    "Homestretch Haste",
+    "Focus"
+  ],
+  "plannedRaces": {
+    "Y1-12-1": "Asahi Hai Futurity Stakes",
+    "Y2-04-1": "Satsuki Sho",
+    "Y2-05-1": "Tokyo Yushun (Japanese Derby)",
+    "Y2-10-1": "Kikuka Sho",
+    "Y2-11-1": "Queen Elizabeth II Cup",
+    "Y3-03-1": "Osaka Hai",
+    "Y3-04-1": "Tenno Sho (Spring)",
+    "Y3-06-1": "Takarazuka Kinen",
+    "Y3-10-1": "Tenno Sho (Autumn)",
+    "Y3-11-1": "Japan Cup",
+    "Y3-12-1": "Arima Kinen"
+  }
+}

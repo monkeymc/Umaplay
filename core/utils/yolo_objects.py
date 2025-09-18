@@ -5,11 +5,11 @@ from typing import List, Optional, Sequence, Tuple
 
 from PIL import Image
 from core.controllers.base import IController
-from core.perception.detection import recognize
+from core.perception.yolo.interface import IDetector
 from core.types import XYXY, DetectionDict
 
-def collect(ctrl: IController, *, imgsz=832, conf=0.51, iou=0.45, tag="general") -> Tuple[Image.Image, List[DetectionDict]]:
-    img, _, dets = recognize(ctrl,imgsz=imgsz, conf=conf, iou=iou, tag=tag)
+def collect(yolo_engine: IDetector, *, imgsz=832, conf=0.51, iou=0.45, tag="general") -> Tuple[Image.Image, List[DetectionDict]]:
+    img, _, dets = yolo_engine.recognize(imgsz=imgsz, conf=conf, iou=iou, tag=tag)
     return img, dets
 
 # ---------- Basic geometry helpers ----------

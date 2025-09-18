@@ -9,7 +9,7 @@ from PIL import Image
 
 from core.controllers.android import ScrcpyController
 from core.controllers.base import IController
-from core.perception.detection import recognize
+from core.perception.yolo.interface import IDetector
 from core.settings import Settings
 from core.utils.logger import logger_uma
 from core.utils.geometry import crop_pil
@@ -132,14 +132,14 @@ def _click_button_by_text(
 # Skill purchase core
 # ----------------------------
 def _collect_skills_view(
-    ctrl: IController,
+    yolo_engine: IDetector,
     *,
     imgsz: int = 832,
     conf: float = 0.51,
     iou: float = 0.45,
 ) -> Tuple[Image.Image, List[DetectionDict]]:
     """Take a screenshot + detections (wrapper for easier testing)."""
-    game_img, _, parsed = recognize(ctrl,
+    game_img, _, parsed = yolo_engine.recognize(
         imgsz=imgsz, conf=conf, iou=iou, tag="skill"
     )
     return game_img, parsed
@@ -161,6 +161,7 @@ def _find_buy_inside(
 def _scan_and_click_buys(
     ctrl: IController,
     ocr,
+    yolo_engine: IDetector,
     targets: Sequence[str],
     *,
     imgsz: int,
@@ -172,7 +173,7 @@ def _scan_and_click_buys(
     One pass over current screen: click any `skills_buy` whose parent square OCR-matches a target skill.
     Returns (clicked_any, game_img, dets).
     """
-    game_img, dets = _collect_skills_view(ctrl, imgsz=imgsz, conf=conf, iou=iou)
+    game_img, dets = _collect_skills_view(yolo_engine, imgsz=imgsz, conf=conf, iou=iou)
 
     squares = [d for d in dets if d["name"] == "skills_square"]
     buys = [d for d in dets if d["name"] == "skills_buy"]
@@ -212,7 +213,8 @@ def _scan_and_click_buys(
 
 
 def _confirm_learn_close_back_flow(
-    ctrl: IController, ocr, *, imgsz: int, conf: float, iou: float, waiting_poput=2
+    ctrl: IController, ocr, 
+    yolo_engine: IDetector,*, imgsz: int, conf: float, iou: float, waiting_poput=2
 ) -> None:
     """
     Confirm → Learn → Close → Back (with re-detect + OCR at each step).
@@ -220,7 +222,7 @@ def _confirm_learn_close_back_flow(
     """
     # Confirm
     for _ in range(6):
-        game_img, dets = _collect_skills_view(ctrl, imgsz=imgsz, conf=conf, iou=iou)
+        game_img, dets = _collect_skills_view(yolo_engine, imgsz=imgsz, conf=conf, iou=iou)
         if _click_button_by_text(
             ctrl, ocr, game_img, dets, classes=("button_green",), texts=("CONFIRM",)
         ):
@@ -231,7 +233,7 @@ def _confirm_learn_close_back_flow(
 
     # Learn (confirmation dialog)
     for _ in range(10):
-        game_img, dets = _collect_skills_view(ctrl, imgsz=imgsz, conf=conf, iou=iou)
+        game_img, dets = _collect_skills_view(yolo_engine, imgsz=imgsz, conf=conf, iou=iou)
         if _click_button_by_text(
             ctrl, ocr, game_img, dets, classes=("button_green",), texts=("LEARN",)
         ):
@@ -243,7 +245,7 @@ def _confirm_learn_close_back_flow(
 
     # Close
     for _ in range(10):
-        game_img, dets = _collect_skills_view(ctrl, imgsz=imgsz, conf=conf, iou=iou)
+        game_img, dets = _collect_skills_view(yolo_engine, imgsz=imgsz, conf=conf, iou=iou)
         if _click_button_by_text(
             ctrl, ocr, game_img, dets, classes=("button_white",), texts=("CLOSE",)
         ):
@@ -254,7 +256,7 @@ def _confirm_learn_close_back_flow(
 
     # Back (bottom-left white)
     for _ in range(10):
-        game_img, dets = _collect_skills_view(ctrl, imgsz=imgsz, conf=conf, iou=iou)
+        game_img, dets = _collect_skills_view(yolo_engine, imgsz=imgsz, conf=conf, iou=iou)
         if _click_button_by_text(
             ctrl, ocr, game_img, dets, classes=("button_white",), texts=("BACK",)
         ):
@@ -266,6 +268,7 @@ def _confirm_learn_close_back_flow(
 def auto_buy_skills(
     ctrl: IController,
     ocr,
+    yolo_engine: IDetector,
     skill_list: Sequence[str],
     *,
     imgsz: int = 832,
@@ -293,6 +296,7 @@ def auto_buy_skills(
         clicked, game_img, dets = _scan_and_click_buys(
             ctrl,
             ocr,
+            yolo_engine,
             skill_list,
             imgsz=imgsz,
             conf=conf,
@@ -368,11 +372,11 @@ def auto_buy_skills(
 
     if any_clicked:
         logger_uma.info("[skills] Confirming purchases...")
-        _confirm_learn_close_back_flow(ctrl, ocr, imgsz=imgsz, conf=conf, iou=iou)
+        _confirm_learn_close_back_flow(ctrl, ocr, yolo_engine, imgsz=imgsz, conf=conf, iou=iou)
     else:
         # Back
         for _ in range(10):
-            game_img, dets = _collect_skills_view(ctrl, imgsz=imgsz, conf=conf, iou=iou)
+            game_img, dets = _collect_skills_view(yolo_engine, imgsz=imgsz, conf=conf, iou=iou)
             if _click_button_by_text(
                 ctrl, ocr, game_img, dets, classes=("button_white",), texts=("BACK",)
             ):

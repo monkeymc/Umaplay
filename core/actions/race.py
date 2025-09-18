@@ -4,6 +4,7 @@ from __future__ import annotations
 import random
 import time
 from core.controllers.android import ScrcpyController
+from core.perception.yolo.interface import IDetector
 from core.utils.waiter import Waiter
 from typing import Dict, List, Optional, Tuple
 from core.utils.race_index import RaceIndex
@@ -31,9 +32,10 @@ class RaceFlow:
       - OCR is used only when texts=... is provided.
     """
 
-    def __init__(self, ctrl: IController, ocr, waiter: Waiter) -> None:
+    def __init__(self, ctrl: IController, ocr, yolo_engine: IDetector, waiter: Waiter) -> None:
         self.ctrl = ctrl
         self.ocr = ocr
+        self.yolo_engine = yolo_engine
         self.waiter = waiter
 
     def _ensure_in_raceday(self, *, reason: str | None = None) -> bool:
@@ -81,7 +83,7 @@ class RaceFlow:
     # Internal helpers
     # --------------------------
     def _collect(self, tag: str) -> Tuple[Image.Image, List[DetectionDict]]:
-        return collect(self.ctrl, imgsz=self.waiter.cfg.imgsz, conf=self.waiter.cfg.conf, iou=self.waiter.cfg.iou, tag=tag)
+        return collect(self.yolo_engine, imgsz=self.waiter.cfg.imgsz, conf=self.waiter.cfg.conf, iou=self.waiter.cfg.iou, tag=tag)
 
     def _pick_view_results_button(self) -> Optional[DetectionDict]:
         """Among white buttons, choose the one that OCR-matches 'VIEW RESULTS' best."""
@@ -648,7 +650,7 @@ class RaceFlow:
             classes=("button_green",),
             texts=("RACE",),
             prefer_bottom=True,
-            timeout_s=2,
+            timeout_s=3,
             tag="race_popup_confirm",
         )
 

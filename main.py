@@ -1,17 +1,82 @@
 # main.py
+from __future__ import annotations
+
 import threading
 import time
 import keyboard
 import uvicorn
 
-from core.controllers.android import ScrcpyController
-from core.controllers.base import IController
-from core.controllers.steam import SteamController
-from core.perception.ocr import OCREngine
-from core.settings import Settings
 from core.utils.logger import logger_uma, setup_uma_logging
-from server.main import app
+from core.settings import Settings
 from core.agent import Player
+
+from server.main import app
+from server.utils import load_config, ensure_config_exists
+
+# Controllers & perception interfaces
+from core.controllers.base import IController
+from core.perception.ocr.interface import OCRInterface
+from core.perception.yolo.interface import IDetector
+from core.controllers.steam import SteamController
+from core.controllers.android import ScrcpyController
+try:
+    # Optional; if your Bluestacks controller is a separate class
+    from core.controllers.bluestacks import BlueStacksController
+    HAS_BLUESTACKS_CTRL = True
+except Exception:
+    BlueStacksController = None  # type: ignore
+    HAS_BLUESTACKS_CTRL = False
+
+
+# ---------------------------
+# Helpers to instantiate runtimes from Settings
+# ---------------------------
+def make_controller_from_settings() -> IController:
+    """Build a fresh controller based on current Settings.MODE + resolved window title."""
+    mode = Settings.MODE.lower().strip()
+    window_title = Settings.resolve_window_title(mode)
+
+    if mode == "steam":
+        logger_uma.info(f"[CTRL] Mode=steam, window_title='{window_title}'")
+        return SteamController(window_title)
+    elif mode == "bluestack":
+        # Use dedicated controller if available, else ScrcpyController as a windowed generic fallback
+        logger_uma.info(f"[CTRL] Mode=bluestack, window_title='{window_title}'")
+        if HAS_BLUESTACKS_CTRL and BlueStacksController is not None:
+            return BlueStacksController(window_title)  # type: ignore
+        return ScrcpyController(window_title)
+    else:
+        # scrcpy (default branch)
+        logger_uma.info(f"[CTRL] Mode=scrcpy, window_title='{window_title}'")
+        return ScrcpyController(window_title)
+
+
+def make_ocr_yolo_from_settings(ctrl: IController) -> tuple[OCRInterface, IDetector]:
+    """Build fresh OCR and YOLO engines based on current Settings."""
+    if Settings.USE_FAST_OCR:
+        det_name = "PP-OCRv5_mobile_det"
+        rec_name = "en_PP-OCRv5_mobile_rec"
+    else:
+        det_name = "PP-OCRv5_server_det"
+        rec_name = "en_PP-OCRv5_server_rec"
+
+    if Settings.USE_EXTERNAL_PROCESSOR:
+        logger_uma.info(f"[PERCEPTION] Using external processor at: {Settings.EXTERNAL_PROCESSOR_URL}")
+        from core.perception.ocr.ocr_remote import RemoteOCREngine
+        from core.perception.yolo.yolo_remote import RemoteYOLOEngine
+        ocr = RemoteOCREngine(base_url=Settings.EXTERNAL_PROCESSOR_URL)
+        yolo_engine = RemoteYOLOEngine(ctrl=ctrl, base_url=Settings.EXTERNAL_PROCESSOR_URL)
+        return ocr, yolo_engine
+
+    logger_uma.info("[PERCEPTION] Using internal processors")
+    from core.perception.ocr.ocr_local import LocalOCREngine
+    from core.perception.yolo.yolo_local import LocalYOLOEngine
+    ocr = LocalOCREngine(
+        text_detection_model_name=det_name,
+        text_recognition_model_name=rec_name,
+    )
+    yolo_engine = LocalYOLOEngine(ctrl=ctrl)
+    return ocr, yolo_engine
 
 
 # ---------------------------
@@ -33,68 +98,54 @@ class BotState:
         self.running: bool = False
         self._lock = threading.Lock()
 
-    def start(self, ctrl: IController, ocr: OCREngine):
+    def start(self):
+        """
+        Reload config.json -> Settings.apply_config -> build fresh controller + OCR/YOLO -> run Player.
+        This guarantees we always reflect the latest UI changes at start time.
+        """
         with self._lock:
             if self.running:
                 logger_uma.info("[BOT] Already running.")
                 return
 
-            logger_uma.debug("[BOT] start(): focusing window…")
-            if not ctrl.focus():
-                logger_uma.error("[BOT] Could not find/focus the scrcpy window.")
-                return
+            # 1) Re-hydrate Settings from the (possibly updated) config.json
+            try:
+                cfg = load_config()
+            except Exception:
+                cfg = {}
+            Settings.apply_config(cfg or {})
 
+            # 2) Configure logging using (possibly updated) Settings.DEBUG
             setup_uma_logging(debug=Settings.DEBUG)
 
+            # 3) Build fresh controller & perception engines using the *current* settings
+            ctrl = make_controller_from_settings()
+            if not ctrl.focus():
+                # Helpful mode-aware error
+                mode = Settings.MODE.lower()
+                miss = "Steam" if mode == "steam" else ("BlueStacks" if mode == "bluestack" else "SCRCPY")
+                logger_uma.error(f"[BOT] Could not find/focus the {miss} window (title='{Settings.resolve_window_title(mode)}').")
+                return
+
+            ocr, yolo_engine = make_ocr_yolo_from_settings(ctrl)
+
+            # 4) Extract preset-specific runtime opts (skill_list / plan_races / select_style)
+            preset_opts = Settings.extract_runtime_preset(cfg or {})
+
+            # 5) Instantiate Player with runtime knobs from Settings + presets
             self.player = Player(
                 ctrl=ctrl,
                 ocr=ocr,
-                interval_stats_refresh=3,
-                minimum_skill_pts=800,
+                yolo_engine=yolo_engine,
+                interval_stats_refresh=1,
+                minimum_skill_pts=Settings.MINIMUM_SKILL_PTS,
                 prioritize_g1=False,
-                auto_rest_minimum=26,
-                plan_races = {
-                    # "Y2-11-1": "Queen Elizabeth II Cup",
-                    # "Y3-03-2": "Osaka Hai",
-                    # "Y3-06-2": "Takarazuka Kinen",
-                    # "Y3-10-2": "Tenno Sho (Autumn)",
-                    # "Y1-12-1": "Asahi Hai Futurity Stakes",
-                    # "Y2-05-1": "NHK Mile Cup",
-                    # "Y2-05-2": "Japanese Oaks",
-                    # # "Y2-06-1": "Japanese Oaks",
-                    # # "Y2-06-2": "Queen Elizabeth II Cup",
-                    # "Y3-05-1": "Osaka Hai",
-                    # "Y3-11-1": "Victoria Mile",
-                    # # "Y3-06-2": "Takarazuka Kinen",
-                    # "Y3-11-2": "Japan Cup",
-                },
-                skill_list=[
-                    "Concentration",
-                    "Focus",
-                    "Professor of Curvature",
-                    "Corner Adept",
-                    "Swinging Maestro",
-                    "Corner Recovery",
-                    "Corner Acceleration",
-                    "Straightaway Recovery",
-                    "Homestretch Haste",
-                    "Straightaway Acceleration",
-                    "Firm Conditions",
-                    # "Pace Chaser Corners",
-                    # "Pace Chaser Straightaways",
-                    # "Pace Chaser Savvy",
-                    "Slipstream",
-                    # "Mile Corners",
-                    # "Left-Handed",
-                    # "Early Lead",
-                    # "Final Push",
-                    # "Fast-Paced",
-                    # "Updrafters"
-                ],
-                select_style=None  # "end", "late", "pace", "front"
+                auto_rest_minimum=Settings.AUTO_REST_MINIMUM,
+                plan_races=preset_opts["plan_races"],
+                skill_list=preset_opts["skill_list"],
+                select_style=preset_opts["select_style"],  # "end"|"late"|"pace"|"front"|None
             )
-            # SKILLs Pace
-            
+
             def _runner():
                 try:
                     logger_uma.info("[BOT] Started.")
@@ -122,18 +173,18 @@ class BotState:
             logger_uma.info("[BOT] Stopping… (signal loop to exit)")
             self.player.is_running = False
 
-    def toggle(self, ctrl: IController, ocr: OCREngine, source: str = "hotkey"):
+    def toggle(self, source: str = "hotkey"):
         logger_uma.debug(f"[BOT] toggle() called from {source}. running={self.running}")
         if self.running:
             self.stop()
         else:
-            self.start(ctrl, ocr)
+            self.start()
 
 
 # ---------------------------
 # Hotkey loop (keyboard lib + polling fallback)
 # ---------------------------
-def hotkey_loop(state: BotState, ctrl: IController, ocr: OCREngine):
+def hotkey_loop(state: BotState):
     # We’ll support both the configured hotkey and F2 as a backup
     configured = str(getattr(Settings, "HOTKEY", "F2")).upper()
     keys = sorted(set([configured, "F2"]))  # e.g. ["F1","F2"] (no duplicates)
@@ -141,6 +192,7 @@ def hotkey_loop(state: BotState, ctrl: IController, ocr: OCREngine):
 
     # Debounce across both hook & poll paths
     last_ts = 0.0
+
     def _debounced_toggle(source: str):
         nonlocal last_ts
         now = time.time()
@@ -148,20 +200,24 @@ def hotkey_loop(state: BotState, ctrl: IController, ocr: OCREngine):
             logger_uma.debug(f"[HOTKEY] Debounced toggle from {source}.")
             return
         last_ts = now
-        state.toggle(ctrl, ocr, source=source)
+        state.toggle(source=source)
 
     # Try to register hooks
-    handlers = []
     for k in keys:
         try:
             logger_uma.debug(f"[HOTKEY] Registering hook for {k}…")
-            h = keyboard.add_hotkey(k, lambda key=k: _debounced_toggle(f"hook:{key}"),
-                                    suppress=False, trigger_on_release=True)
-            handlers.append(h)
+            keyboard.add_hotkey(
+                k,
+                lambda key=k: _debounced_toggle(f"hook:{key}"),
+                suppress=False,
+                trigger_on_release=True,
+            )
             logger_uma.info(f"[HOTKEY] Hook active for '{k}'.")
         except PermissionError as e:
-            logger_uma.warning(f"[HOTKEY] PermissionError registering '{k}'. "
-                               f"On Windows you may need to run as Administrator. {e}")
+            logger_uma.warning(
+                f"[HOTKEY] PermissionError registering '{k}'. "
+                f"On Windows you may need to run as Administrator. {e}"
+            )
         except Exception as e:
             logger_uma.warning(f"[HOTKEY] Could not register '{k}': {e}")
 
@@ -176,10 +232,8 @@ def hotkey_loop(state: BotState, ctrl: IController, ocr: OCREngine):
                         logger_uma.debug(f"[HOTKEY] Poll detected '{k}'.")
                         _debounced_toggle(f"poll:{k}")
                         fired = True
-                        # small sleep to allow key release; prevents rapid repeats
-                        time.sleep(0.20)
+                        time.sleep(0.20)  # allow key release; prevents rapid repeats
                 except Exception as e:
-                    # keyboard may raise if device focus changes—just continue
                     logger_uma.debug(f"[HOTKEY] Poll error on '{k}': {e}")
             if not fired:
                 time.sleep(0.08)
@@ -197,38 +251,29 @@ def hotkey_loop(state: BotState, ctrl: IController, ocr: OCREngine):
 # Main
 # ---------------------------
 if __name__ == "__main__":
+    # Ensure config.json exists (seed from config.sample.json if needed)
+    try:
+        created = ensure_config_exists()
+        if created:
+            logger_uma.info("[SERVER] Created config.json from config.sample.json")
+    except Exception as e:
+        logger_uma.warning(f"[SERVER] Could not ensure config.json exists: {e}")
+
+    # Load once for initial logging setup (will be reloaded again on each Start)
+    try:
+        cfg0 = load_config()
+    except Exception:
+        cfg0 = {}
+    Settings.apply_config(cfg0 or {})
     setup_uma_logging(debug=Settings.DEBUG)
 
-    # Controller + OCR singletons
-
-    if Settings.MODE == "steam":
-        window_title = "Umamusume"
-        ctrl = SteamController(window_title)
-    else:
-        window_title = Settings.ANDROID_WINDOW_TITLE  # change by your own windows title in SCRCPY
-        ctrl = ScrcpyController(window_title)
-    
-
-    if Settings.USE_FAST_OCR:
-        ocr = OCREngine(
-            text_detection_model_name="PP-OCRv5_mobile_det",
-            text_recognition_model_name="en_PP-OCRv5_mobile_rec",
-        )
-    else:
-        ocr = OCREngine(
-            text_detection_model_name="PP-OCRv5_server_det",
-            text_recognition_model_name="en_PP-OCRv5_server_rec",
-        )
-
-    state = BotState()
-
-    logger_uma.info(f"[INIT] Using scrcpy window title: '{window_title}'")
     # Launch hotkey listener and server
+    state = BotState()
     logger_uma.debug("[INIT] Spawning hotkey thread…")
-    threading.Thread(target=hotkey_loop, args=(state, ctrl, ocr), daemon=True).start()
+    threading.Thread(target=hotkey_loop, args=(state,), daemon=True).start()
 
     try:
-        boot_server()
+        boot_server()  # blocking
     except KeyboardInterrupt:
         pass
     finally:
