@@ -81,7 +81,7 @@ Make sure you meet these conditions:
 
 Requirements:
 * [Python 3.10+](https://www.python.org/downloads/)
-* (Optional but recommended) [Conda](https://docs.conda.io/en/latest/)
+* (Optional but recommended) [Anaconda](https://www.anaconda.com/download/success)
 
 ```bash
 git clone https://github.com/Magody/Umaplay.git
