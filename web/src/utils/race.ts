@@ -1,7 +1,7 @@
 export type DateKey = string // Y{year}-{MM}-{half}
 
 export function monthHalfFromDay(day: number): 1 | 2 {
-  return day <= 15 ? 1 : 2
+  return day <= 1 ? 1 : 2
 }
 
 export function toDateKey(year: number, month: number, day: number): DateKey {
