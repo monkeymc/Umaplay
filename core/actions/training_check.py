@@ -639,7 +639,7 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
             )
 
         if any_orange_max_hint:
-            hint_value = 0.5  # Not as valuable as blue green hints
+            hint_value = 0.5  # Not as valuable as blue green hints, unless hint is set as important
             if Settings.HINT_IS_IMPORTANT:
                 hint_value = 0.75
                 hint_value *= 3

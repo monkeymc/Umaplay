@@ -733,8 +733,10 @@ class RaceFlow:
             time.sleep(0.1)
 
         # 4) Wait until the pre-race lobby is actually on screen (key: 'button_change')
+        if isinstance(self.ctrl, ScrcpyController):
+            time.sleep(5)
         t0 = time.time()
-        max_wait = 14.0 if isinstance(self.ctrl, ScrcpyController) else 12.0
+        max_wait = 14.0
         while (time.time() - t0) < max_wait:
             if abort_requested():
                 logger_uma.info("[race] Abort requested while waiting for pre-race lobby.")

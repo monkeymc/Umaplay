@@ -285,7 +285,8 @@ def _parse_stat_segment(ocr: OCRInterface, seg_img: Image.Image) -> int:
 
     # Clamp to valid range
     if val > 2000:
-        val = 1200
+        # TODO: improve when val is higher than 2k
+        val = -1
     if val < 90:
         if not trailing_letter:
             logger_uma.debug(

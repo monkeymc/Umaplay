@@ -56,7 +56,7 @@ class Player:
             "Homestretch Haste",
             "Straightaway Acceleration",
         ],
-        interval_stats_refresh = 3,
+        interval_stats_refresh = 1,
         select_style = None
     ) -> None:
         self.ctrl = ctrl

@@ -75,7 +75,7 @@ class LobbyFlow:
         auto_rest_minimum: int = 24,
         prioritize_g1: bool = False,
         process_on_demand = True,
-        interval_stats_refresh = 5,
+        interval_stats_refresh = 1,
         max_critical_turn = 7,
         plan_races = {}
     ) -> None:
