@@ -46,3 +46,4 @@ README.train.md
 config.json
 build
 /dist/
+tests/outputs/*

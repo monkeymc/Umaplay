@@ -21,7 +21,11 @@ from core.utils.logger import logger_uma
 from core.utils.text import _normalize_ocr, fuzzy_ratio
 from core.utils.yolo_objects import collect, find, bottom_most, inside
 from core.utils.pointer import smart_scroll_small
+from core.utils.abort import abort_requested
 
+class ConsecutiveRaceRefused(Exception):
+    """Raised when a consecutive-race penalty is detected and settings forbid accepting it."""
+    pass
 
 class RaceFlow:
     """
@@ -38,7 +42,7 @@ class RaceFlow:
         self.yolo_engine = yolo_engine
         self.waiter = waiter
 
-    def _ensure_in_raceday(self, *, reason: str | None = None) -> bool:
+    def _ensure_in_raceday(self, *, reason: str | None = None, from_raceday = False) -> bool:
         """
         Idempotent. If we're still in the Lobby, click the lobby 'RACES' tile (or the
         'race_race_day' entry) to enter Raceday; tolerate the consecutive OK popup.
@@ -62,22 +66,43 @@ class RaceFlow:
             tag="race_nav_from_lobby",
         )
         if clicked:
-            logger_uma.debug("Clicked button, waiting for consecutive race...")
-            time.sleep(1.0)
-            # Some careers show a penalty/OK popup; accept it if present.
-            if self.waiter.click_when(
-                classes=("button_green",),
-                texts=("OK",),
-                prefer_bottom=False,
-                threshold=0.7,
-                allow_greedy_click=False,
-                timeout_s=1.4,
-                tag="race_nav_penalty_ok",
-            ):
-                logger_uma.debug("Consecutive race. Accepted penalization")
-            # Give UI a moment to render squares
-            time.sleep(0.8)
-            return True
+            logger_uma.debug("Clicked 'RACES'. Fast-probing for squares vs penalty popup…")
+            # Fast race: as soon as 'race_square' is seen, bail out; otherwise opportunistically click OK.
+            t0 = time.time()
+            MAX_WAIT = 1.6   # upper bound; typical exit << 1.0s
+            while (time.time() - t0) < MAX_WAIT:
+                if abort_requested():
+                    logger_uma.info("[race] Abort requested during nav to Raceday.")
+                    return False
+                # 1) If squares are already visible → done
+                if self.waiter.seen(classes=("race_square",), tag="race_nav_seen_squares"):
+                    return True
+                # 2) If consecutive-race penalty popup is present → honor settings
+                if self.waiter.seen(
+                    classes=("button_green",),
+                    texts=("OK",),
+                    tag="race_nav_penalty_seen"
+                ):
+                    # from_raceday forces to accept consecutive, there is no another option
+                    if not Settings.ACCEPT_CONSECUTIVE_RACE and not from_raceday:
+                        logger_uma.info("[race] Consecutive race detected and refused by settings.")
+                        raise ConsecutiveRaceRefused("Consecutive race not accepted by settings.")
+                    # Accept the penalty promptly (single shot, no wait)
+                    self.waiter.click_when(
+                        classes=("button_green",),
+                        texts=("OK",),
+                        prefer_bottom=False,
+                        allow_greedy_click=False,
+                        timeout_s=0.5,
+                        tag="race_nav_penalty_ok_click"
+                    )
+                    logger_uma.debug("Consecutive race. Accepted penalization per settings.")
+
+                time.sleep(0.12)
+            # If loop expires, do one last probe:
+            if self.waiter.seen(classes=("race_square",), tag="race_nav_seen_final"):
+                return True
+            return False
         return False
     # --------------------------
     # Internal helpers
@@ -403,52 +428,88 @@ class RaceFlow:
                 timeout_s=3,
                 tag="race_lobby_race_click",
             )
-            time.sleep(11)
-            # Extra confirm (popup) — one more greedy attempt
-            self.waiter.click_when(
-                classes=("button_green",),
-                texts=("RACE",),
-                prefer_bottom=True,
-                timeout_s=4,
-                tag="race_lobby_race_confirm",
-            )
+            time.sleep(3)
+            # Reactive second confirmation. Click as soon as popup appears,
+            # or bail early if the pre-race lobby appears or skip buttons show up.
+            t0 = time.time()
+            while (time.time() - t0) < 12.0:
+                # If the confirmation 'RACE' appears, click it immediately.
+                if self.waiter.try_click_once(
+                    classes=("button_green",),
+                    texts=("RACE",),
+                    allow_greedy_click=False,
+                    prefer_bottom=False,
+                    tag="race_lobby_race_confirm_try",
+                ):
+                    time.sleep(0.12)
+                # If we already transitioned into race (skip buttons), stop waiting.
+                if self.waiter.seen(classes=("button_skip",), tag="race_lobby_seen_skip"):
+                    break
+                time.sleep(0.5)
 
-            for _ in range(5):
-                # Press multiple skips buttons
-                if self.waiter.click_when(classes=("button_skip",), prefer_bottom=True, timeout_s=2, tag="race_skip1"):
+            # Greedy skip: keep pressing while present; stop as soon as 'CLOSE' or 'NEXT' shows.
+            closed_early = False
+            t0 = time.time()
+            while (time.time() - t0) < 12.0:
+                # Early-exit conditions:
+                #  - close available → click once and stop
+                if self.waiter.try_click_once(
+                    classes=("button_white",),
+                    texts=("CLOSE",),
+                    prefer_bottom=False,
+                    allow_greedy_click=False,
+                    tag="race_trophy_try_close",
+                ):
+                    closed_early = True
+                    break
+                #  - next visible → stop skipping; later logic will handle NEXT
+                if self.waiter.seen(classes=("button_green",), tag="race_skip_probe_next"):
+                    break
+
+                # Otherwise try to click a skip on this frame.
+                if self.waiter.try_click_once(classes=("button_skip",), prefer_bottom=True, tag="race_skip_try"):
                     img, dets = self._collect("race_skip_followup")
                     sk = bottom_most(find(dets, "button_skip"))
                     if sk:
                         self.ctrl.click_xyxy_center(sk["xyxy"], clicks=random.randint(3, 5))
-                time.sleep(0.3)
+                    continue
+                time.sleep(0.12)
 
-            logger_uma.debug("[race] Looking for CLOSE button.")
-            self.waiter.click_when(
-                classes=("button_white",),
-                texts=("CLOSE",),
-                prefer_bottom=False,
-                allow_greedy_click=False,
-                timeout_s=5,
-                tag="race_trophy",
-            )
+            if not closed_early:
+                logger_uma.debug("[race] Looking for CLOSE button.")
+                self.waiter.click_when(
+                    classes=("button_white",),
+                    texts=("CLOSE",),
+                    prefer_bottom=False,
+                    allow_greedy_click=False,
+                    timeout_s=3,
+                    tag="race_trophy",
+                )
 
         # Check if we loss
 
+        clicked_try_again = False
+        if Settings.TRY_AGAIN_ON_FAILED_GOAL:
+            # Reactive micro-window: try to click 'TRY AGAIN' quickly; otherwise don't pay a 2s timeout.
+            t0 = time.time()
+            while (time.time() - t0) < 2.0:
+                if self.waiter.try_click_once(
+                    classes=("button_green",),
+                    texts=("TRY AGAIN",),
+                    prefer_bottom=False,
+                    allow_greedy_click=False,
+                    forbid_texts=("RACE", "NEXT"),
+                    tag="race_try_again_try",
+                ):
+                    clicked_try_again = True
+                    break
+                time.sleep(0.12)
 
-        if Settings.TRY_AGAIN_ON_FAILED_GOAL and self.waiter.click_when(
-            classes=("button_green",),
-            texts=("TRY AGAIN", ),
-            prefer_bottom=False,
-            allow_greedy_click=False,
-            forbid_texts=("RACE", "NEXT"),
-            timeout_s=2.0,
-            clicks=1,
-            tag="race_try_again",
-        ):
+        if clicked_try_again:
             logger_uma.debug("[race] Lost the race, trying again.")
-            # DANGER -> recursion:
             time.sleep(3)
             return self.lobby()
+
         else:
             # After the race/UI flow → 'NEXT' / 'OK' / 'PROCEED'
             logger_uma.debug("[race] Looking for button_green 'Next' button. Shown after race.")
@@ -468,7 +529,7 @@ class RaceFlow:
                 classes=("race_after_next",),
                 texts=("NEXT", ),
                 prefer_bottom=True,
-                timeout_s=6.0,
+                timeout_s=4.0,
                 clicks=random.randint(2, 4),
                 tag="race_after",
             )
@@ -598,12 +659,16 @@ class RaceFlow:
         date_key: Optional[str] = None,
         select_style = None,
         ensure_navigation: bool = True,
+        from_raceday: bool = False,
         reason: str | None = None,
     ) -> bool:
         """
         End-to-end race-day routine. If called from Lobby, set ensure_navigation=True
         (default) and we will enter the Raceday list ourselves. This allows running
         RaceFlow without involving LobbyFlow/Agent orchestration.
+        Behavior when consecutive-race penalty is detected and settings forbid it:
+          - if from_raceday == True → raise ConsecutiveRaceRefused
+          - else → return False (let caller continue with its skip logic)
         """
         logger_uma.info(
             "[race] RaceDay begin (prioritize_g1=%s, is_g1_goal=%s)%s",
@@ -612,7 +677,11 @@ class RaceFlow:
             f" | reason='{reason}'" if reason else "",
         )
         if ensure_navigation:
-            _ = self._ensure_in_raceday(reason=reason)
+            try:
+                _ = self._ensure_in_raceday(reason=reason, from_raceday=from_raceday)
+            except ConsecutiveRaceRefused:
+                logger_uma.info("[race] Returning False due to refused consecutive race (non-Raceday caller).")
+                return False
 
         time.sleep(2)
         # 1) Pick race card; scroll if needed
@@ -644,23 +713,40 @@ class RaceFlow:
             logger_uma.warning("[race] couldn't find green 'Race' button (list).")
             return False
 
-        time.sleep(0.7)  # give time to popup to appear
-        # 4) Confirm 'Race' popup (green) — one extra greedy attempt
-        self.waiter.click_when(
-            classes=("button_green",),
-            texts=("RACE",),
-            prefer_bottom=True,
-            timeout_s=3,
-            tag="race_popup_confirm",
-        )
+        # Reactive confirm of the popup (if/when it appears). Bail out if pre-race lobby is already visible.
+        t0 = time.time()
+        while (time.time() - t0) < 4.0:
+            if abort_requested():
+                logger_uma.info("[race] Abort requested before popup confirm.")
+                return False
+            if self.waiter.seen(classes=("button_change",), tag="race_pre_lobby_seen_early"):
+                break
+            if self.waiter.try_click_once(
+                classes=("button_green",),
+                texts=("RACE",),
+                prefer_bottom=True,
+                tag="race_popup_confirm_try",
+            ):
+                # Give a short beat for the transition; continue probing.
+                time.sleep(0.2)
+                break
+            time.sleep(0.1)
 
-        if isinstance(self.ctrl, ScrcpyController):
-            time.sleep(5)
-        time.sleep(7)  # TODO: tune for phone/desktop
-        # 5) Proceed with lobby handling
-        if select_style:  # front, pace, late, end
+        # 4) Wait until the pre-race lobby is actually on screen (key: 'button_change')
+        t0 = time.time()
+        max_wait = 14.0 if isinstance(self.ctrl, ScrcpyController) else 12.0
+        while (time.time() - t0) < max_wait:
+            if abort_requested():
+                logger_uma.info("[race] Abort requested while waiting for pre-race lobby.")
+                return False
+            if self.waiter.seen(classes=("button_change",), tag="race_pre_lobby_gate"):
+                break
+            time.sleep(0.15)
+
+        # 5) Optional: set strategy as soon as the Change button is available (no extra sleeps)
+        if select_style and self.waiter.seen(classes=("button_change",), tag="race_pre_lobby_ready"):
             logger_uma.debug(f"Setting style: {select_style}")
             self.set_strategy(select_style)
-            time.sleep(4)
 
+        # 6) Proceed with the result/lobby handling pipeline
         return self.lobby()

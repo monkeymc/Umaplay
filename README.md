@@ -52,7 +52,7 @@ Here’s a reduced and clearer version of your features list, with the **Web UI*
 * **Race Selection**: Picks optimal races with adaptive logic.
 * **Goal Handling**: Supports event-specific goals (e.g., Oguri Cap G1).
 * **Flexible Styles**: Choose starting racing style (front, pace, late, end).
-* **Resolution Independent**: Works across different screen resolutions (tested on PC 1920x1080 + 1377x720 and Android via scrcpy) with a custom YOLO model trained on 300+ images.
+* **Resolution Independent**: Works across different screen resolutions (tested on PC 1920x1080 + 1377x720 and Android via scrcpy) with a custom YOLO model trained on 300+ images. But **bigger the screen size, better the recognition and OCR** so, use big screen / make the window bigger in height if you can, don't maximize if you are in Scrcpy, because black bands can make the performance worse. 
 * **Claw Machine Event**: Supports triggering the claw mini-game (improvements planned).
 * **Hint Hunting**: Prioritizes hints when enabled in settings.
 * **Web UI**:
@@ -113,6 +113,21 @@ python main.py
 
 ---
 
+#### Updating the project
+I usually push new updates, bug fixes, etx. To update just run these commands:
+```bash
+git reset --hard
+git pull
+```
+
+Reset hard is just in case you modified some files.
+
+Good news you (maybe) can use this button in WEB UI to pull from github (I have not tested it too much, only works in main branch):
+
+![Pull button](assets/doc/git_pull.png)
+
+---
+
 #### (experimental) Installation with pre-created script
 
 Clone the repo and just open/run the file: **run_uma.bat**. No Conda stuff, everything should be automatically installed in 'venv'. Very straightforward but it can fail. So better follow the previous instructions.
@@ -151,6 +166,8 @@ I created a version for Bluestacks, you only need to set 'bluestacks' option and
 ## WEB UI
 You can change the configuration at http://127.0.0.1:8000/
 ![UI](assets/doc/UI.png)
+
+**Important**: Don't forget to press 'Save Config' button
 
 You can set:
 - **General configurations** (window title, modes, fast mode, advanced settings)
@@ -208,7 +225,7 @@ The bot uses multiple AI components to make decisions:
 
 * **YOLO Object Detection**
   Recognizes 40+ in-game objects (buttons, support cards, stats, badges, etc.).
-  Trained on 1000+ labeled screenshots.
+  Trained on +300 labeled screenshots.
 
   ![Yolo](assets/doc/yolo.png)
   ![Yolo example 2](assets/doc/yolo-a.png)
@@ -228,6 +245,12 @@ The bot uses multiple AI components to make decisions:
   All models trained with high-quality labels across multiple resolutions.
 
   ![Label Studio](assets/doc/label-studio.png)
+
+---
+
+## TODO
+
+Upcoming features or current work is summarized in [TODO](TODO.md)
 
 ---
 

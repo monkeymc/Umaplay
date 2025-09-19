@@ -19,7 +19,7 @@ from dataclasses import dataclass, asdict
 
 # ---- knobs you may want to tweak later (kept here for clarity) ----
 BASE_MAX_FAILURE = 20  # default risk cap (%) if not provided elsewhere
-GREEDY_THRESHOLD = 3.0  # "pick immediately" threshold (if you use it)
+GREEDY_THRESHOLD = 2.5  # "pick immediately" threshold (if you use it)
 HIGH_SV_THRESHOLD = 3.5  # when SV >= this, allow risk up to ×RISK_RELAX_FACTOR
 RISK_RELAX_FACTOR = 1.5  # e.g., 20% -> 30% when SV is high
 
@@ -172,11 +172,55 @@ def scan_training_screen(
         Enrich each with bar/type pieces, hint, rainbow, etc.
         """
         frame_bgr = cv2.cvtColor(np.array(cur_img), cv2.COLOR_RGB2BGR)
-        supports = [
+
+        # --- helpers: IoU + NMS ---
+        def _area(xyxy):
+            x1, y1, x2, y2 = [float(v) for v in xyxy]
+            return max(0.0, x2 - x1) * max(0.0, y2 - y1)
+
+        def _iou(a, b):
+            ax1, ay1, ax2, ay2 = [float(v) for v in a]
+            bx1, by1, bx2, by2 = [float(v) for v in b]
+            ix1, iy1 = max(ax1, bx1), max(ay1, by1)
+            ix2, iy2 = min(ax2, bx2), min(ay2, by2)
+            iw, ih = max(0.0, ix2 - ix1), max(0.0, iy2 - iy1)
+            inter = iw * ih
+            if inter <= 0.0:
+                return 0.0
+            ua = _area(a) + _area(b) - inter
+            return inter / ua if ua > 0 else 0.0
+
+        def _nms_by_iou(dets, iou_thr=0.50):
+            """
+            Class-agnostic NMS: keep highest-conf per overlap cluster.
+            Each det: {"xyxy":[...], "conf":float, "name":str, ...}
+            """
+            if not dets:
+                return dets
+            # sort by confidence DESC (missing conf -> 0.0)
+            ordered = sorted(dets, key=lambda d: float(d.get("conf", 0.0)), reverse=True)
+            kept = []
+            for d in ordered:
+                dx = d.get("xyxy")
+                if not dx:
+                    continue
+                drop = False
+                for k in kept:
+                    if _iou(dx, k.get("xyxy")) >= iou_thr:
+                        drop = True
+                        break
+                if not drop:
+                    kept.append(d)
+            return kept
+
+        # Raw supports filtered by confidence
+        supports_raw = [
             d
             for d in cur_parsed
             if d["name"] in SUPPORT_NAMES and d.get("conf", 0.0) >= conf_support
         ]
+        # De-duplicate overlaps (e.g., double rainbow hits)
+        supports = _nms_by_iou(supports_raw, iou_thr=0.50)
         parts_bar = [d for d in cur_parsed if d["name"] == "support_bar"]
         parts_type = [d for d in cur_parsed if d["name"] == "support_type"]
 
@@ -233,9 +277,7 @@ def scan_training_screen(
                 piece_type_bgr=type_crop,
             )
 
-            has_rainbow = s["name"].endswith("_rainbow") or (
-                s["name"] == "support_card_rainbow"
-            )
+            has_rainbow = s["name"].endswith("_rainbow") or (s["name"] == "support_card_rainbow")
             any_rainbow |= has_rainbow
 
             enriched.append(
@@ -307,21 +349,96 @@ def scan_training_screen(
     processed: set = set()
     results: List[Dict] = []
 
+    # -------- 1.5) FAST_MODE: low-energy fast path (raised + WIT only) --------
+    if Settings.FAST_MODE and isinstance(energy, (int, float)) and 0 <= int(energy) <= 35:
+        # Identify raised and WIT (last) indices
+        ridx_fast = _raised_training_ltr_index(cur_parsed)
+        last_idx = len(scan) - 1 if len(scan) > 0 else None
+        wanted = []
+        if ridx_fast is not None and 0 <= ridx_fast < len(scan):
+            wanted.append(("raised", ridx_fast))
+        if last_idx is not None and (ridx_fast is None or last_idx != ridx_fast):
+            wanted.append(("wit", last_idx))
+
+        for tag_kind, idx in wanted:
+            tile = scan[idx]
+            if tag_kind == "raised":
+                supps, any_rainbow = _collect_supports_enriched(cur_img, cur_parsed)
+                results.append(
+                    {
+                        **tile,
+                        "supports": supps,
+                        "has_any_rainbow": any_rainbow,
+                        "failure_pct": _failure_pct(cur_img, cur_parsed, tile["tile_xyxy"]),
+                        "skipped_click": True,
+                    }
+                )
+            else:
+                # Click WIT (last) tile
+                ctrl.click_xyxy_center(
+                    tile["tile_xyxy"],
+                    clicks=1,
+                    jitter=calculate_jitter(tile["tile_xyxy"], percentage_offset=0.20),
+                )
+                time.sleep(_jitter_delay())
+                cur_img, _, cur_parsed = yolo_engine.recognize(
+                    imgsz=param_imgsz, conf=param_conf, iou=param_iou, tag="training"
+                )
+                # Refresh LTR geometry
+                btns_now = [d for d in cur_parsed if d["name"] == "training_button"]
+                btns_now.sort(key=lambda d: _center_x(d["xyxy"]))
+                if len(btns_now) == len(scan):
+                    for j, b in enumerate(btns_now):
+                        scan[j]["tile_xyxy"] = b["xyxy"]
+                        scan[j]["tile_center_x"] = float(_center_x(b["xyxy"]))
+                # Determine effective raised after click
+                ridx_now = _raised_training_ltr_index(cur_parsed)
+                eff_idx = ridx_now if (ridx_now is not None and 0 <= ridx_now < len(scan)) else idx
+                eff_tile = scan[eff_idx]
+                supps, any_rainbow = _collect_supports_enriched(cur_img, cur_parsed)
+                results.append(
+                    {
+                        **eff_tile,
+                        "supports": supps,
+                        "has_any_rainbow": any_rainbow,
+                        "failure_pct": _failure_pct(cur_img, cur_parsed, eff_tile["tile_xyxy"]),
+                        "skipped_click": False,
+                    }
+                )
+
+        results.sort(key=lambda r: r["tile_idx"])
+        logger_uma.info(f"FAST MODE: Only analizing WIT, everything else may have high risk")
+        return results, cur_img, cur_parsed
+
     # -------- 2) Already-raised tile (no click) --------
     ridx = _raised_training_ltr_index(cur_parsed)
     if ridx is not None and 0 <= ridx < len(scan):
         tile = scan[ridx]
         supps, any_rainbow = _collect_supports_enriched(cur_img, cur_parsed)
-        results.append(
-            {
-                **tile,
-                "supports": supps,
-                "has_any_rainbow": any_rainbow,
-                "failure_pct": _failure_pct(cur_img, cur_parsed, tile["tile_xyxy"]),
-                "skipped_click": True,
-            }
-        )
+        tile_record = {
+            **tile,
+            "supports": supps,
+            "has_any_rainbow": any_rainbow,
+            "failure_pct": _failure_pct(cur_img, cur_parsed, tile["tile_xyxy"]),
+            "skipped_click": False,
+        }
+        results.append(tile_record)
         processed.add(ridx)
+
+        # -------- FAST_MODE: Greedy short-circuit --------
+        if Settings.FAST_MODE:
+            try:
+                # Compute SV for just this tile and check greedy
+                sv_rows_one = compute_support_values([tile_record])
+                if sv_rows_one and sv_rows_one[0].get("greedy_hit", False):
+                    
+                    notes = sv_rows_one[-1].get("notes", "")
+                    logger_uma.info(f"FAST MODE: Found a greedy training option, not analizing nothing more. notes={notes}")
+                    # Return results so far, don't waste time checking other options; caller will act immediately
+                    return results, cur_img, cur_parsed
+            except Exception as e:
+                # Never break scanning on SV errors; just continue
+                logger_uma.error(f"Error while checking FAST_MODE greedy SV: {e}")
 
     # -------- 3) Visit remaining tiles exactly once --------
     for idx in range(len(scan)):
@@ -363,16 +480,29 @@ def scan_training_screen(
 
         supps, any_rainbow = _collect_supports_enriched(cur_img, cur_parsed)
 
-        results.append(
-            {
-                **eff_tile,
-                "supports": supps,
-                "has_any_rainbow": any_rainbow,
-                "failure_pct": _failure_pct(cur_img, cur_parsed, eff_tile["tile_xyxy"]),
-                "skipped_click": False,
-            }
-        )
+        tile_record = {
+            **eff_tile,
+            "supports": supps,
+            "has_any_rainbow": any_rainbow,
+            "failure_pct": _failure_pct(cur_img, cur_parsed, eff_tile["tile_xyxy"]),
+            "skipped_click": False,
+        }
+        results.append(tile_record)
         processed.add(eff_idx)
+
+        # -------- FAST_MODE: Greedy short-circuit --------
+        if Settings.FAST_MODE:
+            try:
+                # Compute SV for just this tile and check greedy
+                sv_rows_one = compute_support_values([tile_record])
+                if sv_rows_one and sv_rows_one[0].get("greedy_hit", False):
+                    notes = sv_rows_one[-1].get("notes", "")
+                    logger_uma.info(f"FAST MODE: Found a greedy training option, not analizing nothing more. notes={notes}")
+                    # Return results so far, don't waste time checking other options; caller will act immediately
+                    return results, cur_img, cur_parsed
+            except Exception as e:
+                # Never break scanning on SV errors; just continue
+                logger_uma.error(f"Error while checking FAST_MODE greedy SV: {e}")
 
     results.sort(key=lambda r: r["tile_idx"])
     return results, cur_img, cur_parsed
@@ -479,27 +609,27 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
                 # Rainbow hint does not add extra beyond standard tile-capped hint rules;
                 # we still let hint rules below consider color buckets if needed.
                 # (If you want rainbow to bypass color gates, keep as-is)
+
+            # Blue/green baseline
+            if color in BLUE_GREEN:
+                sv_total += 1.0
+                sv_by_type["cards"] = sv_by_type.get("cards", 0.0) + 1.0
+                notes.append(f"{color}: +1.00")
+                if has_hint:
+                    any_bluegreen_hint = True
+            # Orange/Max baseline is 0; only hint may help (tile-capped)
+            elif color in ORANGE_MAX or is_max:
+                if has_hint:
+                    any_orange_max_hint = True
+                notes.append(f"{color}: +0.00")
             else:
-                # Blue/green baseline
-                if color in BLUE_GREEN:
-                    sv_total += 1.0
-                    sv_by_type["cards"] = sv_by_type.get("cards", 0.0) + 1.0
-                    notes.append(f"{color}: +1.00")
-                    if has_hint:
-                        any_bluegreen_hint = True
-                # Orange/Max baseline is 0; only hint may help (tile-capped)
-                elif color in ORANGE_MAX or is_max:
-                    if has_hint:
-                        any_orange_max_hint = True
-                    notes.append(f"{color}: +0.00")
-                else:
-                    notes.append(f"{color}: +0.00 (unknown color category)")
+                notes.append(f"{color}: +0.00 (unknown color category)")
 
         # ---- 2) tile-capped hint bonuses ----
         if any_bluegreen_hint:
             hint_value = 0.75
             if Settings.HINT_IS_IMPORTANT:
-                hint_value *= 2
+                hint_value *= 3
             sv_total += hint_value
             sv_by_type["hint_bluegreen"] = (
                 sv_by_type.get("hint_bluegreen", 0.0) + hint_value
@@ -509,9 +639,10 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
             )
 
         if any_orange_max_hint:
-            hint_value = 0.75
+            hint_value = 0.5  # Not as valuable as blue green hints
             if Settings.HINT_IS_IMPORTANT:
-                hint_value *= 2
+                hint_value = 0.75
+                hint_value *= 3
             sv_total += hint_value
             sv_by_type["hint_orange_max"] = (
                 sv_by_type.get("hint_orange_max", 0.0) + hint_value
@@ -531,16 +662,25 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
             )
             notes.append(f"Rainbow combo +{combo_bonus}")
 
-        # ---- 4) risk gating with “good SV” relax ----
+        # ---- risk gating with dynamic relax based on SV ----
         base_limit = BASE_MAX_FAILURE
-        risk_limit = int(
-            min(
-                100,
-                base_limit
-                * (RISK_RELAX_FACTOR if sv_total >= HIGH_SV_THRESHOLD else 1.0),
-            )
-        )
+        # Piecewise multiplier:
+        #   SV ≥ 4.0 → x2.0
+        #   SV > 3.0 → x1.5
+        #   SV ≥ 2.5 → x1.25
+        #   else     → x1.0
+        if sv_total >= 4.0:
+            risk_mult = 2.0
+        elif sv_total > 3.0:
+            risk_mult = 1.5
+        elif sv_total >= 2.5:
+            risk_mult = 1.25
+        else:
+            risk_mult = 1.0
+
+        risk_limit = int(min(100, base_limit * risk_mult))
         allowed = failure_pct <= risk_limit
+        notes.append(f"Dynamic risk: SV={sv_total:.2f} → base {base_limit}% × {risk_mult:.2f} = {risk_limit}%")
 
         # ---- 5) greedy mark (optional early exit logic can use this) ----
         greedy_hit = (sv_total >= GREEDY_THRESHOLD) and allowed

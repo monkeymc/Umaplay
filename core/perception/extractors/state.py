@@ -24,6 +24,7 @@ from core.utils.logger import logger_uma
 from core.perception.is_button_active import ActiveButtonClassifier
 from PIL import ImageStat
 
+from core.utils.preprocessors import tighten_to_pill, career_date_crop_box, preprocess_digits, read_date_pill_robust
 from core.utils.text import fuzzy_contains
 
 
@@ -97,32 +98,64 @@ def extract_turns(
     parsed_objects_screen: List[DetectionDict],
     *,
     conf_min: float = 0.20,
-) -> Tuple[int, str]:
+) -> int:
     """
-    Returns (turns_left, career_date_raw). If missing, (-1, "").
+    Returns turns_left (1..30) or -1 if not recognized.
+    Uses light preprocessing only when the full frame is small (H < 900).
     """
     d = find_best(parsed_objects_screen, CLASS_UI_TURNS, conf_min=conf_min)
     if not d:
         return -1
-    # Turns (prefer a 1–2 digit number)
-    x1 = d["xyxy"][0]
-    y1 = d["xyxy"][1]
-    x2 = d["xyxy"][2]
-    y2 = d["xyxy"][3]
 
+    # --- keep your current gap logic ---
+    x1, y1, x2, y2 = d["xyxy"]
     element_height = abs(y2 - y1)
-    gap = element_height * 0.2
-    y1 += gap
-    y2 -= gap
+    gap = element_height * 0.20
+    y1 = y1 + gap
+    y2 = y2 - gap
 
     turns_img = crop_pil(game_img, (x1, y1, x2, y2), pad=0)
 
-    # Using ML to predict digit
+    # First, try raw (fast path)
     turns_left = ocr.digits(turns_img)
-    # use digits cropper + resnet if it is faster than ocr.
-
-    if turns_left > 0 and turns_left <= 30:
+    if 1 <= turns_left <= 30:
         return turns_left
+
+    # Frame-aware preprocessing (only when the overall image is small)
+    use_pp = game_img.height < 900
+    if not use_pp:
+        if turns_left == -1:
+            logger_uma.warning("Unrecognized turns")
+        return turns_left
+
+    # Light PP for single, chunky glyphs (avoid heavy top cropping!)
+    # - small top drop
+    # - no right trim
+    # - focus largest CC to auto-tighten around the digit
+    try:
+        final_pil, _steps = preprocess_digits(
+            turns_img,
+            scale=4,
+            drop_top_frac=0.12,   # was ~0.35; too aggressive -> '2' looked like a 'Z'
+            trim_right_frac=0.00,
+            dilate_iters=0,       # keep strokes thin for single digits
+            focus_largest_cc=True,
+        )
+        # OCR with a loose text fallback that maps I/l/| -> 1 (helps ultra-thin '1')
+        turns_pp = ocr.digits(final_pil)
+        if not (1 <= turns_pp <= 30):
+            loose_txt = ocr.text(final_pil, min_conf=0.0) or ""
+            m = re.search(r"[0-9Il|]{1,2}", loose_txt)
+            if m:
+                tok = m.group(0).replace("I", "1").replace("l", "1").replace("|", "1")
+                try:
+                    turns_pp = int(tok)
+                except ValueError:
+                    pass
+        if 1 <= turns_pp <= 30:
+            return turns_pp
+    except Exception as e:
+        logger_uma.debug("Turns PP failed: %s", e)
 
     if turns_left == -1:
         logger_uma.warning("Unrecognized turns")
@@ -132,35 +165,37 @@ def extract_turns(
 # ------------------------------
 # Turns
 # ------------------------------
+
+# ------------------------------
+# Career date (raw OCR)
+# ------------------------------
 def extract_career_date(
     ocr: OCRInterface,
     game_img: Image.Image,
     parsed_objects_screen: List[DetectionDict],
     *,
     conf_min: float = 0.20,
-) -> Tuple[int, str]:
+) -> str:
     """
-    Returns (turns_left, career_date_raw). If missing, (-1, "").
+    Return the raw text inside the career-date pill; empty string if not found.
     """
     d = find_best(parsed_objects_screen, CLASS_UI_TURNS, conf_min=conf_min)
     if not d:
-        return -1, ""
+        return ""
+    # Use shared helper so we can also draw the crop in notebooks.
+    # 1) Robust box for the banner region above Turns
+    rx1, ry1, rx2, ry2 = career_date_crop_box(game_img, d["xyxy"])
+    banner = game_img.crop((rx1, ry1, rx2, ry2))
 
-    # Career date: box immediately above the turns widget
-    W, H = game_img.size
-    x1, y1, x2, _ = xyxy_int(d["xyxy"])
-    tw = x2 - x1
-    width = int(round(2.5 * tw))
-    half_gap = min(y1 // 2, y1)
-    rx1 = x1
-    ry2 = max(0, y1 - 2)
-    ry1 = half_gap
-    rx2 = min(W, rx1 + width)
-    career_crop = game_img.crop((rx1, ry1, rx2, ry2))
-    career_date_raw = (ocr.text(career_crop) or "").strip()
+    #    Heuristic: in HSV, the pill is a bright, low-saturation blob near the lower half.
+    pill_box = tighten_to_pill(banner)
+    cx1, cy1, cx2, cy2 = pill_box
+    cx1, cy1, cx2, cy2 = (rx1 + cx1, ry1 + cy1, rx1 + cx2, ry1 + cy2)  # map to full image coords (for debugging)
+    pill = banner.crop((pill_box))
 
-    return career_date_raw
-
+    # 3) OCR the pill with low-res friendly pre-processing and choose best candidate
+    career_date_raw = read_date_pill_robust(ocr, pill)
+    return (career_date_raw or "").strip()
 
 # ------------------------------
 # Stats (SPD/STA/PWR/GUTS/WIT)
@@ -168,13 +203,25 @@ def extract_career_date(
 def _parse_stat_segment(ocr: OCRInterface, seg_img: Image.Image) -> int:
     """
     Segment typically looks like `C 416 / 1200`.
-    Robust parsing rules:
-      - Strip '/1200' (with or without slash/spaces).
-      - Allow one trailing *letter* (common OCR for the last digit: e→6, O→0, etc.).
-      - Map common letter/digit confusions.
-      - If a trailing letter remains unmapped, replace it with '0' (warn).
-      - Clamp to [90, 1200]; if <90 and there was no trailing letter, clamp to 90.
+    Strategy:
+      1) Try a digits-only fast path using low confidence threshold (min_conf=0.0).
+      2) If that fails, fall back to your robust regex salvage (kept intact).
     """
+    import re
+
+    # ---- 1) fast path: keep low-confidence chars, then strip to digits ----
+    try:
+        raw_loose = ocr.text(seg_img, min_conf=0.0) or ""
+        digits_only = re.sub(r"[^\d]", "", raw_loose).strip()
+        if 1 <= len(digits_only) <= 4:
+            val_fast = int(digits_only)
+            if 90 <= val_fast <= 1200:
+                return val_fast
+            # if it's clearly out of range (e.g., 2034), fall through to salvage
+    except Exception:
+        pass
+
+    # ---- 2) original robust salvage path (unchanged) ----
     raw = ocr.text(seg_img) or ""
     # Normalize and remove the capacity part (tolerant to whitespace)
     t = re.sub(r"[\s,.:;]+", "", raw)
@@ -196,23 +243,13 @@ def _parse_stat_segment(ocr: OCRInterface, seg_img: Image.Image) -> int:
 
     # Common OCR confusions -> digits
     MAP = {
-        "O": "0",
-        "o": "0",
-        "D": "0",
-        "Q": "0",
-        "I": "1",
-        "l": "1",
-        "|": "1",
-        "!": "1",
+        "O": "0","o": "0","D": "0","Q": "0",
+        "I": "1","l": "1","|": "1","!": "1",
         "Z": "2",
-        "S": "5",
-        "s": "5",
-        "E": "6",
-        "e": "6",
-        "G": "6",
+        "S": "5","s": "5",
+        "E": "6","e": "6","G": "6",
         "B": "8",
-        "g": "9",
-        "q": "9",
+        "g": "9","q": "9",
         "A": "4",
     }
 
@@ -225,11 +262,9 @@ def _parse_stat_segment(ocr: OCRInterface, seg_img: Image.Image) -> int:
             if mapped is not None:
                 out.append(mapped)
             else:
-                # keep a placeholder for trailing unknown; drop others
                 if i == len(token) - 1:  # trailing unknown letter
                     out.append("")  # will fill with '0' below
 
-    # If we had a trailing letter and it didn't map, force '0'
     if trailing_letter and (not out or not out[-1].isdigit()):
         out[-1:] = ["0"]
         logger_uma.warning(
@@ -243,7 +278,6 @@ def _parse_stat_segment(ocr: OCRInterface, seg_img: Image.Image) -> int:
     try:
         val = int(digits)
     except Exception:
-        # Very last fallback: first plain digit group from the original text
         nums = re.findall(r"\d+", raw)
         val = int(nums[0]) if nums else -1
         if val == -1:
@@ -254,13 +288,11 @@ def _parse_stat_segment(ocr: OCRInterface, seg_img: Image.Image) -> int:
         val = 1200
     if val < 90:
         if not trailing_letter:
-            # No letter to “fix”; clamp to the known minimum
             logger_uma.debug(
-                "Stat %s < 90 without trailing letter; clamping to 90 (raw='%s')",
-                val,
-                raw,
+                "Stat %s < 90 without trailing letter; treating as unrecognized (raw='%s')",
+                val, raw,
             )
-        val = -1  # not recognized
+        val = -1
 
     return val
 
@@ -279,6 +311,11 @@ def extract_stats(
         {"SPD":103, "STA":95, "PWR":88, "GUTS":76, "WIT":82}
       if with_segments=True:
         {"SPD":{"value":103,"seg":<PIL>}, ...}
+
+    Smart bits:
+      • If the *full* input image is small (height < 900), preprocess each
+        stat segment before OCR to improve low-res robustness.
+      • Keeps your y/x offsets exactly as requested.
     """
     d = find_best(parsed_objects_screen, CLASS_UI_STATS, conf_min=conf_min)
     if not d:
@@ -286,26 +323,69 @@ def extract_stats(
 
     stats_img = crop_pil(game_img, d["xyxy"], pad=(0, 0))
     W, H = stats_img.size
+
+    # segmentation geometry (kept as you set)
     k = 5
     segW = max(1, W // k)
     keys = ["SPD", "STA", "PWR", "GUTS", "WIT"]
+    y_top_offset = 0.27
+    y_bottom_offset = 0.74
+    x_left_offset = 0.45
+    x_right_offset = 0.10
+
+    # Decide whether to run the preprocessor based on *full* image height
+    full_h = game_img.size[1]
+    use_pp = full_h < 900
+
+    def _crop_seg(i: int, last: bool) -> Image.Image:
+        x1 = int((i * segW) + segW * x_left_offset)
+        x2 = W if last else int((i + 1) * segW)
+        x2 = int(x2 + segW * x_right_offset)  # keep your extra right margin
+        return stats_img.crop((x1, int(H * y_top_offset), x2, int(H * y_bottom_offset)))
 
     if with_segments:
         out: Dict[str, Dict[str, object]] = {}
         for i, key in enumerate(keys):
-            x1 = int((i * segW) + segW * 0.4)
-            x2 = W if i == k - 1 else int((i + 1) * segW)
-            x2 += segW * 0.25
-            seg = stats_img.crop((x1, int(H * 0.26), x2, int(H * 0.74)))
-            out[key] = {"value": _parse_stat_segment(ocr, seg), "seg": seg}
+            seg = _crop_seg(i, last=(i == k - 1))
+
+            # Preprocess only for small full-frame captures
+            seg_for_ocr = seg
+            if use_pp:
+                try:
+                    seg_for_ocr, _ = preprocess_digits(
+                        seg,
+                        scale=3,
+                        drop_top_frac=0.35,
+                        trim_right_frac=0.15,
+                        dilate_iters=1,
+                        focus_largest_cc=False,
+                    )
+                except Exception as e:
+                    logger_uma.debug(f"[stats] preprocess_digits failed ({e}); using raw segment")
+
+            out[key] = {"value": _parse_stat_segment(ocr, seg_for_ocr), "seg": seg}
         return out
 
     out2: Dict[str, int] = {}
     for i, key in enumerate(keys):
-        x1 = int((i * segW) + segW * 0.4)
-        x2 = W if i == k - 1 else int((i + 1) * segW)
-        seg = stats_img.crop((x1, int(H * 0.26), x2, int(H * 0.74)))
-        out2[key] = _parse_stat_segment(ocr, seg)
+        seg = _crop_seg(i, last=(i == k - 1))
+
+        seg_for_ocr = seg
+        if use_pp:
+            try:
+                seg_for_ocr, _ = preprocess_digits(
+                    seg,
+                    scale=3,
+                    drop_top_frac=0.35,
+                    trim_right_frac=0.15,
+                    dilate_iters=1,
+                    focus_largest_cc=False,
+                )
+            except Exception as e:
+                logger_uma.debug(f"[stats] preprocess_digits failed ({e}); using raw segment")
+
+        out2[key] = _parse_stat_segment(ocr, seg_for_ocr)
+
     return out2
 
 
@@ -358,14 +438,51 @@ def extract_skill_points(
 ) -> int:
     """
     Returns the skill points integer (0..9999), or -1 if not found.
+    Uses digits-focused preprocessing only when the full frame is small (H < 900).
     """
     d = find_best(parsed_objects_screen, CLASS_UI_SKILLS_PTS, conf_min=conf_min)
     if not d:
         return -1
-    crop = crop_pil(game_img, d["xyxy"], pad=0)
-    digits = ocr.digits(crop)
-    return digits
 
+    crop = crop_pil(game_img, d["xyxy"], pad=0)
+
+    # Fast path
+    v = ocr.digits(crop)
+    if 0 <= v <= 9999:
+        return v
+
+    # Loose fallback before PP (handles thin digits without PP cost on big frames)
+    if v == -1:
+        loose_txt = ocr.text(crop, min_conf=0.0) or ""
+        m = re.search(r"\d{1,4}", loose_txt)
+        if m:
+            try:
+                return int(m.group(0))
+            except ValueError:
+                pass
+
+    # Frame-aware PP (small screens)
+    if game_img.height >= 900:
+        return v
+
+    try:
+        # Similar to what worked in your tests: remove cyan header, slight right trim,
+        # then let Paddle read only the digits.
+        final_pil, _steps = preprocess_digits(
+            crop,
+            scale=3,
+            drop_top_frac=0.30,
+            trim_right_frac=0.15,
+            dilate_iters=1,
+            focus_largest_cc=True,   # helps isolate the digits block
+        )
+        v2 = ocr.digits(final_pil)
+        if 0 <= v2 <= 9999:
+            return v2
+        return v2
+    except Exception as e:
+        logger_uma.debug("SkillPts PP failed: %s", e)
+        return v
 
 # ------------------------------
 # Goal text

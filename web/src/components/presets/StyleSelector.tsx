@@ -11,7 +11,7 @@ export default function StyleSelector({ presetId }: { presetId: string }) {
   return (
     <Paper variant="outlined" sx={{ p: 1.5 }}>
       <Stack spacing={1}>
-        <Typography variant="subtitle2">Select style in Junior</Typography>
+        <Typography variant="subtitle2">Style to select in Debut (only triggered here, once, choose wisely)</Typography>
         <Select
           size="small"
           value={preset.juniorStyle ?? ''}

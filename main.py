@@ -19,6 +19,8 @@ from core.perception.ocr.interface import OCRInterface
 from core.perception.yolo.interface import IDetector
 from core.controllers.steam import SteamController
 from core.controllers.android import ScrcpyController
+from core.utils.abort import request_abort, clear_abort
+
 try:
     # Optional; if your Bluestacks controller is a separate class
     from core.controllers.bluestacks import BlueStacksController
@@ -163,6 +165,7 @@ class BotState:
             self.thread = threading.Thread(target=_runner, daemon=True)
             self.running = True
             logger_uma.debug("[BOT] Launching agent thread…")
+            clear_abort()  # ensure previous abort state is cleared
             self.thread.start()
 
     def stop(self):
@@ -171,7 +174,12 @@ class BotState:
                 logger_uma.info("[BOT] Not running.")
                 return
             logger_uma.info("[BOT] Stopping… (signal loop to exit)")
+            request_abort()
             self.player.is_running = False
+            try:
+                self.player.emergency_stop()
+            except Exception:
+                pass
 
     def toggle(self, source: str = "hotkey"):
         logger_uma.debug(f"[BOT] toggle() called from {source}. running={self.running}")

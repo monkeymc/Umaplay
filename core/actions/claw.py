@@ -14,6 +14,7 @@ from core.perception.yolo.interface import IDetector
 from core.settings import Settings
 from core.utils.logger import logger_uma
 from core.utils.yolo_objects import collect, find as det_find
+from core.utils.abort import abort_requested
 
 # Optional fallback for mouse hold if the controller lacks mouse_down/up
 try:
@@ -403,6 +404,9 @@ class ClawGame:
         poll_idx = 0
         try:
             while True:
+                if abort_requested():
+                    logger_uma.info("[claw] Abort requested; releasing immediately.")
+                    break
                 # Hard stop
                 now = time.time()
                 if (now - t0) >= self.cfg.max_hold_s:
