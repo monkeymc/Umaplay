@@ -1,6 +1,7 @@
 # Features / TODO
 ## Priority
-- Annotate new low confidence images in Label-Studio and retrain a robust model.
+- Annotate new low confidence images in Label-Studio and retrain a robust model. Increase thresholds
+- hint, is not always detected make it more robuts
 - Set custom hint is important value if set to true, by default is x2 instead of true or similar, this should be configurable
 - Event chooser option (and by default select the first one)
 - Handle 'a connection error ocurred'. Buttons are white and green: title screen, retry
@@ -9,7 +10,8 @@
 	- For infirmary, check if there is not a crazy training option, if not, return to infirmary
 
 ## Later
-- Skill buying speed in mobile
+-  mobile still avoid selecting view result quickly and missclassifies view button as inactive
+- TODO: improve when stat is higher, hold but not apply, follow an armonic linear flow than 2k if val > 2000: 
 - FASTER MODE:
 	- multiple clicks in safe zone to skip normal trainee events
 - goldship training restriction coverage
