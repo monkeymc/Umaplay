@@ -75,7 +75,6 @@ class Settings:
     FAST_MODE = True
     USE_FAST_OCR = True
     USE_GPU = True
-    TRY_AGAIN_ON_FAILED_GOAL = True
     HINT_IS_IMPORTANT = False
     MAX_FAILURE = 20  # integer, no pct
 
@@ -97,6 +96,7 @@ class Settings:
 
     MINIMUM_SKILL_PTS = 600
     ACCEPT_CONSECUTIVE_RACE = True
+    TRY_AGAIN_ON_FAILED_GOAL = True
     AUTO_REST_MINIMUM = 26
 
     PRIORITY_STATS = ["SPD", "STA", "WIT", "PWR", "GUTS"]

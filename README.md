@@ -52,7 +52,7 @@ Here’s a reduced and clearer version of your features list, with the **Web UI*
 * **Race Selection**: Picks optimal races with adaptive logic.
 * **Goal Handling**: Supports event-specific goals (e.g., Oguri Cap G1).
 * **Flexible Styles**: Choose starting racing style (front, pace, late, end).
-* **Resolution Independent**: Works across different screen resolutions (tested on PC 1920x1080 + 1377x720 and Android via scrcpy) with a custom YOLO model trained on 300+ images.
+* **Resolution Independent**: Works across different screen resolutions (tested on PC 1920x1080 + 1377x720 and Android via scrcpy) with a custom YOLO model trained on 300+ images. But **bigger the screen size, better the recognition and OCR** so, use big screen / make the window bigger in height if you can, don't maximize if you are in Scrcpy, because black bands can make the performance worse. 
 * **Claw Machine Event**: Supports triggering the claw mini-game (improvements planned).
 * **Hint Hunting**: Prioritizes hints when enabled in settings.
 * **Web UI**:
@@ -81,7 +81,7 @@ Make sure you meet these conditions:
 
 Requirements:
 * [Python 3.10+](https://www.python.org/downloads/)
-* (Optional but recommended) [Conda](https://docs.conda.io/en/latest/)
+* (Optional but recommended) [Anaconda](https://www.anaconda.com/download/success)
 
 ```bash
 git clone https://github.com/Magody/Umaplay.git
@@ -110,6 +110,21 @@ python main.py
 ```
 
 * Press **F2** to **start/stop** the bot.
+
+---
+
+#### Updating the project
+I usually push new updates, bug fixes, etx. To update just run these commands:
+```bash
+git reset --hard
+git pull
+```
+
+Reset hard is just in case you modified some files.
+
+Good news you (maybe) can use this button in WEB UI to pull from github (I have not tested it too much, only works in main branch):
+
+![Pull button](assets/doc/git_pull.png)
 
 ---
 
@@ -152,6 +167,8 @@ I created a version for Bluestacks, you only need to set 'bluestacks' option and
 You can change the configuration at http://127.0.0.1:8000/
 ![UI](assets/doc/UI.png)
 
+**Important**: Don't forget to press 'Save Config' button
+
 You can set:
 - **General configurations** (window title, modes, fast mode, advanced settings)
 - **Presets** (target stats, priority stats, moods, skills, race scheduler)
@@ -166,7 +183,7 @@ You can set:
 I tested it in Laptop without GPU and only 8GB RAM and worked, but a little bit slower. Hardware shouldn't be a problem though; of course it works better if you have a GPU. Nevertheless I found some problems when:
 - Choosing a character very different from my training dataset (It will be solved later retraining YOLO model with more data)
 - Using a slow internet connection: specially in RACES; if internet is very slow the sleep counter will break all the syncronization
-- Sometimes is unable to select a race even if there is only one race (goal). It happens because race may not have enough starts (Haru Urara Arima Kinen for example, or one where you have 'B' aptitude)
+- Sometimes is unable to select a race even if there is only one race (goal). It happens because race may not have enough stars (Haru Urara Arima Kinen for example, or one where you have 'B' aptitude)
 - Gold Ship restricted training may not work yet.
 
 ## Running as 'client' only
@@ -208,7 +225,7 @@ The bot uses multiple AI components to make decisions:
 
 * **YOLO Object Detection**
   Recognizes 40+ in-game objects (buttons, support cards, stats, badges, etc.).
-  Trained on 1000+ labeled screenshots.
+  Trained on +300 labeled screenshots.
 
   ![Yolo](assets/doc/yolo.png)
   ![Yolo example 2](assets/doc/yolo-a.png)
@@ -228,6 +245,12 @@ The bot uses multiple AI components to make decisions:
   All models trained with high-quality labels across multiple resolutions.
 
   ![Label Studio](assets/doc/label-studio.png)
+
+---
+
+## TODO
+
+Upcoming features or current work is summarized in [TODO](TODO.md)
 
 ---
 
