@@ -12,7 +12,7 @@ class DateInfo:
 
     raw: str
     year_code: (
-        int  # Y0..Y5 (0=Pre-debut, 1=Junior, 2=Classic, 3=Senior, 5=Final Season)
+        int  # Y0..Y4 (0=Pre-debut, 1=Junior, 2=Classic, 3=Senior, 4=Final Season)
     )
     month: Optional[int]  # 1..12 or None (Final Season etc.)
     half: Optional[int]  # 1=Early, 2=Late, else None

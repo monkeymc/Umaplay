@@ -13,6 +13,7 @@
 -  mobile still avoid selecting view result quickly and missclassifies view button as inactive
 - TODO: improve when stat is higher, hold but not apply, follow an armonic linear flow than 2k if val > 2000: 
 - Secure the min 600 in top 3 stats from 4 months before finale season but checking if there is SV >0, also in ura finale but doesn't matter if SV == 0
+- Decouple Hint stuff from general config to preset config
 - FASTER MODE:
 	- multiple clicks in safe zone to skip normal trainee events
 - goldship training restriction coverage

@@ -76,7 +76,7 @@ class LobbyFlow:
         prioritize_g1: bool = False,
         process_on_demand = True,
         interval_stats_refresh = 1,
-        max_critical_turn = 7,
+        max_critical_turn = 8,
         plan_races = {}
     ) -> None:
         self.ctrl = ctrl
@@ -153,6 +153,8 @@ class LobbyFlow:
             else:
                 logger_uma.debug("[lobby] Planned race suppressed by first-junior-day/skip flag.")
 
+        if self.process_on_demand:
+            self._process_turns_left(img, dets)
 
         if self.state.turn <= self.max_critical_turn:
             if not self._skip_race_once and self.state.energy > 2:
@@ -160,12 +162,6 @@ class LobbyFlow:
                 outcome_bool, reason = self._maybe_do_goal_race(img, dets)
                 if outcome_bool:
                     return "TO_RACE", reason
-
-        else:
-            if self.state.turn and self.state.turn > 0:
-                # [Optimization] predict turns
-                self.state.turn -= 1  # predicting the turn to save resources
-
         
         # After special-case goal racing, clear the one-shot skip guard.
         self._skip_race_once = False
@@ -513,18 +509,20 @@ class LobbyFlow:
                         accepted = cand
                         reason = "backfix (small)"
             else:
-                cmp = date_cmp(cand, prev)
-                if cmp < 0:
-                    # candidate is earlier -> reject
-                    logger_uma.debug(f"Rejecting earlier date: {cand.as_key()} < {prev.as_key()}")
-                    return
+                # cmp >= 0 → monotonic or equal; proceed
+                pass
             # (Optional) sanity guard against gigantic jumps in one frame
             idx_prev = date_index(prev)
             idx_new  = date_index(cand)
             if (idx_prev is not None and idx_new is not None) and (idx_new - idx_prev > 6):
-                
-                if str(prev.as_key()).strip() == 'Y3-Dec-2' and str(cand.year_code) == 'Y4':
-                    # ok change to final season
+                # Legitimate boundary: Senior Dec (Early/Late) → Final Season
+                if (
+                    prev.year_code == 3
+                    and prev.month == 12
+                    and (prev.half in (1, 2) or prev.half is None)
+                    and cand.year_code == 4
+                ):
+                    # Accept immediately (no persistence required).
                     pass
                 else:
                     # more than ~3 months (6 halves) in one hop → likely OCR glitch; require persistence
@@ -684,7 +682,6 @@ class LobbyFlow:
 
         if self.process_on_demand:
             self.state.goal = extract_goal_text(self.ocr, img, dets)
-            self._process_turns_left(img, dets)
 
         goal = (self.state.goal or "").lower()
 
