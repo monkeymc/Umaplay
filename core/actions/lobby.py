@@ -166,6 +166,7 @@ class LobbyFlow:
                 # [Optimization] predict turns
                 self.state.turn -= 1  # predicting the turn to save resources
 
+        
         # After special-case goal racing, clear the one-shot skip guard.
         self._skip_race_once = False
 
@@ -574,7 +575,8 @@ class LobbyFlow:
         #   Y2-Dec-2 -> Y3-Jan-1
         #   Y3-Dec-2 -> Y4 (Final Season)
         try:
-            if merged_key == prev_key and self.state.date_info and self.state.date_info.year_code not in (0, 4):
+            # IF merged_key and prev_key are the same, probably the prediction now is correct
+            if merged_key == "None" and self.state.date_info and self.state.date_info.year_code not in (0, 4):
                 di = self.state.date_info
                 if di.year_code in (1, 2, 3) and (di.month is not None) and (di.half in (1, 2)):
                     y, m, h = di.year_code, int(di.month), int(di.half)
@@ -605,6 +607,8 @@ class LobbyFlow:
                             new_y, new_m, new_h = y, m + 1, 1
 
                     advanced = DateInfo(raw=di.raw, year_code=new_y, month=new_m, half=new_h)
+
+
                     self.state.date_info = advanced
                     self.state.is_summer = is_summer(advanced)
                     self._date_stable_count = 0

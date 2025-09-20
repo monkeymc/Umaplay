@@ -284,7 +284,7 @@ def _parse_stat_segment(ocr: OCRInterface, seg_img: Image.Image) -> int:
             return -1
 
     # Clamp to valid range
-    if val > 2000:
+    if val > 1200:
         # TODO: improve when val is higher than 2k
         val = -1
     if val < 90:

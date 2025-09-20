@@ -415,10 +415,10 @@ class RaceFlow:
 
         if is_view_active and view_btn is not None:
             # Tap 'View Results' a couple times to clear residual screens
-            self.ctrl.click_xyxy_center(view_btn["xyxy"], clicks=random.randint(2, 3))
-            time.sleep(random.uniform(2, 2.8))
             self.ctrl.click_xyxy_center(view_btn["xyxy"], clicks=random.randint(3, 5))
-            time.sleep(random.uniform(0.2, 0.3))
+            time.sleep(random.uniform(2, 2.8))
+            self.ctrl.click_xyxy_center(view_btn["xyxy"], clicks=random.randint(4, 6))
+            time.sleep(random.uniform(0.3, 0.5))
         else:
             # Click green 'RACE' (prefer bottom-most; OCR disambiguation if needed)
             self.waiter.click_when(
@@ -517,7 +517,7 @@ class RaceFlow:
                 classes=("button_green",),
                 texts=("NEXT", ),
                 prefer_bottom=True,
-                timeout_s=1.2,
+                timeout_s=1.6,
                 clicks=random.randint(1, 2),
                 tag="race_after_flow_next",
             )
@@ -529,7 +529,7 @@ class RaceFlow:
                 classes=("race_after_next",),
                 texts=("NEXT", ),
                 prefer_bottom=True,
-                timeout_s=4.0,
+                timeout_s=6.0,
                 clicks=random.randint(2, 4),
                 tag="race_after",
             )
@@ -713,6 +713,8 @@ class RaceFlow:
             logger_uma.warning("[race] couldn't find green 'Race' button (list).")
             return False
 
+        # Time to popup to grow, so we don't missclassify a mini button in the animation
+        time.sleep(0.7)
         # Reactive confirm of the popup (if/when it appears). Bail out if pre-race lobby is already visible.
         t0 = time.time()
         while (time.time() - t0) < 4.0:
@@ -733,8 +735,7 @@ class RaceFlow:
             time.sleep(0.1)
 
         # 4) Wait until the pre-race lobby is actually on screen (key: 'button_change')
-        if isinstance(self.ctrl, ScrcpyController):
-            time.sleep(5)
+        time.sleep(5)
         t0 = time.time()
         max_wait = 14.0
         while (time.time() - t0) < max_wait:
@@ -749,6 +750,7 @@ class RaceFlow:
         if select_style and self.waiter.seen(classes=("button_change",), tag="race_pre_lobby_ready"):
             logger_uma.debug(f"Setting style: {select_style}")
             self.set_strategy(select_style)
+            time.sleep(2)  # wait for white buttons to dissapear
 
         # 6) Proceed with the result/lobby handling pipeline
         return self.lobby()

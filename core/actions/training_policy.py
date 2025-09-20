@@ -281,7 +281,7 @@ def decide_action_training(
     # If a top-3 priority stat is undertrained vs. reference distribution
     # by ≥ 7% and its best SV is within 1.5 of the best overall, pick it.
     # -------------------------------------------------
-    UNDERTRAIN_DELTA = 0.1  # ≥ 7% gap vs reference share
+    UNDERTRAIN_DELTA = 0.07  # ≥ 7% gap vs reference share
     MAX_SV_GAP = 1.5
 
     try:
@@ -320,6 +320,8 @@ def decide_action_training(
                 ]
 
                 if cand:
+                    
+                    logger_uma.debug(f"Undertrain candidates: {cand}")
                     # Most undertrained among top-3 priorities
                     cand.sort(key=lambda kv: kv[1], reverse=True)
                     under_stat, gap = cand[0]
@@ -375,6 +377,8 @@ def decide_action_training(
                             f"Undertrained {under_stat} by {gap:.1%} vs reference; "
                             f"but the TOP option is better {top_allowed_sv:.2f}, gap={gap} ) or is not worth it to train under_stat"
                         )
+                else:
+                    logger_uma.debug(f"No undertrain candidates, Threshold: {UNDERTRAIN_DELTA}. Keys: {known_keys}. Stats checked: {top3}")
     except Exception as _e:
         # Be permissive—never break the policy due to stats math
         because(f"Distribution check skipped due to stats error: {_e}")
@@ -384,6 +388,58 @@ def decide_action_training(
             f"Top SV ≥ {max_pick_sv_top} allowed by risk → pick tile {best_allowed_tile_25}"
         )
         return (TrainAction.TRAIN_MAX, best_allowed_tile_25, "; ".join(reasons))
+
+    # URA Finale branch
+    if is_final_season(di):
+        # No rest allowed for now
+        if hint_tiles:
+            hinted = max(hint_tiles, key=lambda t: sv_of(t))
+            because("URA Finale: take available hint to get more discounts")
+            return (TrainAction.TAKE_HINT, hinted, "; ".join(reasons))
+
+        # Re-target inheritance thresholds in final season:
+        # 1) For top-3 priority stats, pick the first whose current value < 600.
+        #    (Ignore caps here; thresholds outrank reference targets in URA.)
+        top3_prio = [s.upper() for s in (priority_stats or [])][:3]
+
+        def _best_tile_of_type(rows, stat: str, min_sv: float, tmap: Dict[int, str]):
+            pool = [
+                r for r in rows
+                if str(tmap.get(int(r["tile_idx"]), "")).upper() == stat.upper()
+                and float(r.get("sv_total", 0.0)) >= min_sv
+            ]
+            if not pool:
+                return None, 0.0
+            rbest = max(pool, key=lambda rr: float(rr.get("sv_total", 0.0)))
+            return int(rbest["tile_idx"]), float(rbest.get("sv_total", 0.0))
+
+        # (a) push any top-3 stat to 600 first
+        for stat_name in top3_prio:
+            curv = int(stats.get(stat_name, -1))
+            if curv >= 0 and curv < 600:
+                idx600, sv600 = _best_tile_of_type(allowed_rows, stat_name, -1.0, tile_to_type)
+                if idx600 is not None:
+                    because(f"URA Finale: raise {stat_name} towards 600 (cur={curv}) → tile {idx600}")
+                    return (TrainAction.TRAIN_MAX, idx600, "; ".join(reasons))
+
+        # (b) if all ≥ 600, pick the top-3 stat closest to 1200 but < 1170
+        near_candidates = []
+        for stat_name in top3_prio:
+            curv = int(stats.get(stat_name, -1))
+            if curv >= 0 and curv < 1170:
+                near_candidates.append((stat_name, curv))
+        if near_candidates:
+            # Choose the one with the largest current value (closest to 1200)
+            target_stat = max(near_candidates, key=lambda kv: kv[1])[0]
+            idx1170, sv1170 = _best_tile_of_type(allowed_rows, target_stat, -1.0, tile_to_type)
+            if idx1170 is not None:
+                because(f"URA Finale: push {target_stat} closer to 1200 (cur={int(stats.get(target_stat, -1))}) but <1170 → tile {idx1170}")
+                return (TrainAction.TRAIN_MAX, idx1170, "; ".join(reasons))
+
+        # (c) last resort in URA: WIT soft-skip if available (uses cap-aware best_wit_low above)
+        if best_wit_low is not None:
+            because("URA Finale: no threshold targets; soft-skip with WIT")
+            return (TrainAction.TRAIN_WIT, best_wit_low, "; ".join(reasons))
 
     because("Not a IMPRESIVE option to train (>= 2.5 in SV), checking for other oportunities")
     # 2) Mood check → recreation
@@ -480,58 +536,6 @@ def decide_action_training(
                     because(
                         f"Director present but tile stat {dir_stat} not in top-3 priorities {top3_priorities} → skip Director rule"
                     )
-
-    # URA Finale branch
-    if is_final_season(di):
-        # No rest allowed for now
-        if hint_tiles:
-            hinted = max(hint_tiles, key=lambda t: sv_of(t))
-            because("URA Finale: take available hint to get more discounts")
-            return (TrainAction.TAKE_HINT, hinted, "; ".join(reasons))
-
-        # Re-target inheritance thresholds in final season:
-        # 1) For top-3 priority stats, pick the first whose current value < 600.
-        #    (Ignore caps here; thresholds outrank reference targets in URA.)
-        top3_prio = [s.upper() for s in (priority_stats or [])][:3]
-
-        def _best_tile_of_type(rows, stat: str, min_sv: float, tmap: Dict[int, str]):
-            pool = [
-                r for r in rows
-                if str(tmap.get(int(r["tile_idx"]), "")).upper() == stat.upper()
-                and float(r.get("sv_total", 0.0)) >= min_sv
-            ]
-            if not pool:
-                return None, 0.0
-            rbest = max(pool, key=lambda rr: float(rr.get("sv_total", 0.0)))
-            return int(rbest["tile_idx"]), float(rbest.get("sv_total", 0.0))
-
-        # (a) push any top-3 stat to 600 first
-        for stat_name in top3_prio:
-            curv = int(stats.get(stat_name, -1))
-            if curv >= 0 and curv < 600:
-                idx600, sv600 = _best_tile_of_type(allowed_rows, stat_name, -1.0, tile_to_type)
-                if idx600 is not None:
-                    because(f"URA Finale: raise {stat_name} towards 600 (cur={curv}) → tile {idx600}")
-                    return (TrainAction.TRAIN_MAX, idx600, "; ".join(reasons))
-
-        # (b) if all ≥ 600, pick the top-3 stat closest to 1200 but < 1170
-        near_candidates = []
-        for stat_name in top3_prio:
-            curv = int(stats.get(stat_name, -1))
-            if curv >= 0 and curv < 1170:
-                near_candidates.append((stat_name, curv))
-        if near_candidates:
-            # Choose the one with the largest current value (closest to 1200)
-            target_stat = max(near_candidates, key=lambda kv: kv[1])[0]
-            idx1170, sv1170 = _best_tile_of_type(allowed_rows, target_stat, -1.0, tile_to_type)
-            if idx1170 is not None:
-                because(f"URA Finale: push {target_stat} closer to 1200 (cur={int(stats.get(target_stat, -1))}) but <1170 → tile {idx1170}")
-                return (TrainAction.TRAIN_MAX, idx1170, "; ".join(reasons))
-
-        # (c) last resort in URA: WIT soft-skip if available (uses cap-aware best_wit_low above)
-        if best_wit_low is not None:
-            because("URA Finale: no threshold targets; soft-skip with WIT")
-            return (TrainAction.TRAIN_WIT, best_wit_low, "; ".join(reasons))
 
     # 8) If energy <= 35% → REST
     if energy_pct <= energy_rest_gate_lo:
