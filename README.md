@@ -70,7 +70,7 @@ Make sure you meet these conditions:
 
 * Disable all in-game confirmation pop-ups in settings.
 * Start from the **career lobby screen** (the one with the Tazuna hint icon).
-
+* Set in Umamusume config **Center Stage** (Race recommendations)
 ---
 
 ## 🚀 Getting Started
