@@ -60,3 +60,4 @@ paddleocr
 paddlex
 pytest
 ruff
+matplotlib==3.10.6

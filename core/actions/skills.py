@@ -222,7 +222,7 @@ class SkillsFlow:
                 # Click: center + slight upward offset to counter inertia
                 bx1, by1, bx2, by2 = buy["xyxy"]
                 bh = max(1, by2 - by1)
-                dy = max(2, int(bh * 0.12))  # ~12% upward
+                dy = max(2, int(bh * 0.05))  # ~X% upward
                 shifted = (bx1, by1 - dy, bx2, by2 - dy)
                 self.ctrl.click_xyxy_center(shifted, clicks=1, jitter=0)
                 logger_uma.info("Clicked BUY for '%s' (score=%.2f)", best_name or "?", best_score)
