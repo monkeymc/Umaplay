@@ -22,7 +22,7 @@ You don’t need high FPS for automation or vision tasks.
 Run scrcpy with these options so you save resources:
 
 ```bash
-scrcpy -m 720 --max-fps 10 -b 2M --video-codec=h264 --no-audio
+scrcpy --max-fps 10 -b 2M --video-codec=h264 --no-audio
 ```
 
 ### Explanation of flags:
@@ -30,7 +30,6 @@ scrcpy -m 720 --max-fps 10 -b 2M --video-codec=h264 --no-audio
 * `--max-fps 5–15` → Limits FPS, fewer frames to decode and draw.
 * `--no-audio` → Disables audio capture/decoding thread.
 * `--video-codec h264` → H.264 is cheaper to decode than HEVC/AV1 in a VM.
-* `-m 720` → Scales the screen down to 720p to save resources.
 * `-b 2M` → Reduces bitrate (lower bandwidth and CPU use).
 
 ---

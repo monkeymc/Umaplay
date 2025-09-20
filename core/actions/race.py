@@ -415,9 +415,9 @@ class RaceFlow:
 
         if is_view_active and view_btn is not None:
             # Tap 'View Results' a couple times to clear residual screens
-            self.ctrl.click_xyxy_center(view_btn["xyxy"], clicks=random.randint(3, 5))
-            time.sleep(random.uniform(2, 2.8))
-            self.ctrl.click_xyxy_center(view_btn["xyxy"], clicks=random.randint(4, 6))
+            self.ctrl.click_xyxy_center(view_btn["xyxy"], clicks=random.randint(1, 2))
+            time.sleep(random.uniform(1.6, 2.4))
+            self.ctrl.click_xyxy_center(view_btn["xyxy"], clicks=random.randint(2, 3))
             time.sleep(random.uniform(0.3, 0.5))
         else:
             # Click green 'RACE' (prefer bottom-most; OCR disambiguation if needed)
@@ -518,7 +518,7 @@ class RaceFlow:
                 texts=("NEXT", ),
                 prefer_bottom=True,
                 timeout_s=1.6,
-                clicks=random.randint(1, 2),
+                clicks=1,
                 tag="race_after_flow_next",
             )
 
@@ -735,7 +735,7 @@ class RaceFlow:
             time.sleep(0.1)
 
         # 4) Wait until the pre-race lobby is actually on screen (key: 'button_change')
-        time.sleep(5)
+        time.sleep(7)
         t0 = time.time()
         max_wait = 14.0
         while (time.time() - t0) < max_wait:
@@ -750,7 +750,7 @@ class RaceFlow:
         if select_style and self.waiter.seen(classes=("button_change",), tag="race_pre_lobby_ready"):
             logger_uma.debug(f"Setting style: {select_style}")
             self.set_strategy(select_style)
-            time.sleep(2)  # wait for white buttons to dissapear
+            time.sleep(3)  # wait for white buttons to dissapear
 
         # 6) Proceed with the result/lobby handling pipeline
         return self.lobby()
