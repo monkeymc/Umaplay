@@ -62,7 +62,7 @@ class RaceFlow:
         clicked = self.waiter.click_when(
             classes=("lobby_races", "race_race_day"),
             prefer_bottom=True,
-            timeout_s=1.5,
+            timeout_s=2.5,
             tag="race_nav_from_lobby",
         )
         if clicked:

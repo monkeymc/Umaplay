@@ -3,7 +3,7 @@
 When running inside a **virtual machine** (in the background so you can still use your mouse on the host), it is recommended to limit resources for smoother performance:
 
 - **Memory:** 8 GB RAM  
-- **CPU:** 1 core  
+- **CPU:** 2 cores
 
 ---
 
