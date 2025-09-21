@@ -222,7 +222,12 @@ class SkillsFlow:
                 # Click: center + slight upward offset to counter inertia
                 bx1, by1, bx2, by2 = buy["xyxy"]
                 bh = max(1, by2 - by1)
-                dy = max(2, int(bh * 0.05))  # ~X% upward
+
+                upward_offset = 0.05
+
+                if isinstance(self.ctrl, ScrcpyController):
+                    upward_offset = 0.15
+                dy = max(2, int(bh * upward_offset))  # ~X% upward
                 shifted = (bx1, by1 - dy, bx2, by2 - dy)
                 self.ctrl.click_xyxy_center(shifted, clicks=2, jitter=0)
                 logger_uma.info("Clicked BUY for '%s' (score=%.2f)", best_name or "?", best_score)
@@ -319,7 +324,9 @@ class SkillsFlow:
             cx, cy = (x + w // 2), (y + h // 2)
             self.ctrl.move_to(cx, cy)
             time.sleep(0.5)
-            self.ctrl.scroll(-h // 10, steps=4, duration_range=(0.2, 0.4), end_hold_range=(0.1, 0.2))
+            self.ctrl.scroll(-h // 10, steps=4, duration_range=(0.2, 0.4), end_hold_range=(0.15, 0.22))
+            # Inertia wait
+            time.sleep(0.12)
         else:
             n = random.randint(scroll_time_range[0], scroll_time_range[1])
             for _ in range(n):
