@@ -416,7 +416,7 @@ class RaceFlow:
         if is_view_active and view_btn is not None:
             # Tap 'View Results' a couple times to clear residual screens
             self.ctrl.click_xyxy_center(view_btn["xyxy"], clicks=random.randint(1, 2))
-            time.sleep(random.uniform(1.6, 2.4))
+            time.sleep(random.uniform(2.2, 2.8))
             self.ctrl.click_xyxy_center(view_btn["xyxy"], clicks=random.randint(2, 3))
             time.sleep(random.uniform(0.3, 0.5))
         else:

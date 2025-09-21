@@ -130,7 +130,7 @@ Good news you (maybe) can use this button in WEB UI to pull from github (I have 
 
 #### (experimental) Installation with pre-created script
 
-Clone the repo and just open/run the file: **run_uma.bat**. No Conda stuff, everything should be automatically installed in 'venv'. Very straightforward but it can fail. So better follow the previous instructions.
+Clone the repo and just open/run the file: **scripts/run_uma.bat**. No Conda stuff, everything should be automatically installed in 'venv'. Very straightforward but it can fail. So better follow the previous instructions.
 
 ---
 
@@ -204,7 +204,7 @@ This feature is still experimental, but in my experience, it works quite well.
 
 
 ## Running in GPU
-Follow the instructions in [README.gpu.md](README.gpu.md)
+Follow the instructions in [README.gpu.md](docs/README.gpu.md)
 
 ---
 
@@ -212,7 +212,7 @@ Follow the instructions in [README.gpu.md](README.gpu.md)
 
 When running inside a **virtual machine** (in the background so you can still use your mouse on the host), it is recommended to limit resources for smoother performance.
 
-Follow the instructions in [README.virtual_machine.md](README.virtual_machine.md)
+Follow the instructions in [README.virtual_machine.md](docs/README.virtual_machine.md)
 
 ![VM Screenshot](assets/doc/VM.png)
 
@@ -250,7 +250,7 @@ The bot uses multiple AI components to make decisions:
 
 ## TODO
 
-Upcoming features or current work is summarized in [TODO](TODO.md)
+Upcoming features or current work is summarized in [TODO](docs/TODO.md)
 
 ---
 

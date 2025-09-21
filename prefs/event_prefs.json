@@ -1,0 +1,14 @@
+{
+  "overrides": {
+    "support/Kitasan Black/SSR/Paying It Forward": 2
+  },
+  "patterns": [
+    { "pattern": "trainee/*/*/Acupuncture*", "pick": 4 },
+    { "pattern": "support/*/R/*", "pick": 1 }
+  ],
+  "defaults": {
+    "support": 1,
+    "trainee": 1,
+    "scenario": 1
+  }
+}

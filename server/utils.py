@@ -3,8 +3,9 @@ from pathlib import Path
 import subprocess
 from typing import Tuple
 
-CONFIG_PATH = Path(__file__).resolve().parent.parent / "config.json"
-SAMPLE_CONFIG_PATH = CONFIG_PATH.with_name("config.sample.json")
+PREFS_DIR = Path(__file__).resolve().parent.parent / "prefs"
+CONFIG_PATH = PREFS_DIR / "config.json"
+SAMPLE_CONFIG_PATH = PREFS_DIR / "config.sample.json"
 
 def load_config() -> dict:
   if CONFIG_PATH.exists():

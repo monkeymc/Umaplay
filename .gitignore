@@ -47,3 +47,6 @@ config.json
 build
 /dist/
 tests/outputs/*
+prepare_uma_yolo_dataset.py
+
+dev_train.ipynb

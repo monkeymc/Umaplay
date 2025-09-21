@@ -1,0 +1,412 @@
+[
+  {
+    "key": "support/Kitasan Black/SSR/Paying It Forward",
+    "key_step": "support/Kitasan Black/SSR/Paying It Forward#s2",
+    "type": "support",
+    "name": "Kitasan Black",
+    "rarity": "SSR",
+    "event_name": "Paying It Forward",
+    "chain_step": 2,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": 10,
+          "mood": 1,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "speed": 5,
+          "hints": [
+            "Straightaway Adept"
+          ],
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "paying it forward",
+    "image_path": "assets\\events\\support\\Kitasan Black_SSR.png",
+    "phash64": 18247539382696730829
+  },
+  {
+    "key": "support/Kitasan Black/SSR/Ah, Friendship",
+    "key_step": "support/Kitasan Black/SSR/Ah, Friendship#s1",
+    "type": "support",
+    "name": "Kitasan Black",
+    "rarity": "SSR",
+    "event_name": "Ah, Friendship",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "power": 5,
+          "mood": 1,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "energy": 10,
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "ah, friendship",
+    "image_path": "assets\\events\\support\\Kitasan Black_SSR.png",
+    "phash64": 18247539382696730829
+  },
+  {
+    "key": "support/Kitasan Black/SSR/Ah, Home Sweet Home",
+    "key_step": "support/Kitasan Black/SSR/Ah, Home Sweet Home#s1",
+    "type": "support",
+    "name": "Kitasan Black",
+    "rarity": "SSR",
+    "event_name": "Ah, Home Sweet Home",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "speed": 5,
+          "power": 10,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "status": "Practice perfect",
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "ah, home sweet home",
+    "image_path": "assets\\events\\support\\Kitasan Black_SSR.png",
+    "phash64": 18247539382696730829
+  },
+  {
+    "key": "support/Kitasan Black/R/Ah, Friendship",
+    "key_step": "support/Kitasan Black/R/Ah, Friendship#s1",
+    "type": "support",
+    "name": "Kitasan Black",
+    "rarity": "R",
+    "event_name": "Ah, Friendship",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "power": 5,
+          "mood": 1,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "energy": 10,
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "ah, friendship",
+    "image_path": "assets\\events\\support\\Kitasan Black_R.png",
+    "phash64": 11902154991543528654
+  },
+  {
+    "key": "support/Kitasan Black/R/Ah, Home Sweet Home",
+    "key_step": "support/Kitasan Black/R/Ah, Home Sweet Home#s1",
+    "type": "support",
+    "name": "Kitasan Black",
+    "rarity": "R",
+    "event_name": "Ah, Home Sweet Home",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "speed": 5,
+          "power": 10,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "status": {
+            "name": "Practice perfect",
+            "prob": 100
+          },
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "ah, home sweet home",
+    "image_path": "assets\\events\\support\\Kitasan Black_R.png",
+    "phash64": 11902154991543528654
+  },
+  {
+    "key": "support/Oguri Cap/SR/How Should I Respond?",
+    "key_step": "support/Oguri Cap/SR/How Should I Respond?#s2",
+    "type": "support",
+    "name": "Oguri Cap",
+    "rarity": "SR",
+    "event_name": "How Should I Respond?",
+    "chain_step": 2,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "power": 5,
+          "skill_pts": 10,
+          "hints": [
+            "Stamina to Spare"
+          ],
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "stamina": 5,
+          "skill_pts": 10,
+          "hints": [
+            "Outer Swell"
+          ],
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "how should i respond?",
+    "image_path": "assets\\events\\support\\Oguri Cap_SR.png",
+    "phash64": 16042774276010969447
+  },
+  {
+    "key": "support/Oguri Cap/SR/What I Want to Say",
+    "key_step": "support/Oguri Cap/SR/What I Want to Say#s3",
+    "type": "support",
+    "name": "Oguri Cap",
+    "rarity": "SR",
+    "event_name": "What I Want to Say",
+    "chain_step": 3,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "random_chance": 50,
+          "power": 10,
+          "guts": 5,
+          "skill_pts": 10,
+          "hints": [
+            "Furious Feat"
+          ],
+          "bond": 5
+        },
+        {
+          "random_chance": 50,
+          "power": 15,
+          "guts": 10,
+          "skill_pts": 15,
+          "hints": [
+            "Furious Feat"
+          ],
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "energy": 30
+        }
+      ]
+    },
+    "title_norm": "what i want to say",
+    "image_path": "assets\\events\\support\\Oguri Cap_SR.png",
+    "phash64": 16042774276010969447
+  },
+  {
+    "key": "support/Oguri Cap/SR/How Should I Respond?",
+    "key_step": "support/Oguri Cap/SR/How Should I Respond?#s1",
+    "type": "support",
+    "name": "Oguri Cap",
+    "rarity": "SR",
+    "event_name": "How Should I Respond?",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": 5,
+          "power": 5
+        }
+      ],
+      "2": [
+        {
+          "energy": -10,
+          "guts": 15
+        }
+      ]
+    },
+    "title_norm": "how should i respond?",
+    "image_path": "assets\\events\\support\\Oguri Cap_SR.png",
+    "phash64": 16042774276010969447
+  },
+  {
+    "key": "support/Oguri Cap/SR/Conquering the Crowds",
+    "key_step": "support/Oguri Cap/SR/Conquering the Crowds#s1",
+    "type": "support",
+    "name": "Oguri Cap",
+    "rarity": "SR",
+    "event_name": "Conquering the Crowds",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "skill_pts": 15,
+          "power": 5
+        }
+      ],
+      "2": [
+        {
+          "hints": [
+            "Nakayama Racecourse ○"
+          ]
+        }
+      ]
+    },
+    "title_norm": "conquering the crowds",
+    "image_path": "assets\\events\\support\\Oguri Cap_SR.png",
+    "phash64": 16042774276010969447
+  },
+  {
+    "key": "scenario/Ura Finale/None/Exhilarating! What a Scoop!",
+    "key_step": "scenario/Ura Finale/None/Exhilarating! What a Scoop!#s1",
+    "type": "scenario",
+    "name": "Ura Finale",
+    "rarity": "None",
+    "event_name": "Exhilarating! What a Scoop!",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 10,
+          "bond": 5,
+          "character": "etsuko"
+        }
+      ],
+      "2": [
+        {
+          "guts": 10,
+          "bond": 5,
+          "character": "etsuko"
+        }
+      ]
+    },
+    "title_norm": "exhilarating! what a scoop!",
+    "image_path": "assets\\events\\scenario\\Ura Finale.png",
+    "phash64": 10526736906120381499
+  },
+  {
+    "key": "trainee/general/None/Acupuncture (Just an Acupuncturist, No Worries! ☆)",
+    "key_step": "trainee/general/None/Acupuncture (Just an Acupuncturist, No Worries! ☆)#s1",
+    "type": "trainee",
+    "name": "general",
+    "rarity": "None",
+    "event_name": "Acupuncture (Just an Acupuncturist, No Worries! ☆)",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "random_chance": 30,
+          "stats": 20
+        },
+        {
+          "random_chance": 70,
+          "mood": -2,
+          "stats": -15,
+          "status": "Night Owl"
+        }
+      ],
+      "2": [
+        {
+          "random_chance": 45,
+          "stats": 20,
+          "hints": [
+            "Corner Recovery ○",
+            "Straightaway Recovery"
+          ]
+        },
+        {
+          "random_chance": 55,
+          "energy": -20,
+          "mood": -2
+        }
+      ],
+      "3": [
+        {
+          "random_chance": 70,
+          "energy_max": 12,
+          "energy": 40,
+          "status": "heal"
+        },
+        {
+          "random_chance": 30,
+          "mood": -2,
+          "energy": -20,
+          "status": "Practice Poor"
+        }
+      ],
+      "4": [
+        {
+          "random_chance": 85,
+          "mood": 1,
+          "energy": 20,
+          "status": "Charming"
+        },
+        {
+          "random_chance": 15,
+          "mood": -1,
+          "energy": -20,
+          "status": "Practice Poor"
+        }
+      ],
+      "5": [
+        {
+          "energy": 10
+        }
+      ]
+    },
+    "title_norm": "acupuncture (just an acupuncturist, no worries! *)",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Vodka/None/Showdown by the River!",
+    "key_step": "trainee/Vodka/None/Showdown by the River!#s1",
+    "type": "trainee",
+    "name": "Vodka",
+    "rarity": "None",
+    "event_name": "Showdown by the River!",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "skill_pts": 15,
+          "wit": 10
+        }
+      ],
+      "2": [
+        {
+          "hints": [
+            "Shifting Gears"
+          ]
+        }
+      ]
+    },
+    "title_norm": "showdown by the river!",
+    "image_path": "assets\\events\\trainee\\Vodka.png",
+    "phash64": 16729946952960036168
+  }
+]
