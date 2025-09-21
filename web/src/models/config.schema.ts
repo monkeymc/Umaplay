@@ -23,7 +23,7 @@ export const generalSchema = z.object({
     debugMode: true,
     useExternalProcessor: false,
     externalProcessorUrl: 'http://127.0.0.1:8001',
-    autoRestMinimum: 26,
+    autoRestMinimum: 22,
   }),
 })
 

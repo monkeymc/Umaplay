@@ -1,0 +1,354 @@
+[
+  {
+    "type": "support",
+    "name": "Kitasan Black",
+	"rarity": "SSR",
+	"choice_events": [
+		{
+			"type": "chain",
+			"chain_step": 2,
+			"name": "Paying It Forward",
+			"options": {
+				"1": [
+					{
+						"energy": 10,
+						"mood": 1,
+						"bond": 5
+					}
+				],
+				"2": [
+					{
+						"speed": 5,
+						"hints": ["Straightaway Adept"],
+						"bond": 5
+					}
+				]
+			},
+			"default_preference": 1
+		},
+		{
+			"type": "random",
+			"chain_step": 1,
+			"name": "Ah, Friendship",
+			"options": {
+				"1": [
+					{
+						"power": 5,
+						"mood": 1,
+						"bond": 5
+					}
+				],
+				"2": [
+					{
+						"energy": 10,
+						"bond": 5
+					}
+				]
+			},
+			"default_preference": 2
+		},
+		{
+			"type": "random",
+			"chain_step": 1,
+			"name": "Ah, Home Sweet Home",
+			"options": {
+				"1": [
+					{
+						"speed": 5,
+						"power": 10,
+						"bond": 5
+					}
+				],
+				"2": [
+					{
+						"status": "Practice perfect",
+						"bond": 5
+					}
+				]
+			},
+			"default_preference": 2
+		}
+	]
+  },
+  {
+    "type": "support",
+    "name": "Kitasan Black",
+	"rarity": "R",
+	"choice_events": [
+		{
+			"type": "random",
+			"chain_step": 1,
+			"name": "Ah, Friendship",
+			"options": {
+				"1": [
+					{
+						"power": 5,
+						"mood": 1,
+						"bond": 5
+					}
+				],
+				"2": [
+					{
+						"energy": 10,
+						"bond": 5
+					}
+				]
+			},
+			"default_preference": 2
+		},
+		{
+			"type": "random",
+			"chain_step": 1,
+			"name": "Ah, Home Sweet Home",
+			"options": {
+				"1": [
+					{
+						"speed": 5,
+						"power": 10,
+						"bond": 5
+					}
+				],
+				"2": [
+					{
+						"status": {
+							"name": "Practice perfect",
+							"prob": 100
+						},
+						"bond": 5
+					}
+				]
+			},
+			"default_preference": 2
+		}
+	]
+  },
+  {
+    "type": "support",
+    "name": "Oguri Cap",
+	"rarity": "SR",
+	"choice_events": [
+		{
+			"type": "chain",
+			"chain_step": 2,
+			"name": "How Should I Respond?",
+			"options": {
+				"1": [
+					{
+						"power": 5,
+						"skill_pts": 10,
+						"hints": ["Stamina to Spare"],
+						"bond": 5
+					}
+				],
+				"2": [
+					{
+						"stamina": 5,
+						"skill_pts": 10,
+						"hints": ["Outer Swell"],
+						"bond": 5
+					}
+				]
+			},
+			"default_preference": 2
+		},
+		{
+			"type": "chain",
+			"chain_step": 3,
+			"name": "What I Want to Say",
+			"options": {
+				"1": [
+					{
+						"random_chance": 50,
+						"power": 10,
+						"guts": 5,
+						"skill_pts": 10,
+						"hints": ["Furious Feat"],
+						"bond": 5
+					},
+					{
+						"random_chance": 50,
+						"power": 15,
+						"guts": 10,
+						"skill_pts": 15,
+						"hints": ["Furious Feat"],
+						"bond": 5
+					}
+				],
+				"2": [
+					{
+						"energy": 30
+					}
+				]
+			},
+			"default_preference": 2
+		},
+		{
+			"type": "random",
+			"chain_step": 1,
+			"name": "How Should I Respond?",
+			"options": {
+				"1": [
+					{
+						"energy": 5,
+						"power": 5
+					}
+				],
+				"2": [
+					{
+						"energy": -10,
+						"guts": 15
+					}
+				]
+			},
+			"default_preference": 1
+		},
+		{
+			"type": "random",
+			"chain_step": 1,
+			"name": "Conquering the Crowds",
+			"options": {
+				"1": [
+					{
+						"skill_pts": 15,
+						"power": 5
+					}
+				],
+				"2": [
+					{
+						"hints": ["Nakayama Racecourse ○"]
+					}
+				]
+			},
+			"default_preference": 1
+		}
+	]
+  },
+  {
+    "type": "scenario",
+    "name": "Ura Finale",
+	"rarity": "None",
+	"choice_events": [
+		{
+			"type": "random",
+			"chain_step": 1,
+			"name": "Exhilarating! What a Scoop!",
+			"options": {
+				"1": [
+					{
+						"stamina": 10,
+						"bond": 5,
+						"character": "etsuko"
+					}
+				],
+				"2": [
+					{
+						"guts": 10,
+						"bond": 5,
+						"character": "etsuko"
+					}
+				]
+			},
+			"default_preference": 1
+		}
+	]
+  },
+  {
+    "type": "trainee",
+    "name": "general",
+	"rarity": "None",
+	"choice_events": [
+		{
+			"type": "special",
+			"chain_step": 1,
+			"name": "Acupuncture (Just an Acupuncturist, No Worries! ☆)",
+			"options": {
+				"1": [
+					{
+						"random_chance": 30,
+						"stats": 20
+					},
+					{
+						"random_chance": 70,
+						"mood": -2,
+						"stats": -15,
+						"status": "Night Owl"
+					}
+				],
+				"2": [
+					{
+						"random_chance": 45,
+						"stats": 20,
+						"hints": ["Corner Recovery ○", "Straightaway Recovery"]
+					},
+					{
+						"random_chance": 55,
+						"energy": -20,
+						"mood": -2
+					}
+				],
+				"3": [
+					{
+						"random_chance": 70,
+						"energy_max": 12,
+						"energy": 40,
+						"status": "heal"
+					},
+					{
+						"random_chance": 30,
+						"mood": -2,
+						"energy": -20,
+						"status": "Practice Poor"
+					}
+				],
+				"4": [
+					{
+						"random_chance": 85,
+						"mood": 1,
+						"energy": 20,
+						"status": "Charming"
+					},
+					{
+						"random_chance": 15,
+						"mood": -1,
+						"energy": -20,
+						"status": "Practice Poor"
+					}
+				],
+				"5": [
+					{
+						"energy": 10
+					}
+				]
+			},
+			"default_preference": 2
+		}
+	]
+  },
+  {
+    "type": "trainee",
+    "name": "Vodka",
+	"rarity": "None",
+	"choice_events": [
+		{
+			"type": "random",
+			"chain_step": 1,
+			"name": "Showdown by the River!",
+			"options": {
+				"1": [
+					{
+						"skill_pts": 15,
+						"wit": 10
+					}
+				],
+				"2": [
+					{
+						"hints": ["Shifting Gears"]
+					}
+				]
+			},
+			"default_preference": 1
+		}
+	]
+  }
+  
+]

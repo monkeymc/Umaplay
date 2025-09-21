@@ -4,7 +4,7 @@ from __future__ import annotations
 from time import sleep
 
 from core.actions.claw import ClawGame
-from core.actions.events import click_top_event_choice
+from core.actions.events import EventFlow, click_top_event_choice
 from core.actions.lobby import LobbyFlow
 from core.actions.race import RaceFlow
 from core.actions.skills import SkillsFlow
@@ -25,6 +25,7 @@ from core.utils.text import fuzzy_contains
 from core.utils.waiter import PollConfig, Waiter
 from core.actions.race import ConsecutiveRaceRefused
 from core.utils.abort import abort_requested
+from core.utils.event_processor import CATALOG_JSON, USER_PREFS, Catalog, UserPrefs
 
 class Player:
     def __init__(
@@ -56,7 +57,7 @@ class Player:
             "Homestretch Haste",
             "Straightaway Acceleration",
         ],
-        interval_stats_refresh = 1,
+        interval_stats_refresh = 3,
         select_style = None
     ) -> None:
         self.ctrl = ctrl
@@ -92,7 +93,11 @@ class Player:
             plan_races=self.plan_races,
         )
         self.skills_flow = SkillsFlow(self.ctrl, self.ocr, self.yolo_engine, self.waiter)
-        
+
+        catalog = Catalog.load(CATALOG_JSON)
+        user_prefs = UserPrefs.load(USER_PREFS)
+        self.event_flow = EventFlow(self.ctrl, self.ocr, self.yolo_engine, self.waiter, catalog, user_prefs)
+
         self.claw_game = ClawGame(self.ctrl, self.yolo_engine)
         self.claw_turn = 0
 
@@ -188,7 +193,8 @@ class Player:
 
             if screen == "Event":
                 self.claw_turn = 0
-                click_top_event_choice(self.ctrl, self.ocr, dets, conf_min=0.6)
+                decision = self.event_flow.process_event_screen(img, dets)
+                logger_uma.debug(f"[Event] {decision}")
                 continue
 
             if screen == "Training":

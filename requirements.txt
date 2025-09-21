@@ -61,3 +61,4 @@ paddlex
 pytest
 ruff
 matplotlib==3.10.6
+ImageHash==4.3.2

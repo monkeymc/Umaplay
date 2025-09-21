@@ -47,7 +47,7 @@ class SkillsFlow:
         skill_list: Sequence[str],
         *,
         max_scrolls: int = 10,
-        ocr_threshold: float = 0.82,  # experimental
+        ocr_threshold: float = 0.75,  # experimental
         scroll_time_range: Tuple[int, int] = (6, 7),
         early_stop: bool = True,
     ) -> bool:
