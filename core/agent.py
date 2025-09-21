@@ -4,7 +4,7 @@ from __future__ import annotations
 from time import sleep
 
 from core.actions.claw import ClawGame
-from core.actions.events import EventFlow, click_top_event_choice
+from core.actions.events import EventFlow
 from core.actions.lobby import LobbyFlow
 from core.actions.race import RaceFlow
 from core.actions.skills import SkillsFlow
