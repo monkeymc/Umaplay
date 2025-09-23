@@ -37,12 +37,6 @@ I take no responsibility for bans, issues, or account losses that may result fro
 
 ## ✨ Features
 
-Here’s a reduced and clearer version of your features list, with the **Web UI** part expanded to highlight its capabilities (like race scheduling presets, presets management, etc.):
-
----
-
-## ✨ Features
-
 * **Smart Training**: Uses a point system (rainbows, Etsuko, director, hints, etc.) to choose the best option based on full status and state, not just faces.
 * **Human-like Movements**: Randomized clicks, delays, and jitters to mimic natural input and avoid anti-cheat detection.
 * **Status Tracking**: Monitors mood, stats, skill points, goals, and energy, prioritizing undertrained stats.
