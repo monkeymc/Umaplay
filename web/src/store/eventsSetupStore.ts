@@ -64,32 +64,47 @@ export const useEventsSetupStore = create<State>()(
       },
 
       importSetup(s) {
-        if (!s) return
-        const cur = get().setup
-        // normalize supports → fixed length 6 with slot index and strict unions
-        // normalize supports (length=6 + slot + validated unions)
-        const supports: (SelectedSupport|null)[] = Array.from({ length: 6 }, (_v, i) => {
-          const raw = Array.isArray(s.supports)
-            ? (s.supports[i] as Partial<SelectedSupport> | null | undefined)
-            : undefined
-          if (!raw || !raw.name || !raw.rarity || !raw.attribute) return cur.supports[i] ?? null
-          const rarity: Rarity = isValidRarity(raw.rarity) ? raw.rarity : 'SR'
-          const attribute: AttrKey = isValidAttr(raw.attribute) ? raw.attribute : 'SPD'
-          return { slot: i, name: raw.name, rarity, attribute }
-        })
-        const scenario: SelectedScenario = pickName(s.scenario) ?? cur.scenario
-        const trainee:  SelectedTrainee  = pickName(s.trainee)  ?? cur.trainee
-        const prefs: EventPrefs = {
-          overrides: { ...(cur.prefs?.overrides || {}), ...((s as any).prefs?.overrides || {}) },
-          patterns:  Array.isArray((s as any).prefs?.patterns) ? (s as any).prefs.patterns.slice() : (cur.prefs?.patterns || []),
-          defaults: {
-            support:  Number((s as any).prefs?.defaults?.support  ?? cur.prefs?.defaults?.support  ?? 1),
-            trainee:  Number((s as any).prefs?.defaults?.trainee  ?? cur.prefs?.defaults?.trainee  ?? 1),
-            scenario: Number((s as any).prefs?.defaults?.scenario ?? cur.prefs?.defaults?.scenario ?? 1),
-          },
+        // If not provided, reset to EMPTY so we never leak data across presets.
+        if (!s) {
+          set({ setup: JSON.parse(JSON.stringify(EMPTY)), revision: get().revision + 1 })
+          return
         }
-        const next: EventSetup = { supports, scenario, trainee, prefs }
-        set({ setup: next, revision: get().revision + 1 })
+        const cur = get().setup
+        // supports: if the field exists, rebuild from it; otherwise keep current
+        const supports: (SelectedSupport|null)[] =
+          ('supports' in s)
+            ? Array.from({ length: 6 }, (_v, i) => {
+                const raw = Array.isArray(s.supports)
+                  ? (s.supports[i] as Partial<SelectedSupport> | null | undefined)
+                  : undefined
+                if (!raw || !raw.name || !raw.rarity || !raw.attribute) return null
+                const rarity: Rarity   = isValidRarity(raw.rarity)   ? raw.rarity   : 'SR'
+                const attribute: AttrKey = isValidAttr(raw.attribute) ? raw.attribute : 'SPD'
+                return { slot: i, name: raw.name, rarity, attribute }
+              })
+            : cur.supports
+
+        // scenario/trainee: honor explicit null if the key is present
+        const scenario: SelectedScenario =
+          ('scenario' in s) ? (pickName(s.scenario) ?? null) : cur.scenario
+        const trainee: SelectedTrainee =
+          ('trainee' in s) ? (pickName(s.trainee) ?? null) : cur.trainee
+
+        // prefs: if present, normalize; otherwise keep current
+        const prefs: EventPrefs =
+          ('prefs' in s && s.prefs)
+            ? {
+                overrides: { ...(s.prefs.overrides || {}) },
+                patterns:  Array.isArray(s.prefs.patterns) ? s.prefs.patterns.slice() : [],
+                defaults: {
+                  support:  Number(s.prefs.defaults?.support  ?? 1),
+                  trainee:  Number(s.prefs.defaults?.trainee  ?? 1),
+                  scenario: Number(s.prefs.defaults?.scenario ?? 1),
+                },
+              }
+            : cur.prefs
+
+        set({ setup: { supports, scenario, trainee, prefs }, revision: get().revision + 1 })
       },
 
       getSetup() {
