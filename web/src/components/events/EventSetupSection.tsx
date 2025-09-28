@@ -28,15 +28,24 @@ const ATTR_ORDER: AttrKey[] = ['SPD','STA','PWR','GUTS','WIT','PAL']
 // --- visuals
 const THUMB = 64
 const THUMB_H = 86
-const rarityFrameSx = (rarity: string) => {
+const rarityFrameSx = (rarity: string, w?: number, h?: number) => {
   const base = {
     position: 'relative' as const,
     borderRadius: 1,
     p: '2px',
     display: 'inline-block',
     lineHeight: 0,
-    // keep images sharp but avoid pixelation: only width, no fixed height
-    '& img': { width: '100%', height: 'auto', borderRadius: 1, display: 'block' },
+    // Enforce a fixed box; image will fill it uniformly
+    width: w,
+    height: h,
+    '& img': {
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+      imageRendering: 'auto',
+      borderRadius: 1,
+      display: 'block',
+    },
   }
   if (rarity === 'SSR') {
     return { ...base, background: 'linear-gradient(135deg,#8a2be2,#00e5ff,#ffd54f)' }
@@ -162,20 +171,12 @@ function SupportPickerDialog({
                 <CardActionArea onClick={() => onPick(s)}>
                   <Stack direction="row" spacing={1} sx={{ p: 1, alignItems:'center' }}>
                     {/* force high-quality scaling for the inner <img> regardless of global styles */}
-                    <Box
-                      sx={{
-                        ...rarityFrameSx(s.rarity as string),
-                        '& img': {
-                          imageRendering: 'auto', // override any inherited "pixelated/crisp-edges"
-                          objectFit: 'cover',
-                          display: 'block',
-                        },
-                      }}
-                    >
+                    <Box sx={rarityFrameSx(String(s.rarity), 48, 64)}>
                       <SmartImage
                         candidates={supportImageCandidates(s.name, s.rarity, s.attribute)}
                         alt={s.name}
                         width={48}
+                        height={64}
                         rounded={6}
                       />
                     </Box>
@@ -570,7 +571,7 @@ export default function EventSetupSection({ index }: Props) {
                     <Stack alignItems="center" spacing={1} sx={{ p: 1 }}>
                       {sel ? (
                         <>
-                          <Box sx={rarityFrameSx(sel.rarity || "")}>
+                          <Box sx={rarityFrameSx(sel.rarity || '', THUMB, THUMB_H)}>
                             <SmartImage
                               candidates={supportImageCandidates(sel.name || "", sel.rarity, sel.attribute)}
                               alt={sel.name || ""}
