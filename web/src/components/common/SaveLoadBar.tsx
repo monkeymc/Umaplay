@@ -7,7 +7,7 @@ import { useState } from 'react'
 export default function SaveLoadBar() {
    const config = useConfigStore((s) => s.config)
   // optional selectors if you keep an active preset id in configStore:
-  const activePresetId = useConfigStore((s: any) => s.activePresetId || s.currentPresetId)
+  const activePresetId = useConfigStore((s) => s.config.activePresetId)
   // const exportJson = useConfigStore((s) => s.exportJson)
   const [saving, setSaving] = useState(false)
   const [snack, setSnack] = useState<{ open: boolean; msg: string; severity: 'success'|'error'}>({
