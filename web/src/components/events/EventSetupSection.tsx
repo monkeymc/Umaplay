@@ -62,9 +62,14 @@ function SupportPickerDialog({
 }: { open: boolean; onClose: () => void; index: EventsIndex; onPick: (s: SupportSet) => void }) {
   const [query, setQuery] = useState('')
   const [attrFilter, setAttrFilter] = useState<AttrKey>('SPD')
+  // Build both: per-attribute lists AND a global 'all' list for queries.
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    const res: Record<AttrKey, SupportSet[]> = { SPD:[], STA:[], PWR:[], GUTS:[], WIT:[], PAL:[], None:[] }
+    const byAttrOut: Record<AttrKey, SupportSet[]> = {
+      SPD: [], STA: [], PWR: [], GUTS: [], WIT: [], PAL: [], None: [],
+    }
+    let all: SupportSet[] = []
+
     const byAttr = index.supports as any // Map<AttrKey, Map<Rarity, SupportSet[]>>
     if (byAttr instanceof Map) {
       for (const attr of ATTR_ORDER) {
@@ -80,10 +85,21 @@ function SupportPickerDialog({
             return a.name.localeCompare(b.name)
           })
         }
-        res[attr] = q ? list.filter(s => s.name.toLowerCase().includes(q)) : list
+        const filt = q ? list.filter(s => s.name.toLowerCase().includes(q)) : list
+        byAttrOut[attr] = filt
+        if (q) all = all.concat(filt)
       }
     }
-    return res
+    if (q) {
+      // keep global list nicely sorted as well
+      all.sort((a, b) => {
+        const ra = rarityRank(String(a.rarity))
+        const rb = rarityRank(String(b.rarity))
+        if (ra !== rb) return ra - rb
+        return a.name.localeCompare(b.name)
+      })
+    }
+    return { byAttr: byAttrOut, all }
   }, [index, query])
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
@@ -126,7 +142,10 @@ function SupportPickerDialog({
         <Divider sx={{ mb: 2 }} />
         {/* Visible list for the selected attribute */}
         <Stack direction="row" flexWrap="wrap" gap={1.5}>
-          {(filtered[attrFilter] || []).map((s) => (
+          {((query.trim()
+              ? filtered.all
+              : filtered.byAttr[attrFilter]) || []
+            ).map((s) => (
             <Box
               key={`${s.name}-${s.rarity}-${s.attribute}`}
               sx={{ flexBasis: { xs: 'calc(50% - 12px)', sm: 'calc(33.33% - 12px)', md: 'calc(25% - 12px)' } }}

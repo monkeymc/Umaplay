@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import base64
 import hashlib
-from typing import Any, Dict, List, Literal, Optional
+import io
+from tkinter import Image
+from typing import Any, Dict, List, Literal, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -14,6 +16,7 @@ from pydantic import BaseModel, Field, validator
 # Local OCR implementation (host has Paddle installed)
 from core.perception.ocr.ocr_local import LocalOCREngine
 from core.perception.yolo.yolo_local import LocalYOLOEngine
+from PIL import Image, ImageOps
 
 app = FastAPI()
 engine = LocalOCREngine()  # load once; keeps models on CPU/GPU as configured
@@ -40,15 +43,33 @@ class OCRRequest(BaseModel):
 
 
 
-def _decode_b64_to_bgr(b64: str) -> np.ndarray:
+def _decode_b64_to_bgr(b64: str) -> Tuple[np.ndarray, Image.Image]:
+    """
+    Decode a base64-encoded image (optionally a data: URI) and return:
+      • bgr: NumPy array in 3-channel BGR (uint8), suitable for OpenCV.
+      • pil: PIL.Image in RGB, EXIF-orientation corrected.
+    """
     try:
-        raw = base64.b64decode(b64, validate=True)
-        arr = np.frombuffer(raw, dtype=np.uint8)
-        # Force 3-channel BGR to avoid BGRA or grayscale surprises.
-        img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-        if img is None:
-            raise ValueError("cv2.imdecode failed")
-        return img
+        # Allow 'data:image/png;base64,...' and stray whitespace/newlines
+        if "base64," in b64:
+            b64 = b64.split("base64,", 1)[1]
+        b64 = b64.strip()
+
+        try:
+            raw = base64.b64decode(b64, validate=True)
+        except Exception:
+            # Some encoders insert newlines or lack padding; be permissive as a fallback.
+            raw = base64.b64decode(b64, validate=False)
+
+        # Decode with PIL first to retain EXIF and correct orientation, then force RGB.
+        bio = io.BytesIO(raw)
+        pil_img = Image.open(bio)
+        pil_img = ImageOps.exif_transpose(pil_img).convert("RGB")
+
+        # Convert to BGR for OpenCV consumers (guaranteed 3 channels).
+        rgb = np.array(pil_img)  # H×W×3, uint8
+        bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+        return bgr, pil_img
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid base64 image: {e}") from e
 
@@ -59,7 +80,7 @@ def ocr(req: OCRRequest) -> Dict[str, Any]:
         if req.mode in ("raw", "text", "digits"):
             if not req.img:
                 raise HTTPException(status_code=400, detail="Field 'img' is required for this mode.")
-            img = _decode_b64_to_bgr(req.img)
+            img, pil_img = _decode_b64_to_bgr(req.img)
             if req.mode == "raw":
                 data = engine.raw(img)
             elif req.mode == "text":
@@ -92,15 +113,15 @@ yolo_engine = LocalYOLOEngine(ctrl=None)
 
 class YoloRequest(BaseModel):
     img: str = Field(..., description="Base64-encoded PNG/JPEG image (BGR compatible)")
-    imgsz: int = Field(640, ge=64, le=3072)
-    conf: float = Field(0.25, ge=0.0, le=1.0)
+    imgsz: int = Field(832, ge=64, le=3072)
+    conf: float = Field(0.66, ge=0.0, le=1.0)
     iou: float = Field(0.45, ge=0.0, le=1.0)
 
 @app.post("/yolo")
 def yolo_detect(req: YoloRequest):
     try:
-        bgr = _decode_b64_to_bgr(req.img)
-        meta, dets = yolo_engine.detect_bgr(bgr, imgsz=req.imgsz, conf=req.conf, iou=req.iou)
+        bgr, pil_img = _decode_b64_to_bgr(req.img)
+        meta, dets = yolo_engine.detect_bgr(bgr, imgsz=req.imgsz, conf=req.conf, iou=req.iou, original_pil_img=pil_img, tag="yolo_endpoint")
          # tiny debug: checksum of raw BGR bytes
         sha = hashlib.sha256(bgr.tobytes()).hexdigest()[:12]
         meta.update({

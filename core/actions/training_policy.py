@@ -717,7 +717,7 @@ def check_training(player, *, skip_race: bool = False) -> Optional[TrainingDecis
     sv_rows = compute_support_values(training_state)
     for r in sv_rows:
         logger_uma.info(
-            f"View {Constants.map_tile_idx_to_type[r['tile_idx']]}: "
+            f"View [{int(r['tile_idx'])}] {Constants.map_tile_idx_to_type[int(r['tile_idx'])]}: "
             f"SV={r['sv_total']:.2f}  "
             f"fail={r['failure_pct']}% (≤ {r['risk_limit_pct']}% ? {r['allowed_by_risk']})  "
             f"greedy={r['greedy_hit']}"

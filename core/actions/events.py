@@ -169,12 +169,16 @@ class EventFlow:
         self,
         frame: Image.Image,
         parsed_objects_screen: List[DetectionDict],
+        *,
+        current_energy: int | None = None,
+        max_energy_cap: int = 100,
     ) -> EventDecision:
         """
         Main entry point when we're already on an Event screen.
         """
         debug: Dict[str, Any] = {}
-
+        debug["current_energy"] = current_energy
+        debug["max_energy_cap"] = max_energy_cap
         # 1) Collect detections
         card = _pick_event_card(parsed_objects_screen)
         chain_step_hint = _count_chain_steps(parsed_objects_screen)
@@ -260,12 +264,39 @@ class EventFlow:
             logger_uma.warning("[event] Preference pick=%d out of range 1..%d; fallback to top.", pick, expected_n)
             return self._fallback_click_top(choices_sorted, debug)
 
-        # 7) Click selected option (top-to-bottom order)
+        # (7) If we know current energy, attempt to avoid overfilling it.
+        #     Heuristic: treat an option as "adds energy" if any outcome has energy>0.
+        def _max_positive_energy_for(opt_num: int) -> int:
+            try:
+                outcomes = best.rec.options.get(str(opt_num), []) or []
+                gains = [int(o.get("energy", 0)) for o in outcomes if isinstance(o, dict) and isinstance(o.get("energy", 0), (int, float))]
+                return max([g for g in gains if g > 0], default=0)
+            except Exception:
+                return 0
+
+        adjusted_pick = pick
+        if current_energy is not None and expected_n >= 1:
+            # cycle starting from the chosen option, pick the first that won't overflow
+            for shift in range(expected_n):
+                candidate = ((pick - 1 + shift) % expected_n) + 1
+                gain = _max_positive_energy_for(candidate)
+                if gain <= 0:
+                    # safe: no energy gain
+                    adjusted_pick = candidate
+                    break
+                if (current_energy + gain) <= max_energy_cap:
+                    adjusted_pick = candidate
+                    break
+            if adjusted_pick != pick:
+                debug["pick_adjusted_due_to_energy"] = {"from": pick, "to": adjusted_pick}
+        pick = adjusted_pick
+
+        # 8) Click selected option (top-to-bottom order)
         target = choices_sorted[pick - 1]
         self.ctrl.click_xyxy_center(target["xyxy"], clicks=1)
         logger_uma.info(
-            "[event] Clicked option #%d for %s (score=%.3f).",
-            pick, best.rec.key_step, best.score
+            "[event] Clicked option #%d for %s (score=%.3f, energy=%s/%s).",
+            pick, best.rec.key_step, best.score, str(current_energy), str(max_energy_cap)
         )
 
         return EventDecision(

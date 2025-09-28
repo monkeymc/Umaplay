@@ -164,6 +164,17 @@ def scan_training_screen(
             return max(0.0, random.uniform(lo, hi))
         return 0.6
 
+    def _reindex_left_to_right(rows: List[Dict]) -> List[Dict]:
+        """
+        Normalize logical tile indices by current on-screen geometry to avoid
+        duplicating 'last raised' tiles (e.g., WIT) due to timing/animation.
+        """
+        # Sort by X and assign 0..N-1 as canonical indices
+        rows_sorted = sorted(rows, key=lambda r: float(r.get("tile_center_x", 0.0)))
+        for j, r in enumerate(rows_sorted):
+            r["tile_idx"] = j
+        return rows_sorted
+
     def _collect_supports_enriched(
         cur_img: Image.Image, cur_parsed: List[Dict]
     ) -> Tuple[List[Dict], bool]:
@@ -406,8 +417,9 @@ def scan_training_screen(
                     }
                 )
 
-        results.sort(key=lambda r: r["tile_idx"])
-        logger_uma.info(f"FAST MODE: Only analizing WIT, everything else may have high risk")
+        # Normalize tile indices by current geometry to prevent duplicates
+        results = _reindex_left_to_right(results)
+        logger_uma.info("FAST MODE: Only analyzing WIT; everything else may have high risk")
         return results, cur_img, cur_parsed
 
     # -------- 2) Already-raised tile (no click) --------
@@ -420,7 +432,7 @@ def scan_training_screen(
             "supports": supps,
             "has_any_rainbow": any_rainbow,
             "failure_pct": _failure_pct(cur_img, cur_parsed, tile["tile_xyxy"]),
-            "skipped_click": False,
+            "skipped_click": True,  # we did not click for the already-raised tile
         }
         results.append(tile_record)
         processed.add(ridx)
@@ -504,7 +516,8 @@ def scan_training_screen(
                 # Never break scanning on SV errors; just continue
                 logger_uma.error(f"Error while checking FAST_MODE greedy SV: {e}")
 
-    results.sort(key=lambda r: r["tile_idx"])
+    # Final normalization: enforce 0..N-1 by on-screen LTR to avoid duplicated WIT/GUTS
+    results = _reindex_left_to_right(results)
     return results, cur_img, cur_parsed
 
 

@@ -66,7 +66,7 @@ def classify_screen(
     has_claw = any(d["name"] == names_map["claw"]  and d["conf"] >= lobby_conf  for d in dets)
     
     # 1) Event
-    if n_event_choices >= 1:
+    if n_event_choices >= 2:
         return "Event", {"event_choices": n_event_choices}
 
     if has_inspiration:

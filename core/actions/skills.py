@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import random
 import time
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple, Dict, Any
 from collections import Counter
 from PIL import Image
 
@@ -46,7 +46,7 @@ class SkillsFlow:
         self,
         skill_list: Sequence[str],
         *,
-        max_scrolls: int = 10,
+        max_scrolls: int = 15,
         ocr_threshold: float = 0.75,  # experimental
         scroll_time_range: Tuple[int, int] = (6, 7),
         early_stop: bool = True,
@@ -63,9 +63,10 @@ class SkillsFlow:
 
         any_clicked = False
         prev_sig: Optional[List[Tuple[str, int, int]]] = None
+        prev_ocr_sig: Optional[List[Tuple[str, int, int]]] = None
 
         for i in range(max_scrolls):
-            clicked, game_img, dets = self._scan_and_click_buys(
+            clicked, game_img, dets, cur_ocr_sig = self._scan_and_click_buys(
                 targets=skill_list,
                 ocr_threshold=ocr_threshold,
             )
@@ -73,10 +74,16 @@ class SkillsFlow:
 
             # Early-stop if the scene didn't change between passes and nothing was clicked
             cur_sig = yolo_signature(dets)
-            if early_stop and (not clicked) and (prev_sig is not None) and self._nearly_same(prev_sig, cur_sig):
+            if (
+                early_stop
+                and (not clicked)
+                and (prev_sig is not None)
+                and self._nearly_same(prev_sig, cur_sig, prev_ocr_sig, cur_ocr_sig)
+            ):
                 logger_uma.info("[skills] Early stop (same view twice).")
                 break
             prev_sig = cur_sig
+            prev_ocr_sig = cur_ocr_sig
 
             # First pass focus nudge if nothing clicked
             if i == 0 and not any_clicked:
@@ -112,7 +119,12 @@ class SkillsFlow:
         return img, dets
 
     @staticmethod
-    def _nearly_same(a: List[Tuple[str, int, int]], b: List[Tuple[str, int, int]]) -> bool:
+    def _nearly_same(
+        a: List[Tuple[str, int, int]],
+        b: List[Tuple[str, int, int]],
+        a_ocr: Optional[List[Tuple[str, int, int]]] = None,
+        b_ocr: Optional[List[Tuple[str, int, int]]] = None,
+    ) -> bool:
         """
         Heuristic equivalence for scene signatures.
         Each signature item is (name, cx_bucket, cy_bucket). Two signatures are
@@ -120,6 +132,8 @@ class SkillsFlow:
           1) They have the same per-class counts (ignoring positions), and
           2) For every item in `a`, there exists an unmatched item in `b` with
              the same name and |dx|<=1 and |dy|<=1 bucket.
+        Additionally (to avoid scroll false-positives), if OCR title signatures are provided,
+        require a minimum overlap of normalized title texts across buckets.
         """
         if len(a) != len(b):
             return False
@@ -149,6 +163,48 @@ class SkillsFlow:
             if match_idx == -1:
                 return False
             pool.pop(match_idx)
+        # If we have OCR title fingerprints, enforce overlap to assert "same view".
+        if a_ocr is not None and b_ocr is not None:
+            if not a_ocr or not b_ocr:
+                return False  # no text seen → cannot assert sameness robustly
+            # Treat each entry as (norm_text, cx_bucket, cy_bucket).
+            # Build multisets of texts, optionally requiring coarse spatial consistency.
+            # We'll count matches by text first, then filter with a loose spatial check.
+            def by_text_map(sig: List[Tuple[str, int, int]]) -> Dict[str, List[Tuple[int, int]]]:
+                d: Dict[str, List[Tuple[int, int]]] = {}
+                for t, x, y in sig:
+                    d.setdefault(t, []).append((x, y))
+                return d
+            A = by_text_map(a_ocr)
+            B = by_text_map(b_ocr)
+            matched = 0
+            total = sum(len(v) for v in A.values())
+            for t, apos in A.items():
+                bpos = B.get(t, [])
+                if not bpos:
+                    continue
+                # Greedy bipartite-ish match with TOL buckets.
+                used = [False] * len(bpos)
+                for ax, ay in apos:
+                    best = -1
+                    bestm = None
+                    for j, (bx, by) in enumerate(bpos):
+                        if used[j]:
+                            continue
+                        dx, dy = abs(ax - bx), abs(ay - by)
+                        if dx <= TOL and dy <= TOL:
+                            m = max(dx, dy)
+                            if bestm is None or m < bestm:
+                                bestm = m
+                                best = j
+                                if m == 0:
+                                    break
+                    if best != -1:
+                        used[best] = True
+                        matched += 1
+            # Require a meaningful overlap: at least 2 titles AND ≥60% of the seen titles.
+            return matched >= 2 and matched >= int(0.6 * max(1, total))
+
         return True
 
     @staticmethod
@@ -187,10 +243,10 @@ class SkillsFlow:
         *,
         targets: Sequence[str],
         ocr_threshold: float,
-    ) -> Tuple[bool, Image.Image, List[DetectionDict]]:
+    ) -> Tuple[bool, Image.Image, List[DetectionDict], List[Tuple[str, int, int]]]:
         """
         Single pass: find all skills_square + their BUY button; OCR title-band and
-        click BUY if matches a target. Returns (clicked_any, img, dets).
+        click BUY if matches a target. Returns (clicked_any, img, dets, ocr_title_signature).
         """
         game_img, dets = self._collect("skills_scan")
 
@@ -198,6 +254,7 @@ class SkillsFlow:
         buys = [d for d in dets if d["name"] == "skills_buy"]
 
         clicked_any = False
+        ocr_titles_sig: List[Tuple[str, int, int]] = []
 
         for sq in squares:
             buy = self._find_buy_inside(sq, buys)
@@ -212,11 +269,18 @@ class SkillsFlow:
 
             # OCR only the title band for accuracy/speed
             title_crop = crop_pil(game_img, self._skill_title_roi(sq["xyxy"]), pad=2)
-            text = self.ocr.text(title_crop) or ""
+            raw_text = self.ocr.text(title_crop) or ""
+            norm_text = self._norm_title(raw_text)
+            # Record OCR title signature with coarse position buckets.
+            x1, y1, x2, y2 = sq["xyxy"]
+            cx = int((x1 + x2) / 2) // 8
+            cy = int((y1 + y2) / 2) // 8
+            if norm_text:
+                ocr_titles_sig.append((norm_text, cx, cy))
 
             # quick contains or fallback to best fuzzy match
-            contains_any = any(fuzzy_contains(text, t, threshold=ocr_threshold) for t in targets)
-            best_name, best_score = fuzzy_best_match(text, targets)
+            contains_any = any(fuzzy_contains(raw_text, t, threshold=ocr_threshold) for t in targets)
+            best_name, best_score = fuzzy_best_match(raw_text, targets)
 
             if contains_any or best_score >= ocr_threshold:
                 # Click: center + slight upward offset to counter inertia
@@ -229,11 +293,32 @@ class SkillsFlow:
                     upward_offset = 0.15
                 dy = max(2, int(bh * upward_offset))  # ~X% upward
                 shifted = (bx1, by1 - dy, bx2, by2 - dy)
-                self.ctrl.click_xyxy_center(shifted, clicks=2, jitter=0)
+                self.ctrl.click_xyxy_center(shifted, clicks=1, jitter=0)
                 logger_uma.info("Clicked BUY for '%s' (score=%.2f)", best_name or "?", best_score)
                 clicked_any = True
 
-        return clicked_any, game_img, dets
+        return clicked_any, game_img, dets, ocr_titles_sig
+
+    # --------------------------
+    # Text normalization helpers
+    # --------------------------
+    @staticmethod
+    def _norm_title(s: str) -> str:
+        """
+        Normalize OCR titles for robust signature matching:
+          - strip/lowers
+          - collapse spaces
+          - remove trivial punctuation
+        """
+        s = (s or "").strip().lower()
+        if not s:
+            return ""
+        # collapse whitespace
+        s = " ".join(s.split())
+        # drop superfluous punctuation commonly introduced by OCR
+        TABLE = str.maketrans("", "", "·•|[](){}:;,.!?\"'`’“”")
+        s = s.translate(TABLE)
+        return s
 
     def _confirm_learn_close_back_flow(self, waiting_popup: float = 1.0) -> None:
         """
