@@ -519,7 +519,7 @@ class RaceFlow:
                 classes=("button_green",),
                 texts=("NEXT", ),
                 prefer_bottom=True,
-                timeout_s=1.6,
+                timeout_s=3.6,
                 clicks=1,
                 tag="race_after_flow_next",
             )

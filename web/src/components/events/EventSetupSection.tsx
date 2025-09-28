@@ -607,8 +607,8 @@ export default function EventSetupSection({ index }: Props) {
                         onClick={(e) => { e.stopPropagation(); openOptionsForSupport(idx) }}
                         sx={{
                           position:'absolute', top:6, right:6, width:28, height:28, display:'grid',
-                          placeItems:'center', borderRadius:1, bgcolor:'background.paper',
-                          border:'1px solid', borderColor:'divider', cursor:'pointer'
+                          placeItems:'center', borderRadius:2, bgcolor:'background.paper',
+                          border:'2px solid', borderColor:'black', cursor:'pointer'
                         }}
                       >
                         <EditIcon fontSize="small" />
@@ -653,7 +653,7 @@ export default function EventSetupSection({ index }: Props) {
                   <Tooltip title="Customize event options">
                     <Box role="button" onClick={(e)=>{e.stopPropagation(); openOptionsForScenario()}}
                       sx={{ position:'absolute', top:6, right:6, width:28, height:28, display:'grid', placeItems:'center',
-                        borderRadius:1, bgcolor:'background.paper', border:'1px solid', borderColor:'divider', cursor:'pointer' }}>
+                        borderRadius:2, bgcolor:'background.paper', border:'2px solid', borderColor:'black', cursor:'pointer' }}>
                       <EditIcon fontSize="small" />
                     </Box>
                   </Tooltip>
@@ -691,7 +691,7 @@ export default function EventSetupSection({ index }: Props) {
                   <Tooltip title="Customize event options">
                     <Box role="button" onClick={(e)=>{e.stopPropagation(); openOptionsForTrainee()}}
                       sx={{ position:'absolute', top:6, right:6, width:28, height:28, display:'grid', placeItems:'center',
-                        borderRadius:1, bgcolor:'background.paper', border:'1px solid', borderColor:'divider', cursor:'pointer' }}>
+                        borderRadius:1, bgcolor:'background.paper', border:'2px solid', borderColor:'black', cursor:'pointer' }}>
                       <EditIcon fontSize="small" />
                     </Box>
                   </Tooltip>

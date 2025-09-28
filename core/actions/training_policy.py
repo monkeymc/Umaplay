@@ -166,10 +166,10 @@ def decide_action_training(
     stats={},
     reference_stats={
         "SPD": 1150,
-        "STA": 1000,
-        "PWR": 530,
-        "GUTS": 270,
-        "WIT": 250,
+        "STA": 900,
+        "PWR": 700,
+        "GUTS": 300,
+        "WIT": 400,
     },
     # Tie-break context
     tile_to_type: Optional[Dict[int, str]] = None,
@@ -279,9 +279,9 @@ def decide_action_training(
     # -------------------------------------------------
     # Distribution-aware nudge (before step 1)
     # If a top-3 priority stat is undertrained vs. reference distribution
-    # by ≥ 7% and its best SV is within 1.5 of the best overall, pick it.
+    # by ≥ 6% and its best SV is within 1.5 of the best overall, pick it.
     # -------------------------------------------------
-    UNDERTRAIN_DELTA = 0.07  # ≥ 7% gap vs reference share
+    UNDERTRAIN_DELTA = 0.06  # ≥ 7% gap vs reference share
     MAX_SV_GAP = 1.5
 
     try:
