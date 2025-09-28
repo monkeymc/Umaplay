@@ -6,6 +6,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Link,
 } from '@mui/material'
 import KeyboardDoubleArrowLeftIcon from '@mui/icons-material/KeyboardDoubleArrowLeft'
 import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight'
@@ -250,7 +251,15 @@ export default function GeneralForm() {
         {/* Version + Update from GitHub */}
         <Box sx={{ mt: 2 }}>
           <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 0.5 }}>
-            Version: <strong>{version}</strong>
+            Version: <strong>{version}</strong> | Developed by:{' '}
+          <Link
+            href="https://github.com/Magody/Umaplay"
+            target="_blank"
+            rel="noopener noreferrer"
+            underline="hover"
+          >
+            Magody
+          </Link>
           </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, flexWrap: 'wrap' }}>
             <Button
