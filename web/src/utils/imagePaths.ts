@@ -17,10 +17,6 @@ export function supportImageCandidates(name: string, rarity: any, attr: any) {
   const RAR  = rarity || 'None'
   return [
     `${base}/${NAME}_${ATTR}_${RAR}.png`,
-    `${base}/${NAME}_${ATTR}_${RAR}.jpg`,
-    `${base}/${NAME}_${ATTR}.png`,
-    `${base}/${NAME}_${RAR}.png`,
-    `${base}/${NAME}.png`,
   ]
 }
 
@@ -28,8 +24,6 @@ export function scenarioImageCandidates(name: string) {
   const base = `/events/scenario`
   return [
     `${base}/${name}.png`,
-    `${base}/${name}.jpeg`,
-    `${base}/${name}.jpg`,
   ]
 }
 
@@ -37,9 +31,6 @@ export function traineeImageCandidates(name?: string) {
   const base = `/events/trainee`
   return [
     `${base}/${name}_profile.png`,
-    `${base}/${name}.png`,
-    `${base}/${name}_profile.jpg`,
-    `${base}/${name}.jpg`,
   ]
 }
 
