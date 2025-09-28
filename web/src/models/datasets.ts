@@ -16,6 +16,7 @@ export type RaceInstance = {
   distance_text: string
   distance_m: number
   banner_url?: string
+  public_banner_path?: string
   ribbon_src?: string
   ribbon_code?: string
   rank: 'PRE-OP' | 'EX' | 'OP' | 'G3' | 'G2' | 'G1' | string

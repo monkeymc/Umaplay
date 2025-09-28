@@ -60,7 +60,7 @@ export default function GeneralForm() {
           <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ width: '100%' }}>
             <Typography variant="h6">General configurations</Typography>
             <Tooltip title={collapsed ? 'Expand' : 'Collapse'} placement="left">
-              <IconButton size="small" onClick={() => setCollapsed(!collapsed)}>
+              <IconButton component="span" size="small" onClick={() => setCollapsed(!collapsed)}>
                 {collapsed ? (
                   <KeyboardDoubleArrowRightIcon fontSize="small" />
                 ) : (

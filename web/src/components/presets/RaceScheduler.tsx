@@ -98,8 +98,9 @@ export default function RaceScheduler({ presetId }: { presetId: string; compact?
             <List dense>
               {filtered.slice(0, 500).map((r) => {
                 const badge = BADGE_ICON[r.instance.rank] || null
-                // prefer race_url (new), then banner_url, else default
-                const banner = (r.instance as any).race_url || r.instance.banner_url || DEFAULT_RACE_BANNER
+
+                // prefer race_url (new), then public_banner_path, else default
+                const banner = (r.instance as any).race_url || r.instance.public_banner_path || DEFAULT_RACE_BANNER
                 return (
                   <ListItemButton
                     key={`${r.dateKey}-${r.raceName}`}
@@ -148,7 +149,7 @@ export default function RaceScheduler({ presetId }: { presetId: string; compact?
             <List dense>
               {selectedRows.map((r) => {
                 const badge = BADGE_ICON[r.instance.rank] || null
-                const banner = (r.instance as any).race_url || r.instance.banner_url || DEFAULT_RACE_BANNER
+                const banner = (r.instance as any).race_url || r.instance.public_banner_path || DEFAULT_RACE_BANNER
                 // Pretty date: prefer instance data, fallback to dateKey (Y{n}-{MM}-{half})
                 const prettyDate =
                   (r.instance.year_label && r.instance.date_text)

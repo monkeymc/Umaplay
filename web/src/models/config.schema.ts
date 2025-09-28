@@ -1,6 +1,15 @@
 import { z } from 'zod'
 import type { AppConfig, GeneralConfig, Preset, StatKey } from './types'
 
+// Lightweight re-declare to avoid circulars in schema:
+const eventDefaults = { support: 1, trainee: 1, scenario: 1 }
+export const defaultEventSetup = () => ({
+  supports: [null, null, null, null, null, null],
+  scenario: null,
+  trainee: null,
+  prefs: { overrides: {}, patterns: [], defaults: eventDefaults },
+})
+
 export const STAT_KEYS: StatKey[] = ['SPD', 'STA', 'PWR', 'GUTS', 'WIT']
 
 export const generalSchema = z.object({
@@ -37,6 +46,45 @@ export const presetSchema = z.object({
   juniorStyle: z.enum(['end', 'late', 'pace', 'front']).nullable(),
   skillsToBuy: z.array(z.string()),
   plannedRaces: z.record(z.string(), z.string()),
+  // Make optional on input, but always present on output via default()
+  event_setup: (() => {
+    const rarity = z.enum(['SSR','SR','R'])
+    const attr   = z.enum(['SPD','STA','PWR','GUTS','WIT','PAL'])
+    const selectedSupport = z.object({
+      slot: z.number(),
+      name: z.string(),
+      rarity,
+      attribute: attr,
+    })
+    const selectedScenario = z.object({ name: z.string() }).nullable()
+    const selectedTrainee  = z.object({ name: z.string() }).nullable()
+
+    const defaults = { support: 1, trainee: 1, scenario: 1 }
+    const eventPrefs = z.object({
+      // IMPORTANT: string keys! (EventKey)
+      overrides: z.record(z.string(), z.number()).default({}),
+      patterns: z.array(z.object({ pattern: z.string(), pick: z.number() })).default([]),
+      defaults: z.object({
+        support: z.number().default(1),
+        trainee: z.number().default(1),
+        scenario: z.number().default(1),
+      }).default(defaults),
+    })
+
+    const eventSetup = z.object({
+      supports: z.array(selectedSupport.nullable()).length(6).default([null, null, null, null, null, null]),
+      scenario: selectedScenario.default(null),
+      trainee:  selectedTrainee.default(null),
+      prefs:    eventPrefs.default({ overrides: {}, patterns: [], defaults }),
+    })
+
+    return eventSetup
+  })().default({
+    supports: [null, null, null, null, null, null],
+    scenario: null,
+    trainee:  null,
+    prefs: { overrides: {}, patterns: [], defaults: { support: 1, trainee: 1, scenario: 1 } },
+  }),
 })
 
 export const appConfigSchema = z.object({
@@ -53,15 +101,17 @@ export const defaultPreset = (id: string, name: string): Preset => ({
   priorityStats: ['SPD', 'STA', 'WIT', 'PWR', 'GUTS'],
   targetStats: {
     SPD: 1150,
-    STA: 1000,
-    PWR: 530,
-    GUTS: 270,
-    WIT: 250,
+    STA: 900,
+    PWR: 700,
+    GUTS: 250,
+    WIT: 300,
   },
   minimalMood: 'NORMAL',
   juniorStyle: null,
   skillsToBuy: [],
   plannedRaces: {},
+  // let schema inject defaults; or be explicit:
+  event_setup: defaultEventSetup(),
 })
 
 export const defaultAppConfig = (): AppConfig => ({
