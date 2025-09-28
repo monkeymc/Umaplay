@@ -13,6 +13,7 @@ export default function SaveLoadBar() {
   const [snack, setSnack] = useState<{ open: boolean; msg: string; severity: 'success'|'error'}>({
     open: false, msg: '', severity: 'success'
   })
+
   return (
     <>
       <Stack direction="row" spacing={1} justifyContent="center">
@@ -44,6 +45,10 @@ export default function SaveLoadBar() {
 
               // 4) POST full config (your existing endpoint)
               await saveServerConfig(merged)
+
+              // 5) Also update the local config store so
+              //    export/import and LocalStorage see this immediately.
+              useConfigStore.setState((s) => ({ ...s, config: merged }))
               setSnack({ open: true, msg: 'Config saved to server (config.json)', severity: 'success' })
             } catch (e: any) {
               setSnack({ open: true, msg: e?.message ?? 'Failed to save config', severity: 'error' })

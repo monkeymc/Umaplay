@@ -33,7 +33,7 @@ export function scenarioImageCandidates(name: string) {
   ]
 }
 
-export function traineeImageCandidates(name: string) {
+export function traineeImageCandidates(name?: string) {
   const base = `/events/trainee`
   return [
     `${base}/${name}_profile.png`,

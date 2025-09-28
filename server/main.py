@@ -138,23 +138,6 @@ async def root_index():
     "Pragma": "no-cache",
     "Expires": "0"
   })
-
-@app.get("/{path:path}")
-async def fallback(path: str):
-  file_path = os.path.join(PATH, path)
-  headers = {
-    "Cache-Control": "no-cache, no-store, must-revalidate",
-    "Pragma": "no-cache",
-    "Expires": "0"
-  }
-
-  if os.path.isfile(file_path):
-    media_type = "application/javascript" if file_path.endswith((".js", ".mjs")) else None
-    return FileResponse(file_path, media_type=media_type, headers=headers)
-
-  return FileResponse(os.path.join(PATH, "index.html"), headers=headers)
-
-
 # ----------------------------
 # Admin: Update from GitHub
 # ----------------------------
@@ -195,6 +178,42 @@ async def update_from_github(request: Request):
   return {"status": "ok", "branch": branch, "steps": steps}
 
 # ----------------------------
+# Admin: Force update (HARD RESET)
+# ----------------------------
+@app.post("/admin/force_update")
+async def force_update(request: Request):
+  # Safety: allow only local calls
+  client = request.client.host if request.client else ""
+  if client not in ("127.0.0.1", "localhost", "::1"):
+    raise HTTPException(status_code=403, detail="Local requests only")
+
+  root = repo_root()
+  if not (root / ".git").exists():
+    raise HTTPException(status_code=400, detail="Not a git repository")
+
+  # Determine current branch
+  code, out, err = run_cmd(["git", "rev-parse", "--abbrev-ref", "HEAD"], cwd=root)
+  if code != 0:
+    raise HTTPException(status_code=500, detail=f"git rev-parse failed: {err or out}")
+  branch = (out or "").strip()
+
+  steps = []
+  sequence = [
+    ["git", "fetch", "--all", "--prune"],
+    ["git", "reset", "--hard", f"origin/{branch}"],
+    ["git", "clean", "-fd"],
+    ["git", "pull"],
+  ]
+  for args in sequence:
+    code, out, err = run_cmd(args, cwd=root, timeout=120)
+    steps.append({"cmd": " ".join(args), "code": code, "stdout": out, "stderr": err})
+    if code != 0:
+      raise HTTPException(status_code=500, detail={"message": "Force update failed", "steps": steps})
+
+  return {"status": "ok", "branch": branch, "steps": steps}
+
+
+# ----------------------------
 # Version & update info
 # ----------------------------
 @app.get("/admin/version")
@@ -204,3 +223,20 @@ def get_version():
 @app.get("/admin/check_update")
 def check_update():
   return latest_info()
+
+
+@app.get("/{path:path}")
+async def fallback(path: str):
+  file_path = os.path.join(PATH, path)
+  headers = {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0"
+  }
+
+  if os.path.isfile(file_path):
+    media_type = "application/javascript" if file_path.endswith((".js", ".mjs")) else None
+    return FileResponse(file_path, media_type=media_type, headers=headers)
+
+  return FileResponse(os.path.join(PATH, "index.html"), headers=headers)
+

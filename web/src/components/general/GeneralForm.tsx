@@ -2,6 +2,10 @@ import {
   Accordion, AccordionDetails, AccordionSummary,
   FormControlLabel, MenuItem, Select, Slider, Box, Stack, Switch, TextField, Typography, Button, Snackbar, Alert,
   Tooltip, IconButton, Avatar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material'
 import KeyboardDoubleArrowLeftIcon from '@mui/icons-material/KeyboardDoubleArrowLeft'
 import KeyboardDoubleArrowRightIcon from '@mui/icons-material/KeyboardDoubleArrowRight'
@@ -9,7 +13,7 @@ import Section from '@/components/common/Section'
 import FieldRow from '@/components/common/FieldRow'
 import { useConfigStore } from '@/store/configStore'
 import AdvancedSettings from './AdvancedSettings'
-import { checkUpdate, updateFromGithub } from '@/services/api'
+import { checkUpdate, forceUpdate, getVersion, updateFromGithub } from '@/services/api'
 import { useEffect, useState } from 'react'
 
 export default function GeneralForm() {
@@ -22,12 +26,15 @@ export default function GeneralForm() {
   const [updating, setUpdating] = useState(false)
   const [snack, setSnack] = useState<{open:boolean; msg:string; severity:'success'|'error'}>({open:false,msg:'',severity:'success'})
   const [update, setUpdate] = useState<{is_update_available:boolean; latest?:string; html_url?:string} | null>(null)
+  const [version, setVersion] = useState<string>('—')
+  const [confirmForce, setConfirmForce] = useState(false)
 
   useEffect(() => {
     let mounted = true
     checkUpdate().then(info => {
       if (mounted) setUpdate(info)
     }).catch(() => {})
+    getVersion().then(v => { if (mounted) setVersion(v.version) }).catch(() => {})
     return () => { mounted = false }
   }, [])
   // small helper map for mode icons (place PNGs under /public/icons/)
@@ -240,27 +247,72 @@ export default function GeneralForm() {
 
         <AdvancedSettings />
 
-        {/* Update from GitHub (only local, only if branch == main) */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
-          <Button
-            size="small"
-            variant="contained"
-            disabled={updating}
-            onClick={async () => {
-              try {
-                setUpdating(true)
-                const res = await updateFromGithub()
-                setSnack({ open: true, msg: `Updated successfully (branch: ${res.branch})`, severity: 'success' })
-              } catch (e:any) {
-                setSnack({ open: true, msg: e?.message || 'Update failed', severity: 'error' })
-              } finally {
-                setUpdating(false)
-              }
-            }}
-          >
-            {updating ? 'Updating…' : 'Update from GitHub'}
-          </Button>
+        {/* Version + Update from GitHub */}
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 0.5 }}>
+            Version: <strong>{version}</strong>
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, flexWrap: 'wrap' }}>
+            <Button
+              size="small"
+              variant="contained"
+              disabled={updating}
+              onClick={async () => {
+                try {
+                  setUpdating(true)
+                  const res = await updateFromGithub()
+                  setSnack({ open: true, msg: `Updated successfully (branch: ${res.branch})`, severity: 'success' })
+                } catch (e:any) {
+                  setSnack({ open: true, msg: e?.message || 'Update failed', severity: 'error' })
+                } finally {
+                  setUpdating(false)
+                }
+              }}
+            >
+              {updating ? 'Updating…' : 'Update from GitHub'}
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              color="error"
+              onClick={() => setConfirmForce(true)}
+            >
+              Force update
+            </Button>
+          </Box>
         </Box>
+
+        {/* Force update confirmation */}
+        <Dialog open={confirmForce} onClose={() => setConfirmForce(false)}>
+          <DialogTitle>Force update?</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2">
+              This will run a <code>git reset --hard</code> to the remote branch and <code>git pull</code>.
+              Any local, uncommitted changes will be lost. Continue?
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setConfirmForce(false)}>Cancel</Button>
+            <Button
+              color="error"
+              variant="contained"
+              onClick={async () => {
+                try {
+                  setConfirmForce(false)
+                  setUpdating(true)
+                  const res = await forceUpdate()
+                  setSnack({ open: true, msg: `Force updated (branch: ${res.branch})`, severity: 'success' })
+                } catch (e:any) {
+                  setSnack({ open: true, msg: e?.message || 'Force update failed', severity: 'error' })
+                } finally {
+                  setUpdating(false)
+                }
+              }}
+            >
+              Yes, force update
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         <Snackbar
           open={snack.open}

@@ -15,17 +15,25 @@ import { useEffect } from 'react'
 export default function PresetPanel({ compact = false }: { compact?: boolean }) {
   const cfg = useConfigStore((s) => s.config)
   const renamePreset = useConfigStore((s) => s.renamePreset)
+  const patchPreset = useConfigStore((s) => s.patchPreset)
   const activeId = cfg.activePresetId ?? cfg.presets[0]?.id
   const active = cfg.presets.find((p) => p.id === activeId)
   const eventsIndex = useEventsData()
 
-  // hydrate Event Setup store from the active preset's saved setup
-  const importSetup = useEventsSetupStore((s) => (s as any).importSetup)
+  // 1) Hydrate Event Setup only when active preset id changes
+  const importSetup = useEventsSetupStore((s) => s.importSetup)
+  const revision = useEventsSetupStore((s) => s.revision)
   useEffect(() => {
-    if (active?.event_setup) {
-      importSetup(active.event_setup)
-    }
-  }, [active?.event_setup, importSetup])
+    if (active?.event_setup) importSetup(active.event_setup)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId])
+
+  // 2) On any EventSetup change, write it back into the active preset (so export & LocalStorage keep it)
+  useEffect(() => {
+    if (!activeId) return
+    const setup = useEventsSetupStore.getState().getSetup()
+    patchPreset(activeId, 'event_setup', setup)
+  }, [activeId, revision, patchPreset])
 
   if (!active) return null
 
