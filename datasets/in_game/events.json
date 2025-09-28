@@ -1075,7 +1075,7 @@
 						}
 					]
 				},
-				"default_preference": 1
+				"default_preference": 2
 			},
 			{
 				"type": "random",
@@ -6096,6 +6096,65 @@
 					]
 				},
 				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
 			}
 		]
 	},
@@ -6352,6 +6411,65 @@
 					"2": [
 						{
 							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
 						}
 					]
 				},
@@ -6636,6 +6754,65 @@
 					]
 				},
 				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"skill_pts": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
 			}
 		]
 	},
@@ -6893,6 +7070,8887 @@
 					"2": [
 						{
 							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Air Groove",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Flowers for You",
+				"options": {
+					"1": [
+						{
+							"wit": 20
+						}
+					],
+					"2": [
+						{
+							"speed": 20
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Beautiful Stress Relief Method?",
+				"options": {
+					"1": [
+						{
+							"stamina": 20
+						}
+					],
+					"2": [
+						{
+							"guts": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Guidepost",
+				"options": {
+					"1": [
+						{
+							"speed": 20
+						},
+						{
+							"speed": 20,
+							"status": "Hot Topic"
+						}
+					],
+					"2": [
+						{
+							"power": 20
+						},
+						{
+							"power": 20,
+							"status": "Hot Topic"
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Empress and Monarch",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Operation: Flowerbed",
+				"options": {
+					"1": [
+						{
+							"energy": 5
+						},
+						{
+							"wit": 5
+						}
+					],
+					"2": [
+						{
+							"energy": -10,
+							"speed": 10,
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Empress and Emperor",
+				"options": {
+					"1": [
+						{
+							"hints": [
+								"Homestretch Haste"
+							]
+						}
+					],
+					"2": [
+						{
+							"mood": 1,
+							"skill_pts": 15
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Seize Her!",
+				"options": {
+					"1": [
+						{
+							"energy": 10
+						}
+					],
+					"2": [
+						{
+							"energy": -10,
+							"mood": 1,
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Take Good Care of Your Tail",
+				"options": {
+					"1": [
+						{
+							"energy": 10
+						}
+					],
+					"2": [
+						{
+							"energy": -10,
+							"mood": 1,
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Suggestion Box of Freedom",
+				"options": {
+					"1": [
+						{
+							"energy": 10
+						}
+					],
+					"2": [
+						{
+							"energy": -10,
+							"mood": 1,
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Taste of Effort",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Little Encounter",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Sweet Potato Cake",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Imprinted Memories",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					],
+					"3": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 3
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Blinking Light Means Stop",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Smoldering Silently",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Air Groove (Wedding)",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Who Will Stand Beside Her?",
+				"options": {
+					"1": [
+						{
+							"hints": [
+								"Go with the Flow"
+							]
+						}
+					],
+					"2": [
+						{
+							"guts": 10,
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Never-Ending Road",
+				"options": {
+					"1": [
+						{
+							"hints": [
+								"Up-Tempo"
+							]
+						}
+					],
+					"2": [
+						{
+							"power": 20
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Empress and Mom",
+				"options": {
+					"1": [
+						{
+							"speed": 10,
+							"stamina": 10
+						},
+						{
+							"speed": 10,
+							"stamina": 10,
+							"status": "Charming ○"
+						}
+					],
+					"2": [
+						{
+							"stamina": 10,
+							"power": 10
+						},
+						{
+							"stamina": 10,
+							"power": 10,
+							"status": "Charming ○"
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Empress and Monarch",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Operation: Flowerbed",
+				"options": {
+					"1": [
+						{
+							"energy": 5,
+							"wit": 5
+						}
+					],
+					"2": [
+						{
+							"energy": -10,
+							"speed": 10,
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Empress and Emperor",
+				"options": {
+					"1": [
+						{
+							"hints": [
+								"Homestretch Haste"
+							]
+						}
+					],
+					"2": [
+						{
+							"mood": 1,
+							"skill_pts": 15
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Seize Her!",
+				"options": {
+					"1": [
+						{
+							"energy": 10
+						}
+					],
+					"2": [
+						{
+							"energy": -10,
+							"mood": 1,
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Take Good Care of Your Tail",
+				"options": {
+					"1": [
+						{
+							"energy": 10
+						}
+					],
+					"2": [
+						{
+							"energy": -10,
+							"mood": 1,
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Suggestion Box of Freedom",
+				"options": {
+					"1": [
+						{
+							"energy": 10
+						}
+					],
+					"2": [
+						{
+							"energy": -10,
+							"mood": 1,
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Taste of Effort",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Little Encounter",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Sweet Potato Cake",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Imprinted Memories",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					],
+					"3": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 3
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Blinking Light Means Stop",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Smoldering Silently",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Biwa Hayahide",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "To Keep, or Not to Keep?",
+				"options": {
+					"1": [
+						{
+							"wit": 20
+						}
+					],
+					"2": [
+						{
+							"stamina": 10,
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Realistic Fairytale",
+				"options": {
+					"1": [
+						{
+							"power": 20
+						}
+					],
+					"2": [
+						{
+							"guts": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Theory, the Greatest Weapon",
+				"options": {
+					"1": [
+						{
+							"stamina": 20
+						},
+						{
+							"stamina": 20,
+							"status": "Hot Topic"
+						},
+						{
+							"wit": 20
+						},
+						{
+							"wit": 20,
+							"status": "Hot Topic"
+						}
+					],
+					"2": [
+						{
+							"wit": 20
+						},
+						{
+							"wit": 20,
+							"status": "Practice Perfect ○"
+						},
+						{
+							"wit": 20,
+							"status": "Hot Topic"
+						},
+						{
+							"wit": 20,
+							"status": "Hot Topic & Practice Perfect ○"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Memories of Cooking and Sisterhood",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 5,
+							"wit": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A New Side",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Battle With a Raging Dragon",
+				"options": {
+					"1": [
+						{
+							"power": 5,
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Hanshin Racecourse ○"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Banana Fiend ♪",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Reading in a Cafe",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Sharp Contrast",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Emergency Presentation",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					],
+					"3": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 3
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Hide and Seek Master",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Game Theory",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "El Condor Pasa",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Determination of the World's Strongest",
+				"options": {
+					"1": [
+						{
+							"power": 20
+						}
+					],
+					"2": [
+						{
+							"stamina": 20
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Cactus Feast",
+				"options": {
+					"1": [
+						{
+							"speed": 10,
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Song of Courage",
+				"options": {
+					"1": [
+						{
+							"power": 20
+						},
+						{
+							"power": 20,
+							"status": "Fast Learner"
+						}
+					],
+					"2": [
+						{
+							"speed": 10,
+							"power": 10
+						},
+						{
+							"speed": 10,
+							"power": 10,
+							"status": "Fast Learner"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Personalized Mask",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Salsa Roja",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Go for the Extra-Large Pizza!",
+				"options": {
+					"1": [
+						{
+							"power": 10,
+							"skill_pts": 15
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Soft Step"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Hot and Spicy!",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Wrestler I Admire",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Shocking Retirement",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Renewed Resolve",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					],
+					"3": [
+						{
+							"speed": 5,
+							"stamina": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Academy at Night",
+				"options": {
+					"1": [
+						{
+							"mood": 1,
+							"guts": 5
+						}
+					],
+					"2": [
+						{
+							"energy": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Flower Language",
+				"options": {
+					"1": [
+						{
+							"mood": 1,
+							"wit": 5
+						}
+					],
+					"2": [
+						{
+							"energy": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Curren Chan",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Which Curren Do You Like?",
+				"options": {
+					"1": [
+						{
+							"speed": 10,
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10,
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "How Curren Handles Social Media ♪",
+				"options": {
+					"1": [
+						{
+							"speed": 20
+						}
+					],
+					"2": [
+						{
+							"wit": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Curren's Signature Racewear",
+				"options": {
+					"1": [
+						{
+							"speed": 10,
+							"stamina": 10
+						},
+						{
+							"speed": 10,
+							"stamina": 10,
+							"status": "Practice Perfect ○"
+						}
+					],
+					"2": [
+						{
+							"speed": 10,
+							"power": 10
+						},
+						{
+							"speed": 10,
+							"power": 10,
+							"status": "Practice Perfect ○"
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "One, Two, Three, Curren Chan!",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Ms. Worldwide",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Thanks for the Lesson ♪",
+				"options": {
+					"1": [
+						{
+							"energy": -10,
+							"speed": 20
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Frenzied Late Surgers"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Wanna Eat Together?",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Making Friends",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Making Connections",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Universal Cutie",
+				"options": {
+					"1": [
+						{
+							"speed": 5,
+							"power": 5
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					],
+					"3": [
+						{
+							"speed": 5,
+							"wit": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Nostalgic Flavor",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Rattle, Rattle, Clunk",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "El Condor Pasa (Fantasy)",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Passion-filled Outfit",
+				"options": {
+					"1": [
+						{
+							"hints": [
+								"Calm in a Crowd"
+							]
+						}
+					],
+					"2": [
+						{
+							"speed": 7,
+							"power": 7,
+							"guts": 7
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Passion! Connection! Guidance!",
+				"options": {
+					"1": [
+						{
+							"power": 20
+						}
+					],
+					"2": [
+						{
+							"mood": 1,
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Challenge from the Past",
+				"options": {
+					"1": [
+						{
+							"speed": 10,
+							"power": 10
+						},
+						{
+							"speed": 10,
+							"power": 10,
+							"status": "Charming ○"
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Go with the Flow"
+							]
+						},
+						{
+							"hints": [
+								"Go with the Flow"
+							],
+							"status": "Charming ○"
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Personalized Mask",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Salsa Roja",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Go for the Extra-Large Pizza!",
+				"options": {
+					"1": [
+						{
+							"power": 10,
+							"skill_pts": 15
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Soft Step"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Hot and Spicy!",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Wrestler I Admire",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Shocking Retirement",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Renewed Resolve",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					],
+					"3": [
+						{
+							"speed": 5,
+							"stamina": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Academy at Night",
+				"options": {
+					"1": [
+						{
+							"mood": 1,
+							"guts": 5
+						}
+					],
+					"2": [
+						{
+							"energy": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Flower Language",
+				"options": {
+					"1": [
+						{
+							"mood": 1,
+							"wit": 5
+						}
+					],
+					"2": [
+						{
+							"energy": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Gold Ship",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Red of the Protagonist!",
+				"options": {
+					"1": [
+						{
+							"wit": 20
+						}
+					],
+					"2": [
+						{
+							"guts": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Date, Golshi Style",
+				"options": {
+					"1": [
+						{
+							"stamina": 20
+						}
+					],
+					"2": [
+						{
+							"power": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Sudden Episode from Golshi's Past!",
+				"options": {
+					"1": [
+						{
+							"stamina": 10,
+							"wit": 10
+						},
+						{
+							"stamina": 10,
+							"wit": 10,
+							"status": "Fast Learner"
+						}
+					],
+					"2": [
+						{
+							"speed": 20
+						},
+						{
+							"speed": 20,
+							"status": "Fast Learner"
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Pair Discount Repeat Offender",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Which Did You Lose?",
+				"options": {
+					"1": [
+						{
+							"energy": -10,
+							"power": 20
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "My Part-Time Job Is... Crazy?",
+				"options": {
+					"1": [
+						{
+							"stamina": 10,
+							"skill_pts": 15
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Hanshin Racecourse ○"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Day After, Voices Hoarse",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "This One's For Keeps!",
+				"options": {
+					"1": [
+						{
+							"energy": 10
+						}
+					],
+					"2": [
+						{
+							"skill_pts": 60,
+							"hints": [
+								"Non-Standard Distance ○"
+							]
+						},
+						{
+							"skill_pts": 15,
+							"status": "Slacker"
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "special",
+				"chain_step": 1,
+				"name": "After the Takarazuka Kinen: Keyword 2",
+				"options": {
+					"1": [
+						{
+							"stats": 3,
+							"mood": 1,
+							"skill_pts": 45,
+							"bond": 4
+						}
+					],
+					"2": [
+						{
+							"stats": 3,
+							"mood": 1,
+							"skill_pts": 45,
+							"bond": 4
+						},
+						{
+							"stats": 3,
+							"mood": 1,
+							"skill_pts": 45,
+							"status": "Charming ○",
+							"bond": 4
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Killer Appetite!",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Legend of the Left Pinky",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Hello From About 1.5 Billion Years Ago",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Lovely Place",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Nighttime Park Visit",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "And Then She...",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					],
+					"3": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Grass Wonder",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Hidden Meaning",
+				"options": {
+					"1": [
+						{
+							"stamina": 10,
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"power": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Principles",
+				"options": {
+					"1": [
+						{
+							"speed": 20
+						}
+					],
+					"2": [
+						{
+							"stamina": 20
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Hate to Lose",
+				"options": {
+					"1": [
+						{
+							"wit": 20
+						},
+						{
+							"wit": 20,
+							"status": "Fast Learner"
+						}
+					],
+					"2": [
+						{
+							"stamina": 10,
+							"guts": 10
+						},
+						{
+							"stamina": 10,
+							"guts": 10,
+							"status": "Fast Learner"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Errands Have Perks",
+				"options": {
+					"1": [
+						{
+							"speed": 5,
+							"stamina": 5
+						}
+					],
+					"2": [
+						{
+							"energy": 5,
+							"wit": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Beauteaful",
+				"options": {
+					"1": [
+						{
+							"wit": 5,
+							"skill_pts": 15
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Tracen Karuta Queen",
+				"options": {
+					"1": [
+						{
+							"speed": 10,
+							"wit": 5
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Competitive Spirit ○"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "In Search of Refreshment",
+				"options": {
+					"1": [
+						{
+							"mood": -1,
+							"guts": 25
+						}
+					],
+					"2": [
+						{
+							"mood": -1,
+							"wit": 25
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Together for Tea",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Yamato Nadeshiko",
+				"options": {
+					"1": [
+						{
+							"power": 5,
+							"wit": 5
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Childhoods Apart",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Nadeshiko Gal",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					],
+					"3": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 3
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Childhood Dream",
+				"options": {
+					"1": [
+						{
+							"speed": 5,
+							"guts": 5
+						}
+					],
+					"2": [
+						{
+							"stamina": 5,
+							"wit": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Flower Vase",
+				"options": {
+					"1": [
+						{
+							"guts": 5,
+							"wit": 5
+						}
+					],
+					"2": [
+						{
+							"speed": 5,
+							"stamina": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Grass Wonder (Fantasy)",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Warrior's Spirit",
+				"options": {
+					"1": [
+						{
+							"mood": 1,
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 15
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Whimsical Encounter",
+				"options": {
+					"1": [
+						{
+							"guts": 10,
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 20
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Everlasting Game",
+				"options": {
+					"1": [
+						{
+							"hints": [
+								"Sharp Gaze"
+							]
+						},
+						{
+							"hints": [
+								"Sharp Gaze"
+							],
+							"status": "Hot Topic"
+						}
+					],
+					"2": [
+						{
+							"speed": 10,
+							"skill_pts": 15
+						},
+						{
+							"speed": 10,
+							"skill_pts": 15,
+							"status": "Hot Topic"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Errands Have Perks",
+				"options": {
+					"1": [
+						{
+							"speed": 5,
+							"stamina": 5
+						}
+					],
+					"2": [
+						{
+							"energy": 5,
+							"wit": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Beauteaful",
+				"options": {
+					"1": [
+						{
+							"wit": 5,
+							"skill_pts": 15
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Tracen Karuta Queen",
+				"options": {
+					"1": [
+						{
+							"speed": 10,
+							"wit": 5
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Competitive Spirit ○"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "In Search of Refreshment",
+				"options": {
+					"1": [
+						{
+							"mood": -1,
+							"guts": 25
+						}
+					],
+					"2": [
+						{
+							"mood": -1,
+							"wit": 25
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Together for Tea",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Yamato Nadeshiko",
+				"options": {
+					"1": [
+						{
+							"power": 5,
+							"wit": 5
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Childhoods Apart",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Nadeshiko Gal",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					],
+					"3": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 3
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Childhood Dream",
+				"options": {
+					"1": [
+						{
+							"speed": 5,
+							"guts": 5
+						}
+					],
+					"2": [
+						{
+							"stamina": 5,
+							"wit": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Flower Vase",
+				"options": {
+					"1": [
+						{
+							"guts": 5,
+							"wit": 5
+						}
+					],
+					"2": [
+						{
+							"speed": 5,
+							"stamina": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Haru Urara",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Racewear I Love!",
+				"options": {
+					"1": [
+						{
+							"speed": 20
+						}
+					],
+					"2": [
+						{
+							"power": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Pair Interview!",
+				"options": {
+					"1": [
+						{
+							"power": 20
+						}
+					],
+					"2": [
+						{
+							"stamina": 20
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Tug of War Tournament!",
+				"options": {
+					"1": [
+						{
+							"guts": 20
+						},
+						{
+							"guts": 20,
+							"status": "Hot Topic"
+						}
+					],
+					"2": [
+						{
+							"speed": 20
+						},
+						{
+							"speed": 20,
+							"status": "Hot Topic"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Arm-Wrestling Contest",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Looking for Something Important",
+				"options": {
+					"1": [
+						{
+							"energy": -10,
+							"guts": 20
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Sand Training!",
+				"options": {
+					"1": [
+						{
+							"guts": 10,
+							"skill_pts": 15
+						}
+					],
+					"2": [
+						{
+							"energy": 15
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Final Boss... Spe!",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Little Detour!",
+				"options": {
+					"1": [
+						{
+							"skill_pts": 30
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Parks Are Fun!",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Secret Day Off Plan!",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					],
+					"3": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "So Cool!",
+				"options": {
+					"1": [
+						{
+							"skill_pts": 30
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Forgot to Eat!",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Hishi Amazon",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Another Level",
+				"options": {
+					"1": [
+						{
+							"power": 20
+						}
+					],
+					"2": [
+						{
+							"guts": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "One-on-One! Gangster! Racewear!",
+				"options": {
+					"1": [
+						{
+							"power": 20
+						}
+					],
+					"2": [
+						{
+							"stamina": 20
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Friend or Rival?",
+				"options": {
+					"1": [
+						{
+							"power": 20
+						},
+						{
+							"power": 20,
+							"status": "Practice Perfect ○"
+						}
+					],
+					"2": [
+						{
+							"wit": 20
+						},
+						{
+							"wit": 20,
+							"status": "Practice Perfect ○"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Hishiama's Dorm-Leader Breakfast",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Hishiama's Needlework",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 5,
+							"guts": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Hishiama's Foraging",
+				"options": {
+					"1": [
+						{
+							"power": 10,
+							"skill_pts": 15
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Homestretch Haste"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Magic of Sweets?",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Blazing Memories",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Cool and Fiery Sisters",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Torrential Passion",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					],
+					"3": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Hishiama's Special View",
+				"options": {
+					"1": [
+						{
+							"speed": 5,
+							"power": 5
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Hishiama and the Arts",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "King Halo",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Outfit That Suits Me Most",
+				"options": {
+					"1": [
+						{
+							"speed": 10,
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"power": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Running Isn't Everything",
+				"options": {
+					"1": [
+						{
+							"stamina": 20
+						}
+					],
+					"2": [
+						{
+							"speed": 10,
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Manners Are Common Sense",
+				"options": {
+					"1": [
+						{
+							"guts": 20
+						},
+						{
+							"guts": 20,
+							"status": "Practice Perfect ○"
+						}
+					],
+					"2": [
+						{
+							"stamina": 10,
+							"wit": 10
+						},
+						{
+							"stamina": 10,
+							"wit": 10,
+							"status": "Practice Perfect ○"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Movies Are Full of Learning Opportunities",
+				"options": {
+					"1": [
+						{
+							"speed": 5,
+							"guts": 5
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The King Knows No Exhaustion",
+				"options": {
+					"1": [
+						{
+							"energy": 5
+						},
+						{
+							"energy": 5,
+							"mood": 1
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "First-Rate in Studies Too",
+				"options": {
+					"1": [
+						{
+							"wit": 10,
+							"skill_pts": 15
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Outer Swell"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "After-School Soda",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Three Heads Are Better than One",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Sweet Tooth Temptation",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "First-Rate Spot",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "First-Rate Harvest",
+				"options": {
+					"1": [
+						{
+							"power": 5,
+							"guts": 5
+						}
+					],
+					"2": [
+						{
+							"speed": 5,
+							"stamina": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "First-Rate Terms",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					],
+					"3": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Crowds Are No Problem",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Breaking Curfew is Second-Rate",
+				"options": {
+					"1": [
+						{
+							"guts": 5,
+							"wit": 5
+						}
+					],
+					"2": [
+						{
+							"speed": 5,
+							"power": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Maruzensky",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Trendsetter",
+				"options": {
+					"1": [
+						{
+							"speed": 10,
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"power": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Sewing Star",
+				"options": {
+					"1": [
+						{
+							"guts": 20
+						}
+					],
+					"2": [
+						{
+							"stamina": 10,
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "My Favorite Things",
+				"options": {
+					"1": [
+						{
+							"speed": 20
+						},
+						{
+							"speed": 20,
+							"status": "Fast Learner"
+						}
+					],
+					"2": [
+						{
+							"stamina": 10,
+							"guts": 10
+						},
+						{
+							"stamina": 10,
+							"guts": 10,
+							"status": "Fast Learner"
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Hot Rod",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Let's Play ♪",
+				"options": {
+					"1": [
+						{
+							"energy": 10
+						}
+					],
+					"2": [
+						{
+							"energy": -5,
+							"power": 10,
+							"guts": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Lady's Style ☆",
+				"options": {
+					"1": [
+						{
+							"speed": 5,
+							"skill_pts": 10,
+							"mood": 1
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Huge Lead"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Let's Cook!",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Road to a Rad Victory!",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Down to Dance!",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Nostalgia Fever ☆",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Secret to Supporting Each Other",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Even Role Models Get Lonely",
+				"options": {
+					"1": [
+						{
+							"stamina": 5,
+							"guts": 5
+						}
+					],
+					"2": [
+						{
+							"speed": 5,
+							"power": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Take the Wheel",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					],
+					"3": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Meeting New People Is Trendy ☆",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Fun Never Stops ♪",
+				"options": {
+					"1": [
+						{
+							"speed": 5,
+							"wit": 5
+						}
+					],
+					"2": [
+						{
+							"stamina": 5,
+							"power": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Matikanefukukitaru",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Room of the Chosen Ones",
+				"options": {
+					"1": [
+						{
+							"guts": 20
+						}
+					],
+					"2": [
+						{
+							"speed": 20
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Better Fortune! Lucky Telephone",
+				"options": {
+					"1": [
+						{
+							"stamina": 10,
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"power": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Under the Meteor Shower",
+				"options": {
+					"1": [
+						{
+							"speed": 10,
+							"power": 10
+						},
+						{
+							"speed": 10,
+							"power": 10,
+							"status": "Charming ○"
+						}
+					],
+					"2": [
+						{
+							"stamina": 10,
+							"guts": 10
+						},
+						{
+							"stamina": 10,
+							"guts": 10,
+							"status": "Charming ○"
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Cursed Camera",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"skill_pts": 30
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Manhattan's Dream",
+				"options": {
+					"1": [
+						{
+							"hints": [
+								"Hesitant Front Runners"
+							]
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Pretty Gunslingers",
+				"options": {
+					"1": [
+						{
+							"skill_pts": 15,
+							"mood": 1
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Seven Gods of Fortune Fine Food Tour",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Fukukitaru's Protection against Misfortune",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Punch in a Pinch",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 5,
+							"wit": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Fukukitaru's Unique Good-Luck Spell",
+				"options": {
+					"1": [
+						{
+							"speed": 5,
+							"guts": 5
+						}
+					],
+					"2": [
+						{
+							"stamina": 5,
+							"power": 5
+						}
+					],
+					"3": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Taking the Plunge",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 5,
+							"wit": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Shrine Visit",
+				"options": {
+					"1": [
+						{
+							"power": 5,
+							"guts": 5
+						}
+					],
+					"2": [
+						{
+							"speed": 5,
+							"stamina": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Mayano Top Gun",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Maya's Thrilling ☆ Test of Courage",
+				"options": {
+					"1": [
+						{
+							"power": 20
+						}
+					],
+					"2": [
+						{
+							"guts": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Sweet Feelings for You ♪",
+				"options": {
+					"1": [
+						{
+							"stamina": 20
+						}
+					],
+					"2": [
+						{
+							"wit": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Mayano Takes Off ☆",
+				"options": {
+					"1": [
+						{
+							"speed": 20
+						},
+						{
+							"speed": 20,
+							"status": "Charming ○"
+						}
+					],
+					"2": [
+						{
+							"stamina": 20
+						},
+						{
+							"stamina": 20,
+							"status": "Charming ○"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Maya Will Teach You ☆",
+				"options": {
+					"1": [
+						{
+							"power": 5,
+							"guts": 5
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Tips from a Top Model!",
+				"options": {
+					"1": [
+						{
+							"energy": -10,
+							"stamina": 20
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Maya's Race Class ☆",
+				"options": {
+					"1": [
+						{
+							"stamina": 10,
+							"skill_pts": 15
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Straightaway Adept"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Hearty Chanko! ☆",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Maya's Exciting ☆ Livestream!",
+				"options": {
+					"1": [
+						{
+							"stamina": 5,
+							"power": 5
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Maya's Euphoric ☆ Livestream!",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Maya's Twinkly ☆ Determination!",
+				"options": {
+					"1": [
+						{
+							"speed": 5,
+							"stamina": 5
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					],
+					"3": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Maya's Special Someone!",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Wish on a Star",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Mayano Top Gun (Wedding)",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "You're My Sunshine ☆",
+				"options": {
+					"1": [
+						{
+							"stamina": 20
+						}
+					],
+					"2": [
+						{
+							"power": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Meant to Be ♪",
+				"options": {
+					"1": [
+						{
+							"hints": [
+								"Pace Strategy"
+							]
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Straightaway Acceleration"
+							]
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "With My Whole Heart!",
+				"options": {
+					"1": [
+						{
+							"stamina": 10,
+							"skill_pts": 15
+						},
+						{
+							"stamina": 10,
+							"skill_pts": 15,
+							"status": "Practice Perfect ○"
+						}
+					],
+					"2": [
+						{
+							"energy": 15
+						},
+						{
+							"energy": 15,
+							"status": "Practice Perfect ○"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Maya Will Teach You ☆",
+				"options": {
+					"1": [
+						{
+							"power": 5,
+							"guts": 5
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Tips from a Top Model!",
+				"options": {
+					"1": [
+						{
+							"energy": -10,
+							"stamina": 20
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Maya's Race Class ☆",
+				"options": {
+					"1": [
+						{
+							"stamina": 10,
+							"skill_pts": 15
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Straightaway Adept"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Hearty Chanko! ☆",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Maya's Exciting ☆ Livestream!",
+				"options": {
+					"1": [
+						{
+							"stamina": 5,
+							"power": 5
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Maya's Euphoric ☆ Livestream!",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Maya's Twinkly ☆ Determination!",
+				"options": {
+					"1": [
+						{
+							"speed": 5,
+							"stamina": 5
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					],
+					"3": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Maya's Special Someone!",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Wish on a Star",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Mejiro McQueen",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Resolve and Duty",
+				"options": {
+					"1": [
+						{
+							"speed": 10,
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"power": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Late-Night Fanservice Training",
+				"options": {
+					"1": [
+						{
+							"guts": 20
+						}
+					],
+					"2": [
+						{
+							"speed": 20
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Elegance",
+				"options": {
+					"1": [
+						{
+							"stamina": 10,
+							"power": 10
+						},
+						{
+							"stamina": 10,
+							"power": 10,
+							"status": "Practice Perfect ○"
+						}
+					],
+					"2": [
+						{
+							"wit": 20
+						},
+						{
+							"wit": 20,
+							"status": "Practice Perfect ○"
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Queen of the Island",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "It's Called a Sea Pineapple!",
+				"options": {
+					"1": [
+						{
+							"skill_pts": 30
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Cooking Up Memories",
+				"options": {
+					"1": [
+						{
+							"energy": 15
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Early Lead"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Allure of Racecourse Food",
+				"options": {
+					"1": [
+						{
+							"energy": 30,
+							"stamina": 10,
+							"skill_pts": 10
+						},
+						{
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					],
+					"2": [
+						{
+							"guts": 15,
+							"skill_pts": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Attack of the Chestnut Feast!",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Two Tickets for the Silver Screen",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 5,
+							"skill_pts": 15
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "An Excited Young Lady",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Endless Kingdom",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					],
+					"3": [
+						{
+							"speed": 5,
+							"power": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Bargain Find",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Three Ramen Bowls' Worth of Temptation",
+				"options": {
+					"1": [
+						{
+							"skill_pts": 30
+						}
+					],
+					"2": [
+						{
+							"speed": 5,
+							"stamina": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Mejiro McQueen (Anime Collab)",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "My Roommate's Concern",
+				"options": {
+					"1": [
+						{
+							"hints": [
+								"Calm in a Crowd"
+							]
+						}
+					],
+					"2": [
+						{
+							"stamina": 10,
+							"skill_pts": 15
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "My Family Make a Difficult Decision",
+				"options": {
+					"1": [
+						{
+							"speed": 10,
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 7,
+							"guts": 7,
+							"wit": 7
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "My Rival, No Matter the Stage",
+				"options": {
+					"1": [
+						{
+							"hints": [
+								"Prudent Positioning"
+							]
+						},
+						{
+							"hints": [
+								"Prudent Positioning"
+							],
+							"status": "Hot Topic"
+						}
+					],
+					"2": [
+						{
+							"wit": 10,
+							"skill_pts": 15
+						},
+						{
+							"wit": 10,
+							"skill_pts": 15,
+							"status": "Hot Topic"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Queen of the Island",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "It's Called a Sea Pineapple!",
+				"options": {
+					"1": [
+						{
+							"skill_pts": 30
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Cooking Up Memories",
+				"options": {
+					"1": [
+						{
+							"energy": 15
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Early Lead"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Allure of Racecourse Food",
+				"options": {
+					"1": [
+						{
+							"energy": 30,
+							"stamina": 10,
+							"skill_pts": 10
+						},
+						{
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					],
+					"2": [
+						{
+							"guts": 15,
+							"skill_pts": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Attack of the Chestnut Feast!",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Two Tickets for the Silver Screen",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 5,
+							"skill_pts": 15
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "An Excited Young Lady",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Endless Kingdom",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					],
+					"3": [
+						{
+							"speed": 5,
+							"power": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Bargain Find",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Three Ramen Bowls' Worth of Temptation",
+				"options": {
+					"1": [
+						{
+							"skill_pts": 30
+						}
+					],
+					"2": [
+						{
+							"speed": 5,
+							"stamina": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Mejiro Ryan",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "My Signature Racewear",
+				"options": {
+					"1": [
+						{
+							"guts": 20
+						}
+					],
+					"2": [
+						{
+							"speed": 20
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Heart-Pounding Aquarium",
+				"options": {
+					"1": [
+						{
+							"power": 10,
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10,
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Refreshingly Real",
+				"options": {
+					"1": [
+						{
+							"stamina": 20
+						},
+						{
+							"stamina": 20,
+							"status": "Hot Topic"
+						}
+					],
+					"2": [
+						{
+							"power": 20
+						},
+						{
+							"power": 20,
+							"status": "Hot Topic"
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Muscle Jealousy",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Pony Girl and the Wolf Prince",
+				"options": {
+					"1": [
+						{
+							"energy": 5,
+							"stamina": 5
+						}
+					],
+					"2": [
+						{
+							"energy": 5,
+							"speed": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Real Gains",
+				"options": {
+					"1": [
+						{
+							"power": 10,
+							"skill_pts": 15
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Wet Conditions ○"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Rest Day",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Nerve-Racking Rest Time",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Flush with Feelings",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "With Relaxation and Trust Comes...",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					],
+					"3": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Ryan to the Rescue!",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Little Fans of the Umadol",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Narita Brian",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Strategy",
+				"options": {
+					"1": [
+						{
+							"speed": 20
+						}
+					],
+					"2": [
+						{
+							"power": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Tact",
+				"options": {
+					"1": [
+						{
+							"stamina": 20
+						}
+					],
+					"2": [
+						{
+							"wit": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Flexibility",
+				"options": {
+					"1": [
+						{
+							"speed": 20
+						},
+						{
+							"speed": 20,
+							"status": "Hot Topic"
+						}
+					],
+					"2": [
+						{
+							"guts": 20
+						},
+						{
+							"guts": 20,
+							"status": "Hot Topic"
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Aspiration",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"energy": -10,
+							"power": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Transcendence",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 5,
+							"guts": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Ability",
+				"options": {
+					"1": [
+						{
+							"speed": 15
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Passing Pro"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Starving Warriors",
+				"options": {
+					"1": [
+						{
+							"energy": 5,
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"energy": -10,
+							"mood": 1,
+							"speed": 25
+						},
+						{
+							"energy": -10,
+							"speed": 10
+						}
+					],
+					"3": [
+						{
+							"energy": -10,
+							"mood": 1,
+							"stamina": 25
+						},
+						{
+							"energy": -10,
+							"stamina": 10
+						}
+					],
+					"4": [
+						{
+							"energy": -10,
+							"mood": 1,
+							"power": 25
+						},
+						{
+							"energy": -10,
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Carnivore",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Lone Wolf's Diet",
+				"options": {
+					"1": [
+						{
+							"speed": 5,
+							"power": 5
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Caught by Brian!",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Digging In",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					],
+					"3": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Lone Wolf Hunts Alone",
+				"options": {
+					"1": [
+						{
+							"stamina": 5,
+							"guts": 5
+						}
+					],
+					"2": [
+						{
+							"power": 5,
+							"wit": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Breakthrough",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Narita Taishin",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Strong Just the Way I Am",
+				"options": {
+					"1": [
+						{
+							"power": 20
+						}
+					],
+					"2": [
+						{
+							"speed": 20
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Taishin's SOS",
+				"options": {
+					"1": [
+						{
+							"speed": 10,
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 20
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Anxious Survival",
+				"options": {
+					"1": [
+						{
+							"power": 20
+						},
+						{
+							"power": 20,
+							"status": "Charming ○"
+						}
+					],
+					"2": [
+						{
+							"guts": 10,
+							"wit": 10
+						},
+						{
+							"guts": 10,
+							"wit": 10,
+							"status": "Charming ○"
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Report Submitted",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 5,
+							"power": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Unknown Music",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Distance",
+				"options": {
+					"1": [
+						{
+							"mood": 1,
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Standing By"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Extra Training to Blow Off Steam",
+				"options": {
+					"1": [
+						{
+							"energy": 10
+						}
+					],
+					"2": [
+						{
+							"energy": -10,
+							"skill_pts": 25
+						}
+					],
+					"3": [
+						{
+							"energy": -15,
+							"stats": 10
+						},
+						{
+							"energy": -15,
+							"mood": 1,
+							"stats": 15
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Extra Training to De-stress?",
+				"options": {
+					"1": [
+						{
+							"energy": 10
+						}
+					],
+					"2": [
+						{
+							"energy": -10,
+							"skill_pts": 25
+						}
+					],
+					"3": [
+						{
+							"energy": -15,
+							"stats": 10
+						},
+						{
+							"energy": -15,
+							"mood": 1,
+							"stats": 15
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Nutritional Food is the Food of Hope?",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "git gud noob",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "ggez",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "ggwp",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					],
+					"3": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 3
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Taciturn Two",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Open the Cage Door with Your Own Hands",
+				"options": {
+					"1": [
+						{
+							"stamina": 5,
+							"guts": 5
+						}
+					],
+					"2": [
+						{
+							"speed": 5,
+							"power": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Nice Nature",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Nature and Her Tired Trainer",
+				"options": {
+					"1": [
+						{
+							"power": 20
+						}
+					],
+					"2": [
+						{
+							"stamina": 20
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Bittersweet Sparkle",
+				"options": {
+					"1": [
+						{
+							"power": 20
+						}
+					],
+					"2": [
+						{
+							"speed": 20
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Festive Colors",
+				"options": {
+					"1": [
+						{
+							"guts": 20
+						},
+						{
+							"guts": 20,
+							"status": "Charming ○"
+						}
+					],
+					"2": [
+						{
+							"stamina": 20
+						},
+						{
+							"stamina": 20,
+							"status": "Charming ○"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Rainy-Day Fun",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"energy": -10,
+							"stamina": 10,
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Not My Style",
+				"options": {
+					"1": [
+						{
+							"energy": 5,
+							"mood": 1
+						}
+					],
+					"2": [
+						{
+							"speed": 5,
+							"power": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Whirlwind Advice",
+				"options": {
+					"1": [
+						{
+							"hints": [
+								"Studious"
+							]
+						}
+					],
+					"2": [
+						{
+							"speed": 5,
+							"stamina": 5,
+							"power": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Little Can't Hurt",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Phone Call from Mom",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Once in a While",
+				"options": {
+					"1": [
+						{
+							"stamina": 5,
+							"guts": 5
+						}
+					],
+					"2": [
+						{
+							"stamina": 5,
+							"power": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Bittersweet Twilight",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					],
+					"3": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Snapshot of Emotions",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Let's Watch the Fish",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Oguri Cap",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Pinned Hopes",
+				"options": {
+					"1": [
+						{
+							"stamina": 10,
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Oguri the Forest Guide?",
+				"options": {
+					"1": [
+						{
+							"speed": 20
+						}
+					],
+					"2": [
+						{
+							"power": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Better Than a Plushie",
+				"options": {
+					"1": [
+						{
+							"guts": 20
+						},
+						{
+							"guts": 20,
+							"status": "Hot Topic"
+						}
+					],
+					"2": [
+						{
+							"stamina": 20
+						},
+						{
+							"stamina": 20,
+							"status": "Hot Topic"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Lost Umamusume",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Field Workout",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Running on Full",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 15
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Nakayama Racecourse ○"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Oguri's Gluttony Championship",
+				"options": {
+					"1": [
+						{
+							"energy": 30,
+							"power": 10,
+							"skill_pts": 10
+						},
+						{
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					],
+					"2": [
+						{
+							"energy": 10,
+							"power": 5,
+							"skill_pts": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Bottomless Pit",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Oguri Makes a Resolution",
+				"options": {
+					"1": [
+						{
+							"speed": 5,
+							"wit": 5
+						}
+					],
+					"2": [
+						{
+							"stamina": 5,
+							"guts": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Oguri Perseveres",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Oguri Matures",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					],
+					"3": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Something Smells Good!",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "High-Level Rival",
+				"options": {
+					"1": [
+						{
+							"speed": 5,
+							"stamina": 5
+						}
+					],
+					"2": [
+						{
+							"power": 5,
+							"wit": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Rice Shower",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Am I Enough?",
+				"options": {
+					"1": [
+						{
+							"guts": 20
+						}
+					],
+					"2": [
+						{
+							"power": 20
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Sweet & Lively Joy",
+				"options": {
+					"1": [
+						{
+							"speed": 10,
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "I Am Enough",
+				"options": {
+					"1": [
+						{
+							"guts": 10,
+							"wit": 10
+						},
+						{
+							"guts": 10,
+							"wit": 10,
+							"status": "Charming ○"
+						}
+					],
+					"2": [
+						{
+							"stamina": 10,
+							"power": 10
+						},
+						{
+							"stamina": 10,
+							"power": 10,
+							"status": "Charming ○"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Training Inspiration",
+				"options": {
+					"1": [
+						{
+							"energy": -10,
+							"guts": 20
+						}
+					],
+					"2": [
+						{
+							"energy": 5,
+							"skill_pts": 15
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Wonderful New Worlds",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 5,
+							"wit": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Looking on the Bright Side",
+				"options": {
+					"1": [
+						{
+							"stamina": 5,
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Firm Conditions ○"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Page about Apples",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Even When the Ladybugs Are Gone",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Even When Clouds Cover the Sky",
+				"options": {
+					"1": [
+						{
+							"speed": 5,
+							"power": 5
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "My Sun",
+				"options": {
+					"1": [
+						{
+							"guts": 5,
+							"wit": 5
+						}
+					],
+					"2": [
+						{
+							"speed": 5,
+							"power": 5
+						}
+					],
+					"3": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 3
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "I've Got This!",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Page about Sunsets",
+				"options": {
+					"1": [
+						{
+							"power": 5,
+							"guts": 5
+						}
+					],
+					"2": [
+						{
+							"stamina": 5,
+							"wit": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Sakura Bakushin O",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Bakushin for Love!",
+				"options": {
+					"1": [
+						{
+							"stamina": 10,
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Day Without a Class Rep",
+				"options": {
+					"1": [
+						{
+							"speed": 20
+						}
+					],
+					"2": [
+						{
+							"power": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Bakushin in Signature Racewear!",
+				"options": {
+					"1": [
+						{
+							"power": 10,
+							"guts": 10
+						},
+						{
+							"power": 10,
+							"guts": 10,
+							"status": "Hot Topic"
+						}
+					],
+					"2": [
+						{
+							"wit": 20
+						},
+						{
+							"wit": 20,
+							"status": "Hot Topic"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Bakushin Book!",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Voices of the Students",
+				"options": {
+					"1": [
+						{
+							"energy": -10,
+							"stamina": 10,
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Solving Riddles, Bakushin Style!",
+				"options": {
+					"1": [
+						{
+							"guts": 10,
+							"skill_pts": 15
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Nakayama Racecourse ○"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Bakushin?! Class?!",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Bakushin-ing with a Classmate!",
+				"options": {
+					"1": [
+						{
+							"power": 5,
+							"guts": 5
+						}
+					],
+					"2": [
+						{
+							"speed": 5,
+							"wit": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Best Bakushin!",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 5,
+							"guts": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Bakushin, Now and Forever!",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 5,
+							"wit": 5
+						}
+					],
+					"3": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Together with Someone Important!",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 5,
+							"stamina": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Speed King",
+				"options": {
+					"1": [
+						{
+							"power": 5,
+							"wit": 5
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "trainee",
+		"name": "Seiun Sky",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Sleepy Time Incense",
+				"options": {
+					"1": [
+						{
+							"wit": 20
+						}
+					],
+					"2": [
+						{
+							"stamina": 20
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Tactician vs. King",
+				"options": {
+					"1": [
+						{
+							"guts": 20
+						}
+					],
+					"2": [
+						{
+							"speed": 20
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Who Do You Run For?",
+				"options": {
+					"1": [
+						{
+							"stamina": 20
+						},
+						{
+							"stamina": 20,
+							"status": "Charming ○"
+						}
+					],
+					"2": [
+						{
+							"power": 20
+						},
+						{
+							"power": 20,
+							"status": "Charming ○"
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Is Cat Language Real?",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Shady Dealings",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Sei's Escape Plan",
+				"options": {
+					"1": [
+						{
+							"speed": 10,
+							"skill_pts": 15
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Subdued Late Surgers"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Sunny Day Standoff",
+				"options": {
+					"1": [
+						{
+							"speed": 20
+						},
+						{
+							"speed": 5,
+							"mood": -1
+						}
+					],
+					"2": [
+						{
+							"energy": 20,
+							"hints": [
+								"Deep Breaths"
+							]
+						},
+						{
+							"energy": 10,
+							"status": "Slacker"
+						}
+					],
+					"3": [
+						{
+							"energy": 5,
+							"speed": 5
+						}
+					]
+				},
+				"default_preference": 3
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "I Can Unwind Outdoors Too",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 5
+						}
+					],
+					"2": [
+						{
+							"random_chance": 90,
+							"energy": 30,
+							"skill_pts": 10
+						},
+						{
+							"random_chance": 10,
+							"energy": 30,
+							"skill_pts": 10,
+							"speed": -5,
+							"power": 5,
+							"status": "Slow Metabolism"
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Cat Expert",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Cat Patrol",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Goodbye, Cat",
+				"options": {
+					"1": [
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					],
+					"3": [
+						{
+							"power": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Nap Master",
+				"options": {
+					"1": [
+						{
+							"stamina": 10
+						}
+					],
+					"2": [
+						{
+							"wit": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Cloudy, Followed By...",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "At Summer Camp (Year 2)",
+				"options": {
+					"1": [
+						{
+							"power": 10
+						}
+					],
+					"2": [
+						{
+							"guts": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Dance Lesson",
+				"options": {
+					"1": [
+						{
+							"guts": 10
+						}
+					],
+					"2": [
+						{
+							"stamina": 10
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "New Year's Resolutions",
+				"options": {
+					"1": [
+						{
+							"speed": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 20
+						}
+					],
+					"3": [
+						{
+							"skill_pts": 20
 						}
 					]
 				},

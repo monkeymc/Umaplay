@@ -43,19 +43,25 @@ export async function saveServerConfig(payload: unknown): Promise<void> {
   }
 }
 
-export async function updateFromGithub(): Promise<{status:string; branch:string; steps:any[]}> {
-  const r = await fetch('/admin/update', { method: 'POST' })
-  if (!r.ok) {
-    let msg = 'Update failed'
-    try { const e = await r.json(); msg = e.detail?.message || e.detail || msg } catch {}
-    throw new Error(msg)
-  }
+// --- Admin / Update helpers
+export async function getVersion(): Promise<{ version: string }> {
+  const r = await fetch('/admin/version')
+  if (!r.ok) throw new Error('Failed to fetch version')
   return r.json()
 }
 
-export async function getVersion(): Promise<{version:string}> {
-  const r = await fetch('/admin/version')
-  if (!r.ok) throw new Error('version check failed')
+export async function updateFromGithub(): Promise<any> {
+  const r = await fetch('/admin/update', { method: 'POST' })
+  if (!r.ok) throw new Error('Update failed')
+  return r.json()
+}
+
+export async function forceUpdate(): Promise<any> {
+  const r = await fetch('/admin/force_update', { method: 'POST' })
+  if (!r.ok) {
+    const txt = await r.text().catch(() => '')
+    throw new Error(txt || 'Force update failed')
+  }
   return r.json()
 }
 

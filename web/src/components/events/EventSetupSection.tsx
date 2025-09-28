@@ -6,7 +6,15 @@ import {
 import EditIcon from '@mui/icons-material/Tune'
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
-import type { EventsIndex, SupportSet, ScenarioSet, TraineeSet, AttrKey, EventOptionEffect } from '@/types/events'
+import type {
+  EventsIndex,
+  SupportSet,
+  ScenarioSet,
+  TraineeSet,
+  AttrKey,
+  EventOptionEffect,
+  ChoiceEvent,
+} from '@/types/events'
 import SmartImage from '@/components/common/SmartImage'
 import { supportImageCandidates, scenarioImageCandidates, traineeImageCandidates, supportTypeIcons } from '@/utils/imagePaths'
 import { useEventsSetupStore } from '@/store/eventsSetupStore'
@@ -287,7 +295,7 @@ function EventOptionsDialog({
   type: 'support'|'scenario'|'trainee'
   onPick: (keyStep: string, pick: number) => void
 }) {
-  const prefs = useEventsSetupStore(s => s.prefs)
+  const prefs = useEventsSetupStore((s) => s.setup.prefs)
   const [q, setQ] = useState('')
 
   // helpers to render compact effect chips
@@ -421,13 +429,13 @@ function EventOptionsDialog({
 
 // ---- main section
 export default function EventSetupSection({ index }: Props) {
-  const supports = useEventsSetupStore(s => s.supports)
-  const scenario  = useEventsSetupStore(s => s.scenario)
-  const trainee   = useEventsSetupStore(s => s.trainee)
-  const setSupport = useEventsSetupStore(s => s.setSupport)
-  const setScenario = useEventsSetupStore(s => s.setScenario)
-  const setTrainee  = useEventsSetupStore(s => s.setTrainee)
-  const setOverride = useEventsSetupStore(s => s.setOverride)
+  const supports    = useEventsSetupStore((s) => s.setup.supports)
+  const scenario    = useEventsSetupStore((s) => s.setup.scenario)
+  const trainee     = useEventsSetupStore((s) => s.setup.trainee)
+  const setSupport  = useEventsSetupStore((s) => s.setSupport)
+  const setScenario = useEventsSetupStore((s) => s.setScenario)
+  const setTrainee  = useEventsSetupStore((s) => s.setTrainee)
+  const setOverride = useEventsSetupStore((s) => s.setOverride)
 
   // dialogs state
   const [pickSlot, setPickSlot] = useState<number | null>(null)
@@ -457,7 +465,9 @@ export default function EventSetupSection({ index }: Props) {
     }
     if (!set) return
     
-    const evs = ((set as any).events ?? (set as any).choice_events ?? []) as any[]
+    const evs: ChoiceEvent[] = (((set as unknown as { events?: ChoiceEvent[]; choice_events?: ChoiceEvent[] }).events)
+      ?? ((set as unknown as { events?: ChoiceEvent[]; choice_events?: ChoiceEvent[] }).choice_events)
+      ?? [])
     const items = evs.map((ev: any) => ({
       key: `support/${set.name}/${set.attribute}/${set.rarity}/${ev.name}`,
       keyStep: `support/${set.name}/${set.attribute}/${set.rarity}/${ev.name}#s${ev.chain_step ?? 1}`,
@@ -480,7 +490,9 @@ export default function EventSetupSection({ index }: Props) {
     if (!scenario) return
     const set = index.scenarios.find(s => s.name === scenario.name)
     if (!set) return
-    const evs = ((set as any).events ?? (set as any).choice_events ?? []) as any[]
+    const evs: ChoiceEvent[] = (((set as unknown as { events?: ChoiceEvent[]; choice_events?: ChoiceEvent[] }).events)
+      ?? ((set as unknown as { events?: ChoiceEvent[]; choice_events?: ChoiceEvent[] }).choice_events)
+      ?? [])
     const items = evs.map((ev: any) => ({
       key: `scenario/${set.name}/None/None/${ev.name}`,
       keyStep: `scenario/${set.name}/None/None/${ev.name}#s${ev.chain_step ?? 1}`,
@@ -500,16 +512,32 @@ export default function EventSetupSection({ index }: Props) {
 
   const openOptionsForTrainee = () => {
     if (!trainee) return
-    const general = (index.trainees as any)?.general
-    const specMap = (index.trainees as any)?.specific as Map<string, any> | undefined
-    const specific = specMap?.get(trainee.name) ?? null
-    const genEvents = ((general as any)?.events ?? (general as any)?.choice_events ?? []) as any[]
-    const specEvents = ((specific as any)?.events ?? (specific as any)?.choice_events ?? []) as any[]
 
-    const merged = [...genEvents, ...specEvents]
-    const items = merged.map((ev: any) => ({
-      key: `trainee/${specific ? specific.name : 'general'}/None/None/${ev.name}`,
-      keyStep: `trainee/${specific ? specific.name : 'general'}/None/None/${ev.name}#s${ev.chain_step ?? 1}`,
+    const general = (index.trainees as any)?.general as { events?: ChoiceEvent[]; choice_events?: ChoiceEvent[] } | null | undefined
+    const specMap = (index.trainees as any)?.specific as Map<string, { events?: ChoiceEvent[]; choice_events?: ChoiceEvent[] }> | undefined
+    const specific = specMap?.get(trainee.name) ?? null
+
+    const genEvents: ChoiceEvent[] =
+      (general?.events ?? general?.choice_events ?? []) as ChoiceEvent[]
+    const specEvents: ChoiceEvent[] =
+      (specific?.events ?? specific?.choice_events ?? []) as ChoiceEvent[]
+
+    // ---- Merge with override:
+    // When a specific trainee has an event with the same (name, chain_step),
+    // it REPLACES the general one. Otherwise, general events are kept.
+    const norm = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase()
+    const evKey = (ev: ChoiceEvent) => `${norm(ev.name)}#${Number(ev.chain_step ?? 1)}`
+    const specKeys = new Set(specEvents.map(evKey))
+    // Put specific events first (their own order), then remaining general ones
+    const merged: ChoiceEvent[] = [
+      ...specEvents,
+      ...genEvents.filter((e) => !specKeys.has(evKey(e))),
+    ]
+
+    const owner = specific ? specific as any : { name: 'general' }
+    const items = merged.map((ev) => ({
+      key: `trainee/${owner.name}/None/None/${ev.name}`,
+      keyStep: `trainee/${owner.name}/None/None/${ev.name}#s${ev.chain_step ?? 1}`,
       evType: ev.type,
       eventName: ev.name,
       chainStep: ev.chain_step ?? 1,
@@ -542,10 +570,10 @@ export default function EventSetupSection({ index }: Props) {
                     <Stack alignItems="center" spacing={1} sx={{ p: 1 }}>
                       {sel ? (
                         <>
-                          <Box sx={rarityFrameSx(sel.rarity)}>
+                          <Box sx={rarityFrameSx(sel.rarity || "")}>
                             <SmartImage
-                              candidates={supportImageCandidates(sel.name, sel.rarity, sel.attribute)}
-                              alt={sel.name}
+                              candidates={supportImageCandidates(sel.name || "", sel.rarity, sel.attribute)}
+                              alt={sel.name || ""}
                               width={THUMB}
                               height={THUMB_H}
                               rounded={8}
@@ -555,7 +583,7 @@ export default function EventSetupSection({ index }: Props) {
                               position:'absolute', top:0, left:0, p:'0px',
                               border: '1px solid', borderColor: 'divider',
                             }}>
-                              <img src={supportTypeIcons[sel.attribute]} width={16} height={16} />
+                              <img src={supportTypeIcons[sel.attribute || ""]} width={16} height={16} />
                             </Box>
                           </Box>
                           <Typography variant="body2" noWrap>{sel.name}</Typography>
@@ -607,7 +635,7 @@ export default function EventSetupSection({ index }: Props) {
                   <Stack alignItems="center" spacing={1} sx={{ p: 1 }}>
                     {scenario ? (
                       <>
-                        <SmartImage candidates={scenarioImageCandidates(scenario.name)} alt={scenario.name} width={THUMB} rounded={8}/>
+                        <SmartImage candidates={scenarioImageCandidates(scenario.name || "")} alt={scenario.name} width={THUMB} rounded={8}/>
                         <Typography variant="body2" noWrap>{scenario.name}</Typography>
                       </>
                     ) : (
@@ -645,7 +673,7 @@ export default function EventSetupSection({ index }: Props) {
                   <Stack alignItems="center" spacing={1} sx={{ p: 1 }}>
                     {trainee ? (
                       <>
-                        <SmartImage candidates={traineeImageCandidates(trainee.name)} alt={trainee.name} width={THUMB} height={THUMB_H} rounded={8}/>
+                        <SmartImage candidates={traineeImageCandidates(trainee.name)} alt={trainee.name || ""} width={THUMB} height={THUMB_H} rounded={8}/>
                         <Typography variant="body2" noWrap>{trainee.name}</Typography>
                       </>
                     ) : (
@@ -676,18 +704,13 @@ export default function EventSetupSection({ index }: Props) {
 
       {/* dialogs */}
       <SupportPickerDialog
-        open={pickSlot != null}
+        open={pickSlot !== null}
         onClose={() => setPickSlot(null)}
         index={index}
         onPick={(s) => {
           if (pickSlot == null) return
-          // s.rarity in index can be "None" for non-support records; narrow to support rarity
-          setSupport(pickSlot, {
-            slot: pickSlot,
-            name: s.name,
-            rarity: (s.rarity as 'SSR' | 'SR' | 'R'),
-            attribute: s.attribute
-          })
+          const rarity = (s.rarity === 'SSR' || s.rarity === 'SR' || s.rarity === 'R') ? s.rarity : 'SR'
+          setSupport(pickSlot, { name: s.name, rarity, attribute: s.attribute })
           setPickSlot(null)
         }}
       />

@@ -1,120 +1,147 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
-import type { EventKey, EventPrefs, EventSetup, SelectedScenario, SelectedSupport, SelectedTrainee } from '@/types/events'
+import { persist, subscribeWithSelector } from 'zustand/middleware'
+import type {
+  EventSetup,
+  SelectedSupport,
+  SelectedScenario,
+  SelectedTrainee,
+  EventPrefs,
+  AttrKey,
+  Rarity,
+} from '@/types/events'
 
-
-type EventsSetupState = {
-  // selection
-  supports: (SelectedSupport | null)[] // length 6
-  scenario: SelectedScenario
-  trainee: SelectedTrainee
-
-  // prefs (UI overrides)
-  prefs: EventPrefs
-
+type State = {
+  // internal revision to trigger subscribers (e.g., to sync into preset)
+  revision: number
+  setup: EventSetup
   // actions
-  setSupport(slot: number, sel: SelectedSupport | null): void
-  swapSupports(a: number, b: number): void
-  setScenario(sel: SelectedScenario): void
-  setTrainee(sel: SelectedTrainee): void
-
-  setOverride(key: EventKey, pick: number): void
-  removeOverride(key: EventKey): void
-  resetOverrides(): void
-
-  importPrefs(p: Partial<EventPrefs>): void
-
-  // snapshot helpers (for server round-trip)
+  reset(): void
+  importSetup(s: Partial<EventSetup> | undefined | null): void
   getSetup(): EventSetup
-  importSetup(setup: Partial<EventSetup>): void
+  setSupport(slot: number, ref: null | Omit<SelectedSupport, 'slot'>): void
+  setScenario(ref: SelectedScenario | null): void
+  setTrainee(ref: SelectedTrainee | null): void
+  setPrefs(p: Partial<EventPrefs>): void
+  setOverride(keyStep: string, pick: number): void
 }
 
-const defaultPrefs: EventPrefs = {
-  overrides: {},
-  patterns: [],
-  defaults: { support: 1, trainee: 1, scenario: 1 },
-}
-
-export const useEventsSetupStore = create<EventsSetupState>()(
-  persist(
-    (set, get) => ({
+const EMPTY: EventSetup = {
   supports: [null, null, null, null, null, null],
   scenario: null,
   trainee: null,
-  prefs: defaultPrefs,
+  prefs: {
+    overrides: {},
+    patterns: [],
+    defaults: { support: 1, trainee: 1, scenario: 1 },
+  },
+}
+// --- Narrowing helpers ---
+const VALID_RARITIES = ['SSR', 'SR', 'R'] as const
+type ValidRarity = typeof VALID_RARITIES[number]
+const isValidRarity = (x: unknown): x is ValidRarity =>
+  VALID_RARITIES.includes(x as ValidRarity)
 
-  setSupport(slot, sel) {
-    set(s => {
-      const next = s.supports.slice()
-      next[slot] = sel
-      return { supports: next }
-    })
-  },
+const VALID_ATTRS = ['SPD', 'STA', 'PWR', 'GUTS', 'WIT', 'PAL'] as const
+type ValidAttr = typeof VALID_ATTRS[number]
+const isValidAttr = (x: unknown): x is ValidAttr =>
+  VALID_ATTRS.includes(x as ValidAttr)
 
-  swapSupports(a, b) {
-    set(s => {
-      const next = s.supports.slice()
-      const t = next[a]; next[a] = next[b]; next[b] = t
-      return { supports: next }
-    })
-  },
+const pickName = (x: unknown): { name: string } | null => {
+  if (x && typeof x === 'object' && 'name' in x && typeof (x as any).name === 'string') {
+    return { name: (x as any).name }
+  }
+  return null
+}
 
-  setScenario(sel) { set({ scenario: sel }) },
-  setTrainee(sel) { set({ trainee: sel }) },
+export const useEventsSetupStore = create<State>()(
+  persist(
+    subscribeWithSelector((set, get) => ({
+      revision: 0,
+      setup: { ...EMPTY },
 
-  setOverride(key, pick) {
-    set(s => ({ prefs: { ...s.prefs, overrides: { ...s.prefs.overrides, [key]: pick } } }))
-  },
-  removeOverride(key) {
-    set(s => {
-      const o = { ...s.prefs.overrides }
-      delete o[key]
-      return { prefs: { ...s.prefs, overrides: o } }
-    })
-  },
-  resetOverrides() {
-    set(s => ({ prefs: { ...s.prefs, overrides: {} } }))
-  },
+      reset() {
+        set({ setup: { ...EMPTY }, revision: get().revision + 1 })
+      },
 
-  importPrefs(p) {
-    const curr = get().prefs
-    set({ prefs: {
-      overrides: p.overrides ?? curr.overrides,
-      patterns:  p.patterns  ?? curr.patterns,
-      defaults:  p.defaults  ?? curr.defaults,
-    }})
-  },
+      importSetup(s) {
+        if (!s) return
+        const cur = get().setup
+        // normalize supports → fixed length 6 with slot index and strict unions
+        // normalize supports (length=6 + slot + validated unions)
+        const supports: (SelectedSupport|null)[] = Array.from({ length: 6 }, (_v, i) => {
+          const raw = Array.isArray(s.supports)
+            ? (s.supports[i] as Partial<SelectedSupport> | null | undefined)
+            : undefined
+          if (!raw || !raw.name || !raw.rarity || !raw.attribute) return cur.supports[i] ?? null
+          const rarity: Rarity = isValidRarity(raw.rarity) ? raw.rarity : 'SR'
+          const attribute: AttrKey = isValidAttr(raw.attribute) ? raw.attribute : 'SPD'
+          return { slot: i, name: raw.name, rarity, attribute }
+        })
+        const scenario: SelectedScenario = pickName(s.scenario) ?? cur.scenario
+        const trainee:  SelectedTrainee  = pickName(s.trainee)  ?? cur.trainee
+        const prefs: EventPrefs = {
+          overrides: { ...(cur.prefs?.overrides || {}), ...((s as any).prefs?.overrides || {}) },
+          patterns:  Array.isArray((s as any).prefs?.patterns) ? (s as any).prefs.patterns.slice() : (cur.prefs?.patterns || []),
+          defaults: {
+            support:  Number((s as any).prefs?.defaults?.support  ?? cur.prefs?.defaults?.support  ?? 1),
+            trainee:  Number((s as any).prefs?.defaults?.trainee  ?? cur.prefs?.defaults?.trainee  ?? 1),
+            scenario: Number((s as any).prefs?.defaults?.scenario ?? cur.prefs?.defaults?.scenario ?? 1),
+          },
+        }
+        const next: EventSetup = { supports, scenario, trainee, prefs }
+        set({ setup: next, revision: get().revision + 1 })
+      },
 
-  getSetup() {
-    const s = get()
-    return {
-      supports: s.supports,
-      scenario: s.scenario,
-      trainee: s.trainee,
-      prefs: s.prefs,
-    }
-  },
+      getSetup() {
+        // Return a deep clone so callers can safely serialize/mutate
+        return JSON.parse(JSON.stringify(get().setup)) as EventSetup
+      },
 
-  importSetup(setup) {
-    if (!setup) return
-    set(s => ({
-      supports: setup.supports ?? s.supports,
-      scenario:  setup.scenario  ?? s.scenario,
-      trainee:   setup.trainee   ?? s.trainee,
-      prefs:     setup.prefs     ?? s.prefs,
-    }))
-  },
-}),
+      setSupport(slot, ref) {
+        const s = get().setup
+        const idx = Math.max(0, Math.min(5, slot))
+        const supports = s.supports.slice()
+        supports[idx] = ref ? ({ slot: idx, ...ref } as SelectedSupport) : null
+        set({ setup: { ...s, supports }, revision: get().revision + 1 })
+      },
+
+      setScenario(ref) {
+        const s = get().setup
+        set({ setup: { ...s, scenario: ref ? { ...ref } : null }, revision: get().revision + 1 })
+      },
+
+      setTrainee(ref) {
+        const s = get().setup
+        set({ setup: { ...s, trainee: ref ? { ...ref } : null }, revision: get().revision + 1 })
+      },
+
+      setPrefs(p) {
+        const s = get().setup
+        const cur = s.prefs || EMPTY.prefs
+        const next: EventPrefs = {
+          overrides: { ...cur.overrides, ...(p.overrides || {}) },
+          patterns:  Array.isArray(p.patterns) ? p.patterns.slice() : cur.patterns,
+          defaults: {
+            support: Number(p.defaults?.support ?? cur.defaults.support),
+            trainee: Number(p.defaults?.trainee ?? cur.defaults.trainee),
+            scenario:Number(p.defaults?.scenario ?? cur.defaults.scenario),
+          },
+        }
+        set({ setup: { ...s, prefs: next }, revision: get().revision + 1 })
+      },
+      setOverride(keyStep, pick) {
+        const s = get().setup
+        const next: EventPrefs = {
+          ...s.prefs,
+          overrides: { ...(s.prefs?.overrides ?? {}), [keyStep]: Number(pick) },
+        }
+        set({ setup: { ...s, prefs: next }, revision: get().revision + 1 })
+      },
+    })),
     {
-      name: 'uma:events-setup:v1',
+      name: 'uma_event_setup_v1',          // LocalStorage key
       version: 1,
-      // only persist what we actually need
-      partialize: (state) => ({
-        supports: state.supports,
-        scenario: state.scenario,
-        trainee:  state.trainee,
-        prefs:    state.prefs,
-      }),
+      partialize: (s) => ({ setup: s.setup }), // only persist the data (not revision)
     }
   )
 )
