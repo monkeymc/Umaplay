@@ -51,7 +51,7 @@ class Settings:
     ROOT_DIR: Path = CORE_DIR.parent
 
     # Common directories
-    ASSETS_DIR: Path = Path(_env("ASSETS_DIR") or (ROOT_DIR / "assets"))
+    ASSETS_DIR: Path = Path(_env("ASSETS_DIR") or (ROOT_DIR / "web/public"))
     MODELS_DIR: Path = Path(_env("MODELS_DIR") or (ROOT_DIR / "models"))
     DEBUG_DIR: Path = Path(_env("DEBUG_DIR") or (ROOT_DIR / "debug"))
 

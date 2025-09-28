@@ -167,5 +167,8 @@ class RemoteYOLOEngine(IDetector):
             img = self.ctrl.screenshot(region=region)
 
         meta, dets = self.detect_pil(img, imgsz=imgsz, conf=conf, iou=iou)
-        self._maybe_store_debug(img, dets, tag=tag, thr=Settings.STORE_FOR_TRAINING_THRESHOLD)
+
+        if not Settings.USE_EXTERNAL_PROCESSOR:
+            # otherwise it is already saved in external processor
+            self._maybe_store_debug(img, dets, tag=tag, thr=Settings.STORE_FOR_TRAINING_THRESHOLD)
         return img, meta, dets

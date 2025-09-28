@@ -1,9 +1,11 @@
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import HTTPException, Request
+from fastapi.staticfiles import StaticFiles
 import os
-
+from typing import Any, Dict
 from server.utils import load_dataset_json
 from server.utils import load_config, save_config, run_cmd, repo_root
 from server.updater import latest_info
@@ -29,6 +31,29 @@ def update_config(new_config: dict):
   return {"status": "success", "data": new_config}
 
 PATH = "web/dist"
+BUILD_DIR = Path(__file__).resolve().parent.parent / "web" / "dist"
+
+# -----------------------------------------------------------------------------
+# Static mounts (production build)
+# - Vite copies everything in web/public → web/dist (preserving folders).
+# - Our images live under /events/... at runtime, so serve that folder directly.
+# -----------------------------------------------------------------------------
+events_dir = BUILD_DIR / "events"
+icons_dir = BUILD_DIR / "icons"
+badges_dir = BUILD_DIR / "badges"
+mood_dir = BUILD_DIR / "mood"
+race_dir = BUILD_DIR / "race"
+
+if events_dir.exists():
+  app.mount("/events", StaticFiles(directory=str(events_dir)), name="events")
+if icons_dir.exists():
+  app.mount("/icons", StaticFiles(directory=str(icons_dir)), name="icons")
+if badges_dir.exists():
+  app.mount("/badges", StaticFiles(directory=str(badges_dir)), name="badges")
+if mood_dir.exists():
+  app.mount("/mood", StaticFiles(directory=str(mood_dir)), name="mood")
+if race_dir.exists():
+  app.mount("/race", StaticFiles(directory=str(race_dir)), name="race")
 
 
 # -----------------------------
@@ -61,6 +86,50 @@ def api_races():
     return data
   return {}
 
+
+@app.get("/api/events")
+def api_events():
+    """
+    Returns: list[RawEventSet]
+    Source: datasets/in_game/events.json
+    """
+    data = load_dataset_json("events.json")
+    if data is None:
+        return []
+    if isinstance(data, list):
+        return data
+    return []
+
+# -----------------------------
+# Event setup per preset (focused endpoints)
+# -----------------------------
+@app.get("/api/presets/{preset_id}/event_setup")
+def get_preset_event_setup(preset_id: str) -> Dict[str, Any]:
+  """
+  Return the event_setup object stored in the given preset.
+  If not present, return {} (caller can decide defaults).
+  """
+  cfg = load_config() or {}
+  presets = cfg.get("presets", [])
+  for p in presets:
+    if p.get("id") == preset_id:
+      return p.get("event_setup", {}) or {}
+  raise HTTPException(status_code=404, detail="Preset not found")
+
+@app.post("/api/presets/{preset_id}/event_setup")
+def put_preset_event_setup(preset_id: str, payload: Dict[str, Any]):
+  """
+  Upsert the `event_setup` object inside a matching preset,
+  without touching the rest of the config.
+  """
+  cfg = load_config() or {}
+  presets = cfg.get("presets", [])
+  for p in presets:
+    if p.get("id") == preset_id:
+      p["event_setup"] = payload or {}
+      save_config(cfg)
+      return {"status": "ok", "preset_id": preset_id}
+  raise HTTPException(status_code=404, detail="Preset not found")
 
 @app.get("/")
 async def root_index():

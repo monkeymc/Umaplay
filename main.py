@@ -20,6 +20,7 @@ from core.perception.yolo.interface import IDetector
 from core.controllers.steam import SteamController
 from core.controllers.android import ScrcpyController
 from core.utils.abort import request_abort, clear_abort
+from core.utils.event_processor import UserPrefs
 
 try:
     # Optional; if your Bluestacks controller is a separate class
@@ -134,7 +135,12 @@ class BotState:
             # 4) Extract preset-specific runtime opts (skill_list / plan_races / select_style)
             preset_opts = Settings.extract_runtime_preset(cfg or {})
 
-            # 5) Instantiate Player with runtime knobs from Settings + presets
+            # 5) Build event prefs from config (active preset). If malformed/missing,
+            #    UserPrefs.from_config() returns safe defaults and EventFlow will still
+            #    pick the top option if a pick is invalid at runtime.
+            event_prefs = UserPrefs.from_config(cfg or {})
+
+            # 6) Instantiate Player with runtime knobs from Settings + presets + event prefs
             self.player = Player(
                 ctrl=ctrl,
                 ocr=ocr,
@@ -146,9 +152,11 @@ class BotState:
                 plan_races=preset_opts["plan_races"],
                 skill_list=preset_opts["skill_list"],
                 select_style=preset_opts["select_style"],  # "end"|"late"|"pace"|"front"|None
+                event_prefs=event_prefs,
             )
 
             def _runner():
+                re_init = False
                 try:
                     logger_uma.info("[BOT] Started.")
                     self.player.run(
@@ -156,11 +164,20 @@ class BotState:
                         max_iterations=getattr(Settings, "MAX_ITERATIONS", None),
                     )
                 except Exception as e:
-                    logger_uma.exception("[BOT] Crash: %s", e)
+                    if 'connection aborted' in str(e).lower():
+                        logger_uma.info("Trying to recover from bot crash, connection to host was lost")
+                        time.sleep(2)
+                        self.player.run(
+                            delay=getattr(Settings, "MAIN_LOOP_DELAY", 0.4),
+                            max_iterations=getattr(Settings, "MAX_ITERATIONS", None),
+                        )
+                    else:
+                        logger_uma.exception("[BOT] Crash: %s", e)
                 finally:
-                    with self._lock:
-                        self.running = False
-                        logger_uma.info("[BOT] Stopped.")
+                    if not re_init:
+                        with self._lock:
+                            self.running = False
+                            logger_uma.info("[BOT] Stopped.")
 
             self.thread = threading.Thread(target=_runner, daemon=True)
             self.running = True

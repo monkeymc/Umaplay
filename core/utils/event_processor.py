@@ -16,8 +16,7 @@ from PIL.Image import Image as PILImage
 DATASETS_EVENTS = Path("datasets/in_game/events.json")
 ASSETS_EVENTS_DIR = Path("assets/events")  # /{support|trainee|scenario}/<name>_<rarity>.png
 BUILD_DIR = Path("build")                  # will hold event_catalog.json
-CATALOG_JSON = BUILD_DIR / "event_catalog.json"
-USER_PREFS = Path("event_prefs.json")       # optional overrides
+CATALOG_JSON = Path("datasets/in_game/event_catalog.json")
 
 
 def safe_phash_from_image(img: PILImage) -> Optional[int]:
@@ -73,23 +72,44 @@ def hamming_similarity64(a_int: Optional[int], b_int: Optional[int]) -> float:
     return 1.0 - (dist / 64.0)
 
 
-def find_event_image_path(ev_type: str, name: str, rarity: str) -> Optional[Path]:
+def find_event_image_path(ev_type: str, name: str, rarity: str, attribute: str) -> Optional[Path]:
     """
-    Find an image under assets/events/{ev_type}/<name>_<rarity>.(png|jpg|jpeg|webp).
+    Find an image under assets/events/{ev_type}/<name>_<attribute>_<rarity>.(png|jpg|jpeg|webp).
     ev_type is one of: support|trainee|scenario
     """
     folder = ASSETS_EVENTS_DIR / ev_type
-    # Normalize FS name (spaces->spaces okay; user promised '<name>_<rarity>' convention)
-    if rarity.lower() in ("none", "null"):
-        base = name
-    else:
-        base = f"{name}_{rarity}"
-    # Try a few extensions
     exts = (".png", ".jpg", ".jpeg", ".webp")
-    for ext in exts:
-        p = folder / f"{base}{ext}"
-        if p.exists():
-            return p
+
+    attr = (attribute or "None").strip()
+    rar  = (rarity or "None").strip()
+    attr_up = attr.upper()
+
+    candidates: List[str] = []
+
+    # Primary (new convention): <name>_<ATTRIBUTE>_<rarity>
+    if attr.lower() not in ("none", "null") and rar.lower() not in ("none", "null"):
+        candidates.append(f"{name}_{attr_up}_{rar}")
+
+    # Variants in case a pack is missing one dimension:
+    #  - <name>_<ATTRIBUTE>
+    if attr.lower() not in ("none", "null"):
+        candidates.append(f"{name}_{attr_up}")
+    #  - <name>_<rarity>
+    if rar.lower() not in ("none", "null"):
+        candidates.append(f"{name}_{rar}")
+
+    # Legacy: just <name>
+    candidates.append(name)
+
+    # Trainee special: profile portrait like "<name>_profile"
+    if ev_type == "trainee":
+        candidates.insert(0, f"{name}_profile")
+
+    for base in candidates:
+        for ext in exts:
+            p = folder / f"{base}{ext}"
+            if p.exists():
+                return p
     return None
 
 
@@ -105,6 +125,7 @@ class EventRecord:
     type: str              # support|trainee|scenario
     name: str              # e.g., "Kitasan Black", "Vodka", "Ura Finale", or "general"
     rarity: str            # e.g., "SSR", "SR", "R", "None"
+    attribute: str    # e.g., "SPD", "STA", "PWR", "GUTS", "WIT", "None"
     event_name: str        # e.g., "Paying It Forward"
     chain_step: Optional[int]
     default_preference: Optional[int]  # which option number to pick by default
@@ -114,11 +135,12 @@ class EventRecord:
     phash64: Optional[int]             # 64-bit pHash int
 
     @staticmethod
-    def from_json_item(parent: Dict, ev_item: Dict, phash_map: Dict[Tuple[str, str, str], Tuple[Optional[str], Optional[int]]]) -> "EventRecord":
+    def from_json_item(parent: Dict, ev_item: Dict, phash_map: Dict[Tuple[str, str, str, str], Tuple[Optional[str], Optional[int]]]) -> "EventRecord":
         ev_type = parent.get("type", "")
         name = parent.get("name", "")
         rarity = parent.get("rarity", "None") or "None"
         ev_name = ev_item.get("name", "")
+        attribute = parent.get("attribute", "None")
         chain_step = ev_item.get("chain_step", None)
         default_pref = ev_item.get("default_preference", None)
         options = ev_item.get("options", {})
@@ -127,15 +149,16 @@ class EventRecord:
         options_str_keys = {str(k): v for k, v in options.items()}
 
         title_norm = normalize_text(ev_name)
-        key = f"{ev_type}/{name}/{rarity}/{ev_name}"
+        key = f"{ev_type}/{name}/{attribute}/{rarity}/{ev_name}"
 
-        img_path, phash = phash_map.get((ev_type, name, rarity), (None, None))
+        img_path, phash = phash_map.get((ev_type, name, rarity, attribute), (None, None))
         return EventRecord(
             key=key,
             key_step=f"{key}#s{chain_step if chain_step is not None else 1}",
             type=ev_type,
             name=name,
             rarity=rarity,
+            attribute=attribute,
             event_name=ev_name,
             chain_step=chain_step,
             default_preference=default_pref,
@@ -152,8 +175,8 @@ class EventRecord:
 
 def build_catalog() -> None:
     """
-    Parse datasets/in_game/events.json, compute representative image pHashes once per (type,name,rarity),
-    and produce build/event_catalog.json with one row per *event* (choice_event).
+    Parse datasets/in_game/events.json, compute representative image pHashes once per (type,name,rarity,attribute),
+    and produce datasets/in_game/event_catalog.json with one row per *event* (choice_event).
     """
     BUILD_DIR.mkdir(parents=True, exist_ok=True)
     if not DATASETS_EVENTS.exists():
@@ -163,28 +186,29 @@ def build_catalog() -> None:
         root = json.load(f)
 
     # Precompute phash for each (type,name,rarity)
-    triple_to_file_and_phash: Dict[Tuple[str, str, str], Tuple[Optional[str], Optional[int]]] = {}
-    seen_triples = set()
+    set_data_to_file_and_phash: Dict[Tuple[str, str, str, str], Tuple[Optional[str], Optional[int]]] = {}
+    seen_set_data = set()
 
     for parent in root:
         ev_type = parent.get("type", "")
         name = parent.get("name", "")
         rarity = parent.get("rarity", "None") or "None"
-        triple = (ev_type, name, rarity)
-        if triple in seen_triples:
+        attribute = parent.get("attribute", "None")
+        set_data = (ev_type, name, rarity, attribute)
+        if set_data in seen_set_data:
             continue
-        seen_triples.add(triple)
+        seen_set_data.add(set_data)
 
-        img_path = find_event_image_path(ev_type, name, rarity)
+        img_path = find_event_image_path(ev_type, name, rarity, attribute)
         phash = safe_phash(img_path) if img_path else None
-        triple_to_file_and_phash[triple] = (str(img_path) if img_path else None, phash)
+        set_data_to_file_and_phash[set_data] = (str(img_path) if img_path else None, phash)
 
     # Expand to event records
     records: List[EventRecord] = []
     for parent in root:
         choice_events = parent.get("choice_events", []) or []
         for ev in choice_events:
-            rec = EventRecord.from_json_item(parent, ev, triple_to_file_and_phash)
+            rec = EventRecord.from_json_item(parent, ev, set_data_to_file_and_phash)
             records.append(rec)
 
     # Save compact JSON for runtime
@@ -209,7 +233,7 @@ class UserPrefs:
     default_by_type: Dict[str, int]
 
     @staticmethod
-    def load(path: Path = USER_PREFS) -> "UserPrefs":
+    def load(path: Path) -> "UserPrefs":
         if not path.exists():
             # sensible defaults
             return UserPrefs(
@@ -229,6 +253,72 @@ class UserPrefs:
             patterns = [(d.get("pattern", ""), int(d.get("pick", 1))) for d in patt_src]
         default_by_type = raw.get("defaults", {"support": 1, "trainee": 1, "scenario": 1})
         return UserPrefs(overrides=overrides, patterns=patterns, default_by_type=default_by_type)
+
+ 
+    # ---- build UserPrefs from the active preset inside config.json ----
+    @staticmethod
+    def from_config(cfg: dict | None) -> "UserPrefs":
+        """
+        Pull event prefs from config['presets'][active]['event_setup']['prefs'].
+        If anything is missing or malformed, we return sensible defaults.
+        """
+        cfg = cfg or {}
+        presets = cfg.get("presets") or []
+        active_id = cfg.get("activePresetId")
+        preset = next((p for p in presets if p.get("id") == active_id), None) or (presets[0] if presets else None)
+        if not preset:
+            # no presets at all
+            return UserPrefs(overrides={}, patterns=[], default_by_type={"support": 1, "trainee": 1, "scenario": 1})
+
+        setup = preset.get("event_setup") or {}
+        prefs = setup.get("prefs") or {}
+
+        # --- overrides ---
+        overrides_in = prefs.get("overrides", {}) or {}
+        overrides: Dict[str, int] = {}
+        if isinstance(overrides_in, dict):
+            for k, v in overrides_in.items():
+                try:
+                    n = int(v)
+                    if n >= 1:  # don't accept 0/negatives
+                        overrides[str(k)] = n
+                except Exception:
+                    # ignore malformed values
+                    continue
+
+        # --- patterns ---
+        patt_src = prefs.get("patterns", []) or []
+        patterns: List[Tuple[str, int]] = []
+        if isinstance(patt_src, dict):
+            # tolerate dict form as well
+            for pat, pick in patt_src.items():
+                try:
+                    patterns.append((str(pat), int(pick)))
+                except Exception:
+                    continue
+        else:
+            # expect list of {"pattern": "...", "pick": 2}
+            for item in patt_src:
+                if not isinstance(item, dict):
+                    continue
+                pat = str(item.get("pattern", "")).strip()
+                if not pat:
+                    continue
+                try:
+                    pick = int(item.get("pick", 1))
+                except Exception:
+                    pick = 1
+                patterns.append((pat, pick if pick >= 1 else 1))
+
+        # --- defaults ---
+        d = prefs.get("defaults", {}) or {}
+        default_by_type = {
+            "support": int(d.get("support", 1) or 1),
+            "trainee": int(d.get("trainee", 1) or 1),
+            "scenario": int(d.get("scenario", 1) or 1),
+        }
+        return UserPrefs(overrides=overrides, patterns=patterns, default_by_type=default_by_type)
+
 
     def pick_for(self, rec: EventRecord) -> int:
         """
@@ -292,6 +382,7 @@ class Query:
     type_hint: Optional[str] = None        # support|trainee|scenario
     name_hint: Optional[str] = None        # e.g., "Kitasan Black"
     rarity_hint: Optional[str] = None      # "SSR"/"SR"/"R"/"None"
+    attribute_hint: Optional[str] = None   # "SPD"/"STA"/"PWR"/"GUTS"/"WIT"/"None"
     chain_step_hint: Optional[int] = None  # e.g., 1/2/3 for chain events
     portrait_path: Optional[str] = None    # optional: path to portrait/icon
     portrait_image: Optional[PILImage] = None  # optional: PIL image crop (in-memory)
@@ -325,11 +416,13 @@ def score_candidate(q: Query, rec: EventRecord, portrait_phash: Optional[int]) -
         hint_bonus += 0.08
     if q.rarity_hint and normalize_text(q.rarity_hint) == normalize_text(rec.rarity):
         hint_bonus += 0.12
+    if q.attribute_hint and normalize_text(q.attribute_hint) == normalize_text(rec.attribute):
+        hint_bonus += 0.12
     if q.chain_step_hint is not None and (rec.chain_step or 1) == q.chain_step_hint:
         hint_bonus += 0.12
     # Weighted sum (tuneable, but conservative)
     # Text carries most of the weight; image breaks ties when portrait is present.
-    score = 0.72 * text_sim + 0.25 * img_sim + hint_bonus
+    score = 0.82 * text_sim + 0.11 * img_sim + hint_bonus
 
     return MatchResult(rec=rec, score=score, text_sim=text_sim, img_sim=img_sim, hint_bonus=hint_bonus)
 
@@ -338,7 +431,7 @@ def retrieve_best(
     catalog: Catalog,
     q: Query,
     top_k: int = 5,
-    min_score: float = 0.80,
+    min_score: float = 0.75,
 ) -> List[MatchResult]:
     """
     Apply hint-driven *pre-filters* first (type → name → rarity). Each filter is
@@ -370,6 +463,13 @@ def retrieve_best(
             pool = subset
     if q.rarity_hint:
         subset = [r for r in pool if normalize_text(r.rarity) == normalize_text(q.rarity_hint)]
+        if subset:
+            pool = subset
+    if q.attribute_hint:
+        subset = [
+            r for r in pool
+            if normalize_text(r.attribute) == normalize_text(q.attribute_hint)
+        ]
         if subset:
             pool = subset
     if q.chain_step_hint is not None:

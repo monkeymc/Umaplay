@@ -15,7 +15,7 @@ from core.actions.training_policy import (
 )
 from core.controllers.base import IController
 from core.perception.analyzers.screen import classify_screen
-from core.perception.extractors.state import extract_goal_text, extract_skill_points, find_best
+from core.perception.extractors.state import extract_energy_pct, extract_goal_text, extract_skill_points, find_best
 from core.perception.ocr.interface import OCRInterface
 from core.perception.yolo.interface import IDetector
 from core.settings import Settings
@@ -25,7 +25,7 @@ from core.utils.text import fuzzy_contains
 from core.utils.waiter import PollConfig, Waiter
 from core.actions.race import ConsecutiveRaceRefused
 from core.utils.abort import abort_requested
-from core.utils.event_processor import CATALOG_JSON, USER_PREFS, Catalog, UserPrefs
+from core.utils.event_processor import CATALOG_JSON, Catalog, UserPrefs
 
 class Player:
     def __init__(
@@ -58,7 +58,8 @@ class Player:
             "Straightaway Acceleration",
         ],
         interval_stats_refresh = 3,
-        select_style = None
+        select_style = None,
+        event_prefs: UserPrefs | None = None
     ) -> None:
         self.ctrl = ctrl
         self.ocr = ocr
@@ -95,8 +96,10 @@ class Player:
         self.skills_flow = SkillsFlow(self.ctrl, self.ocr, self.yolo_engine, self.waiter)
 
         catalog = Catalog.load(CATALOG_JSON)
-        user_prefs = UserPrefs.load(USER_PREFS)
-        self.event_flow = EventFlow(self.ctrl, self.ocr, self.yolo_engine, self.waiter, catalog, user_prefs)
+        # Prefer prefs coming from config.json (passed by main); fallback to legacy file.
+        self.event_flow = EventFlow(
+            self.ctrl, self.ocr, self.yolo_engine, self.waiter, catalog, event_prefs
+        )
 
         self.claw_game = ClawGame(self.ctrl, self.yolo_engine)
         self.claw_turn = 0
@@ -193,7 +196,15 @@ class Player:
 
             if screen == "Event":
                 self.claw_turn = 0
-                decision = self.event_flow.process_event_screen(img, dets)
+                # pass what we know about current energy (may be None if not read yet)
+                self.lobby.state.energy = extract_energy_pct(img, dets)
+                curr_energy = self.lobby.state.energy or 100
+                decision = self.event_flow.process_event_screen(
+                    img,
+                    dets,
+                    current_energy=curr_energy,
+                    max_energy_cap=100,
+                )
                 logger_uma.debug(f"[Event] {decision}")
                 continue
 
@@ -351,7 +362,8 @@ class Player:
 
             if screen == "FinalScreen":
                 self.claw_turn = 0
-                if self.lobby._go_skills():
+                # Only if skill list defined
+                if len(self.skill_list) > 0 and self.lobby._go_skills():
                     sleep(1.0)
                     bought = self.skills_flow.buy(self.skill_list)
                     logger_uma.info(f"[agent] Skills bought: {bought}")

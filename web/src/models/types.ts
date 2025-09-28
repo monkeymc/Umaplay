@@ -1,3 +1,4 @@
+import type { EventSetup } from "@/types/events"
 
 export type Mode = 'steam' | 'scrcpy' | 'bluestack'
 export type Hotkey = 'F1' | 'F2' | 'F3' | 'F4'
@@ -31,6 +32,7 @@ export interface Preset {
   minimalMood: MoodName
   juniorStyle: 'end' | 'late' | 'pace' | 'front' | null
   skillsToBuy: string[]
+  event_setup?: EventSetup
   plannedRaces: Record<string, string> // dateKey -> raceName (Y{year}-{MM}-{half})
 }
 

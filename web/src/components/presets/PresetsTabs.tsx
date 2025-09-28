@@ -50,7 +50,6 @@ export default function PresetsTabs() {
       config: { ...s.config, presets: [...s.config.presets, p], activePresetId: p.id },
     }))
   }
-
   return (
     <Stack spacing={1.5}>
       <Stack direction="row" alignItems="center" spacing={1} sx={{ flexWrap: 'wrap' }}>

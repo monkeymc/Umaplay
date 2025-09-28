@@ -398,7 +398,8 @@ class RaceFlow:
         view_btn = self._pick_view_results_button()
         if view_btn is None:
             # try again just in case
-            time.sleep(1.5)
+            logger_uma.warning("No view result button found, waiting for 5 s more...")
+            time.sleep(5)
             view_btn = self._pick_view_results_button()
 
         is_view_active = False
@@ -412,11 +413,12 @@ class RaceFlow:
                 logger_uma.debug("[race] View Results active probability: %.3f", p)
             except Exception:
                 is_view_active = False
+                logger_uma.debug("[race] View Results inactive")
 
         if is_view_active and view_btn is not None:
             # Tap 'View Results' a couple times to clear residual screens
             self.ctrl.click_xyxy_center(view_btn["xyxy"], clicks=random.randint(1, 2))
-            time.sleep(random.uniform(2.2, 2.8))
+            time.sleep(random.uniform(2.5, 3.2))
             self.ctrl.click_xyxy_center(view_btn["xyxy"], clicks=random.randint(2, 3))
             time.sleep(random.uniform(0.3, 0.5))
         else:
@@ -425,7 +427,7 @@ class RaceFlow:
                 classes=("button_green",),
                 texts=("RACE",),
                 prefer_bottom=True,
-                timeout_s=3,
+                timeout_s=4,
                 tag="race_lobby_race_click",
             )
             time.sleep(3)
@@ -507,7 +509,7 @@ class RaceFlow:
 
         if clicked_try_again:
             logger_uma.debug("[race] Lost the race, trying again.")
-            time.sleep(3)
+            time.sleep(5)  # enough time to show the view result button again
             return self.lobby()
 
         else:
