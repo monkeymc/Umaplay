@@ -1,33 +1,42 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { PLACEHOLDER } from '@/utils/imagePaths'
 
 type Props = {
   candidates: string[]
-  alt: string
-  style?: React.CSSProperties
-  className?: string
-  width?: number | string
-  height?: number | string
+  alt?: string
+  width?: number
+  height?: number
   rounded?: number
+  className?: string
+  style?: React.CSSProperties
 }
 
-export default function SmartImage({ candidates, alt, style, className, width, height, rounded = 8 }: Props) {
-  const [src, setSrc] = useState<string | null>(null)
+export default function SmartImage({
+  candidates,
+  alt = '',
+  width,
+  height,
+  rounded,
+  className,
+  style,
+}: Props) {
+  // Ensure placeholder is last guard
+  const list = (candidates && candidates.length ? candidates : []).concat(PLACEHOLDER)
+  const [idx, setIdx] = useState(0)
+  const src = list[Math.min(idx, list.length - 1)]
 
-  useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      for (const url of candidates) {
-        try {
-          const res = await fetch(url, { method: 'HEAD' })
-          if (!cancelled && res.ok) {
-            setSrc(url); break
-          }
-        } catch {/* ignore */}
-      }
-    })()
-    return () => { cancelled = true }
-  }, [JSON.stringify(candidates)])
-
-  if (!src) return <div style={{ width, height, borderRadius: rounded, background: 'var(--mui-palette-action-hover)' }} />
-  return <img src={src} alt={alt} style={{ width, height, borderRadius: rounded, objectFit: 'cover', ...style }} className={className} />
+  return (
+    <img
+      src={src}
+      alt={alt}
+      width={width}
+      height={height}
+      loading="lazy"
+      decoding="async"
+      draggable={false}
+      onError={() => setIdx((i) => Math.min(i + 1, list.length - 1))}
+      className={className}
+      style={{ borderRadius: rounded ?? 0, display: 'block', ...(style || {}) }}
+    />
+  )
 }
