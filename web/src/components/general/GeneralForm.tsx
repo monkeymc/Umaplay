@@ -289,6 +289,12 @@ export default function GeneralForm() {
               Force update
             </Button>
           </Box>
+          <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 0.5 }}>
+            <br></br>
+            <strong>Important: RESTART</strong> the cmd / program after updating
+          
+            
+          </Typography>
         </Box>
 
         {/* Force update confirmation */}
