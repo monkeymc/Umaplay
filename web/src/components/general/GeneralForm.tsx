@@ -263,7 +263,7 @@ export default function GeneralForm() {
                   const res = await updateFromGithub()
                   setSnack({ open: true, msg: `Updated successfully (branch: ${res.branch})`, severity: 'success' })
                 } catch (e:any) {
-                  setSnack({ open: true, msg: e?.message || 'Update failed', severity: 'error' })
+                  setSnack({ open: true, msg: e?.message || e?.detail || 'Update failed Check that you are in main branch', severity: 'error' })
                 } finally {
                   setUpdating(false)
                 }
