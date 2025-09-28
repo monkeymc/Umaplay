@@ -1292,7 +1292,7 @@
     "attribute": "SPD",
     "event_name": "Warmth, Love, and Lunch",
     "chain_step": 1,
-    "default_preference": 1,
+    "default_preference": 2,
     "options": {
       "1": [
         {
@@ -6934,6 +6934,89 @@
     "phash64": null
   },
   {
+    "key": "trainee/Vodka/None/None/At Summer Camp (Year 2)",
+    "key_step": "trainee/Vodka/None/None/At Summer Camp (Year 2)#s1",
+    "type": "trainee",
+    "name": "Vodka",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "At Summer Camp (Year 2)",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "guts": 10
+        }
+      ]
+    },
+    "title_norm": "at summer camp (year 2)",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Vodka/None/None/Dance Lesson",
+    "key_step": "trainee/Vodka/None/None/Dance Lesson#s1",
+    "type": "trainee",
+    "name": "Vodka",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Dance Lesson",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 10
+        }
+      ],
+      "2": [
+        {
+          "stamina": 10
+        }
+      ]
+    },
+    "title_norm": "dance lesson",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Vodka/None/None/New Year's Resolutions",
+    "key_step": "trainee/Vodka/None/None/New Year's Resolutions#s1",
+    "type": "trainee",
+    "name": "Vodka",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "New Year's Resolutions",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "speed": 10
+        }
+      ],
+      "2": [
+        {
+          "energy": 20
+        }
+      ],
+      "3": [
+        {
+          "skill_pts": 20
+        }
+      ]
+    },
+    "title_norm": "new year's resolutions",
+    "image_path": null,
+    "phash64": null
+  },
+  {
     "key": "trainee/Daiwa Scarlet/None/None/The Best Pose",
     "key_step": "trainee/Daiwa Scarlet/None/None/The Best Pose#s1",
     "type": "trainee",
@@ -7545,7 +7628,7 @@
     "attribute": "None",
     "event_name": "On My Heels",
     "chain_step": 1,
-    "default_preference": 2,
+    "default_preference": 1,
     "options": {
       "1": [
         {
@@ -20629,6 +20712,4596 @@
       ]
     },
     "title_norm": "new year's resolutions",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Smart Falcon/None/None/Polished ✯ Diamond",
+    "key_step": "trainee/Smart Falcon/None/None/Polished ✯ Diamond#s1",
+    "type": "trainee",
+    "name": "Smart Falcon",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Polished ✯ Diamond",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "speed": 20
+        }
+      ],
+      "2": [
+        {
+          "power": 10,
+          "guts": 10
+        }
+      ]
+    },
+    "title_norm": "polished ✯ diamond",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Smart Falcon/None/None/Umadol ✯ Friendship!",
+    "key_step": "trainee/Smart Falcon/None/None/Umadol ✯ Friendship!#s1",
+    "type": "trainee",
+    "name": "Smart Falcon",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Umadol ✯ Friendship!",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "wit": 20
+        }
+      ],
+      "2": [
+        {
+          "power": 20
+        }
+      ]
+    },
+    "title_norm": "umadol ✯ friendship!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Smart Falcon/None/None/Energetic ✯ Children",
+    "key_step": "trainee/Smart Falcon/None/None/Energetic ✯ Children#s1",
+    "type": "trainee",
+    "name": "Smart Falcon",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Energetic ✯ Children",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "speed": 20
+        },
+        {
+          "speed": 20,
+          "status": "Charming ○"
+        }
+      ],
+      "2": [
+        {
+          "stamina": 20
+        },
+        {
+          "stamina": 20,
+          "status": "Charming ○"
+        }
+      ]
+    },
+    "title_norm": "energetic ✯ children",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Smart Falcon/None/None/Studying Umadols?",
+    "key_step": "trainee/Smart Falcon/None/None/Studying Umadols?#s1",
+    "type": "trainee",
+    "name": "Smart Falcon",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Studying Umadols?",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "wit": 10
+        }
+      ]
+    },
+    "title_norm": "studying umadols?",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Smart Falcon/None/None/Heart-Pounding ✯ Situation",
+    "key_step": "trainee/Smart Falcon/None/None/Heart-Pounding ✯ Situation#s1",
+    "type": "trainee",
+    "name": "Smart Falcon",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Heart-Pounding ✯ Situation",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "stamina": 10
+        }
+      ]
+    },
+    "title_norm": "heart-pounding ✯ situation",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Smart Falcon/None/None/Umadol Spirit ✯ Ignited",
+    "key_step": "trainee/Smart Falcon/None/None/Umadol Spirit ✯ Ignited#s1",
+    "type": "trainee",
+    "name": "Smart Falcon",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Umadol Spirit ✯ Ignited",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 10,
+          "guts": 10
+        }
+      ],
+      "2": [
+        {
+          "hints": [
+            "Leader's Pride"
+          ]
+        }
+      ]
+    },
+    "title_norm": "umadol spirit ✯ ignited",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Smart Falcon/None/None/Cuteness ✯ Research",
+    "key_step": "trainee/Smart Falcon/None/None/Cuteness ✯ Research#s1",
+    "type": "trainee",
+    "name": "Smart Falcon",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Cuteness ✯ Research",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": 10,
+          "skill_pts": 5
+        }
+      ],
+      "2": [
+        {
+          "random_chance": 90,
+          "energy": 30,
+          "skill_pts": 10
+        },
+        {
+          "random_chance": 10,
+          "energy": 30,
+          "skill_pts": 10,
+          "speed": -5,
+          "power": 5,
+          "status": "Slow Metabolism"
+        }
+      ]
+    },
+    "title_norm": "cuteness ✯ research",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Smart Falcon/None/None/Test Recovery ✯",
+    "key_step": "trainee/Smart Falcon/None/None/Test Recovery ✯#s1",
+    "type": "trainee",
+    "name": "Smart Falcon",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Test Recovery ✯",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "wit": 10
+        }
+      ],
+      "2": [
+        {
+          "power": 10
+        }
+      ]
+    },
+    "title_norm": "test recovery ✯",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Smart Falcon/None/None/A Thank-You Gift for You ♪",
+    "key_step": "trainee/Smart Falcon/None/None/A Thank-You Gift for You ♪#s1",
+    "type": "trainee",
+    "name": "Smart Falcon",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "A Thank-You Gift for You ♪",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "speed": 10
+        }
+      ],
+      "2": [
+        {
+          "power": 10
+        }
+      ]
+    },
+    "title_norm": "a thank-you gift for you note ",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Smart Falcon/None/None/Memory ✯ Lane",
+    "key_step": "trainee/Smart Falcon/None/None/Memory ✯ Lane#s1",
+    "type": "trainee",
+    "name": "Smart Falcon",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Memory ✯ Lane",
+    "chain_step": 1,
+    "default_preference": 3,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "guts": 10
+        }
+      ],
+      "3": [
+        {
+          "speed": 10
+        }
+      ]
+    },
+    "title_norm": "memory ✯ lane",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Smart Falcon/None/None/Sharing ✯ Memories",
+    "key_step": "trainee/Smart Falcon/None/None/Sharing ✯ Memories#s1",
+    "type": "trainee",
+    "name": "Smart Falcon",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Sharing ✯ Memories",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 10
+        }
+      ],
+      "2": [
+        {
+          "guts": 10
+        }
+      ]
+    },
+    "title_norm": "sharing ✯ memories",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Smart Falcon/None/None/Location ✯ Scouting",
+    "key_step": "trainee/Smart Falcon/None/None/Location ✯ Scouting#s1",
+    "type": "trainee",
+    "name": "Smart Falcon",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Location ✯ Scouting",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "wit": 10
+        }
+      ],
+      "2": [
+        {
+          "power": 10
+        }
+      ]
+    },
+    "title_norm": "location ✯ scouting",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Smart Falcon/None/None/At Summer Camp (Year 2)",
+    "key_step": "trainee/Smart Falcon/None/None/At Summer Camp (Year 2)#s1",
+    "type": "trainee",
+    "name": "Smart Falcon",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "At Summer Camp (Year 2)",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "guts": 10
+        }
+      ]
+    },
+    "title_norm": "at summer camp (year 2)",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Smart Falcon/None/None/Dance Lesson",
+    "key_step": "trainee/Smart Falcon/None/None/Dance Lesson#s1",
+    "type": "trainee",
+    "name": "Smart Falcon",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Dance Lesson",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 10
+        }
+      ],
+      "2": [
+        {
+          "wit": 10
+        }
+      ]
+    },
+    "title_norm": "dance lesson",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Smart Falcon/None/None/New Year's Resolutions",
+    "key_step": "trainee/Smart Falcon/None/None/New Year's Resolutions#s1",
+    "type": "trainee",
+    "name": "Smart Falcon",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "New Year's Resolutions",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "speed": 10
+        }
+      ],
+      "2": [
+        {
+          "energy": 20
+        }
+      ],
+      "3": [
+        {
+          "skill_pts": 20
+        }
+      ]
+    },
+    "title_norm": "new year's resolutions",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Special Week/None/None/How Should I Pose?",
+    "key_step": "trainee/Special Week/None/None/How Should I Pose?#s1",
+    "type": "trainee",
+    "name": "Special Week",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "How Should I Pose?",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "power": 20
+        }
+      ],
+      "2": [
+        {
+          "skill_pts": 40
+        }
+      ]
+    },
+    "title_norm": "how should i pose?",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Special Week/None/None/Wear Your Heart on Your Sleeve",
+    "key_step": "trainee/Special Week/None/None/Wear Your Heart on Your Sleeve#s1",
+    "type": "trainee",
+    "name": "Special Week",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Wear Your Heart on Your Sleeve",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 20
+        }
+      ],
+      "2": [
+        {
+          "guts": 20
+        }
+      ]
+    },
+    "title_norm": "wear your heart on your sleeve",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Special Week/None/None/Today and Tomorrow, Too",
+    "key_step": "trainee/Special Week/None/None/Today and Tomorrow, Too#s1",
+    "type": "trainee",
+    "name": "Special Week",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Today and Tomorrow, Too",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "speed": 20
+        },
+        {
+          "speed": 20,
+          "status": "Hot Topic"
+        }
+      ],
+      "2": [
+        {
+          "wit": 20
+        },
+        {
+          "wit": 20,
+          "status": "Hot Topic"
+        }
+      ]
+    },
+    "title_norm": "today and tomorrow, too",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Special Week/None/None/A Beautiful Day for Tennis",
+    "key_step": "trainee/Special Week/None/None/A Beautiful Day for Tennis#s1",
+    "type": "trainee",
+    "name": "Special Week",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "A Beautiful Day for Tennis",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "speed": 10
+        }
+      ],
+      "2": [
+        {
+          "stamina": 10
+        }
+      ]
+    },
+    "title_norm": "a beautiful day for tennis",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Special Week/None/None/Karaoke Connoisseur ♪",
+    "key_step": "trainee/Special Week/None/None/Karaoke Connoisseur ♪#s1",
+    "type": "trainee",
+    "name": "Special Week",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Karaoke Connoisseur ♪",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": 10
+        }
+      ],
+      "2": [
+        {
+          "power": 10
+        }
+      ]
+    },
+    "title_norm": "karaoke connoisseur note ",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Special Week/None/None/Early Afternoon Payback",
+    "key_step": "trainee/Special Week/None/None/Early Afternoon Payback#s1",
+    "type": "trainee",
+    "name": "Special Week",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Early Afternoon Payback",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": 5,
+          "wit": 5
+        }
+      ],
+      "2": [
+        {
+          "hints": [
+            "Pace Strategy"
+          ]
+        }
+      ]
+    },
+    "title_norm": "early afternoon payback",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Special Week/None/None/Putting It Away at the Cafeteria",
+    "key_step": "trainee/Special Week/None/None/Putting It Away at the Cafeteria#s1",
+    "type": "trainee",
+    "name": "Special Week",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Putting It Away at the Cafeteria",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": 10,
+          "skill_pts": 5
+        }
+      ],
+      "2": [
+        {
+          "random_chance": 90,
+          "energy": 30,
+          "skill_pts": 10
+        },
+        {
+          "random_chance": 10,
+          "energy": 30,
+          "skill_pts": 10,
+          "speed": -5,
+          "power": 5,
+          "status": "Slow Metabolism"
+        }
+      ]
+    },
+    "title_norm": "putting it away at the cafeteria",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Special Week/None/None/Because It's Special",
+    "key_step": "trainee/Special Week/None/None/Because It's Special#s1",
+    "type": "trainee",
+    "name": "Special Week",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Because It's Special",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 10
+        }
+      ],
+      "2": [
+        {
+          "speed": 10
+        }
+      ]
+    },
+    "title_norm": "because it's special",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Special Week/None/None/A Place I Want to Take You",
+    "key_step": "trainee/Special Week/None/None/A Place I Want to Take You#s1",
+    "type": "trainee",
+    "name": "Special Week",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "A Place I Want to Take You",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "wit": 10
+        }
+      ],
+      "2": [
+        {
+          "stamina": 10
+        }
+      ]
+    },
+    "title_norm": "a place i want to take you",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Special Week/None/None/Someone I Respect",
+    "key_step": "trainee/Special Week/None/None/Someone I Respect#s1",
+    "type": "trainee",
+    "name": "Special Week",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Someone I Respect",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "skill_pts": 30
+        }
+      ],
+      "2": [
+        {
+          "stamina": 5,
+          "guts": 5
+        }
+      ],
+      "3": [
+        {
+          "speed": 5,
+          "power": 5
+        }
+      ]
+    },
+    "title_norm": "someone i respect",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Special Week/None/None/Just a Little More",
+    "key_step": "trainee/Special Week/None/None/Just a Little More#s1",
+    "type": "trainee",
+    "name": "Special Week",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Just a Little More",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "hints": [
+            "Homestretch Haste"
+          ]
+        }
+      ],
+      "2": [
+        {
+          "hints": [
+            "Corner Adept ○"
+          ]
+        }
+      ]
+    },
+    "title_norm": "just a little more",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Special Week/None/None/Research Fanatic",
+    "key_step": "trainee/Special Week/None/None/Research Fanatic#s1",
+    "type": "trainee",
+    "name": "Special Week",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Research Fanatic",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "hints": [
+            "Tokyo Racecourse ○"
+          ]
+        }
+      ],
+      "2": [
+        {
+          "hints": [
+            "Nakayama Racecourse ○"
+          ]
+        }
+      ]
+    },
+    "title_norm": "research fanatic",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Special Week/None/None/At Summer Camp (Year 2)",
+    "key_step": "trainee/Special Week/None/None/At Summer Camp (Year 2)#s1",
+    "type": "trainee",
+    "name": "Special Week",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "At Summer Camp (Year 2)",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "guts": 10
+        }
+      ]
+    },
+    "title_norm": "at summer camp (year 2)",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Special Week/None/None/Dance Lesson",
+    "key_step": "trainee/Special Week/None/None/Dance Lesson#s1",
+    "type": "trainee",
+    "name": "Special Week",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Dance Lesson",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 10
+        }
+      ],
+      "2": [
+        {
+          "stamina": 10
+        }
+      ]
+    },
+    "title_norm": "dance lesson",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Special Week/None/None/New Year's Resolutions",
+    "key_step": "trainee/Special Week/None/None/New Year's Resolutions#s1",
+    "type": "trainee",
+    "name": "Special Week",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "New Year's Resolutions",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "stamina": 10
+        }
+      ],
+      "2": [
+        {
+          "energy": 20
+        }
+      ],
+      "3": [
+        {
+          "skill_pts": 20
+        }
+      ]
+    },
+    "title_norm": "new year's resolutions",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Super Creek/None/None/A Self-Satisfying Wish",
+    "key_step": "trainee/Super Creek/None/None/A Self-Satisfying Wish#s1",
+    "type": "trainee",
+    "name": "Super Creek",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "A Self-Satisfying Wish",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "power": 20
+        }
+      ],
+      "2": [
+        {
+          "stamina": 20
+        }
+      ]
+    },
+    "title_norm": "a self-satisfying wish",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Super Creek/None/None/Fill Life with Love",
+    "key_step": "trainee/Super Creek/None/None/Fill Life with Love#s1",
+    "type": "trainee",
+    "name": "Super Creek",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Fill Life with Love",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "speed": 10,
+          "stamina": 10
+        },
+        {
+          "wit": 20
+        }
+      ],
+      "2": [
+        {
+          "wit": 20
+        }
+      ]
+    },
+    "title_norm": "fill life with love",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Super Creek/None/None/Patience Is Key",
+    "key_step": "trainee/Super Creek/None/None/Patience Is Key#s1",
+    "type": "trainee",
+    "name": "Super Creek",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Patience Is Key",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 20
+        },
+        {
+          "guts": 20,
+          "status": "Hot Topic"
+        }
+      ],
+      "2": [
+        {
+          "stamina": 10,
+          "power": 10
+        },
+        {
+          "stamina": 10,
+          "power": 10,
+          "status": "Hot Topic"
+        }
+      ]
+    },
+    "title_norm": "patience is key",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Super Creek/None/None/One-Day Experience ✯ Ceramics Class",
+    "key_step": "trainee/Super Creek/None/None/One-Day Experience ✯ Ceramics Class#s1",
+    "type": "trainee",
+    "name": "Super Creek",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "One-Day Experience ✯ Ceramics Class",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "speed": 5,
+          "wit": 5
+        }
+      ],
+      "2": [
+        {
+          "stamina": 10
+        }
+      ]
+    },
+    "title_norm": "one-day experience ✯ ceramics class",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Super Creek/None/None/Find the Lost Child!",
+    "key_step": "trainee/Super Creek/None/None/Find the Lost Child!#s1",
+    "type": "trainee",
+    "name": "Super Creek",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Find the Lost Child!",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": -10,
+          "stamina": 10,
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "wit": 10
+        }
+      ]
+    },
+    "title_norm": "find the lost child!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Super Creek/None/None/A Dangerous Treat",
+    "key_step": "trainee/Super Creek/None/None/A Dangerous Treat#s1",
+    "type": "trainee",
+    "name": "Super Creek",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "A Dangerous Treat",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 10,
+          "skill_pts": 15
+        }
+      ],
+      "2": [
+        {
+          "hints": [
+            "Corner Recovery ○"
+          ]
+        }
+      ]
+    },
+    "title_norm": "a dangerous treat",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Super Creek/None/None/Sweet Nighttime Temptation",
+    "key_step": "trainee/Super Creek/None/None/Sweet Nighttime Temptation#s1",
+    "type": "trainee",
+    "name": "Super Creek",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Sweet Nighttime Temptation",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": 30,
+          "speed": 10,
+          "skill_pts": 10
+        },
+        {
+          "energy": 30,
+          "speed": 10,
+          "skill_pts": 10,
+          "mood": -1,
+          "status": "Slow Metabolism"
+        }
+      ],
+      "2": [
+        {
+          "energy": 10,
+          "speed": 5,
+          "skill_pts": 5
+        }
+      ]
+    },
+    "title_norm": "sweet nighttime temptation",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Super Creek/None/None/For My Friends",
+    "key_step": "trainee/Super Creek/None/None/For My Friends#s1",
+    "type": "trainee",
+    "name": "Super Creek",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "For My Friends",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": 10,
+          "skill_pts": 5
+        }
+      ],
+      "2": [
+        {
+          "random_chance": 90,
+          "energy": 30,
+          "skill_pts": 10
+        },
+        {
+          "random_chance": 10,
+          "energy": 30,
+          "skill_pts": 10,
+          "speed": -5,
+          "power": 5,
+          "status": "Slow Metabolism"
+        }
+      ]
+    },
+    "title_norm": "for my friends",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Super Creek/None/None/Is Relaxing Being Spoiled?",
+    "key_step": "trainee/Super Creek/None/None/Is Relaxing Being Spoiled?#s1",
+    "type": "trainee",
+    "name": "Super Creek",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Is Relaxing Being Spoiled?",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 10
+        }
+      ],
+      "2": [
+        {
+          "wit": 10
+        }
+      ]
+    },
+    "title_norm": "is relaxing being spoiled?",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Super Creek/None/None/Dispel Your Anxieties",
+    "key_step": "trainee/Super Creek/None/None/Dispel Your Anxieties#s1",
+    "type": "trainee",
+    "name": "Super Creek",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Dispel Your Anxieties",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "speed": 5,
+          "guts": 5
+        }
+      ]
+    },
+    "title_norm": "dispel your anxieties",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Super Creek/None/None/Let's Share",
+    "key_step": "trainee/Super Creek/None/None/Let's Share#s1",
+    "type": "trainee",
+    "name": "Super Creek",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Let's Share",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 10
+        }
+      ],
+      "2": [
+        {
+          "speed": 10
+        }
+      ],
+      "3": [
+        {
+          "power": 10
+        }
+      ]
+    },
+    "title_norm": "let's share",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Super Creek/None/None/Rough Massage!",
+    "key_step": "trainee/Super Creek/None/None/Rough Massage!#s1",
+    "type": "trainee",
+    "name": "Super Creek",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Rough Massage!",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 10
+        }
+      ],
+      "2": [
+        {
+          "speed": 5,
+          "wit": 5
+        }
+      ]
+    },
+    "title_norm": "rough massage!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Super Creek/None/None/Stargazing is Better Together",
+    "key_step": "trainee/Super Creek/None/None/Stargazing is Better Together#s1",
+    "type": "trainee",
+    "name": "Super Creek",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Stargazing is Better Together",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "power": 5,
+          "guts": 5
+        }
+      ],
+      "2": [
+        {
+          "stamina": 10
+        }
+      ]
+    },
+    "title_norm": "stargazing is better together",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Super Creek/None/None/At Summer Camp (Year 2)",
+    "key_step": "trainee/Super Creek/None/None/At Summer Camp (Year 2)#s1",
+    "type": "trainee",
+    "name": "Super Creek",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "At Summer Camp (Year 2)",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "guts": 10
+        }
+      ]
+    },
+    "title_norm": "at summer camp (year 2)",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Super Creek/None/None/Dance Lesson",
+    "key_step": "trainee/Super Creek/None/None/Dance Lesson#s1",
+    "type": "trainee",
+    "name": "Super Creek",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Dance Lesson",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 10
+        }
+      ],
+      "2": [
+        {
+          "speed": 10
+        }
+      ]
+    },
+    "title_norm": "dance lesson",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Super Creek/None/None/New Year's Resolutions",
+    "key_step": "trainee/Super Creek/None/None/New Year's Resolutions#s1",
+    "type": "trainee",
+    "name": "Super Creek",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "New Year's Resolutions",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "stamina": 10
+        }
+      ],
+      "2": [
+        {
+          "energy": 20
+        }
+      ],
+      "3": [
+        {
+          "skill_pts": 20
+        }
+      ]
+    },
+    "title_norm": "new year's resolutions",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Symboli Rudolf/None/None/Midway Reflection",
+    "key_step": "trainee/Symboli Rudolf/None/None/Midway Reflection#s1",
+    "type": "trainee",
+    "name": "Symboli Rudolf",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Midway Reflection",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "speed": 20
+        }
+      ],
+      "2": [
+        {
+          "power": 20
+        }
+      ]
+    },
+    "title_norm": "midway reflection",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Symboli Rudolf/None/None/The Smiling Emperor's New Clothes",
+    "key_step": "trainee/Symboli Rudolf/None/None/The Smiling Emperor's New Clothes#s1",
+    "type": "trainee",
+    "name": "Symboli Rudolf",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "The Smiling Emperor's New Clothes",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "wit": 20
+        }
+      ],
+      "2": [
+        {
+          "guts": 20
+        }
+      ]
+    },
+    "title_norm": "the smiling emperor's new clothes",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Symboli Rudolf/None/None/The Distant View from the End of the Road",
+    "key_step": "trainee/Symboli Rudolf/None/None/The Distant View from the End of the Road#s1",
+    "type": "trainee",
+    "name": "Symboli Rudolf",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "The Distant View from the End of the Road",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 20
+        },
+        {
+          "stamina": 20,
+          "status": "Hot Topic"
+        }
+      ],
+      "2": [
+        {
+          "guts": 20
+        },
+        {
+          "guts": 20,
+          "status": "Hot Topic"
+        }
+      ]
+    },
+    "title_norm": "the distant view from the end of the road",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Symboli Rudolf/None/None/Those Who March Forth",
+    "key_step": "trainee/Symboli Rudolf/None/None/Those Who March Forth#s1",
+    "type": "trainee",
+    "name": "Symboli Rudolf",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Those Who March Forth",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "speed": 5,
+          "power": 5
+        }
+      ],
+      "2": [
+        {
+          "stamina": 5,
+          "guts": 5
+        }
+      ]
+    },
+    "title_norm": "those who march forth",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Symboli Rudolf/None/None/The Emperor's Social Studies",
+    "key_step": "trainee/Symboli Rudolf/None/None/The Emperor's Social Studies#s1",
+    "type": "trainee",
+    "name": "Symboli Rudolf",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "The Emperor's Social Studies",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": -10,
+          "stamina": 10,
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "wit": 5,
+          "skill_pts": 15
+        }
+      ]
+    },
+    "title_norm": "the emperor's social studies",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Symboli Rudolf/None/None/The Emperor's Spare Time",
+    "key_step": "trainee/Symboli Rudolf/None/None/The Emperor's Spare Time#s1",
+    "type": "trainee",
+    "name": "Symboli Rudolf",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "The Emperor's Spare Time",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "wit": 10,
+          "skill_pts": 15
+        }
+      ],
+      "2": [
+        {
+          "hints": [
+            "Rainy Days ○"
+          ]
+        }
+      ]
+    },
+    "title_norm": "the emperor's spare time",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Symboli Rudolf/None/None/At Any Time",
+    "key_step": "trainee/Symboli Rudolf/None/None/At Any Time#s1",
+    "type": "trainee",
+    "name": "Symboli Rudolf",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "At Any Time",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": -10,
+          "guts": 20,
+          "bond": 10
+        }
+      ],
+      "2": [
+        {
+          "energy": 10
+        }
+      ]
+    },
+    "title_norm": "at any time",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Symboli Rudolf/None/None/Sudden Kindness",
+    "key_step": "trainee/Symboli Rudolf/None/None/Sudden Kindness#s1",
+    "type": "trainee",
+    "name": "Symboli Rudolf",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Sudden Kindness",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": -10,
+          "stamina": 20,
+          "bond": 10
+        }
+      ],
+      "2": [
+        {
+          "energy": 10
+        }
+      ]
+    },
+    "title_norm": "sudden kindness",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Symboli Rudolf/None/None/As Good As My Word",
+    "key_step": "trainee/Symboli Rudolf/None/None/As Good As My Word#s1",
+    "type": "trainee",
+    "name": "Symboli Rudolf",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "As Good As My Word",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": -10,
+          "power": 20,
+          "bond": 10
+        }
+      ],
+      "2": [
+        {
+          "energy": 10
+        }
+      ]
+    },
+    "title_norm": "as good as my word",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Symboli Rudolf/None/None/The Emperor's Satiation",
+    "key_step": "trainee/Symboli Rudolf/None/None/The Emperor's Satiation#s1",
+    "type": "trainee",
+    "name": "Symboli Rudolf",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "The Emperor's Satiation",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": 10,
+          "skill_pts": 5
+        }
+      ],
+      "2": [
+        {
+          "random_chance": 90,
+          "energy": 30,
+          "skill_pts": 10
+        },
+        {
+          "random_chance": 10,
+          "energy": 30,
+          "skill_pts": 10,
+          "speed": -5,
+          "power": 5,
+          "status": "Slow Metabolism"
+        }
+      ]
+    },
+    "title_norm": "the emperor's satiation",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Symboli Rudolf/None/None/Birds of a Feather",
+    "key_step": "trainee/Symboli Rudolf/None/None/Birds of a Feather#s1",
+    "type": "trainee",
+    "name": "Symboli Rudolf",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Birds of a Feather",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "speed": 10
+        }
+      ],
+      "2": [
+        {
+          "stamina": 10
+        }
+      ]
+    },
+    "title_norm": "birds of a feather",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Symboli Rudolf/None/None/Well-Earned Respect",
+    "key_step": "trainee/Symboli Rudolf/None/None/Well-Earned Respect#s1",
+    "type": "trainee",
+    "name": "Symboli Rudolf",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Well-Earned Respect",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "wit": 10
+        }
+      ],
+      "2": [
+        {
+          "power": 10
+        }
+      ]
+    },
+    "title_norm": "well-earned respect",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Symboli Rudolf/None/None/A Clear and Beautiful Night",
+    "key_step": "trainee/Symboli Rudolf/None/None/A Clear and Beautiful Night#s1",
+    "type": "trainee",
+    "name": "Symboli Rudolf",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "A Clear and Beautiful Night",
+    "chain_step": 1,
+    "default_preference": 3,
+    "options": {
+      "1": [
+        {
+          "speed": 10
+        }
+      ],
+      "2": [
+        {
+          "wit": 10
+        }
+      ],
+      "3": [
+        {
+          "stamina": 10
+        }
+      ]
+    },
+    "title_norm": "a clear and beautiful night",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Symboli Rudolf/None/None/The Emperor's Daily Routine",
+    "key_step": "trainee/Symboli Rudolf/None/None/The Emperor's Daily Routine#s1",
+    "type": "trainee",
+    "name": "Symboli Rudolf",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "The Emperor's Daily Routine",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "guts": 10
+        }
+      ]
+    },
+    "title_norm": "the emperor's daily routine",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Symboli Rudolf/None/None/The Emperor's Path",
+    "key_step": "trainee/Symboli Rudolf/None/None/The Emperor's Path#s1",
+    "type": "trainee",
+    "name": "Symboli Rudolf",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "The Emperor's Path",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "wit": 10
+        }
+      ],
+      "2": [
+        {
+          "power": 10
+        }
+      ]
+    },
+    "title_norm": "the emperor's path",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Symboli Rudolf/None/None/At Summer Camp (Year 2)",
+    "key_step": "trainee/Symboli Rudolf/None/None/At Summer Camp (Year 2)#s1",
+    "type": "trainee",
+    "name": "Symboli Rudolf",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "At Summer Camp (Year 2)",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "guts": 10
+        }
+      ]
+    },
+    "title_norm": "at summer camp (year 2)",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Symboli Rudolf/None/None/Dance Lesson",
+    "key_step": "trainee/Symboli Rudolf/None/None/Dance Lesson#s1",
+    "type": "trainee",
+    "name": "Symboli Rudolf",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Dance Lesson",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "wit": 10
+        }
+      ],
+      "2": [
+        {
+          "power": 10
+        }
+      ]
+    },
+    "title_norm": "dance lesson",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Symboli Rudolf/None/None/New Year's Resolutions",
+    "key_step": "trainee/Symboli Rudolf/None/None/New Year's Resolutions#s1",
+    "type": "trainee",
+    "name": "Symboli Rudolf",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "New Year's Resolutions",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "wit": 10
+        }
+      ],
+      "2": [
+        {
+          "energy": 20
+        }
+      ],
+      "3": [
+        {
+          "skill_pts": 20
+        }
+      ]
+    },
+    "title_norm": "new year's resolutions",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Taiki Shuttle/None/None/Quick Draw Showdown",
+    "key_step": "trainee/Taiki Shuttle/None/None/Quick Draw Showdown#s1",
+    "type": "trainee",
+    "name": "Taiki Shuttle",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Quick Draw Showdown",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": 10,
+          "speed": 10
+        }
+      ],
+      "2": [
+        {
+          "energy": 10,
+          "wit": 10
+        }
+      ]
+    },
+    "title_norm": "quick draw showdown",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Taiki Shuttle/None/None/Must-Win Match",
+    "key_step": "trainee/Taiki Shuttle/None/None/Must-Win Match#s1",
+    "type": "trainee",
+    "name": "Taiki Shuttle",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Must-Win Match",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "wit": 20
+        }
+      ],
+      "2": [
+        {
+          "stamina": 20
+        }
+      ]
+    },
+    "title_norm": "must-win match",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Taiki Shuttle/None/None/To the Top!",
+    "key_step": "trainee/Taiki Shuttle/None/None/To the Top!#s1",
+    "type": "trainee",
+    "name": "Taiki Shuttle",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "To the Top!",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "power": 10,
+          "guts": 10
+        },
+        {
+          "power": 10,
+          "guts": 10,
+          "status": "Fast Learner"
+        }
+      ],
+      "2": [
+        {
+          "speed": 10,
+          "wit": 10
+        },
+        {
+          "speed": 10,
+          "wit": 10,
+          "status": "Fast Learner"
+        }
+      ]
+    },
+    "title_norm": "to the top!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Taiki Shuttle/None/None/Hide-and-Seek",
+    "key_step": "trainee/Taiki Shuttle/None/None/Hide-and-Seek#s1",
+    "type": "trainee",
+    "name": "Taiki Shuttle",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Hide-and-Seek",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "speed": 10
+        }
+      ],
+      "2": [
+        {
+          "stamina": 10
+        }
+      ]
+    },
+    "title_norm": "hide-and-seek",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Taiki Shuttle/None/None/Embracing Guidance",
+    "key_step": "trainee/Taiki Shuttle/None/None/Embracing Guidance#s1",
+    "type": "trainee",
+    "name": "Taiki Shuttle",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Embracing Guidance",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "energy": 10
+        }
+      ]
+    },
+    "title_norm": "embracing guidance",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Taiki Shuttle/None/None/Harvest Festival",
+    "key_step": "trainee/Taiki Shuttle/None/None/Harvest Festival#s1",
+    "type": "trainee",
+    "name": "Taiki Shuttle",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Harvest Festival",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "power": 10,
+          "skill_pts": 15
+        }
+      ],
+      "2": [
+        {
+          "hints": [
+            "Prepared to Pass"
+          ]
+        }
+      ]
+    },
+    "title_norm": "harvest festival",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Taiki Shuttle/None/None/Serial Riddler",
+    "key_step": "trainee/Taiki Shuttle/None/None/Serial Riddler#s1",
+    "type": "trainee",
+    "name": "Taiki Shuttle",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Serial Riddler",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "mood": 1,
+          "stamina": 5,
+          "power": 10
+        },
+        {
+          "mood": -1
+        }
+      ],
+      "2": [
+        {
+          "wit": 10
+        }
+      ]
+    },
+    "title_norm": "serial riddler",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Taiki Shuttle/None/None/Taste of Home",
+    "key_step": "trainee/Taiki Shuttle/None/None/Taste of Home#s1",
+    "type": "trainee",
+    "name": "Taiki Shuttle",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Taste of Home",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "mood": 1,
+          "speed": 10,
+          "power": 5
+        },
+        {
+          "mood": -1
+        }
+      ],
+      "2": [
+        {
+          "wit": 10
+        }
+      ]
+    },
+    "title_norm": "taste of home",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Taiki Shuttle/None/None/Meaty Heaven",
+    "key_step": "trainee/Taiki Shuttle/None/None/Meaty Heaven#s1",
+    "type": "trainee",
+    "name": "Taiki Shuttle",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Meaty Heaven",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": 10,
+          "skill_pts": 5
+        }
+      ],
+      "2": [
+        {
+          "random_chance": 90,
+          "energy": 30,
+          "skill_pts": 10
+        },
+        {
+          "energy": 30,
+          "skill_pts": 10,
+          "speed": -5,
+          "power": 5,
+          "status": "Slow Metabolism"
+        }
+      ]
+    },
+    "title_norm": "meaty heaven",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Taiki Shuttle/None/None/Rainy Power",
+    "key_step": "trainee/Taiki Shuttle/None/None/Rainy Power#s1",
+    "type": "trainee",
+    "name": "Taiki Shuttle",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Rainy Power",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "skill_pts": 30
+        }
+      ]
+    },
+    "title_norm": "rainy power",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Taiki Shuttle/None/None/Rainy Choice",
+    "key_step": "trainee/Taiki Shuttle/None/None/Rainy Choice#s1",
+    "type": "trainee",
+    "name": "Taiki Shuttle",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Rainy Choice",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "speed": 5,
+          "guts": 5
+        }
+      ],
+      "2": [
+        {
+          "stamina": 5,
+          "wit": 5
+        }
+      ]
+    },
+    "title_norm": "rainy choice",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Taiki Shuttle/None/None/Rainy Rescue",
+    "key_step": "trainee/Taiki Shuttle/None/None/Rainy Rescue#s1",
+    "type": "trainee",
+    "name": "Taiki Shuttle",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Rainy Rescue",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "skill_pts": 30
+        }
+      ],
+      "2": [
+        {
+          "power": 5,
+          "wit": 5
+        }
+      ],
+      "3": [
+        {
+          "speed": 5,
+          "guts": 5
+        }
+      ]
+    },
+    "title_norm": "rainy rescue",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Taiki Shuttle/None/None/Let's Patrol!",
+    "key_step": "trainee/Taiki Shuttle/None/None/Let's Patrol!#s1",
+    "type": "trainee",
+    "name": "Taiki Shuttle",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Let's Patrol!",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "energy": 10
+        }
+      ]
+    },
+    "title_norm": "let's patrol!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Taiki Shuttle/None/None/Going Home Together",
+    "key_step": "trainee/Taiki Shuttle/None/None/Going Home Together#s1",
+    "type": "trainee",
+    "name": "Taiki Shuttle",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Going Home Together",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "mood": 1,
+          "speed": 5
+        }
+      ],
+      "2": [
+        {
+          "mood": 1,
+          "stamina": 5
+        }
+      ]
+    },
+    "title_norm": "going home together",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Taiki Shuttle/None/None/At Summer Camp (Year 2)",
+    "key_step": "trainee/Taiki Shuttle/None/None/At Summer Camp (Year 2)#s1",
+    "type": "trainee",
+    "name": "Taiki Shuttle",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "At Summer Camp (Year 2)",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "guts": 10
+        }
+      ]
+    },
+    "title_norm": "at summer camp (year 2)",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Taiki Shuttle/None/None/Dance Lesson",
+    "key_step": "trainee/Taiki Shuttle/None/None/Dance Lesson#s1",
+    "type": "trainee",
+    "name": "Taiki Shuttle",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Dance Lesson",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "speed": 10
+        }
+      ]
+    },
+    "title_norm": "dance lesson",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Taiki Shuttle/None/None/New Year's Resolutions",
+    "key_step": "trainee/Taiki Shuttle/None/None/New Year's Resolutions#s1",
+    "type": "trainee",
+    "name": "Taiki Shuttle",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "New Year's Resolutions",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "speed": 10
+        }
+      ],
+      "2": [
+        {
+          "energy": 20
+        }
+      ],
+      "3": [
+        {
+          "skill_pts": 20
+        }
+      ]
+    },
+    "title_norm": "new year's resolutions",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/TM Opera O/None/None/Fit for a King",
+    "key_step": "trainee/TM Opera O/None/None/Fit for a King#s1",
+    "type": "trainee",
+    "name": "TM Opera O",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Fit for a King",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "wit": 20
+        }
+      ],
+      "2": [
+        {
+          "power": 20
+        }
+      ]
+    },
+    "title_norm": "fit for a king",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/TM Opera O/None/None/For My Admirer",
+    "key_step": "trainee/TM Opera O/None/None/For My Admirer#s1",
+    "type": "trainee",
+    "name": "TM Opera O",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "For My Admirer",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "stamina": 10,
+          "guts": 10
+        }
+      ],
+      "2": [
+        {
+          "speed": 20
+        }
+      ]
+    },
+    "title_norm": "for my admirer",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/TM Opera O/None/None/Strength of Will",
+    "key_step": "trainee/TM Opera O/None/None/Strength of Will#s1",
+    "type": "trainee",
+    "name": "TM Opera O",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Strength of Will",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "wit": 20
+        },
+        {
+          "wit": 20,
+          "status": "Fast Learner"
+        }
+      ],
+      "2": [
+        {
+          "speed": 10,
+          "power": 10
+        },
+        {
+          "speed": 10,
+          "power": 10,
+          "status": "Fast Learner"
+        },
+        {
+          "speed": 20
+        },
+        {
+          "speed": 20,
+          "status": "Fast Learner"
+        }
+      ]
+    },
+    "title_norm": "strength of will",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/TM Opera O/None/None/Fantastic Voyeur",
+    "key_step": "trainee/TM Opera O/None/None/Fantastic Voyeur#s1",
+    "type": "trainee",
+    "name": "TM Opera O",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Fantastic Voyeur",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "wit": 10
+        }
+      ]
+    },
+    "title_norm": "fantastic voyeur",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/TM Opera O/None/None/Blinding Beauty",
+    "key_step": "trainee/TM Opera O/None/None/Blinding Beauty#s1",
+    "type": "trainee",
+    "name": "TM Opera O",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Blinding Beauty",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": -10,
+          "power": 20
+        }
+      ],
+      "2": [
+        {
+          "speed": 10
+        }
+      ]
+    },
+    "title_norm": "blinding beauty",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/TM Opera O/None/None/Bring Me Your Finest",
+    "key_step": "trainee/TM Opera O/None/None/Bring Me Your Finest#s1",
+    "type": "trainee",
+    "name": "TM Opera O",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Bring Me Your Finest",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "speed": 10,
+          "skill_pts": 15
+        }
+      ],
+      "2": [
+        {
+          "hints": [
+            "Non-Standard Distance ○"
+          ]
+        }
+      ]
+    },
+    "title_norm": "bring me your finest",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/TM Opera O/None/None/Battle of Kings: The Great Ramen War",
+    "key_step": "trainee/TM Opera O/None/None/Battle of Kings: The Great Ramen War#s1",
+    "type": "trainee",
+    "name": "TM Opera O",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Battle of Kings: The Great Ramen War",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": 10,
+          "skill_pts": 5
+        }
+      ],
+      "2": [
+        {
+          "random_chance": 90,
+          "energy": 30,
+          "skill_pts": 10
+        },
+        {
+          "random_chance": 10,
+          "energy": 30,
+          "skill_pts": 10,
+          "speed": -5,
+          "power": 5,
+          "status": "Slow Metabolism"
+        }
+      ]
+    },
+    "title_norm": "battle of kings: the great ramen war",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/TM Opera O/None/None/The Princess in Pajamas",
+    "key_step": "trainee/TM Opera O/None/None/The Princess in Pajamas#s1",
+    "type": "trainee",
+    "name": "TM Opera O",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "The Princess in Pajamas",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "speed": 10
+        }
+      ],
+      "2": [
+        {
+          "stamina": 10
+        }
+      ]
+    },
+    "title_norm": "the princess in pajamas",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/TM Opera O/None/None/What the Mirror Reflects",
+    "key_step": "trainee/TM Opera O/None/None/What the Mirror Reflects#s1",
+    "type": "trainee",
+    "name": "TM Opera O",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "What the Mirror Reflects",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "wit": 10
+        }
+      ],
+      "2": [
+        {
+          "guts": 10
+        }
+      ]
+    },
+    "title_norm": "what the mirror reflects",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/TM Opera O/None/None/My Radiance is Yours",
+    "key_step": "trainee/TM Opera O/None/None/My Radiance is Yours#s1",
+    "type": "trainee",
+    "name": "TM Opera O",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "My Radiance is Yours",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "guts": 10
+        }
+      ],
+      "3": [
+        {
+          "wit": 10
+        }
+      ]
+    },
+    "title_norm": "my radiance is yours",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/TM Opera O/None/None/Maintaining Magnificence",
+    "key_step": "trainee/TM Opera O/None/None/Maintaining Magnificence#s1",
+    "type": "trainee",
+    "name": "TM Opera O",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Maintaining Magnificence",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "speed": 10
+        }
+      ],
+      "2": [
+        {
+          "wit": 10
+        }
+      ]
+    },
+    "title_norm": "maintaining magnificence",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/TM Opera O/None/None/Evening Opera O Theater",
+    "key_step": "trainee/TM Opera O/None/None/Evening Opera O Theater#s1",
+    "type": "trainee",
+    "name": "TM Opera O",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Evening Opera O Theater",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "energy": 10
+        }
+      ]
+    },
+    "title_norm": "evening opera o theater",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/TM Opera O/None/None/At Summer Camp (Year 2)",
+    "key_step": "trainee/TM Opera O/None/None/At Summer Camp (Year 2)#s1",
+    "type": "trainee",
+    "name": "TM Opera O",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "At Summer Camp (Year 2)",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "guts": 10
+        }
+      ]
+    },
+    "title_norm": "at summer camp (year 2)",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/TM Opera O/None/None/Dance Lesson",
+    "key_step": "trainee/TM Opera O/None/None/Dance Lesson#s1",
+    "type": "trainee",
+    "name": "TM Opera O",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Dance Lesson",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 10
+        }
+      ],
+      "2": [
+        {
+          "speed": 10
+        }
+      ]
+    },
+    "title_norm": "dance lesson",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/TM Opera O/None/None/New Year's Resolutions",
+    "key_step": "trainee/TM Opera O/None/None/New Year's Resolutions#s1",
+    "type": "trainee",
+    "name": "TM Opera O",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "New Year's Resolutions",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "energy": 20
+        }
+      ],
+      "3": [
+        {
+          "skill_pts": 20
+        }
+      ]
+    },
+    "title_norm": "new year's resolutions",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio/None/None/Good Luck Charm",
+    "key_step": "trainee/Tokai Teio/None/None/Good Luck Charm#s1",
+    "type": "trainee",
+    "name": "Tokai Teio",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Good Luck Charm",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 20
+        }
+      ],
+      "2": [
+        {
+          "wit": 20
+        }
+      ]
+    },
+    "title_norm": "good luck charm",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio/None/None/Selfish Teio and a Nostalgic View",
+    "key_step": "trainee/Tokai Teio/None/None/Selfish Teio and a Nostalgic View#s1",
+    "type": "trainee",
+    "name": "Tokai Teio",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Selfish Teio and a Nostalgic View",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 20
+        }
+      ],
+      "2": [
+        {
+          "speed": 10,
+          "power": 10
+        }
+      ]
+    },
+    "title_norm": "selfish teio and a nostalgic view",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio/None/None/Racewear Like Prez",
+    "key_step": "trainee/Tokai Teio/None/None/Racewear Like Prez#s1",
+    "type": "trainee",
+    "name": "Tokai Teio",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Racewear Like Prez",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "speed": 10,
+          "wit": 10
+        },
+        {
+          "speed": 10,
+          "wit": 10,
+          "status": "Hot Topic"
+        }
+      ],
+      "2": [
+        {
+          "stamina": 10,
+          "guts": 10
+        },
+        {
+          "stamina": 10,
+          "guts": 10,
+          "status": "Hot Topic"
+        }
+      ]
+    },
+    "title_norm": "racewear like prez",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio/None/None/Empress vs Monarch",
+    "key_step": "trainee/Tokai Teio/None/None/Empress vs Monarch#s1",
+    "type": "trainee",
+    "name": "Tokai Teio",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Empress vs Monarch",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 10
+        }
+      ],
+      "2": [
+        {
+          "skill_pts": 30
+        }
+      ]
+    },
+    "title_norm": "empress vs monarch",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio/None/None/Cupcakes for All",
+    "key_step": "trainee/Tokai Teio/None/None/Cupcakes for All#s1",
+    "type": "trainee",
+    "name": "Tokai Teio",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Cupcakes for All",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": 5,
+          "mood": 1
+        }
+      ],
+      "2": [
+        {
+          "speed": 5,
+          "power": 5
+        }
+      ]
+    },
+    "title_norm": "cupcakes for all",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio/None/None/Teio's Warrior Training",
+    "key_step": "trainee/Tokai Teio/None/None/Teio's Warrior Training#s1",
+    "type": "trainee",
+    "name": "Tokai Teio",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Teio's Warrior Training",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "guts": 10,
+          "skill_pts": 15
+        }
+      ],
+      "2": [
+        {
+          "hints": [
+            "Prepared to Pass"
+          ]
+        }
+      ]
+    },
+    "title_norm": "teio's warrior training",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio/None/None/Karaoke Power?",
+    "key_step": "trainee/Tokai Teio/None/None/Karaoke Power?#s1",
+    "type": "trainee",
+    "name": "Tokai Teio",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Karaoke Power?",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 10
+        }
+      ],
+      "2": [
+        {
+          "speed": 10
+        }
+      ]
+    },
+    "title_norm": "karaoke power?",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio/None/None/Teio, an Umadol?!",
+    "key_step": "trainee/Tokai Teio/None/None/Teio, an Umadol?!#s1",
+    "type": "trainee",
+    "name": "Tokai Teio",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Teio, an Umadol?!",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "speed": 10
+        }
+      ]
+    },
+    "title_norm": "teio, an umadol?!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio/None/None/Secret to Strength",
+    "key_step": "trainee/Tokai Teio/None/None/Secret to Strength#s1",
+    "type": "trainee",
+    "name": "Tokai Teio",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Secret to Strength",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": 10,
+          "skill_pts": 5
+        }
+      ],
+      "2": [
+        {
+          "random_chance": 90,
+          "energy": 30,
+          "skill_pts": 10
+        },
+        {
+          "random_chance": 10,
+          "energy": 30,
+          "skill_pts": 10,
+          "speed": -5,
+          "power": 5,
+          "status": "Slow Metabolism"
+        }
+      ]
+    },
+    "title_norm": "secret to strength",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio/None/None/I Got Praised!",
+    "key_step": "trainee/Tokai Teio/None/None/I Got Praised!#s1",
+    "type": "trainee",
+    "name": "Tokai Teio",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "I Got Praised!",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 10
+        }
+      ],
+      "2": [
+        {
+          "speed": 10
+        }
+      ]
+    },
+    "title_norm": "i got praised!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio/None/None/I Got Scolded!",
+    "key_step": "trainee/Tokai Teio/None/None/I Got Scolded!#s1",
+    "type": "trainee",
+    "name": "Tokai Teio",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "I Got Scolded!",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "wit": 10
+        }
+      ],
+      "2": [
+        {
+          "power": 5,
+          "guts": 5
+        }
+      ]
+    },
+    "title_norm": "i got scolded!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio/None/None/I Figured It Out!",
+    "key_step": "trainee/Tokai Teio/None/None/I Figured It Out!#s1",
+    "type": "trainee",
+    "name": "Tokai Teio",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "I Figured It Out!",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "speed": 5,
+          "stamina": 5
+        }
+      ],
+      "2": [
+        {
+          "guts": 5,
+          "wit": 5
+        }
+      ],
+      "3": [
+        {
+          "power": 10
+        }
+      ]
+    },
+    "title_norm": "i figured it out!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio/None/None/Grown-Up Time",
+    "key_step": "trainee/Tokai Teio/None/None/Grown-Up Time#s1",
+    "type": "trainee",
+    "name": "Tokai Teio",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Grown-Up Time",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 10
+        }
+      ],
+      "2": [
+        {
+          "wit": 10
+        }
+      ]
+    },
+    "title_norm": "grown-up time",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio/None/None/Punny Prez",
+    "key_step": "trainee/Tokai Teio/None/None/Punny Prez#s1",
+    "type": "trainee",
+    "name": "Tokai Teio",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Punny Prez",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "stamina": 5,
+          "power": 5
+        }
+      ],
+      "2": [
+        {
+          "speed": 10
+        }
+      ]
+    },
+    "title_norm": "punny prez",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio/None/None/At Summer Camp (Year 2)",
+    "key_step": "trainee/Tokai Teio/None/None/At Summer Camp (Year 2)#s1",
+    "type": "trainee",
+    "name": "Tokai Teio",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "At Summer Camp (Year 2)",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "guts": 10
+        }
+      ]
+    },
+    "title_norm": "at summer camp (year 2)",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio/None/None/Dance Lesson",
+    "key_step": "trainee/Tokai Teio/None/None/Dance Lesson#s1",
+    "type": "trainee",
+    "name": "Tokai Teio",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Dance Lesson",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 10
+        }
+      ],
+      "2": [
+        {
+          "power": 10
+        }
+      ]
+    },
+    "title_norm": "dance lesson",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio/None/None/New Year's Resolutions",
+    "key_step": "trainee/Tokai Teio/None/None/New Year's Resolutions#s1",
+    "type": "trainee",
+    "name": "Tokai Teio",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "New Year's Resolutions",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 10
+        }
+      ],
+      "2": [
+        {
+          "energy": 20
+        }
+      ],
+      "3": [
+        {
+          "skill_pts": 20
+        }
+      ]
+    },
+    "title_norm": "new year's resolutions",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio (Anime Collab)/None/None/Rivals on Paper, Friends in Practice",
+    "key_step": "trainee/Tokai Teio (Anime Collab)/None/None/Rivals on Paper, Friends in Practice#s1",
+    "type": "trainee",
+    "name": "Tokai Teio (Anime Collab)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Rivals on Paper, Friends in Practice",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "hints": [
+            "Stamina to Spare"
+          ]
+        }
+      ],
+      "2": [
+        {
+          "speed": 10,
+          "skill_pts": 15
+        }
+      ]
+    },
+    "title_norm": "rivals on paper, friends in practice",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio (Anime Collab)/None/None/The Secret to Teio Tenacity",
+    "key_step": "trainee/Tokai Teio (Anime Collab)/None/None/The Secret to Teio Tenacity#s1",
+    "type": "trainee",
+    "name": "Tokai Teio (Anime Collab)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "The Secret to Teio Tenacity",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "hints": [
+            "Corner Acceleration ○"
+          ]
+        }
+      ],
+      "2": [
+        {
+          "wit": 10,
+          "skill_pts": 15
+        }
+      ]
+    },
+    "title_norm": "the secret to teio tenacity",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio (Anime Collab)/None/None/I'm Never Giving Up!",
+    "key_step": "trainee/Tokai Teio (Anime Collab)/None/None/I'm Never Giving Up!#s1",
+    "type": "trainee",
+    "name": "Tokai Teio (Anime Collab)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "I'm Never Giving Up!",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 15,
+          "guts": 5
+        },
+        {
+          "stamina": 15,
+          "guts": 5,
+          "status": "Practice Perfect ○"
+        }
+      ],
+      "2": [
+        {
+          "power": 5,
+          "wit": 15
+        },
+        {
+          "power": 5,
+          "wit": 15,
+          "status": "Practice Perfect ○"
+        }
+      ]
+    },
+    "title_norm": "i'm never giving up!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio (Anime Collab)/None/None/Empress vs Monarch",
+    "key_step": "trainee/Tokai Teio (Anime Collab)/None/None/Empress vs Monarch#s1",
+    "type": "trainee",
+    "name": "Tokai Teio (Anime Collab)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Empress vs Monarch",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 10
+        }
+      ],
+      "2": [
+        {
+          "skill_pts": 30
+        }
+      ]
+    },
+    "title_norm": "empress vs monarch",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio (Anime Collab)/None/None/Cupcakes for All",
+    "key_step": "trainee/Tokai Teio (Anime Collab)/None/None/Cupcakes for All#s1",
+    "type": "trainee",
+    "name": "Tokai Teio (Anime Collab)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Cupcakes for All",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": 5,
+          "mood": 1
+        }
+      ],
+      "2": [
+        {
+          "speed": 5,
+          "power": 5
+        }
+      ]
+    },
+    "title_norm": "cupcakes for all",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio (Anime Collab)/None/None/Teio's Warrior Training",
+    "key_step": "trainee/Tokai Teio (Anime Collab)/None/None/Teio's Warrior Training#s1",
+    "type": "trainee",
+    "name": "Tokai Teio (Anime Collab)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Teio's Warrior Training",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "guts": 10,
+          "skill_pts": 15
+        }
+      ],
+      "2": [
+        {
+          "hints": [
+            "Prepared to Pass"
+          ]
+        }
+      ]
+    },
+    "title_norm": "teio's warrior training",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio (Anime Collab)/None/None/Karaoke Power?",
+    "key_step": "trainee/Tokai Teio (Anime Collab)/None/None/Karaoke Power?#s1",
+    "type": "trainee",
+    "name": "Tokai Teio (Anime Collab)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Karaoke Power?",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 10
+        }
+      ],
+      "2": [
+        {
+          "speed": 10
+        }
+      ]
+    },
+    "title_norm": "karaoke power?",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio (Anime Collab)/None/None/Teio, an Umadol?!",
+    "key_step": "trainee/Tokai Teio (Anime Collab)/None/None/Teio, an Umadol?!#s1",
+    "type": "trainee",
+    "name": "Tokai Teio (Anime Collab)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Teio, an Umadol?!",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "speed": 10
+        }
+      ]
+    },
+    "title_norm": "teio, an umadol?!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio (Anime Collab)/None/None/Secret to Strength",
+    "key_step": "trainee/Tokai Teio (Anime Collab)/None/None/Secret to Strength#s1",
+    "type": "trainee",
+    "name": "Tokai Teio (Anime Collab)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Secret to Strength",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": 10,
+          "skill_pts": 5
+        }
+      ],
+      "2": [
+        {
+          "random_chance": 90,
+          "energy": 30,
+          "skill_pts": 10
+        },
+        {
+          "random_chance": 10,
+          "energy": 30,
+          "skill_pts": 10,
+          "speed": -5,
+          "power": 5,
+          "status": "Slow Metabolism"
+        }
+      ]
+    },
+    "title_norm": "secret to strength",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio (Anime Collab)/None/None/I Got Praised!",
+    "key_step": "trainee/Tokai Teio (Anime Collab)/None/None/I Got Praised!#s1",
+    "type": "trainee",
+    "name": "Tokai Teio (Anime Collab)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "I Got Praised!",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 10
+        }
+      ],
+      "2": [
+        {
+          "speed": 10
+        }
+      ]
+    },
+    "title_norm": "i got praised!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio (Anime Collab)/None/None/I Got Scolded!",
+    "key_step": "trainee/Tokai Teio (Anime Collab)/None/None/I Got Scolded!#s1",
+    "type": "trainee",
+    "name": "Tokai Teio (Anime Collab)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "I Got Scolded!",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "wit": 10
+        }
+      ],
+      "2": [
+        {
+          "power": 5,
+          "guts": 5
+        }
+      ]
+    },
+    "title_norm": "i got scolded!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio (Anime Collab)/None/None/I Figured It Out!",
+    "key_step": "trainee/Tokai Teio (Anime Collab)/None/None/I Figured It Out!#s1",
+    "type": "trainee",
+    "name": "Tokai Teio (Anime Collab)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "I Figured It Out!",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "speed": 5,
+          "stamina": 5
+        }
+      ],
+      "2": [
+        {
+          "guts": 5,
+          "wit": 5
+        }
+      ],
+      "3": [
+        {
+          "power": 10
+        }
+      ]
+    },
+    "title_norm": "i figured it out!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio (Anime Collab)/None/None/Grown-Up Time",
+    "key_step": "trainee/Tokai Teio (Anime Collab)/None/None/Grown-Up Time#s1",
+    "type": "trainee",
+    "name": "Tokai Teio (Anime Collab)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Grown-Up Time",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 10
+        }
+      ],
+      "2": [
+        {
+          "wit": 10
+        }
+      ]
+    },
+    "title_norm": "grown-up time",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio (Anime Collab)/None/None/Punny Prez",
+    "key_step": "trainee/Tokai Teio (Anime Collab)/None/None/Punny Prez#s1",
+    "type": "trainee",
+    "name": "Tokai Teio (Anime Collab)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Punny Prez",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "stamina": 5,
+          "power": 5
+        }
+      ],
+      "2": [
+        {
+          "speed": 10
+        }
+      ]
+    },
+    "title_norm": "punny prez",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio (Anime Collab)/None/None/At Summer Camp (Year 2)",
+    "key_step": "trainee/Tokai Teio (Anime Collab)/None/None/At Summer Camp (Year 2)#s1",
+    "type": "trainee",
+    "name": "Tokai Teio (Anime Collab)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "At Summer Camp (Year 2)",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "guts": 10
+        }
+      ]
+    },
+    "title_norm": "at summer camp (year 2)",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio (Anime Collab)/None/None/Dance Lesson",
+    "key_step": "trainee/Tokai Teio (Anime Collab)/None/None/Dance Lesson#s1",
+    "type": "trainee",
+    "name": "Tokai Teio (Anime Collab)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Dance Lesson",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 10
+        }
+      ],
+      "2": [
+        {
+          "power": 10
+        }
+      ]
+    },
+    "title_norm": "dance lesson",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Tokai Teio (Anime Collab)/None/None/New Year's Resolutions",
+    "key_step": "trainee/Tokai Teio (Anime Collab)/None/None/New Year's Resolutions#s1",
+    "type": "trainee",
+    "name": "Tokai Teio (Anime Collab)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "New Year's Resolutions",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 10
+        }
+      ],
+      "2": [
+        {
+          "energy": 20
+        }
+      ],
+      "3": [
+        {
+          "skill_pts": 20
+        }
+      ]
+    },
+    "title_norm": "new year's resolutions",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Winning Ticket/None/None/Full-Power Testing!",
+    "key_step": "trainee/Winning Ticket/None/None/Full-Power Testing!#s1",
+    "type": "trainee",
+    "name": "Winning Ticket",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Full-Power Testing!",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 20
+        }
+      ],
+      "2": [
+        {
+          "speed": 20
+        }
+      ]
+    },
+    "title_norm": "full-power testing!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Winning Ticket/None/None/Full-Power Fashion!",
+    "key_step": "trainee/Winning Ticket/None/None/Full-Power Fashion!#s1",
+    "type": "trainee",
+    "name": "Winning Ticket",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Full-Power Fashion!",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 20
+        }
+      ],
+      "2": [
+        {
+          "power": 10,
+          "guts": 10
+        }
+      ]
+    },
+    "title_norm": "full-power fashion!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Winning Ticket/None/None/Full-Power Effort!",
+    "key_step": "trainee/Winning Ticket/None/None/Full-Power Effort!#s1",
+    "type": "trainee",
+    "name": "Winning Ticket",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Full-Power Effort!",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "speed": 10,
+          "wit": 10
+        },
+        {
+          "speed": 10,
+          "wit": 10,
+          "status": "Hot Topic"
+        }
+      ],
+      "2": [
+        {
+          "power": 20
+        },
+        {
+          "power": 20,
+          "status": "Hot Topic"
+        }
+      ]
+    },
+    "title_norm": "full-power effort!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Winning Ticket/None/None/Rain or Shine",
+    "key_step": "trainee/Winning Ticket/None/None/Rain or Shine#s1",
+    "type": "trainee",
+    "name": "Winning Ticket",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Rain or Shine",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": -10,
+          "stamina": 10,
+          "skill_pts": 15
+        }
+      ],
+      "2": [
+        {
+          "power": 10
+        }
+      ]
+    },
+    "title_norm": "rain or shine",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Winning Ticket/None/None/Overcome the Towering Obstacle!",
+    "key_step": "trainee/Winning Ticket/None/None/Overcome the Towering Obstacle!#s1",
+    "type": "trainee",
+    "name": "Winning Ticket",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Overcome the Towering Obstacle!",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "mood": 1,
+          "guts": 5
+        }
+      ],
+      "2": [
+        {
+          "mood": 1,
+          "power": 5
+        }
+      ]
+    },
+    "title_norm": "overcome the towering obstacle!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Winning Ticket/None/None/A Fresh Perspective",
+    "key_step": "trainee/Winning Ticket/None/None/A Fresh Perspective#s1",
+    "type": "trainee",
+    "name": "Winning Ticket",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "A Fresh Perspective",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "speed": 10,
+          "skill_pts": 15
+        }
+      ],
+      "2": [
+        {
+          "hints": [
+            "Nimble Navigator"
+          ]
+        }
+      ]
+    },
+    "title_norm": "a fresh perspective",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Winning Ticket/None/None/Full-Power Eating!",
+    "key_step": "trainee/Winning Ticket/None/None/Full-Power Eating!#s1",
+    "type": "trainee",
+    "name": "Winning Ticket",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Full-Power Eating!",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": 10,
+          "skill_pts": 5
+        }
+      ],
+      "2": [
+        {
+          "random_chance": 90,
+          "energy": 30,
+          "skill_pts": 10
+        },
+        {
+          "random_chance": 10,
+          "energy": 30,
+          "skill_pts": 10,
+          "speed": -5,
+          "power": 5,
+          "status": "Slow Metabolism"
+        }
+      ]
+    },
+    "title_norm": "full-power eating!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Winning Ticket/None/None/Play of the Three Kingdoms",
+    "key_step": "trainee/Winning Ticket/None/None/Play of the Three Kingdoms#s1",
+    "type": "trainee",
+    "name": "Winning Ticket",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Play of the Three Kingdoms",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 5,
+          "skill_pts": 15
+        }
+      ],
+      "2": [
+        {
+          "power": 5,
+          "skill_pts": 15
+        }
+      ]
+    },
+    "title_norm": "play of the three kingdoms",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Winning Ticket/None/None/Futsal, Now?!",
+    "key_step": "trainee/Winning Ticket/None/None/Futsal, Now?!#s1",
+    "type": "trainee",
+    "name": "Winning Ticket",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Futsal, Now?!",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 10
+        }
+      ],
+      "2": [
+        {
+          "speed": 10
+        }
+      ]
+    },
+    "title_norm": "futsal, now?!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Winning Ticket/None/None/The Last Ticket",
+    "key_step": "trainee/Winning Ticket/None/None/The Last Ticket#s1",
+    "type": "trainee",
+    "name": "Winning Ticket",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "The Last Ticket",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 10
+        }
+      ],
+      "2": [
+        {
+          "speed": 10
+        }
+      ],
+      "3": [
+        {
+          "power": 10
+        }
+      ]
+    },
+    "title_norm": "the last ticket",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Winning Ticket/None/None/Shake Off Your Blues!",
+    "key_step": "trainee/Winning Ticket/None/None/Shake Off Your Blues!#s1",
+    "type": "trainee",
+    "name": "Winning Ticket",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Shake Off Your Blues!",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "mood": 1,
+          "power": 5
+        }
+      ],
+      "2": [
+        {
+          "speed": 5,
+          "skill_pts": 15
+        }
+      ]
+    },
+    "title_norm": "shake off your blues!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Winning Ticket/None/None/Big Girls Cry Too",
+    "key_step": "trainee/Winning Ticket/None/None/Big Girls Cry Too#s1",
+    "type": "trainee",
+    "name": "Winning Ticket",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Big Girls Cry Too",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 5,
+          "skill_pts": 15
+        }
+      ],
+      "2": [
+        {
+          "mood": 1,
+          "power": 5
+        }
+      ]
+    },
+    "title_norm": "big girls cry too",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Winning Ticket/None/None/At Summer Camp (Year 2)",
+    "key_step": "trainee/Winning Ticket/None/None/At Summer Camp (Year 2)#s1",
+    "type": "trainee",
+    "name": "Winning Ticket",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "At Summer Camp (Year 2)",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "guts": 10
+        }
+      ]
+    },
+    "title_norm": "at summer camp (year 2)",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Winning Ticket/None/None/Dance Lesson",
+    "key_step": "trainee/Winning Ticket/None/None/Dance Lesson#s1",
+    "type": "trainee",
+    "name": "Winning Ticket",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Dance Lesson",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 10
+        }
+      ],
+      "2": [
+        {
+          "wit": 10
+        }
+      ]
+    },
+    "title_norm": "dance lesson",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "trainee/Winning Ticket/None/None/New Year's Resolutions",
+    "key_step": "trainee/Winning Ticket/None/None/New Year's Resolutions#s1",
+    "type": "trainee",
+    "name": "Winning Ticket",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "New Year's Resolutions",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 10
+        }
+      ],
+      "2": [
+        {
+          "energy": 20
+        }
+      ],
+      "3": [
+        {
+          "skill_pts": 20
+        }
+      ]
+    },
+    "title_norm": "new year's resolutions",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "support/Gold Ship/SPD/SSR/Raising the Uma Lord's Castle",
+    "key_step": "support/Gold Ship/SPD/SSR/Raising the Uma Lord's Castle#s1",
+    "type": "support",
+    "name": "Gold Ship",
+    "rarity": "SSR",
+    "attribute": "SPD",
+    "event_name": "Raising the Uma Lord's Castle",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy_max": 4,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "speed": 10,
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "raising the uma lord's castle",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "support/Gold Ship/SPD/SSR/Assembling the Uma Lord's Minions",
+    "key_step": "support/Gold Ship/SPD/SSR/Assembling the Uma Lord's Minions#s3",
+    "type": "support",
+    "name": "Gold Ship",
+    "rarity": "SSR",
+    "attribute": "SPD",
+    "event_name": "Assembling the Uma Lord's Minions",
+    "chain_step": 3,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": -10,
+          "speed": 5,
+          "stamina": 5,
+          "hints": [
+            "Inside Scoop"
+          ],
+          "bond": 5
+        },
+        {
+          "energy": -10,
+          "speed": 10,
+          "stamina": 10,
+          "hints": [
+            "Innate Experience"
+          ],
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "energy": 10,
+          "hints": [
+            "Maverick ○"
+          ]
+        }
+      ]
+    },
+    "title_norm": "assembling the uma lord's minions",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "support/Gold Ship/SPD/SSR/Adventurer Gold Ship",
+    "key_step": "support/Gold Ship/SPD/SSR/Adventurer Gold Ship#s1",
+    "type": "support",
+    "name": "Gold Ship",
+    "rarity": "SSR",
+    "attribute": "SPD",
+    "event_name": "Adventurer Gold Ship",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 15,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "guts": 10,
+          "skill_pts": 15,
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "adventurer gold ship",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "support/Gold Ship/SPD/SSR/Revive the Brand! Golshi's Yakisoba",
+    "key_step": "support/Gold Ship/SPD/SSR/Revive the Brand! Golshi's Yakisoba#s1",
+    "type": "support",
+    "name": "Gold Ship",
+    "rarity": "SSR",
+    "attribute": "SPD",
+    "event_name": "Revive the Brand! Golshi's Yakisoba",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "mood": 1,
+          "stamina": 5
+        }
+      ],
+      "2": [
+        {
+          "hints": [
+            "Hanshin Racecourse ○"
+          ],
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "revive the brand! golshi's yakisoba",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "support/King Halo/PWR/SSR/A Captivating Invitation",
+    "key_step": "support/King Halo/PWR/SSR/A Captivating Invitation#s1",
+    "type": "support",
+    "name": "King Halo",
+    "rarity": "SSR",
+    "attribute": "PWR",
+    "event_name": "A Captivating Invitation",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "power": 10,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "guts": 10,
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "a captivating invitation",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "support/King Halo/PWR/SSR/Dancer's Pride",
+    "key_step": "support/King Halo/PWR/SSR/Dancer's Pride#s2",
+    "type": "support",
+    "name": "King Halo",
+    "rarity": "SSR",
+    "attribute": "PWR",
+    "event_name": "Dancer's Pride",
+    "chain_step": 2,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": -5,
+          "stamina": 10,
+          "power": 5,
+          "skill_pts": 5,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "energy": 15,
+          "skill_pts": 5,
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "dancer's pride",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "support/King Halo/PWR/SSR/You May Socialize With Me!",
+    "key_step": "support/King Halo/PWR/SSR/You May Socialize With Me!#s1",
+    "type": "support",
+    "name": "King Halo",
+    "rarity": "SSR",
+    "attribute": "PWR",
+    "event_name": "You May Socialize With Me!",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": -20,
+          "speed": 10,
+          "power": 10,
+          "wit": 5,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "mood": -1,
+          "guts": 25,
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "you may socialize with me!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "support/King Halo/PWR/SSR/You May Advise Me!",
+    "key_step": "support/King Halo/PWR/SSR/You May Advise Me!#s1",
+    "type": "support",
+    "name": "King Halo",
+    "rarity": "SSR",
+    "attribute": "PWR",
+    "event_name": "You May Advise Me!",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 10,
+          "wit": 5,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "hints": [
+            "Homestretch Haste"
+          ],
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "you may advise me!",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "support/Seiun Sky/WIT/SSR/Sudden Murder Mystery! Part 1",
+    "key_step": "support/Seiun Sky/WIT/SSR/Sudden Murder Mystery! Part 1#s1",
+    "type": "support",
+    "name": "Seiun Sky",
+    "rarity": "SSR",
+    "attribute": "WIT",
+    "event_name": "Sudden Murder Mystery! Part 1",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "wit": 5,
+          "skill_pts": 10,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "energy": 10,
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "sudden murder mystery! part 1",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "support/Seiun Sky/WIT/SSR/Sudden Murder Mystery! Part 2",
+    "key_step": "support/Seiun Sky/WIT/SSR/Sudden Murder Mystery! Part 2#s2",
+    "type": "support",
+    "name": "Seiun Sky",
+    "rarity": "SSR",
+    "attribute": "WIT",
+    "event_name": "Sudden Murder Mystery! Part 2",
+    "chain_step": 2,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "wit": 5,
+          "hints": [
+            "Frenzied Pace Chasers"
+          ],
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "energy": 5,
+          "skill_pts": 10,
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "sudden murder mystery! part 2",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "support/Seiun Sky/WIT/SSR/Sudden Murder Mystery! Part 3",
+    "key_step": "support/Seiun Sky/WIT/SSR/Sudden Murder Mystery! Part 3#s3",
+    "type": "support",
+    "name": "Seiun Sky",
+    "rarity": "SSR",
+    "attribute": "WIT",
+    "event_name": "Sudden Murder Mystery! Part 3",
+    "chain_step": 3,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "wit": 5,
+          "hints": [
+            "Vanguard Spirit"
+          ],
+          "bond": 5
+        },
+        {
+          "wit": 10,
+          "hints": [
+            "Vanguard Spirit"
+          ],
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "energy": 10,
+          "stamina": 10,
+          "skill_pts": 15
+        }
+      ]
+    },
+    "title_norm": "sudden murder mystery! part 3",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "support/Seiun Sky/WIT/SSR/Recruiting Cat Catchers",
+    "key_step": "support/Seiun Sky/WIT/SSR/Recruiting Cat Catchers#s1",
+    "type": "support",
+    "name": "Seiun Sky",
+    "rarity": "SSR",
+    "attribute": "WIT",
+    "event_name": "Recruiting Cat Catchers",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": 10,
+          "wit": 5,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "energy": -10,
+          "speed": 15,
+          "stamina": 5,
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "recruiting cat catchers",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "support/Seiun Sky/WIT/SSR/Recruiting Advisors",
+    "key_step": "support/Seiun Sky/WIT/SSR/Recruiting Advisors#s1",
+    "type": "support",
+    "name": "Seiun Sky",
+    "rarity": "SSR",
+    "attribute": "WIT",
+    "event_name": "Recruiting Advisors",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "wit": 15,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "hints": [
+            "Keeping the Lead"
+          ],
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "recruiting advisors",
     "image_path": null,
     "phash64": null
   }
