@@ -20,23 +20,61 @@
   "skillsToBuy": [
     "Swinging Maestro",
     "Professor of Curvature",
-    "Corner Acceleration \u25cb",
     "Corner Connoisseur",
-    "Corner Recovery \u25cb",
+    "Corner Recovery ○",
     "Homestretch Haste",
     "Focus"
   ],
   "plannedRaces": {
     "Y1-12-1": "Asahi Hai Futurity Stakes",
     "Y2-04-1": "Satsuki Sho",
-    "Y2-05-1": "Tokyo Yushun (Japanese Derby)",
-    "Y2-10-1": "Kikuka Sho",
     "Y2-11-1": "Queen Elizabeth II Cup",
-    "Y3-03-1": "Osaka Hai",
-    "Y3-04-1": "Tenno Sho (Spring)",
-    "Y3-06-1": "Takarazuka Kinen",
-    "Y3-10-1": "Tenno Sho (Autumn)",
-    "Y3-11-1": "Japan Cup",
-    "Y3-12-1": "Arima Kinen"
+    "Y2-05-2": "Tokyo Yushun (Japanese Derby)",
+    "Y2-10-2": "Kikuka Sho",
+    "Y3-03-2": "Osaka Hai",
+    "Y3-04-2": "Tenno Sho (Spring)",
+    "Y3-10-2": "Tenno Sho (Autumn)",
+    "Y3-11-2": "Japan Cup"
+  },
+  "event_setup": {
+    "supports": [
+      {
+        "slot": 0,
+        "name": "Biko Pegasus",
+        "rarity": "SSR",
+        "attribute": "SPD"
+      },
+      {
+        "slot": 1,
+        "name": "Kitasan Black",
+        "rarity": "SSR",
+        "attribute": "SPD"
+      },
+      null,
+      null,
+      null,
+      null
+    ],
+    "scenario": {
+      "name": "Ura Finale"
+    },
+    "trainee": {
+      "name": "Daiwa Scarlet"
+    },
+    "prefs": {
+      "overrides": {
+        "support/Biko Pegasus/SPD/SSR/A Hero's Woes#s1": 2,
+        "support/Biko Pegasus/SPD/SSR/Preparing My Special Move!#s1": 1,
+        "support/Kitasan Black/SPD/SSR/Ah, Friendship#s1": 1,
+        "trainee/Daiwa Scarlet/None/None/Failed training (Don't Overdo It!)#s1": 2,
+        "scenario/Ura Finale/None/None/A Trainer's Knowledge#s1": 1
+      },
+      "patterns": [],
+      "defaults": {
+        "support": 1,
+        "trainee": 1,
+        "scenario": 1
+      }
+    }
   }
 }

@@ -1,6 +1,8 @@
 # core/actions/lobby.py
 from __future__ import annotations
 
+from collections import deque
+import statistics
 import time
 from dataclasses import dataclass
 from typing import Optional, Tuple
@@ -223,16 +225,25 @@ class LobbyFlow:
         """
         KEYS = ("SPD", "STA", "PWR", "GUTS", "WIT")
         STAT_MIN, STAT_MAX = 0, 1200
-        MAX_UP_STEP = 150          # typical per-turn cap; tune if you see legit bigger jumps
-        MAX_DOWN_STEP = 60         # allow tiny decreases; block bigger drops
-        PERSIST_FRAMES = 2         # confirm large jumps across this many refreshes
-        WARMUP_FRAMES = 2          # during the first N frames after accepting a value, allow big fixes
+        MAX_UP_STEP = 150           # typical per-turn cap; tune if you see legit bigger jumps
+        MAX_DOWN_STEP = 60          # allow tiny decreases; block bigger drops
+        PERSIST_FRAMES_UP = 2       # confirm large upward jumps across this many refreshes
+        PERSIST_FRAMES_DOWN = 2     # confirm large downward corrections across this many refreshes
+        WARMUP_FRAMES = 2           # after accepting a value, allow big fixes for a few frames
+        SUSPECT_FRAMES = 5          # after a big upward jump is accepted, allow big downward correction for a while
+        HIST_LEN = 5                # how many recent raw reads to keep per stat
+        CORR_TOL = 80               # tolerance near baseline/median to treat as a correction (not a real drop)
 
         # lazy init of helper state
         if not hasattr(self, "_stats_last_pred"):
             self._stats_last_pred = {k: -1 for k in KEYS}   # last raw OCR per key
         if not hasattr(self, "_stats_pending"):             # pending large jump candidates
             self._stats_pending = {k: None for k in KEYS}
+        # pending big downward corrections
+        if not hasattr(self, "_stats_pending_down"):
+            self._stats_pending_down = {k: None for k in KEYS}
+        if not hasattr(self, "_stats_pending_down_count"):
+            self._stats_pending_down_count = {k: 0 for k in KEYS}
         if not hasattr(self, "_stats_pending_count"):
             self._stats_pending_count = {k: 0 for k in KEYS}
         if not hasattr(self, "_stats_stable_count"):
@@ -241,6 +252,14 @@ class LobbyFlow:
         if not hasattr(self, "_stats_artificial"):
             # keys whose current value was imputed (avg). Real reads must overwrite immediately.
             self._stats_artificial = set()
+        # track "suspect" state after accepting a big upward jump
+        if not hasattr(self, "_stats_suspect_until"):
+            self._stats_suspect_until = {k: 0 for k in KEYS}
+        if not hasattr(self, "_stats_prejump_value"):
+            self._stats_prejump_value = {k: None for k in KEYS}
+        # small history of raw valid reads to compute medians
+        if not hasattr(self, "_stats_history"):
+            self._stats_history = {k: deque(maxlen=HIST_LEN) for k in KEYS}
 
         # Refresh gating (preserve optimization) + force if any unknowns
         any_missing = any((self.state.stats or {}).get(k, -1) == -1 for k in KEYS)
@@ -268,13 +287,19 @@ class LobbyFlow:
                 if new_val == -1:
                     logger_uma.debug(f"[stats] {key}: invalid read (-1), keeping {prev}")
                     continue
+                # keep history of valid raw reads
+                self._stats_history[key].append(new_val)
                 if prev == -1:
                     # first valid observation
                     current[key] = new_val
                     self._stats_artificial.discard(key)
                     self._stats_pending[key] = None
                     self._stats_pending_count[key] = 0
+                    self._stats_pending_down[key] = None
+                    self._stats_pending_down_count[key] = 0
                     self._stats_stable_count[key] = 0
+                    self._stats_suspect_until[key] = 0
+                    self._stats_prejump_value[key] = None
                     changed.append((key, -1, new_val))
                     continue
 
@@ -282,15 +307,59 @@ class LobbyFlow:
 
                 # small negative change allowed; big drop rejected
                 if delta < 0:
-                    if abs(delta) <= MAX_DOWN_STEP:
+                    drop = abs(delta)
+                    if drop <= MAX_DOWN_STEP:
                         current[key] = new_val
                         self._stats_artificial.discard(key)
                         self._stats_pending[key] = None
                         self._stats_pending_count[key] = 0
+                        self._stats_pending_down[key] = None
+                        self._stats_pending_down_count[key] = 0
                         self._stats_stable_count[key] = 0
+                        self._stats_suspect_until[key] = max(0, self._stats_suspect_until[key] - 1)
                         changed.append((key, prev, new_val))
                     else:
-                        logger_uma.debug(f"[stats] {key}: rejecting large drop {prev}->{new_val} (Δ={delta})")
+                        # Large downward move. Treat as a possible correction if:
+                        #  - previous was artificial, OR
+                        #  - we are inside a suspect window after a big upward jump
+                        #    and the new value is close to the pre-jump baseline, OR
+                        #  - it persists across a few frames and is closer to the median of recent raw reads.
+                        accept = False
+                        reason = "blocked"
+
+                        if prev_was_artificial:
+                            accept, reason = True, "prev artificial"
+                        elif self._stats_suspect_until.get(key, 0) > 0:
+                            base = self._stats_prejump_value.get(key, prev)
+                            if base is not None and abs(new_val - int(base)) <= CORR_TOL:
+                                accept, reason = True, f"suspect-window correction to ~{base}"
+                        else:
+                            # persistence gate + median support
+                            pend = self._stats_pending_down[key]
+                            if pend == new_val:
+                                self._stats_pending_down_count[key] += 1
+                            else:
+                                self._stats_pending_down[key] = new_val
+                                self._stats_pending_down_count[key] = 1
+                            if self._stats_pending_down_count[key] >= PERSIST_FRAMES_DOWN:
+                                med = statistics.median(self._stats_history[key]) if self._stats_history[key] else new_val
+                                if abs(new_val - med) <= CORR_TOL or abs(prev - med) > abs(new_val - med):
+                                    accept, reason = True, f"median≈{int(med)} persistence"
+
+                        if accept:
+                            current[key] = new_val
+                            self._stats_artificial.discard(key)
+                            self._stats_pending[key] = None
+                            self._stats_pending_count[key] = 0
+                            self._stats_pending_down[key] = None
+                            self._stats_pending_down_count[key] = 0
+                            self._stats_stable_count[key] = 0
+                            self._stats_suspect_until[key] = 0
+                            self._stats_prejump_value[key] = None
+                            changed.append((key, prev, new_val))
+                            logger_uma.debug(f"[stats] {key}: accepted big downward correction {prev}->{new_val} ({reason})")
+                        else:
+                            logger_uma.debug(f"[stats] {key}: holding large drop {prev}->{new_val} (Δ={delta})")
                     continue
 
                 # non-negative delta
@@ -300,7 +369,12 @@ class LobbyFlow:
                     self._stats_artificial.discard(key)
                     self._stats_pending[key] = None
                     self._stats_pending_count[key] = 0
+                    self._stats_pending_down[key] = None
+                    self._stats_pending_down_count[key] = 0
                     self._stats_stable_count[key] = 0
+                    # normal moves are not "suspect"
+                    self._stats_suspect_until[key] = max(0, self._stats_suspect_until[key] - 1)
+
                     changed.append((key, prev, new_val))
                 else:
                     # large upward jump
@@ -312,7 +386,12 @@ class LobbyFlow:
                         self._stats_artificial.discard(key)
                         self._stats_pending[key] = None
                         self._stats_pending_count[key] = 0
+                        self._stats_pending_down[key] = None
+                        self._stats_pending_down_count[key] = 0
                         self._stats_stable_count[key] = 0
+                        # Mark as suspect so we can accept a later big correction down.
+                        self._stats_suspect_until[key] = SUSPECT_FRAMES
+                        self._stats_prejump_value[key] = prev
                         changed.append((key, prev, new_val))
                         logger_uma.debug(f"[stats] {key}: accepted big correction {prev}->{new_val} (Δ={delta})")
                     else:
@@ -324,7 +403,7 @@ class LobbyFlow:
                             self._stats_pending[key] = new_val
                             self._stats_pending_count[key] = 1
 
-                        if self._stats_pending_count[key] >= PERSIST_FRAMES:
+                        if self._stats_pending_count[key] >= PERSIST_FRAMES_UP:
                             current[key] = new_val
                             changed.append((key, prev, new_val))
                             logger_uma.debug(f"[stats] {key}: accepted confirmed big jump {prev}->{new_val} (Δ={delta})")
@@ -332,10 +411,13 @@ class LobbyFlow:
                             self._stats_pending_count[key] = 0
                             self._stats_stable_count[key] = 0
                             self._stats_artificial.discard(key)
+                            # big confirmed upward jump → open suspect window
+                            self._stats_suspect_until[key] = SUSPECT_FRAMES
+                            self._stats_prejump_value[key] = prev
                         else:
                             logger_uma.debug(
                                 f"[stats] {key}: holding big jump {prev}->{new_val} (Δ={delta}); "
-                                f"need {PERSIST_FRAMES - self._stats_pending_count[key]} more confirm(s)"
+                                f"need {PERSIST_FRAMES_UP - self._stats_pending_count[key]} more confirm(s)"
                             )
 
             # If some stats are still unknown, impute with the average of known ones
@@ -353,6 +435,10 @@ class LobbyFlow:
             for k in KEYS:
                 if current.get(k, -1) != -1 and current.get(k) == prev_snapshot.get(k):
                     self._stats_stable_count[k] = self._stats_stable_count.get(k, 0) + 1
+                else:
+                    # when a value changes, shrink suspect window a bit
+                    if self._stats_suspect_until.get(k, 0) > 0:
+                        self._stats_suspect_until[k] = max(0, self._stats_suspect_until[k] - 1)
 
             # commit
             self.state.stats = current

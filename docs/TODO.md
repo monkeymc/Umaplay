@@ -1,76 +1,149 @@
-# Features / TODO
-## Priority
-- Annotate new low confidence images in Label-Studio and retrain a robust model. Increase thresholds
-- hint, is not always detected make it more robuts
-- Set custom hint is important value if set to true, by default is x2 instead of true or similar, this should be configurable
-- Event chooser option (and by default select the first one)
-- Handle 'a connection error ocurred'. Buttons are white and green: title screen, retry
-- Lookup feature:
-	- Suggestion from Community: "Have a toggle for allowing scheduled races to be skipped if training has 2+ rainbows. And also managing this to avoid 3 races in a row or racing on 0 energy."
-	- For infirmary, check if there is not a crazy training option, if not, return to infirmary
+# UMA MUSUME (UmaPlay) – Backlog (organized)
 
-## Later
--  mobile still avoid selecting view result quickly and missclassifies view button as inactive
-- TODO: improve when stat is higher, hold but not apply, follow an armonic linear flow than 2k if val > 2000: 
-- Secure the min 600 in top 3 stats from 4 months before finale season but checking if there is SV >0, also in ura finale but doesn't matter if SV == 0
-- Decouple Hint stuff from general config to preset config
-- FASTER MODE:
-	- multiple clicks in safe zone to skip normal trainee events
-- goldship training restriction coverage
-- todo in failure to avoid errors, check colors clamp values check previous failures excep with they should be very similar, even use only the spped failure as reference
-- Claw machine adjust the release time of the button depending on the turn (turn 3 the claw is way faster than turn 1)
-- Final season take into account the turn, to not rest in the end but allow resting in the first turn
-- Address low resolution: date recognition
-- prioritize G1 x prioritize fans -> train for get fans ( full g1 search smart)
-- web ui is inneficent something is taking too much possible related to skills.json and races.json
-- Add testing to score algorithm sometimes it doesn't properly sum rainbows hints together
-- Reduce bluestack crop
-- implement inmediate stop, right now it waits for the routine to end
-- not rest directly if in summer is always + 40, but we can get 50 or 70 in normal, also is better to train there. Create better strategy
-- implement advanced anti -> anti-cheating based on this deep research:
-https://chatgpt.com/share/68cb64a9-2720-800f-8197-9b22547a3e9f
-- recognice digits faster and accurate with yolo + single digit recognicer (resnet20)
-- Use template matching to recognize turns left = 1
-- take into account 'left turns' even considering scheduled race before taking decision specially before summer
-- SIM phone notification control, click in a possible button there
-- Fans handling (for director training decisions)
+This organizes the mixed notes into a clear, actionable backlog. Items are grouped by workstream and priority. “Later” holds non-urgent ideas. A final section captures non-UMA (“Meta Manager”) items so they don’t pollute the UMA queue.
 
-# Implemented, pending validate
-- Only train in director if it is in top 3 priority stats, also reduce its priority below the >= 2 SV and prioritize G1 config
-- Dynamic risk: if 2.5 in SV, allow up to 1.25 of the risk. if > 3, allow  up to 1.5. if > 4 allow up to 2
-- FAST_MODE:
-	- greedy decisions like: If you found a SV of 2.5 just take it, don't look into other training buttons
-	- when low energy but not too low to do immediate est, check for with great value first (because other options will have at least +40% failure so don't waste time looking into them)
-	
-- Final season features
-	- is resting in last turn, that doesn't have value. force a training
-	- is trying to race
+================================================================================
+NEXT WORK (prioritized)
 
-- Training check
-	- high confidence and multi overlap control, it found more than 6 rainbows
-	
-- Training policy:
-	- Handle already capped stats
-	- Function to secure 600 minimum in case stats are '-1'
-	- if hint is important not prioritize untrained stat unless there is no hint
+P0 — Must do next
+-----------------
+Vision/OCR & Models
+- Label low-confidence frames in Label Studio and retrain a more robust detector; raise acceptance thresholds where safe.
+- “Hint” robustness: reduce misses (tune ROI, add ensemble check, raise min conf with a small hysteresis).
 
-- STATS
-	- If stat is -1 but others has something, use the 'avg' of them, at least to address the distribution stat, but set a flag like 'artificial' so a real read overwrites this
-	- use max refresh -> if not turn to refresh stat, check if there is a '-1' stat and recalculate
+Training Strategy
+- Configurable “Hint importance” as a **multiplier** (default x2). Per-preset; supports “disable special racing fallback when SV<=1” flag.
+- If an option contains a skill hint: pick it only if the skill hasn’t been bought; otherwise rotate to next best option.
+- Add control knobs in Web UI: “maximum critical turn”, and “% distribution for stats” (used by fallback/stat balancing).
 
-- Skill buying
-	- Speed on mobile
-	- OCR region and fuzzy accuracy. left-handed not recognized when buying
-	- Reduce skill buy box size click, somethins for the inertia is clicking wrong
+Racing & Schedule
+- Connection error handler (“A connection error occurred”): detect dialog with **white** and **green** buttons; handle “Title Screen” and “Retry”.
+- Lookup toggle: allow skipping **scheduled race** if training has **2+ rainbows**; avoid **3 races in a row** and racing at **0 energy**.
 
-- Date processing
-	- fuzzy date match
-	- test initial dates y0 to y1, and y3 to y4 big jumps
-	- when scheduled previous race, sometimes date doesn't change so it thinks we are still in previous day and tries to race, but we already raced
-	
-- Race
-	- It is slow, be reactive
+Skills Buying
+- Prevent over-opening the Skill shop in Final Season; throttle and tighten triggers.
 
-- Connect WebUI settings with actual program:
-	Settings.ACCEPT_CONSECUTIVE_RACE = True
- 
+UI / UX
+- Ensure “Thanks for reporting” messaging for BlueStacks users.
+- Web UI: show version; add “Force update” confirmation; persist preset-specific event setups (no cross-preset bleed).
+
+Debugging, Telemetry & Quality
+- Better logs for “no match” / errors when Debug Mode is on.
+- Instruction banner: “Restart after updating.”
+
+P1 — Should follow P0
+---------------------
+Training Strategy
+- When no good option (SV ≤ 1), **race for skill points** (toggle to disable: fallback to highest SV).
+- Slight WIT nerf on weak turns (prevent over-weighting).
+
+Vision/OCR & Models
+- Accept YOLO `tag` in endpoint to organize samples.
+
+Integrations & Platforms
+- Scrcpy “drag” bug: fix gesture handling.
+- Primary screen limitation: detect and warn or add fallback.
+
+UI / UX
+- End-of-career: if nothing was bought, ensure it goes **Back** correctly.
+
+Data / Update / Ops
+- “Thanks to GameTora” acknowledgement somewhere appropriate.
+
+Check phone logs
+
+================================================================================
+LATER (nice-to-have / backlog)
+------------------------------
+Mobile / UI
+- On mobile, avoid tapping “View result” too quickly (misclassifies as inactive).
+- Web UI perf: investigate skills.json / races.json bottlenecks.
+- Reduce BlueStacks crop.
+
+Vision/OCR
+- Faster digits: YOLO + single-digit recognizer (ResNet-20) for stat/date.
+- Template matching for “turns left = 1”.
+
+Training Strategy
+- Ensure ≥600 in top-3 stats starting ~4 months before Final Season when SV>0 (and Ura finals ok with SV=0).
+- Early stop at scrolling skill list at endgame when all desired 3 hints bought (fix case where first isn’t bought).
+- “Check first” at lobby: pre-turn heuristics before going to infirmaty, rest, etc. Pre lookup
+- Failure risk guardrails: clamp color read values; compare against prior failures; optionally use **Speed** failure as reference.
+- Final Season: consider turn number; avoid Rest on last turn but allow earlier; better plan to exploit Summer training (Rest may be worse than training).
+
+Racing
+- Prioritize **G1** and **fans**: smart search to train for fans when needed.
+- Reactivity: race handling is slow — reduce latencies.
+
+Skills Buying
+- Speed on mobile; improve left-handed OCR; shrink click box to avoid inertia misses.
+
+Date / Timeline
+- Fuzzy date matching; handle y0→y1 and y3→y4 jumps.
+- After a scheduled race, date sometimes doesn’t advance; don’t try to race again.
+
+Control & Safety
+- Implement **immediate stop** (do not wait for routine end).
+- Avoid “Rest” directly in Summer if +40; sometimes +50/+70 normal is better; create smarter summer strategy.
+
+Housekeeping
+- Early stop mode not working when “all bought 3” edge case; fix.
+- YOLO endpoint `accept tag` (for dataset org).
+- SIM phone notification: click a plausible button if shown.
+- Fans handling for “director training” decisions.
+
+Integrations & Platforms
+- Gold Ship training restriction coverage.
+
+- “Recreation special handling” (2 options, tazuna for example) — document behavior.
+
+================================================================================
+IMPLEMENTED — PENDING VALIDATION
+--------------------------------
+Training Policy
+- Only train in Director if it is in top-3 priority stats; lower its priority below SV≥2; respect G1 priority.
+- Dynamic risk: 
+  - SV≥2.5 → allow risk up to 1.25×; 
+  - SV>3 → up to 1.5×; 
+  - SV>4 → up to 2×.
+- Fast Mode:
+  - Greedy: if SV≥2.5 found, take it — skip scanning others.
+  - Low energy: check the “great value first” path (others likely ≥40% fail).
+
+Final Season
+- Prevent Rest on the very last turn → force a training.
+- Avoid trying to race in wrong contexts.
+
+Training Check
+- High-confidence + multi-overlap control; handled case with >6 rainbows.
+
+Stats
+- If any stat = -1 while others valid, fill with average and mark as “artificial” so real reads overwrite.
+- Max-refresh behavior: if not a refresh turn but any stat is -1, force a stat read.
+
+Skills
+- Mobile speed improvements.
+- OCR region/fuzzy accuracy; left-handed recognition when buying.
+- Smaller click box on the confirm button to avoid inertia misclick.
+
+Date Processing
+- Fuzzy date match; handle large year jumps.
+- Fix: after a scheduled race the date may not change; avoid double racing.
+
+Race
+- Make handler reactive (initial pass done).
+
+Settings Bridge
+- Wire WebUI “Accept consecutive race” to program setting.
+
+- Stats corrections: accept large downward “corrections” after OCR spikes (post-spike suspect window + persist/median gate). (Implementation aligned with recent `_update_stats` changes.)
+
+- BlueStacks: scrolling solved 
+- Connect Web UI “Accept consecutive race” to program setting.
+
+- Normalize extreme stat reads (e.g., 931 → clamp/median replace); continue using “artificial” average fill only until a real read arrives.
+
+Event Engine
+- Event chooser UI: surface options and default to option #1 if no preference is stored; persist per event/preset.
+- Trainee events override: when a character has a specific event with same (name, step), it replaces the general one (no duplicates).
+- Only search/use events for the **selected** support cards, trainee, and scenario (smaller, faster index).
