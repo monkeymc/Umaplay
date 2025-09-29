@@ -2,7 +2,12 @@
 
 This project is an **AI bot for Umamusume: Pretty Derby** that automates training, races, and skill management. It helps you **farm fans, clear goals, and optimize stats** without grinding manually.
 
-It works on **Steam (PC)** and **Android (via scrcpy)**, using a mix of **YOLO object detection, machine learning, OCR, and custom logic** to play like a human.  
+It works on:
+
+- **Steam (PC)**, check a full run in: https://www.youtube.com/watch?v=smNZnwD1QI4
+- **Android (via scrcpy)**, check a full run in https://www.youtube.com/watch?v=sD9CjXORIUM (inside Virtual Machine)
+
+It is using a mix of **YOLO object detection, machine learning, OCR, and custom logic** to play like a human.  
 
 Whether you want to **auto race G1s, plan a training schedule, or run 24/7 farming**, this tool provides a flexible and safe way to streamline your Umamusume career runs.
 
@@ -59,6 +64,8 @@ Make sure you meet these conditions:
 * Disable all in-game confirmation pop-ups in settings.
 * Start from the **career lobby screen** (the one with the Tazuna hint icon).
 * Set in Umamusume config **Center Stage** (Race recommendations)
+* It works on the primary display only, don't move the game to second screen.
+* GPU optimization is described in another README file, it is only available for NVIDIA GPU cards
 ---
 
 ## 🚀 Getting Started
