@@ -10,13 +10,9 @@ from core.perception.analyzers.friendship_bar import FBAConfig, FriendshipBarAna
 from core.perception.analyzers.hint import HintConfig, HintDetector
 from core.perception.analyzers.support_type import FixedRoiTypeClassifier
 from core.utils.logger import logger_uma
+from core.settings import Settings
 
-try:
-    from core.settings import ASSETS_DIR
-
-    ICONS_DIR = os.path.join(ASSETS_DIR, "icons")
-except Exception:
-    ICONS_DIR = "assets/icons"
+ICONS_DIR = os.path.join(Settings.ASSETS_DIR, "icons")
 
 # --- Singletons (initialized once) -------------------------------------------
 type_clf = FixedRoiTypeClassifier(ICONS_DIR)

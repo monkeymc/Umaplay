@@ -4,10 +4,10 @@ from __future__ import annotations
 from time import sleep
 
 from core.actions.claw import ClawGame
-from core.actions.events import click_top_event_choice
+from core.actions.events import EventFlow
 from core.actions.lobby import LobbyFlow
 from core.actions.race import RaceFlow
-from core.actions.skills import auto_buy_skills
+from core.actions.skills import SkillsFlow
 from core.actions.training_policy import (
     TrainAction,
     click_training_tile,
@@ -15,7 +15,7 @@ from core.actions.training_policy import (
 )
 from core.controllers.base import IController
 from core.perception.analyzers.screen import classify_screen
-from core.perception.extractors.state import extract_goal_text, extract_skill_points, find_best
+from core.perception.extractors.state import extract_energy_pct, extract_goal_text, extract_skill_points, find_best
 from core.perception.ocr.interface import OCRInterface
 from core.perception.yolo.interface import IDetector
 from core.settings import Settings
@@ -23,7 +23,9 @@ from core.utils.logger import logger_uma
 from typing import Optional
 from core.utils.text import fuzzy_contains
 from core.utils.waiter import PollConfig, Waiter
-
+from core.actions.race import ConsecutiveRaceRefused
+from core.utils.abort import abort_requested
+from core.utils.event_processor import CATALOG_JSON, Catalog, UserPrefs
 
 class Player:
     def __init__(
@@ -56,7 +58,8 @@ class Player:
             "Straightaway Acceleration",
         ],
         interval_stats_refresh = 3,
-        select_style = None
+        select_style = None,
+        event_prefs: UserPrefs | None = None
     ) -> None:
         self.ctrl = ctrl
         self.ocr = ocr
@@ -90,6 +93,14 @@ class Player:
             interval_stats_refresh=interval_stats_refresh,
             plan_races=self.plan_races,
         )
+        self.skills_flow = SkillsFlow(self.ctrl, self.ocr, self.yolo_engine, self.waiter)
+
+        catalog = Catalog.load(CATALOG_JSON)
+        # Prefer prefs coming from config.json (passed by main); fallback to legacy file.
+        self.event_flow = EventFlow(
+            self.ctrl, self.ocr, self.yolo_engine, self.waiter, catalog, event_prefs
+        )
+
         self.claw_game = ClawGame(self.ctrl, self.yolo_engine)
         self.claw_turn = 0
 
@@ -127,6 +138,10 @@ class Player:
         self.is_running = True
 
         while self.is_running:
+            # Hard-stop hook (F2)
+            if abort_requested():
+                logger_uma.info("[agent] Abort requested; exiting main loop immediately.")
+                break
             sleep(delay)
             img, _, dets = self.yolo_engine.recognize(
                 imgsz=self.imgsz, conf=self.conf, iou=self.iou, tag="screen"
@@ -181,7 +196,16 @@ class Player:
 
             if screen == "Event":
                 self.claw_turn = 0
-                click_top_event_choice(self.ctrl, self.ocr, dets, conf_min=0.6)
+                # pass what we know about current energy (may be None if not read yet)
+                self.lobby.state.energy = extract_energy_pct(img, dets)
+                curr_energy = self.lobby.state.energy or 100
+                decision = self.event_flow.process_event_screen(
+                    img,
+                    dets,
+                    current_energy=curr_energy,
+                    max_energy_cap=100,
+                )
+                logger_uma.debug(f"[Event] {decision}")
                 continue
 
             if screen == "Training":
@@ -215,15 +239,8 @@ class Player:
                 # If enough points, go to skills and auto-buy (unchanged logic)
                 if self.lobby.state.skill_pts >= self._minimum_skill_pts and len(self.skill_list) > 0:
                     self.lobby._go_skills()
-                    bought = auto_buy_skills(
-                        self.ctrl,
-                        self.ocr,
-                        yolo_engine=self.yolo_engine,
-                        skill_list=self.skill_list,
-                        imgsz=self.imgsz,
-                        conf=self.conf,
-                        iou=self.iou,
-                    )
+
+                    bought = self.skills_flow.buy(self.skill_list)
                     logger_uma.info(f"[agent] Skills bought: {bought}")
                 career_date_raw = (self.lobby.state.career_date_raw or "")
 
@@ -241,12 +258,27 @@ class Player:
                 if race_predebut:
                     # Enter or confirm race, then run RaceFlow
                     # Run RaceFlow; it will ensure navigation into Raceday if needed
-                    if not self.race.run(prioritize_g1=False, select_style=self.select_style, reason="Pre-debut (race day)"):
+                    ok = self.race.run(
+                        prioritize_g1=False,
+                        select_style=self.select_style,
+                        from_raceday=True,
+                        reason="Pre-debut (race day)",
+                    )
+                    if not ok:
                         raise RuntimeError("Couldn't race")
+                    # Mark raced on current date-key to avoid double-race if date OCR doesn't tick
+                    self.lobby.mark_raced_today(self._today_date_key())
                     continue
                 else:
-                    if not self.race.run(prioritize_g1=False, select_style=None, reason="Normal (race day)"):
+                    ok = self.race.run(
+                        prioritize_g1=False,
+                        select_style=None,
+                        from_raceday=True,
+                        reason="Normal (race day)",
+                    )
+                    if not ok:
                         raise RuntimeError("Couldn't race")
+                    self.lobby.mark_raced_today(self._today_date_key())
                     continue
 
 
@@ -259,23 +291,36 @@ class Player:
                 if outcome == "TO_RACE":
                     if "G1" in reason.upper():
                         logger_uma.info(reason)
-                        ok = self.race.run(prioritize_g1=True, is_g1_goal=True, reason=self.lobby.state.goal)
+                        try:
+                            ok = self.race.run(prioritize_g1=True, is_g1_goal=True, reason=self.lobby.state.goal)
+                        except ConsecutiveRaceRefused:
+                            logger_uma.info("[lobby] Consecutive race refused → backing out; set skip guard.")
+                            self.lobby._go_back()
+                            self.lobby._skip_race_once = True
+                            continue
                         if not ok:
                             logger_uma.error("[lobby] Couldn't race (G1 target). Backing out; set skip guard.")
                             self.lobby._go_back()
                             self.lobby._skip_race_once = True
                             continue
+                        self.lobby.mark_raced_today(self._today_date_key())
                     elif "PLAN" in reason.upper():
                         desired_race_name = self._desired_race_today()
                         if desired_race_name:
                             # Planned race
-                            ok = self.race.run(
-                                prioritize_g1=self.prioritize_g1,
-                                is_g1_goal=False,
-                                desired_race_name=desired_race_name,
-                                date_key=self._today_date_key(),
-                                reason=f"Planned race: {desired_race_name}",
-                            )
+                            try:
+                                ok = self.race.run(
+                                    prioritize_g1=self.prioritize_g1,
+                                    is_g1_goal=False,
+                                    desired_race_name=desired_race_name,
+                                    date_key=self._today_date_key(),
+                                    reason=f"Planned race: {desired_race_name}",
+                                )
+                            except ConsecutiveRaceRefused:
+                                logger_uma.info("[lobby] Consecutive race refused on planned race → back & skip once.")
+                                self.lobby._go_back()
+                                self.lobby._skip_race_once = True
+                                continue
                             if not ok:
                                 logger_uma.error(f"[race] Couldn't race {desired_race_name}")
                                 self.lobby._go_back()
@@ -284,16 +329,23 @@ class Player:
                                 continue
 
                             # Clean planned
-                            self.lobby.state.planned_race_name = None
+                            self.lobby.mark_raced_today(self._today_date_key())
 
                     elif "FANS" in reason.upper():
                         logger_uma.info(reason)
-                        ok = self.race.run(prioritize_g1=self.prioritize_g1, is_g1_goal=False, reason=self.lobby.state.goal)
+                        try:
+                            ok = self.race.run(prioritize_g1=self.prioritize_g1, is_g1_goal=False, reason=self.lobby.state.goal)
+                        except ConsecutiveRaceRefused:
+                            logger_uma.info("[lobby] Consecutive race refused → back & skip once.")
+                            self.lobby._go_back()
+                            self.lobby._skip_race_once = True
+                            continue
                         if not ok:
                             logger_uma.error("[lobby] Couldn't race (fans target). Backing out; set skip guard.")
                             self.lobby._go_back()
                             self.lobby._skip_race_once = True
                             continue
+                        self.lobby.mark_raced_today(self._today_date_key())
 
                 if outcome == "TO_TRAINING":
                     logger_uma.info(
@@ -310,17 +362,10 @@ class Player:
 
             if screen == "FinalScreen":
                 self.claw_turn = 0
-                if self.lobby._go_skills():
+                # Only if skill list defined
+                if len(self.skill_list) > 0 and self.lobby._go_skills():
                     sleep(1.0)
-                    bought = auto_buy_skills(
-                        self.ctrl,
-                        self.ocr,
-                        yolo_engine=self.yolo_engine,
-                        skill_list=self.skill_list,
-                        imgsz=self.imgsz,
-                        conf=self.conf,
-                        iou=self.iou,
-                    )
+                    bought = self.skills_flow.buy(self.skill_list)
                     logger_uma.info(f"[agent] Skills bought: {bought}")
                     self.is_running = False  # end of career
                     logger_uma.info("Detected end of career")
@@ -408,7 +453,18 @@ class Player:
 
             if action.value == TrainAction.RACE.value:
                 # Try to race from lobby (RaceFlow will navigate into Raceday)
-                if self.race.run(prioritize_g1=self.prioritize_g1, reason="Training policy → race"):
+                try:
+                    if self.race.run(prioritize_g1=self.prioritize_g1, reason="Training policy → race"):
+                        return
+                except ConsecutiveRaceRefused:
+                    logger_uma.info("[training] Consecutive race refused → back to training and skip once.")
+                    self.lobby._go_back()
+                    self.lobby._skip_race_once = True
+                    self._skip_training_race_once = True
+                    if self.lobby._go_training_screen_from_lobby(None, None):
+                        decision2 = check_training(self, skip_race=True)
+                        if decision2 and decision2.action.value in tile_actions_train and decision2.tile_idx is not None:
+                            click_training_tile(self.ctrl, decision2.training_state, decision2.tile_idx)
                     return
 
                 # Race failed → go back, revisit training once with skip_race=True
@@ -433,3 +489,13 @@ class Player:
         # Fallback: nothing to do
         logger_uma.debug("[training] No actionable decision.")
 
+    # ------------- Hard-stop helper -------------
+    def emergency_stop(self) -> None:
+        """Cooperative, best-effort immediate stop hook."""
+        self.is_running = False
+        try:
+            # Release any possible held inputs if controller exposes such methods
+            if hasattr(self.ctrl, "release_all"):
+                self.ctrl.release_all()  # type: ignore[attr-defined]
+        except Exception:
+            pass

@@ -66,7 +66,6 @@ class LocalOCREngine(OCRInterface):
         # Also shrink det input and bump rec batch for small crops.
         self.reader = None
         init_kwargs = dict(
-            lang=self.lang,
             # speed: disable extras you don't need for tiny stat crops
             # use_doc_orientation_classify: Disables the document-level orientation classifier (the thing that decides if a whole page/photo is rotated 90°/180°/270°). You saw it as PP-LCNet_x1_0_doc_ori in the logs. Useful for scanned pages; unnecessary for small screen snippets that are already upright.
             use_doc_orientation_classify=use_doc_orientation_classify,
@@ -84,6 +83,8 @@ class LocalOCREngine(OCRInterface):
             # throughput when you benchmark many small images
             text_recognition_batch_size=16,
         )
+        if not text_detection_model_name and not text_recognition_model_name:
+            init_kwargs["lang"] = self.lang
         try:
             # Newer API (device=...)
             self.reader = PaddleOCR(device=self.device, enable_hpi=False, **init_kwargs)

@@ -2,7 +2,12 @@
 
 This project is an **AI bot for Umamusume: Pretty Derby** that automates training, races, and skill management. It helps you **farm fans, clear goals, and optimize stats** without grinding manually.
 
-It works on **Steam (PC)** and **Android (via scrcpy)**, using a mix of **YOLO object detection, machine learning, OCR, and custom logic** to play like a human.  
+It works on:
+
+- **Steam (PC)**, check a full run in: https://www.youtube.com/watch?v=smNZnwD1QI4
+- **Android (via scrcpy)**, check a full run in https://www.youtube.com/watch?v=sD9CjXORIUM (inside Virtual Machine)
+
+It is using a mix of **YOLO object detection, machine learning, OCR, and custom logic** to play like a human.  
 
 Whether you want to **auto race G1s, plan a training schedule, or run 24/7 farming**, this tool provides a flexible and safe way to streamline your Umamusume career runs.
 
@@ -37,24 +42,18 @@ I take no responsibility for bans, issues, or account losses that may result fro
 
 ## ✨ Features
 
-* **Smart Training**: Uses a point system (rainbows, Etsuko, director, hints, etc.) to choose the best option based on full status and state, not just faces.
-* **Human-like Movements**: Randomized clicks, delays, and jitters to mimic natural input and avoid anti-cheat detection.
-* **Status Tracking**: Monitors mood, stats, skill points, goals, and energy, prioritizing undertrained stats.
-* **Health & Energy**: Automatically rests or visits the infirmary when needed.
-* **Race Scheduling**: Plan and schedule races in advance for fan farming or goals.
-* **Skill Management**: Auto-purchases and prioritizes selected skills.
-* **Race Selection**: Picks optimal races with adaptive logic.
-* **Goal Handling**: Supports event-specific goals (e.g., Oguri Cap G1).
-* **Flexible Styles**: Choose starting racing style (front, pace, late, end).
-* **Resolution Independent**: Works across different screen resolutions (tested on PC 1920x1080 + 1377x720 and Android via scrcpy) with a custom YOLO model trained on 300+ images.
-* **Claw Machine Event**: Supports triggering the claw mini-game (improvements planned).
-* **Hint Hunting**: Prioritizes hints when enabled in settings.
-* **Web UI**:
-  * Manage presets (stat caps, training priorities, minimal mood, racing style).
-  * Race scheduling presets (select and save favorite races for multiple runs).
-  * Toggle advanced settings (failure %, fast mode, hints priority, etc.).
-  * Switch modes easily (Steam, scrcpy, Bluestacks).
-  * Update bot directly from GitHub with a single click.
+* **Smart Training** – Chooses the best option using a point system (rainbows, director, hints, etc.).
+* **Human-like Input** – Random clicks, delays, and jitters to stay natural.
+* **Full Tracking** – Monitors mood, stats, skills, goals, and energy.
+* **Health & Energy** – Rests or uses the infirmary automatically.
+* **Events** – Event option selector and character-specific overrides.
+* **Races** – Schedule in advance and auto-pick optimal races.
+* **Skills** – Buys and prioritizes selected skills automatically.
+* **Goals & Styles** – Handles special goals and lets you set racing style.
+* **Cross-Platform** – Works on PC (Steam) and Android (scrcpy/Bluestacks); resolution independent but OCR works better on bigger resolutions.
+* **Claw Machine** – Supports the claw mini-game.
+* **Hints** – Prioritize skill hints when enabled.
+* **Web UI** – Manage presets (stats, races, events), adjust advanced settings, switch modes, and update directly from GitHub.
 
 ---
 
@@ -64,7 +63,9 @@ Make sure you meet these conditions:
 
 * Disable all in-game confirmation pop-ups in settings.
 * Start from the **career lobby screen** (the one with the Tazuna hint icon).
-
+* Set in Umamusume config **Center Stage** (Race recommendations)
+* It works on the primary display only, don't move the game to second screen.
+* GPU optimization is described in another README file, it is only available for NVIDIA GPU cards
 ---
 
 ## 🚀 Getting Started
@@ -74,6 +75,7 @@ Make sure you meet these conditions:
 #### Installation with Python and Conda
 
 Requirements:
+* [Git](https://git-scm.com/downloads)
 * [Python 3.10+](https://www.python.org/downloads/)
 * (Optional but recommended) [Anaconda](https://www.anaconda.com/download/success)
 
@@ -107,9 +109,24 @@ python main.py
 
 ---
 
+#### Updating the project
+I usually push new updates, bug fixes, etc. To update just run these commands:
+```bash
+git reset --hard
+git pull
+```
+
+Reset hard is just in case you modified some files.
+
+Good news, you (maybe) can use this button in WEB UI to pull from github directly also there is another button to 'force' the update. You still need to restart the full script after that:
+
+![Pull button](assets/doc/git_pull.png)
+
+---
+
 #### (experimental) Installation with pre-created script
 
-Clone the repo and just open/run the file: **run_uma.bat**. No Conda stuff, everything should be automatically installed in 'venv'. Very straightforward but it can fail. So better follow the previous instructions.
+Clone the repo and just open/run the file: **scripts/run_uma.bat**. No Conda stuff, everything should be automatically installed in 'venv'. Very straightforward but it can fail. So better follow the previous instructions.
 
 ---
 
@@ -129,8 +146,9 @@ I'm trying to precompile everything in a Windows executable, but I still recomme
 #### Scrcpy (Recommended)
 Scrcpy is a tool to 'mirror' your Android screen, and emulate 'touchs' over it and it requires developer mode.
 - Download Scrcpy [Official Repo scrcpy](https://github.com/Genymobile/scrcpy/releases).
-- You MUST enable the USB debugging (Security Settings), so the program can emulate the input; making this solution 99.9% undetectable by any anti-cheat (Although I also set a kind of human behaviour when clicking).
-- Follow the instructions in [scrcpy readme](https://github.com/Genymobile/scrcpy)
+- You need **developer mode** (usually you get this by tapping multiple times the android version in the phone settings).
+- You MUST enable the USB debugging (Security Settings), so the program can emulate the input; making this solution 99.9% undetectable by any anti-cheat (Although I also set a kind of human behaviour when clicking). Then you need to connect the phone through USB to the PC or VM.
+- In general, follow the instructions in [scrcpy readme](https://github.com/Genymobile/scrcpy) to properly setup this.
 
 Once it is installed, you only need to set 'scrcpy' option and save config in http://127.0.0.1:8000/ (read WEB UI section)
 **Important**: Don't forget to set the window title, in my case for Redmi 13 Pro the title is '23117RA68G'
@@ -146,11 +164,22 @@ I created a version for Bluestacks, you only need to set 'bluestacks' option and
 You can change the configuration at http://127.0.0.1:8000/
 ![UI](assets/doc/UI.png)
 
+**Important: Don't forget to press 'Save Config' button**
+
 You can set:
 - **General configurations** (window title, modes, fast mode, advanced settings)
 - **Presets** (target stats, priority stats, moods, skills, race scheduler)
 - **Responsive layout**: left = General, right = Presets (collapsible)
-- **Save config**: persists changes to `config.json` in the repo root (via backend API)
+- **Save config**: persists changes to `config.json` in the repo root (via backend API).
+- **Events selector**: Like in Gametora, to can select the card but also you can 'tweak' the event option (it is still experimental, but it worked for me):
+![event_setup](assets/doc/event_setup.png)
+
+![event_setup_support_picker](assets/doc/event_setup_support_picker.png)
+
+![event_setup_trainee_events](assets/doc/event_setup_trainee_events.png)
+
+![event_setup_support_events](assets/doc/event_setup_support_events.png)
+
 - **Schedule races**:
 ![UI](assets/doc/UI-races.png)
 ---
@@ -160,7 +189,6 @@ You can set:
 I tested it in Laptop without GPU and only 8GB RAM and worked, but a little bit slower. Hardware shouldn't be a problem though; of course it works better if you have a GPU. Nevertheless I found some problems when:
 - Choosing a character very different from my training dataset (It will be solved later retraining YOLO model with more data)
 - Using a slow internet connection: specially in RACES; if internet is very slow the sleep counter will break all the syncronization
-- Sometimes is unable to select a race even if there is only one race (goal). It happens because race may not have enough stars (Haru Urara Arima Kinen for example, or one where you have 'B' aptitude)
 - Gold Ship restricted training may not work yet.
 
 ## Running as 'client' only
@@ -181,7 +209,7 @@ This feature is still experimental, but in my experience, it works quite well.
 
 
 ## Running in GPU
-Follow the instructions in [README.gpu.md](README.gpu.md)
+Follow the instructions in [README.gpu.md](docs/README.gpu.md)
 
 ---
 
@@ -189,7 +217,7 @@ Follow the instructions in [README.gpu.md](README.gpu.md)
 
 When running inside a **virtual machine** (in the background so you can still use your mouse on the host), it is recommended to limit resources for smoother performance.
 
-Follow the instructions in [README.virtual_machine.md](README.virtual_machine.md)
+Follow the instructions in [README.virtual_machine.md](docs/README.virtual_machine.md)
 
 ![VM Screenshot](assets/doc/VM.png)
 
@@ -202,7 +230,7 @@ The bot uses multiple AI components to make decisions:
 
 * **YOLO Object Detection**
   Recognizes 40+ in-game objects (buttons, support cards, stats, badges, etc.).
-  Trained on 1000+ labeled screenshots.
+  Trained on +300 labeled screenshots.
 
   ![Yolo](assets/doc/yolo.png)
   ![Yolo example 2](assets/doc/yolo-a.png)
@@ -222,6 +250,24 @@ The bot uses multiple AI components to make decisions:
   All models trained with high-quality labels across multiple resolutions.
 
   ![Label Studio](assets/doc/label-studio.png)
+
+---
+
+## 🆕 Changelog (latest)
+
+**Highlights**
+
+* **Faster runs**: less scanning and a greedy path in Fast Mode when a great option is found.
+* **Fewer stalls**: fixed flows that could stop gameplay (final-turn rest, wrong race retries, more reactive race handler).
+* **Events overhaul**: The bot now makes smarter default event choices, and you can fully customize preferences through the new Event Chooser for even more control.
+* **Stats are steadier**: large OCR spikes are corrected; missing stats get a temporary average that’s overwritten by the next real read.
+* **UI & platform**: “Accept consecutive race” toggle is wired.
+* **BlueStacks**: Scrolling bug fixed.
+
+### Next up (top 3)
+1) **YOLO model**: label low-confidence frames and retrain; raise acceptance thresholds where safe.  
+2) **Hints**: stronger detection and a configurable “Hint importance” multiplier (per preset) to be more selective on hints.  
+3) **Safer racing**: add a toggle to skip racing when no good training option.
 
 ---
 

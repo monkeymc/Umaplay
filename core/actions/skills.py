@@ -3,386 +3,418 @@ from __future__ import annotations
 
 import random
 import time
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple, Dict, Any
 from collections import Counter
 from PIL import Image
 
 from core.controllers.android import ScrcpyController
 from core.controllers.base import IController
+from core.perception.ocr.interface import OCRInterface
 from core.perception.yolo.interface import IDetector
 from core.settings import Settings
 from core.utils.logger import logger_uma
 from core.utils.geometry import crop_pil
-from core.utils.text import fuzzy_contains, fuzzy_ratio, fuzzy_best_match
+from core.utils.text import fuzzy_contains, fuzzy_best_match
 from core.perception.is_button_active import ActiveButtonClassifier
 from core.types import DetectionDict
 from core.utils.yolo_objects import inside, yolo_signature
+from core.utils.waiter import Waiter, PollConfig
 
 
-def _nearly_same(a: List[Tuple[str, int, int]], b: List[Tuple[str, int, int]]) -> bool:
+class SkillsFlow:
     """
-    Heuristic equivalence for scene signatures.
-    Each signature item is (name, cx_bucket, cy_bucket). Two signatures are
-    considered the same if:
-      1) They have the same per-class counts (ignoring positions), and
-      2) For every item in `a`, there exists an *unmatched* item in `b` with
-         the same name and |dx|<=1 and |dy|<=1 bucket.
-    This tolerates tiny shifts between frames (e.g., 8–16 px).
+    Skills screen automation (Learn view).
+    - Uses Waiter for robust button clicking (OCR + position heuristics)
+    - Speeds up by preloading the "active button" classifier
+    - OCRs only the title band within each skills_square for accuracy
+    - Mitigates scroll inertia by clicking the BUY button slightly above center
     """
-    if len(a) != len(b):
-        return False
 
-    # Same counts per class?
-    ca = Counter(n for n, _, _ in a)
-    cb = Counter(n for n, _, _ in b)
-    if ca != cb:
-        return False
+    def __init__(self, ctrl: IController, ocr: OCRInterface, yolo_engine: IDetector, waiter: Waiter) -> None:
+        self.ctrl = ctrl
+        self.ocr = ocr
+        self.yolo_engine = yolo_engine
+        self.waiter = waiter
+        # Preload once for speed
+        self._clf = ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH)
 
-    TOL = 1  # buckets (each of your buckets is ~8 px)
+    # --------------------------
+    # Public API
+    # --------------------------
 
-    # Build per-class pools for B we can remove from as we match
-    pools = {}
-    for name, x, y in b:
-        pools.setdefault(name, []).append([x, y])
-
-    # Greedy matching with tolerance
-    for name, ax, ay in a:
-        pool = pools.get(name, [])
-        match_idx = -1
-        best_metric = None
-        for j, (bx, by) in enumerate(pool):
-            dx, dy = abs(ax - bx), abs(ay - by)
-            if dx <= TOL and dy <= TOL:
-                # prefer tighter matches (Chebyshev distance)
-                m = max(dx, dy)
-                if best_metric is None or m < best_metric:
-                    best_metric = m
-                    match_idx = j
-                    if m == 0:
-                        break
-        if match_idx == -1:
+    def buy(
+        self,
+        skill_list: Sequence[str],
+        *,
+        max_scrolls: int = 15,
+        ocr_threshold: float = 0.75,  # experimental
+        scroll_time_range: Tuple[int, int] = (6, 7),
+        early_stop: bool = True,
+    ) -> bool:
+        """
+        End-to-end skill buying.
+        Returns True if at least one skill was purchased (Confirm → Learn → Close → Back).
+        """
+        if not skill_list:
+            logger_uma.info("[skills] No targets configured.")
             return False
-        # consume the match so duplicates are handled correctly
-        pool.pop(match_idx)
 
-    return True
+        logger_uma.info("[skills] Buying targets: %s", ", ".join(skill_list))
 
+        any_clicked = False
+        prev_sig: Optional[List[Tuple[str, int, int]]] = None
+        prev_ocr_sig: Optional[List[Tuple[str, int, int]]] = None
 
-# ----------------------------
-# Button logic (OCR + fuzzy)
-# ----------------------------
-
-
-def _click_button_by_text(
-    ctrl: IController,
-    ocr,
-    game_img: Image.Image,
-    dets: List[DetectionDict],
-    *,
-    classes: Sequence[str],
-    texts: Sequence[str],
-    threshold: float = 0.70,
-) -> bool:
-    """
-    Find buttons of specific classes, OCR them, click the one that best matches any `texts`.
-    Falls back to single-button click if only one exists.
-    """
-    choices = [d for d in dets if str(d.get("name")) in classes]
-    if not choices:
-        return False
-
-    if len(choices) == 1:
-        ctrl.click_xyxy_center(choices[0]["xyxy"], clicks=1)
-        return True
-
-    if "BACK" in texts:
-        # Special heuristic for BACK:
-        # choose the white button that is **bottom-most** (largest y)
-        # and, among those, **left-most** (smallest x).
-        try:
-            pick = min(
-                choices,
-                key=lambda d: (
-                    -((d["xyxy"][1] + d["xyxy"][3]) / 2.0),  # prefer larger y (bottom)
-                    ((d["xyxy"][0] + d["xyxy"][2]) / 2.0),  # then smaller x (left)
-                ),
+        for i in range(max_scrolls):
+            clicked, game_img, dets, cur_ocr_sig = self._scan_and_click_buys(
+                targets=skill_list,
+                ocr_threshold=ocr_threshold,
             )
-            ctrl.click_xyxy_center(pick["xyxy"], clicks=1)
-            return True
-        except Exception as e:
-            logger_uma.warning(f"Couldn't directly find BACK: {e}")
-            # fall back to normal OCR matching below if something goes wrong
-            pass
+            any_clicked |= clicked
 
-    best_d, best_score = None, 0.0
-    for d in choices:
-        crop = crop_pil(game_img, d["xyxy"], pad=0)
-        txt = (ocr.text(crop) or "").strip()
-        score = max(fuzzy_ratio(txt, t) for t in texts)
-        if score > best_score:
-            best_d, best_score = d, score
-
-    if best_d and best_score >= threshold:
-        ctrl.click_xyxy_center(best_d["xyxy"], clicks=1)
-        return True
-    return False
-
-
-# ----------------------------
-# Skill purchase core
-# ----------------------------
-def _collect_skills_view(
-    yolo_engine: IDetector,
-    *,
-    imgsz: int = 832,
-    conf: float = 0.51,
-    iou: float = 0.45,
-) -> Tuple[Image.Image, List[DetectionDict]]:
-    """Take a screenshot + detections (wrapper for easier testing)."""
-    game_img, _, parsed = yolo_engine.recognize(
-        imgsz=imgsz, conf=conf, iou=iou, tag="skill"
-    )
-    return game_img, parsed
-
-
-def _find_buy_inside(
-    square: DetectionDict, candidates: List[DetectionDict]
-) -> Optional[DetectionDict]:
-    """Return the buy button whose bbox lies inside the 'skills_square' bbox."""
-    sq_xyxy = square.get("xyxy")
-    if not sq_xyxy:
-        return None
-    for c in candidates:
-        if inside(c["xyxy"], sq_xyxy, pad=4):
-            return c
-    return None
-
-
-def _scan_and_click_buys(
-    ctrl: IController,
-    ocr,
-    yolo_engine: IDetector,
-    targets: Sequence[str],
-    *,
-    imgsz: int,
-    conf: float,
-    iou: float,
-    ocr_threshold: float = 0.68,
-) -> Tuple[bool, Image.Image, List[DetectionDict]]:
-    """
-    One pass over current screen: click any `skills_buy` whose parent square OCR-matches a target skill.
-    Returns (clicked_any, game_img, dets).
-    """
-    game_img, dets = _collect_skills_view(yolo_engine, imgsz=imgsz, conf=conf, iou=iou)
-
-    squares = [d for d in dets if d["name"] == "skills_square"]
-    buys = [d for d in dets if d["name"] == "skills_buy"]
-    clf = ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH)
-    clicked_any = False
-
-    for sq in squares:
-
-        # if valid skill (not obtained)
-        buy = _find_buy_inside(sq, buys)
-        if buy is None:
-            continue
-
-        # if we can buy it
-
-        crop_buy = crop_pil(game_img, buy["xyxy"], pad=0)
-        p = float(clf.predict_proba(crop_buy))
-        if p < 0.55:
-            # IS OFF (inactive button)
-            continue
-
-        crop = crop_pil(game_img, sq["xyxy"], pad=3)
-        text = ocr.text(crop) or ""
-        # quick contains OR best match (robust)
-        contains_any = any(
-            fuzzy_contains(text, t, threshold=ocr_threshold) for t in targets
-        )
-        best_name, best_score = fuzzy_best_match(text, targets)
-        if contains_any or best_score >= ocr_threshold:
-            ctrl.click_xyxy_center(buy["xyxy"], clicks=1)
-            logger_uma.info(
-                "Clicked BUY for skill '%s' (score=%.2f)", best_name or "?", best_score
-            )
-            clicked_any = True
-
-    return clicked_any, game_img, dets
-
-
-def _confirm_learn_close_back_flow(
-    ctrl: IController, ocr, 
-    yolo_engine: IDetector,*, imgsz: int, conf: float, iou: float, waiting_poput=2
-) -> None:
-    """
-    Confirm → Learn → Close → Back (with re-detect + OCR at each step).
-    Each step tolerates multiple buttons; we pick the best OCR match.
-    """
-    # Confirm
-    for _ in range(6):
-        game_img, dets = _collect_skills_view(yolo_engine, imgsz=imgsz, conf=conf, iou=iou)
-        if _click_button_by_text(
-            ctrl, ocr, game_img, dets, classes=("button_green",), texts=("CONFIRM",)
-        ):
-            break
-        time.sleep(0.15)
-
-    time.sleep(waiting_poput)
-
-    # Learn (confirmation dialog)
-    for _ in range(10):
-        game_img, dets = _collect_skills_view(yolo_engine, imgsz=imgsz, conf=conf, iou=iou)
-        if _click_button_by_text(
-            ctrl, ocr, game_img, dets, classes=("button_green",), texts=("LEARN",)
-        ):
-            break
-        time.sleep(0.15)
-
-    # Animation / toast
-    time.sleep(waiting_poput)
-
-    # Close
-    for _ in range(10):
-        game_img, dets = _collect_skills_view(yolo_engine, imgsz=imgsz, conf=conf, iou=iou)
-        if _click_button_by_text(
-            ctrl, ocr, game_img, dets, classes=("button_white",), texts=("CLOSE",)
-        ):
-            break
-        time.sleep(0.15)
-
-    time.sleep(waiting_poput)
-
-    # Back (bottom-left white)
-    for _ in range(10):
-        game_img, dets = _collect_skills_view(yolo_engine, imgsz=imgsz, conf=conf, iou=iou)
-        if _click_button_by_text(
-            ctrl, ocr, game_img, dets, classes=("button_white",), texts=("BACK",)
-        ):
-            break
-        time.sleep(0.15)
-    time.sleep(waiting_poput)
-
-
-def auto_buy_skills(
-    ctrl: IController,
-    ocr,
-    yolo_engine: IDetector,
-    skill_list: Sequence[str],
-    *,
-    imgsz: int = 832,
-    conf: float = 0.51,
-    iou: float = 0.45,
-    max_scrolls: int = 10,
-    ocr_threshold: float = 0.68,
-    scroll_time_range: int = [6, 7],
-    early_stop: bool = True,
-) -> bool:
-    """
-    Main entrypoint used on RaceDay.
-    Returns True if at least one skill was bought (and confirm/learn/close/back sequence executed).
-    """
-    if not skill_list:
-        logger_uma.info("[skills] No targets configured.")
-        return False
-
-    logger_uma.info("[skills] Buying targets: %s", ", ".join(skill_list))
-
-    any_clicked = False
-    prev_sig: Optional[List[Tuple[str, int, int]]] = None
-
-    for i in range(max_scrolls):
-        clicked, game_img, dets = _scan_and_click_buys(
-            ctrl,
-            ocr,
-            yolo_engine,
-            skill_list,
-            imgsz=imgsz,
-            conf=conf,
-            iou=iou,
-            ocr_threshold=ocr_threshold,
-        )
-        any_clicked |= clicked
-
-        # early stop if nothing clicked and screen basically didn't change
-        cur_sig = yolo_signature(dets)
-        if (
-            early_stop
-            and not clicked
-            and prev_sig is not None
-            and _nearly_same(prev_sig, cur_sig)
-        ):
-            logger_uma.info("[skills] Early stop (same view twice).")
-            break
-        prev_sig = cur_sig
-
-        # If on the very first pass nothing was clicked, the mouse might not be
-        # over the scrollable list. Nudge focus by clicking a skills square (or
-        # fallback to screen center) and then perform a few micro-scrolls.
-        if i == 0 and not any_clicked:
-            try:
-                squares = [d for d in dets if d.get("name") == "skills_square"]
-                if squares:
-                    ctrl.move_xyxy_center(squares[0]["xyxy"])
-                    logger_uma.debug(
-                        "[skills] Focus nudge: moved to first skills_square"
-                    )
-
-                else:
-                    # Center of the last screenshot (local) → screen coords
-                    W, H = game_img.size
-                    cx, cy = W // 2, H // 2
-                    sx, sy = ctrl.local_to_screen(cx, cy)
-                    j = 10
-                    logger_uma.debug(
-                        "[skills] Focus nudge: moved to screen center local(%d,%d) -> screen(%d,%d)",
-                        cx,
-                        cy,
-                        sx,
-                        sy,
-                    )
-                    ctrl.move_to(
-                        sx + random.randint(-j, j),
-                        sy + random.randint(-j, j),
-                        duration=0.18,
-                    )
-                time.sleep(0.10)
-            except Exception as e:
-                logger_uma.debug("[skills] Focus nudge failed: %s", e)
-
-        scroll_time = random.randint(scroll_time_range[0], scroll_time_range[1])
-
-        is_android = isinstance(ctrl, ScrcpyController)
-        if is_android:
-            x, y, w, h = ctrl._client_bbox_screen_xywh()
-            cx, cy = (x + w // 2), (y + h // 2)
-            ctrl.move_to(cx, cy)
-            time.sleep(0.5)
-            # Heuristic for Redmi 13 Pro
-            ctrl.scroll(
-                -h // 10, steps=4, duration_range=[0.2, 0.4], end_hold_range=[0.1, 0.2]
-            )
-        else:
-            for _ in range(scroll_time):
-                # Small scroll for next batch
-                ctrl.scroll(-1)
-                time.sleep(0.01)
-        time.sleep(0.1)
-
-    if any_clicked:
-        logger_uma.info("[skills] Confirming purchases...")
-        _confirm_learn_close_back_flow(ctrl, ocr, yolo_engine, imgsz=imgsz, conf=conf, iou=iou)
-    else:
-        # Back
-        for _ in range(10):
-            game_img, dets = _collect_skills_view(yolo_engine, imgsz=imgsz, conf=conf, iou=iou)
-            if _click_button_by_text(
-                ctrl, ocr, game_img, dets, classes=("button_white",), texts=("BACK",)
+            # Early-stop if the scene didn't change between passes and nothing was clicked
+            cur_sig = yolo_signature(dets)
+            if (
+                early_stop
+                and (not clicked)
+                and (prev_sig is not None)
+                and self._nearly_same(prev_sig, cur_sig, prev_ocr_sig, cur_ocr_sig)
             ):
+                logger_uma.info("[skills] Early stop (same view twice).")
                 break
-            time.sleep(0.15)
-        logger_uma.info("[skills] No matching skills found to buy.")
-        time.sleep(1.5)
+            prev_sig = cur_sig
+            prev_ocr_sig = cur_ocr_sig
 
-    return any_clicked
+            # First pass focus nudge if nothing clicked
+            if i == 0 and not any_clicked:
+                self._focus_nudge(game_img, dets)
+
+            self._scroll_once(scroll_time_range)
+
+        if any_clicked:
+            logger_uma.info("[skills] Confirming purchases...")
+            self._confirm_learn_close_back_flow()
+            return True
+
+        # If nothing was bought, go BACK cleanly using Waiter (OCR-gated)
+        self.waiter.click_when(
+            classes=("button_white",),
+            texts=("BACK",),
+            prefer_bottom=True,
+            timeout_s=2.5,
+            tag="skills_flow_back_no_buys",
+        )
+        logger_uma.info("[skills] No matching skills found to buy.")
+        time.sleep(1.2)
+        return False
+
+    # --------------------------
+    # Internals
+    # --------------------------
+
+    def _collect(self, tag: str) -> Tuple[Image.Image, List[DetectionDict]]:
+        img, _, dets = self.yolo_engine.recognize(
+            imgsz=self.waiter.cfg.imgsz, conf=self.waiter.cfg.conf, iou=self.waiter.cfg.iou, tag=tag
+        )
+        return img, dets
+
+    @staticmethod
+    def _nearly_same(
+        a: List[Tuple[str, int, int]],
+        b: List[Tuple[str, int, int]],
+        a_ocr: Optional[List[Tuple[str, int, int]]] = None,
+        b_ocr: Optional[List[Tuple[str, int, int]]] = None,
+    ) -> bool:
+        """
+        Heuristic equivalence for scene signatures.
+        Each signature item is (name, cx_bucket, cy_bucket). Two signatures are
+        considered the same if:
+          1) They have the same per-class counts (ignoring positions), and
+          2) For every item in `a`, there exists an unmatched item in `b` with
+             the same name and |dx|<=1 and |dy|<=1 bucket.
+        Additionally (to avoid scroll false-positives), if OCR title signatures are provided,
+        require a minimum overlap of normalized title texts across buckets.
+        """
+        if len(a) != len(b):
+            return False
+        ca = Counter(n for n, _, _ in a)
+        cb = Counter(n for n, _, _ in b)
+        if ca != cb:
+            return False
+
+        TOL = 1  # buckets (~8 px)
+        pools = {}
+        for name, x, y in b:
+            pools.setdefault(name, []).append([x, y])
+
+        for name, ax, ay in a:
+            pool = pools.get(name, [])
+            match_idx = -1
+            best_metric = None
+            for j, (bx, by) in enumerate(pool):
+                dx, dy = abs(ax - bx), abs(ay - by)
+                if dx <= TOL and dy <= TOL:
+                    m = max(dx, dy)
+                    if best_metric is None or m < best_metric:
+                        best_metric = m
+                        match_idx = j
+                        if m == 0:
+                            break
+            if match_idx == -1:
+                return False
+            pool.pop(match_idx)
+        # If we have OCR title fingerprints, enforce overlap to assert "same view".
+        if a_ocr is not None and b_ocr is not None:
+            if not a_ocr or not b_ocr:
+                return False  # no text seen → cannot assert sameness robustly
+            # Treat each entry as (norm_text, cx_bucket, cy_bucket).
+            # Build multisets of texts, optionally requiring coarse spatial consistency.
+            # We'll count matches by text first, then filter with a loose spatial check.
+            def by_text_map(sig: List[Tuple[str, int, int]]) -> Dict[str, List[Tuple[int, int]]]:
+                d: Dict[str, List[Tuple[int, int]]] = {}
+                for t, x, y in sig:
+                    d.setdefault(t, []).append((x, y))
+                return d
+            A = by_text_map(a_ocr)
+            B = by_text_map(b_ocr)
+            matched = 0
+            total = sum(len(v) for v in A.values())
+            for t, apos in A.items():
+                bpos = B.get(t, [])
+                if not bpos:
+                    continue
+                # Greedy bipartite-ish match with TOL buckets.
+                used = [False] * len(bpos)
+                for ax, ay in apos:
+                    best = -1
+                    bestm = None
+                    for j, (bx, by) in enumerate(bpos):
+                        if used[j]:
+                            continue
+                        dx, dy = abs(ax - bx), abs(ay - by)
+                        if dx <= TOL and dy <= TOL:
+                            m = max(dx, dy)
+                            if bestm is None or m < bestm:
+                                bestm = m
+                                best = j
+                                if m == 0:
+                                    break
+                    if best != -1:
+                        used[best] = True
+                        matched += 1
+            # Require a meaningful overlap: at least 2 titles AND ≥60% of the seen titles.
+            return matched >= 2 and matched >= int(0.6 * max(1, total))
+
+        return True
+
+    @staticmethod
+    def _skill_title_roi(square_xyxy: Tuple[int, int, int, int]) -> Tuple[int, int, int, int]:
+        """
+        Tight crop for the *title line* within a skills_square:
+          - Skip left icon (~10%)
+          - Crop a band near the top (~8%..38% height)
+          - Leave some right margin (remove price/labels)
+        """
+        x1, y1, x2, y2 = square_xyxy
+        w = max(1, x2 - x1)
+        h = max(1, y2 - y1)
+        left  = x1 + int(w * 0.10)
+        right = x2 - int(w * 0.25)
+        top   = y1 + int(h * 0.08)
+        bot   = y1 + int(h * 0.38)
+        if right <= left:
+            right = left + 1
+        if bot <= top:
+            bot = top + 1
+        return (left, top, right, bot)
+
+    @staticmethod
+    def _find_buy_inside(square: DetectionDict, candidates: List[DetectionDict]) -> Optional[DetectionDict]:
+        sq_xyxy = square.get("xyxy")
+        if not sq_xyxy:
+            return None
+        for c in candidates:
+            if inside(c["xyxy"], sq_xyxy, pad=4):
+                return c
+        return None
+
+    def _scan_and_click_buys(
+        self,
+        *,
+        targets: Sequence[str],
+        ocr_threshold: float,
+    ) -> Tuple[bool, Image.Image, List[DetectionDict], List[Tuple[str, int, int]]]:
+        """
+        Single pass: find all skills_square + their BUY button; OCR title-band and
+        click BUY if matches a target. Returns (clicked_any, img, dets, ocr_title_signature).
+        """
+        game_img, dets = self._collect("skills_scan")
+
+        squares = [d for d in dets if d["name"] == "skills_square"]
+        buys = [d for d in dets if d["name"] == "skills_buy"]
+
+        clicked_any = False
+        ocr_titles_sig: List[Tuple[str, int, int]] = []
+
+        for sq in squares:
+            buy = self._find_buy_inside(sq, buys)
+            if buy is None:
+                continue
+
+            # BUY must be active
+            crop_buy = crop_pil(game_img, buy["xyxy"], pad=0)
+            p = float(self._clf.predict_proba(crop_buy))
+            if p < 0.55:
+                continue
+
+            # OCR only the title band for accuracy/speed
+            title_crop = crop_pil(game_img, self._skill_title_roi(sq["xyxy"]), pad=2)
+            raw_text = self.ocr.text(title_crop) or ""
+            norm_text = self._norm_title(raw_text)
+            # Record OCR title signature with coarse position buckets.
+            x1, y1, x2, y2 = sq["xyxy"]
+            cx = int((x1 + x2) / 2) // 8
+            cy = int((y1 + y2) / 2) // 8
+            if norm_text:
+                ocr_titles_sig.append((norm_text, cx, cy))
+
+            # quick contains or fallback to best fuzzy match
+            contains_any = any(fuzzy_contains(raw_text, t, threshold=ocr_threshold) for t in targets)
+            best_name, best_score = fuzzy_best_match(raw_text, targets)
+
+            if contains_any or best_score >= ocr_threshold:
+                # Click: center + slight upward offset to counter inertia
+                bx1, by1, bx2, by2 = buy["xyxy"]
+                bh = max(1, by2 - by1)
+
+                upward_offset = 0.05
+
+                if isinstance(self.ctrl, ScrcpyController):
+                    upward_offset = 0.15
+                dy = max(2, int(bh * upward_offset))  # ~X% upward
+                shifted = (bx1, by1 - dy, bx2, by2 - dy)
+                self.ctrl.click_xyxy_center(shifted, clicks=1, jitter=0)
+                logger_uma.info("Clicked BUY for '%s' (score=%.2f)", best_name or "?", best_score)
+                clicked_any = True
+
+        return clicked_any, game_img, dets, ocr_titles_sig
+
+    # --------------------------
+    # Text normalization helpers
+    # --------------------------
+    @staticmethod
+    def _norm_title(s: str) -> str:
+        """
+        Normalize OCR titles for robust signature matching:
+          - strip/lowers
+          - collapse spaces
+          - remove trivial punctuation
+        """
+        s = (s or "").strip().lower()
+        if not s:
+            return ""
+        # collapse whitespace
+        s = " ".join(s.split())
+        # drop superfluous punctuation commonly introduced by OCR
+        TABLE = str.maketrans("", "", "·•|[](){}:;,.!?\"'`’“”")
+        s = s.translate(TABLE)
+        return s
+
+    def _confirm_learn_close_back_flow(self, waiting_popup: float = 1.0) -> None:
+        """
+        Confirm → Learn → Close → Back using Waiter (OCR disambiguation under the hood).
+        """
+        # Confirm
+        if not self.waiter.click_when(
+            classes=("button_green",),
+            texts=("CONFIRM",),
+            prefer_bottom=True,
+            timeout_s=3.0,
+            tag="skills_flow_confirm",
+        ):
+            logger_uma.warning("Confirm button not found")
+            return False
+        time.sleep(waiting_popup)
+
+        # Learn
+        if not self.waiter.click_when(
+            classes=("button_green",),
+            texts=("LEARN",),
+            prefer_bottom=True,
+            timeout_s=1.2,
+            tag="skills_flow_learn",
+        ):
+            logger_uma.warning("Confirm button not found")
+            return False
+            
+        time.sleep(waiting_popup * 2)
+
+        # Close
+        if not self.waiter.click_when(
+            classes=("button_white",),
+            texts=("CLOSE",),
+            prefer_bottom=False,
+            allow_greedy_click=False,
+            timeout_s=2,
+            tag="skills_flow_close",
+        ):
+            logger_uma.warning("Close button not found")
+            return False
+        time.sleep(waiting_popup)
+
+        # Back
+        if not self.waiter.click_when(
+            classes=("button_white",),
+            texts=("BACK",),
+            prefer_bottom=True,
+            timeout_s=1.2,
+            tag="skills_back",
+        ):
+            logger_uma.warning("Back button not found")
+            return False
+        time.sleep(0.15)
+        return True
+
+    def _focus_nudge(self, game_img: Image.Image, dets: List[DetectionDict]) -> None:
+        """
+        If nothing clicked on first pass, gently move cursor onto the scrollable list to
+        'wake up' the focus, then micro-scrolls will land properly.
+        """
+        try:
+            squares = [d for d in dets if d.get("name") == "skills_square"]
+            if squares:
+                self.ctrl.move_xyxy_center(squares[0]["xyxy"])
+                logger_uma.debug("[skills] Focus nudge: moved to first skills_square")
+            else:
+                W, H = game_img.size
+                cx, cy = W // 2, H // 2
+                sx, sy = self.ctrl.local_to_screen(cx, cy)
+                j = 10
+                self.ctrl.move_to(sx + random.randint(-j, j), sy + random.randint(-j, j), duration=0.18)
+                logger_uma.debug("[skills] Focus nudge: moved to screen center")
+            time.sleep(0.07)
+        except Exception as e:
+            logger_uma.debug("[skills] Focus nudge failed: %s", e)
+
+    def _scroll_once(self, scroll_time_range: Tuple[int, int]) -> None:
+        """
+        One scroll step (PC: wheel nudges; Android: drag with end-hold to kill inertia).
+        """
+        is_android = isinstance(self.ctrl, ScrcpyController)
+        if is_android:
+            xywh = self.ctrl._client_bbox_screen_xywh()
+            if xywh is None:
+                return
+            x, y, w, h = xywh
+            cx, cy = (x + w // 2), (y + h // 2)
+            self.ctrl.move_to(cx, cy)
+            time.sleep(0.5)
+            self.ctrl.scroll(-h // 10, steps=4, duration_range=(0.2, 0.4), end_hold_range=(0.15, 0.22))
+            # Inertia wait
+            time.sleep(0.12)
+        else:
+            n = random.randint(scroll_time_range[0], scroll_time_range[1])
+            for _ in range(n):
+                self.ctrl.scroll(-1)
+                time.sleep(0.01)
+        time.sleep(0.12)

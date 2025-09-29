@@ -158,7 +158,7 @@ def _director_tile_and_color(
 def decide_action_training(
     sv_rows: List[Dict],
     *,
-    mood,  # 'GOOD' or ('GOOD', 4)
+    mood,
     turns_left,
     career_date: DateInfo,
     energy_pct: int,
@@ -166,10 +166,10 @@ def decide_action_training(
     stats={},
     reference_stats={
         "SPD": 1150,
-        "STA": 1000,
-        "PWR": 530,
-        "GUTS": 270,
-        "WIT": 250,
+        "STA": 900,
+        "PWR": 700,
+        "GUTS": 300,
+        "WIT": 400,
     },
     # Tie-break context
     tile_to_type: Optional[Dict[int, str]] = None,
@@ -215,32 +215,59 @@ def decide_action_training(
 
     # Convenience views
     allowed_rows = [r for r in sv_rows if r.get("allowed_by_risk", False)]
+    sv_by_tile = {int(r["tile_idx"]): float(r.get("sv_total", 0.0)) for r in sv_rows}
+
+    # -------- Cap-aware filtering (do not train stats already at/above reference) --------
+    def _stat_of_tile(idx: int) -> str:
+        return str(tile_to_type.get(int(idx), "")).upper()
+
+    try:
+        capped_stats = set()
+        for k, target in (reference_stats or {}).items():
+            kU = str(k).upper()
+            cur = int(stats.get(kU, -1))
+            if cur >= 0 and int(target) > 0 and cur >= int(target):
+                capped_stats.add(kU)
+    except Exception:
+        capped_stats = set()
+
+    def _exclude_capped(rows):
+        return [r for r in rows if _stat_of_tile(int(r["tile_idx"])) not in capped_stats]
+
+    allowed_rows_filtered = _exclude_capped(allowed_rows)
+
+    # WIT helpers respect caps too
+    best_wit_any = None if "WIT" in capped_stats else _best_wit_tile(
+        sv_rows, allowed_only=True, min_sv=0.0, tile_to_type=tile_to_type
+    )
+    best_wit_low = None if "WIT" in capped_stats else _best_wit_tile(
+        sv_rows, allowed_only=True, min_sv=low_pick_sv_gate, tile_to_type=tile_to_type
+    )
+
+    # Hinted tiles that pass risk AND are not capped
+    hint_tiles = [
+        t for t in _tiles_with_hint(sv_rows)
+        if any((r["tile_idx"] == t) and r.get("allowed_by_risk", False) for r in sv_rows)
+        and _stat_of_tile(int(t)) not in capped_stats
+    ]
     best_allowed_tile_25 = _best_tile(
-        allowed_rows,
+        allowed_rows_filtered,
         min_sv=max_pick_sv_top,
         prefer_types=priority_stats,
         tile_to_type=tile_to_type,
     )
     best_allowed_tile_20 = _best_tile(
-        allowed_rows,
+        allowed_rows_filtered,
         min_sv=next_pick_sv_top,
         prefer_types=priority_stats,
         tile_to_type=tile_to_type,
     )
     best_allowed_any = _best_tile(
-        allowed_rows,
+        allowed_rows_filtered,
         min_sv=-1.0,
         prefer_types=priority_stats,
         tile_to_type=tile_to_type,
     )
-    best_wit_any = _best_wit_tile(
-        sv_rows, allowed_only=True, min_sv=0.0, tile_to_type=tile_to_type
-    )
-
-    best_wit_low = _best_wit_tile(
-        sv_rows, allowed_only=True, min_sv=low_pick_sv_gate, tile_to_type=tile_to_type
-    )
-    sv_by_tile = {int(r["tile_idx"]): float(r.get("sv_total", 0.0)) for r in sv_rows}
 
     def sv_of(idx: Optional[int]) -> float:
         return sv_by_tile.get(int(idx), 0.0) if idx is not None else 0.0
@@ -252,9 +279,9 @@ def decide_action_training(
     # -------------------------------------------------
     # Distribution-aware nudge (before step 1)
     # If a top-3 priority stat is undertrained vs. reference distribution
-    # by ≥ 7% and its best SV is within 1.5 of the best overall, pick it.
+    # by ≥ 6% and its best SV is within 1.5 of the best overall, pick it.
     # -------------------------------------------------
-    UNDERTRAIN_DELTA = 0.07  # ≥ 7% gap vs reference share
+    UNDERTRAIN_DELTA = 0.06  # ≥ 6% gap vs reference share
     MAX_SV_GAP = 1.5
 
     try:
@@ -262,7 +289,8 @@ def decide_action_training(
         keys = ["SPD", "STA", "PWR", "GUTS", "WIT"]
         known_keys = [k for k in keys if max(0, int(stats.get(k, -1))) > 0]
 
-        if known_keys:
+        # If hint is important ignore undertrain stat check, prioritize hint
+        if known_keys and not (Settings.HINT_IS_IMPORTANT and len(hint_tiles) > 0):
             # Normalize reference to the same subset
             ref_sum = sum(max(0, int(reference_stats.get(k, 0))) for k in known_keys)
             cur_sum = sum(max(0, int(stats.get(k, 0))) for k in known_keys)
@@ -292,6 +320,8 @@ def decide_action_training(
                 ]
 
                 if cand:
+                    
+                    logger_uma.debug(f"Undertrain candidates: {cand}")
                     # Most undertrained among top-3 priorities
                     cand.sort(key=lambda kv: kv[1], reverse=True)
                     under_stat, gap = cand[0]
@@ -316,15 +346,16 @@ def decide_action_training(
                         rbest = max(pool, key=lambda rr: float(rr.get("sv_total", 0.0)))
                         return int(rbest["tile_idx"]), float(rbest.get("sv_total", 0.0))
 
+                    # respect caps here by using allowed_rows_filtered
                     under_idx, under_sv = _best_tile_of_type(
-                        allowed_rows, under_stat, -1.0, tile_to_type
+                        allowed_rows_filtered, under_stat, -1.0, tile_to_type
                     )
 
                     gap_top_under = top_allowed_sv - under_sv
                     flexible_gap = MAX_SV_GAP
 
                     # Wit h at least some value, default >= 0.5
-                    if under_idx is not None:
+                    if under_idx is not None and under_sv and under_sv > 0:
                         if gap > UNDERTRAIN_DELTA * 1.5:
                             # accept more gap respect to best play
                             flexible_gap += 0.5
@@ -346,6 +377,8 @@ def decide_action_training(
                             f"Undertrained {under_stat} by {gap:.1%} vs reference; "
                             f"but the TOP option is better {top_allowed_sv:.2f}, gap={gap} ) or is not worth it to train under_stat"
                         )
+                else:
+                    logger_uma.debug(f"No undertrain candidates, Threshold: {UNDERTRAIN_DELTA}. Keys: {known_keys}. Stats checked: {top3}")
     except Exception as _e:
         # Be permissive—never break the policy due to stats math
         because(f"Distribution check skipped due to stats error: {_e}")
@@ -356,7 +389,59 @@ def decide_action_training(
         )
         return (TrainAction.TRAIN_MAX, best_allowed_tile_25, "; ".join(reasons))
 
-    because("Not a IMPRESIVE option to train, checking for other oportunities")
+    # URA Finale branch
+    if is_final_season(di):
+        # No rest allowed for now
+        if hint_tiles:
+            hinted = max(hint_tiles, key=lambda t: sv_of(t))
+            because("URA Finale: take available hint to get more discounts")
+            return (TrainAction.TAKE_HINT, hinted, "; ".join(reasons))
+
+        # Re-target inheritance thresholds in final season:
+        # 1) For top-3 priority stats, pick the first whose current value < 600.
+        #    (Ignore caps here; thresholds outrank reference targets in URA.)
+        top3_prio = [s.upper() for s in (priority_stats or [])][:3]
+
+        def _best_tile_of_type(rows, stat: str, min_sv: float, tmap: Dict[int, str]):
+            pool = [
+                r for r in rows
+                if str(tmap.get(int(r["tile_idx"]), "")).upper() == stat.upper()
+                and float(r.get("sv_total", 0.0)) >= min_sv
+            ]
+            if not pool:
+                return None, 0.0
+            rbest = max(pool, key=lambda rr: float(rr.get("sv_total", 0.0)))
+            return int(rbest["tile_idx"]), float(rbest.get("sv_total", 0.0))
+
+        # (a) push any top-3 stat to 600 first
+        for stat_name in top3_prio:
+            curv = int(stats.get(stat_name, -1))
+            if curv >= 0 and curv < 600:
+                idx600, sv600 = _best_tile_of_type(allowed_rows, stat_name, -1.0, tile_to_type)
+                if idx600 is not None:
+                    because(f"URA Finale: raise {stat_name} towards 600 (cur={curv}) → tile {idx600}")
+                    return (TrainAction.TRAIN_MAX, idx600, "; ".join(reasons))
+
+        # (b) if all ≥ 600, pick the top-3 stat closest to 1200 but < 1170
+        near_candidates = []
+        for stat_name in top3_prio:
+            curv = int(stats.get(stat_name, -1))
+            if curv >= 0 and curv < 1170:
+                near_candidates.append((stat_name, curv))
+        if near_candidates:
+            # Choose the one with the largest current value (closest to 1200)
+            target_stat = max(near_candidates, key=lambda kv: kv[1])[0]
+            idx1170, sv1170 = _best_tile_of_type(allowed_rows, target_stat, -1.0, tile_to_type)
+            if idx1170 is not None:
+                because(f"URA Finale: push {target_stat} closer to 1200 (cur={int(stats.get(target_stat, -1))}) but <1170 → tile {idx1170}")
+                return (TrainAction.TRAIN_MAX, idx1170, "; ".join(reasons))
+
+        # (c) last resort in URA: WIT soft-skip if available (uses cap-aware best_wit_low above)
+        if best_wit_low is not None:
+            because("URA Finale: no threshold targets; soft-skip with WIT")
+            return (TrainAction.TRAIN_WIT, best_wit_low, "; ".join(reasons))
+
+    because("Not a IMPRESIVE option to train (>= 2.5 in SV), checking for other oportunities")
     # 2) Mood check → recreation
     min_mood_score = MOOD_MAP.get(str(minimal_mood).upper(), 3)
     if (
@@ -369,49 +454,30 @@ def decide_action_training(
         )
         return (TrainAction.RECREATION, None, "; ".join(reasons))
 
-    # 3) Summer close? (1 turn) and energy <= 90 → TRAIN_WIT
-    if is_summer_in_next_turn(di) and energy_pct <= 90:
-        idx = _best_wit_tile(
-            sv_rows, allowed_only=True, min_sv=0.0, tile_to_type=tile_to_type
-        )
-        if idx is not None:
-            because("Summer in 1 turn and energy ≤ 90% → soft-skip with WIT")
-            return (TrainAction.TRAIN_WIT, idx, "; ".join(reasons))
+    # 3) Summer close? (1 turn) → TRAIN_WIT if rest is excesive
+    if is_summer_in_next_turn(di):
+        because("Summer is in next turn")
+        if energy_pct >= 75 and energy_pct <= 96:
+            idx = _best_wit_tile(
+                sv_rows, allowed_only=True, min_sv=0.0, tile_to_type=tile_to_type
+            )
+            if idx is not None:
+                because(f"Summer in 1 turn and energy {energy_pct} % → recover a little with soft-skip with WIT")
+                return (TrainAction.TRAIN_WIT, idx, "; ".join(reasons))
+        elif energy_pct <= 70:
+            because(f"Summer in 1 turn and energy {energy_pct} % → recover a lot with soft-skip with WIT")
+            return (TrainAction.REST, None, "; ".join(reasons))
+
 
     # 4) Summer within ≤2 turns and (energy<=90 and WIT SV>=1) → TRAIN_WIT
     if is_summer_in_two_or_less_turns(di) and energy_pct <= 90:
+        because("Summer is in ≤2 turns away, checking for good opportunities in with")
         idx = _best_wit_tile(
-            sv_rows, allowed_only=True, min_sv=0.0, tile_to_type=tile_to_type
+            sv_rows, allowed_only=True, min_sv=0.50, tile_to_type=tile_to_type
         )
         if idx is not None:
-            because("Summer ≤2 turns away, energy ≤ 90% → WIT")
+            because("Valuable WIT found for summer, SV >= 0.5")
             return (TrainAction.TRAIN_WIT, idx, "; ".join(reasons))
-
-    # 5) Director rule (approximation—see)
-    #    If Director is present and not max (color != yellow), and the date is within your windows → TRAIN_DIRECTOR
-    director_idx, director_color = _director_tile_and_color(sv_rows)
-    if director_idx is not None and di.year_code == 3:
-        if (di.month in (1, 2, 3) and director_color in ("blue",)) or (
-            di.month in (9, 10, 11, 12) and director_color not in ("yellow", "max")
-        ):
-            if (
-                sv_rows[director_idx]
-                if isinstance(sv_rows, list) and director_idx < len(sv_rows)
-                else True
-            ):
-                # Still respect risk for that tile:
-                if any(
-                    r["tile_idx"] == director_idx and r.get("allowed_by_risk", False)
-                    for r in sv_rows
-                ):
-                    because(
-                        f"We should train with Director for extra bonuses; director color={director_color}; risk ok → train director on tile {director_idx}"
-                    )
-                    return (
-                        TrainAction.TRAIN_DIRECTOR,
-                        director_idx,
-                        "; ".join(reasons),
-                    )
 
     # 6) If max SV option >= 2.0 → TRAIN_MAX
     if best_allowed_tile_20 is not None:
@@ -426,13 +492,51 @@ def decide_action_training(
         and not is_junior_year(di)
         and di.month is not None
         and not skip_race
+        and not is_final_season(di)
     ):
         dk = date_key_from_dateinfo(di)
         if dk and RaceIndex.has_g1(dk):
             because("Prioritize G1 enabled, G1 available today → try race")
             return (TrainAction.RACE, None, "; ".join(reasons))
 
-    because("No good options in general, checking other posibilities")
+    # Director rule (approximation—see)
+    #    If Director is present and not max (color != yellow), date is within windows,
+    #    AND the tile's stat is within the top-3 priority stats → TRAIN_DIRECTOR
+    director_idx, director_color = _director_tile_and_color(sv_rows)
+    if director_idx is not None and di.year_code == 3:
+        if (di.month in (1, 2, 3) and director_color in ("blue",)) or (
+            di.month in (9, 10, 11, 12) and director_color not in ("yellow", "max")
+        ):
+            # Validate index and map tile -> stat
+            if isinstance(sv_rows, list) and 0 <= director_idx < len(sv_rows):
+                dir_stat = str(tile_to_type.get(int(director_idx), "")).upper()
+                top3_priorities = [s.upper() for s in (priority_stats or [])][:3]
+
+                # Require Director tile to be one of the top-3 priority stats
+                if dir_stat in top3_priorities:
+                    # Also skip if this stat is capped already
+                    if dir_stat in capped_stats and director_color not in ("orange", ):
+                        because(f"Director present but {dir_stat} already at/above target and is not orange → skip Director rule")
+                    else:
+                        # Still respect risk for that tile:
+                        if any(
+                            (r.get("tile_idx") == director_idx) and r.get("allowed_by_risk", False)
+                            for r in sv_rows
+                        ):
+                            because(
+                                f"We should train with Director for extra bonuses; director color={director_color}; "
+                                f"tile stat={dir_stat} in top-3 priorities {top3_priorities}; risk ok → tile {director_idx}"
+                            )
+                            return (
+                                TrainAction.TRAIN_DIRECTOR,
+                                director_idx,
+                                "; ".join(reasons),
+                            )
+                else:
+                    because(
+                        f"Director present but tile stat {dir_stat} not in top-3 priorities {top3_priorities} → skip Director rule"
+                    )
+
     # 8) If energy <= 35% → REST
     if energy_pct <= energy_rest_gate_lo:
         because(f"Energy {energy_pct}% ≤ {energy_rest_gate_lo}% → rest")
@@ -447,7 +551,7 @@ def decide_action_training(
         idx = _best_wit_tile(
             sv_rows,
             allowed_only=True,
-            min_sv=late_pick_sv_top,
+            min_sv=1.5,
             tile_to_type=tile_to_type,
         )
         if idx is not None:
@@ -455,39 +559,6 @@ def decide_action_training(
                 f"Decent WIT SV ≥ {late_pick_sv_top} and risk ok → WIT (aka skip turn)"
             )
             return (TrainAction.TRAIN_WIT, idx, "; ".join(reasons))
-
-    # 10) URA Finale branch
-    if is_final_season(di):
-        hint_tiles = [
-            t
-            for t in _tiles_with_hint(sv_rows)
-            if any(
-                r["tile_idx"] == t and r.get("allowed_by_risk", False) for r in sv_rows
-            )
-        ]
-        if hint_tiles:
-            # choose hinted tile with best SV
-            hinted = max(hint_tiles, key=lambda t: sv_of(t))
-            because("URA Finale: take available hint to get more discounts")
-            return (TrainAction.TAKE_HINT, hinted, "; ".join(reasons))
-
-        because("No hint training in final season")
-        # If energy <= 50 during URA → REST
-        if turns_left >= 1 and energy_pct <= energy_rest_gate_mid:
-            because(
-                f"URA Finale, turns_left={turns_left} and energy {energy_pct}% ≤ {energy_rest_gate_mid}% → rest"
-            )
-            return (TrainAction.REST, None, "; ".join(reasons))
-
-        # Else soft skip with WIT if available (≥1)
-        if best_wit_low is not None:
-            because("The best decision is to skip turn with WIT training")
-            return (TrainAction.TRAIN_WIT, best_wit_low, "; ".join(reasons))
-
-        # Else secure skills plan (non-tile)
-        # TODO: return (TrainAction.SECURE_SKILL, None), for now just the best
-        because("URA Finale: secure skill / otherwise take best allowed training")
-        return (TrainAction.TRAIN_MAX, best_allowed_any, "; ".join(reasons))
 
     # 11)
     if best_wit_low is not None:
@@ -497,7 +568,7 @@ def decide_action_training(
     because("There is no value in training WIT, checking other options")
     # 12) If max SV ≥ 1.5 → TRAIN_MAX
     best_allowed_tile_15 = _best_tile(
-        allowed_rows,
+        allowed_rows_filtered,
         min_sv=late_pick_sv_top,
         prefer_types=priority_stats,
         tile_to_type=tile_to_type,
@@ -522,8 +593,7 @@ def decide_action_training(
         and (not is_pre_debut(di) or not is_junior_year(di))
         and not is_final_season(di)
     ):
-        # The diagram says "and not Junior Pre Debut"
-        if not (is_junior_year(di) and is_pre_debut(di)) and not skip_race:
+        if not (is_junior_year(di) or is_pre_debut(di) or is_final_season(di)) and not skip_race:
             because(
                 f"Not summer, energy ≥ {energy_race_gate}% and not Junior Pre-Debut → try race (collect skill pts + minimal stat)"
             )
@@ -542,7 +612,7 @@ def decide_action_training(
 
     # 15) If max SV ≥ 1 and the stat is within first 3 priorities → TRAIN_MAX
     best_allowed_tile_10 = _best_tile(
-        allowed_rows,
+        allowed_rows_filtered,
         min_sv=low_pick_sv_gate,
         prefer_types=priority_stats[:3],
         tile_to_type=tile_to_type,
@@ -647,7 +717,7 @@ def check_training(player, *, skip_race: bool = False) -> Optional[TrainingDecis
     sv_rows = compute_support_values(training_state)
     for r in sv_rows:
         logger_uma.info(
-            f"View {Constants.map_tile_idx_to_type[r['tile_idx']]}: "
+            f"View [{int(r['tile_idx'])}] {Constants.map_tile_idx_to_type[int(r['tile_idx'])]}: "
             f"SV={r['sv_total']:.2f}  "
             f"fail={r['failure_pct']}% (≤ {r['risk_limit_pct']}% ? {r['allowed_by_risk']})  "
             f"greedy={r['greedy_hit']}"

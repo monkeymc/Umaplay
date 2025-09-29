@@ -1,6 +1,8 @@
 # core/actions/lobby.py
 from __future__ import annotations
 
+from collections import deque
+import statistics
 import time
 from dataclasses import dataclass
 from typing import Optional, Tuple
@@ -75,8 +77,8 @@ class LobbyFlow:
         auto_rest_minimum: int = 24,
         prioritize_g1: bool = False,
         process_on_demand = True,
-        interval_stats_refresh = 5,
-        max_critical_turn = 7,
+        interval_stats_refresh = 1,
+        max_critical_turn = 8,
         plan_races = {}
     ) -> None:
         self.ctrl = ctrl
@@ -97,6 +99,13 @@ class LobbyFlow:
         self.last_turns_left_prediction = None
         self._last_date_key: Optional[str] = None
         self.plan_races = plan_races
+        self._date_stable_count: int = 0           # how long current accepted date has been stable
+        self._date_artificial: bool = False        # last accepted date was auto-advanced (imputed)
+        self._pending_date_jump = None             # keep forward pending (exists already in codepath)
+        self._pending_date_back = None             # pending backward correction candidate
+        self._pending_date_back_count: int = 0
+        self._last_turn_at_date_update: Optional[int] = None  # turns value when we last updated date
+        self._raced_keys_recent: set[str] = set()  # keys we already raced on (avoid double-race if OCR didn’t tick)
 
     # --------------------------
     # Public entry point
@@ -146,6 +155,8 @@ class LobbyFlow:
             else:
                 logger_uma.debug("[lobby] Planned race suppressed by first-junior-day/skip flag.")
 
+        if self.process_on_demand:
+            self._process_turns_left(img, dets)
 
         if self.state.turn <= self.max_critical_turn:
             if not self._skip_race_once and self.state.energy > 2:
@@ -153,12 +164,7 @@ class LobbyFlow:
                 outcome_bool, reason = self._maybe_do_goal_race(img, dets)
                 if outcome_bool:
                     return "TO_RACE", reason
-
-        else:
-            if self.state.turn and self.state.turn > 0:
-                # [Optimization] predict turns
-                self.state.turn -= 1  # predicting the turn to save resources
-
+        
         # After special-case goal racing, clear the one-shot skip guard.
         self._skip_race_once = False
 
@@ -198,40 +204,79 @@ class LobbyFlow:
 
     def _update_stats(self, img, dets) -> None:
         """
-        Smart, monotonic-ish stat updater with refresh gating and noise guards.
+        Smart, monotonic-ish stat updater with refresh gating, noise guards,
+        and recovery from early misreads.
 
         Rules (per stat key in {SPD, STA, PWR, GUTS, WIT}):
-        - Ignore invalid reads (-1) and out-of-range values.
-        - If previous is -1, accept the first valid value.
-        - Accept normal increases up to MAX_UP_STEP per refresh.
-        - For larger upward jumps, require the same value to repeat
-            PERSIST_FRAMES times before accepting (prevents OCR spikes).
-        - Allow small decreases up to MAX_DOWN_STEP (rare debuffs / OCR wobble).
-            Larger drops are ignored.
+          - Ignore invalid reads (-1) and out-of-range values.
+          - If previous is -1, accept the first valid value.
+          - Accept normal increases up to MAX_UP_STEP per refresh.
+          - For larger upward jumps, require the same value to repeat
+            PERSIST_FRAMES times before accepting (prevents OCR spikes),
+            EXCEPT during a short warm-up window or if the previous value was
+            artificial (imputed) — in those cases accept immediately to fix
+            early misreads like 103→703.
+          - Allow small decreases up to MAX_DOWN_STEP (rare debuffs / wobble).
+          - If at least one of the 5 stats is still -1, force a refresh even
+            if we are between interval gates.
+          - If a stat remains -1 while others are valid, fill it with the
+            average of the known ones and mark it *artificial* so any later
+            real read will overwrite it unconditionally.
         """
         KEYS = ("SPD", "STA", "PWR", "GUTS", "WIT")
         STAT_MIN, STAT_MAX = 0, 1200
-        MAX_UP_STEP = 150          # typical per-turn cap; tune if you see legit bigger jumps
-        MAX_DOWN_STEP = 60         # allow tiny decreases; block bigger drops
-        PERSIST_FRAMES = 2         # confirm large jumps across this many refreshes
+        MAX_UP_STEP = 150           # typical per-turn cap; tune if you see legit bigger jumps
+        MAX_DOWN_STEP = 60          # allow tiny decreases; block bigger drops
+        PERSIST_FRAMES_UP = 2       # confirm large upward jumps across this many refreshes
+        PERSIST_FRAMES_DOWN = 2     # confirm large downward corrections across this many refreshes
+        WARMUP_FRAMES = 2           # after accepting a value, allow big fixes for a few frames
+        SUSPECT_FRAMES = 5          # after a big upward jump is accepted, allow big downward correction for a while
+        HIST_LEN = 5                # how many recent raw reads to keep per stat
+        CORR_TOL = 80               # tolerance near baseline/median to treat as a correction (not a real drop)
 
         # lazy init of helper state
         if not hasattr(self, "_stats_last_pred"):
             self._stats_last_pred = {k: -1 for k in KEYS}   # last raw OCR per key
         if not hasattr(self, "_stats_pending"):             # pending large jump candidates
             self._stats_pending = {k: None for k in KEYS}
+        # pending big downward corrections
+        if not hasattr(self, "_stats_pending_down"):
+            self._stats_pending_down = {k: None for k in KEYS}
+        if not hasattr(self, "_stats_pending_down_count"):
+            self._stats_pending_down_count = {k: 0 for k in KEYS}
         if not hasattr(self, "_stats_pending_count"):
             self._stats_pending_count = {k: 0 for k in KEYS}
+        if not hasattr(self, "_stats_stable_count"):
+            # how long the currently accepted value has been kept
+            self._stats_stable_count = {k: 0 for k in KEYS}
+        if not hasattr(self, "_stats_artificial"):
+            # keys whose current value was imputed (avg). Real reads must overwrite immediately.
+            self._stats_artificial = set()
+        # track "suspect" state after accepting a big upward jump
+        if not hasattr(self, "_stats_suspect_until"):
+            self._stats_suspect_until = {k: 0 for k in KEYS}
+        if not hasattr(self, "_stats_prejump_value"):
+            self._stats_prejump_value = {k: None for k in KEYS}
+        # small history of raw valid reads to compute medians
+        if not hasattr(self, "_stats_history"):
+            self._stats_history = {k: deque(maxlen=HIST_LEN) for k in KEYS}
 
-        # Refresh gating (preserve your optimization)
-        if self._stats_refresh_counter == 0 or self._stats_refresh_counter % self.interval_stats_refresh == 0:
+        # Refresh gating (preserve optimization) + force if any unknowns
+        any_missing = any((self.state.stats or {}).get(k, -1) == -1 for k in KEYS)
+        if (
+            self._stats_refresh_counter == 0
+            or self._stats_refresh_counter % self.interval_stats_refresh == 0
+            or any_missing
+        ):
             observed = extract_stats(self.ocr, img, dets)  # dict[str,int]
             current  = dict(self.state.stats or {})        # copy to modify safely
+            prev_snapshot = dict(current)
             changed  = []
 
             for key in KEYS:
                 new_val = int(observed.get(key, -1))
                 prev    = int(current.get(key, -1))
+                prev_was_artificial = key in self._stats_artificial
 
                 # remember last prediction for debugging/telemetry
                 self._stats_last_pred[key] = new_val
@@ -242,11 +287,19 @@ class LobbyFlow:
                 if new_val == -1:
                     logger_uma.debug(f"[stats] {key}: invalid read (-1), keeping {prev}")
                     continue
+                # keep history of valid raw reads
+                self._stats_history[key].append(new_val)
                 if prev == -1:
                     # first valid observation
                     current[key] = new_val
+                    self._stats_artificial.discard(key)
                     self._stats_pending[key] = None
                     self._stats_pending_count[key] = 0
+                    self._stats_pending_down[key] = None
+                    self._stats_pending_down_count[key] = 0
+                    self._stats_stable_count[key] = 0
+                    self._stats_suspect_until[key] = 0
+                    self._stats_prejump_value[key] = None
                     changed.append((key, -1, new_val))
                     continue
 
@@ -254,48 +307,145 @@ class LobbyFlow:
 
                 # small negative change allowed; big drop rejected
                 if delta < 0:
-                    if abs(delta) <= MAX_DOWN_STEP:
+                    drop = abs(delta)
+                    if drop <= MAX_DOWN_STEP:
                         current[key] = new_val
+                        self._stats_artificial.discard(key)
                         self._stats_pending[key] = None
                         self._stats_pending_count[key] = 0
+                        self._stats_pending_down[key] = None
+                        self._stats_pending_down_count[key] = 0
+                        self._stats_stable_count[key] = 0
+                        self._stats_suspect_until[key] = max(0, self._stats_suspect_until[key] - 1)
                         changed.append((key, prev, new_val))
                     else:
-                        logger_uma.debug(f"[stats] {key}: rejecting large drop {prev}->{new_val} (Δ={delta})")
+                        # Large downward move. Treat as a possible correction if:
+                        #  - previous was artificial, OR
+                        #  - we are inside a suspect window after a big upward jump
+                        #    and the new value is close to the pre-jump baseline, OR
+                        #  - it persists across a few frames and is closer to the median of recent raw reads.
+                        accept = False
+                        reason = "blocked"
+
+                        if prev_was_artificial:
+                            accept, reason = True, "prev artificial"
+                        elif self._stats_suspect_until.get(key, 0) > 0:
+                            base = self._stats_prejump_value.get(key, prev)
+                            if base is not None and abs(new_val - int(base)) <= CORR_TOL:
+                                accept, reason = True, f"suspect-window correction to ~{base}"
+                        else:
+                            # persistence gate + median support
+                            pend = self._stats_pending_down[key]
+                            if pend == new_val:
+                                self._stats_pending_down_count[key] += 1
+                            else:
+                                self._stats_pending_down[key] = new_val
+                                self._stats_pending_down_count[key] = 1
+                            if self._stats_pending_down_count[key] >= PERSIST_FRAMES_DOWN:
+                                med = statistics.median(self._stats_history[key]) if self._stats_history[key] else new_val
+                                if abs(new_val - med) <= CORR_TOL or abs(prev - med) > abs(new_val - med):
+                                    accept, reason = True, f"median≈{int(med)} persistence"
+
+                        if accept:
+                            current[key] = new_val
+                            self._stats_artificial.discard(key)
+                            self._stats_pending[key] = None
+                            self._stats_pending_count[key] = 0
+                            self._stats_pending_down[key] = None
+                            self._stats_pending_down_count[key] = 0
+                            self._stats_stable_count[key] = 0
+                            self._stats_suspect_until[key] = 0
+                            self._stats_prejump_value[key] = None
+                            changed.append((key, prev, new_val))
+                            logger_uma.debug(f"[stats] {key}: accepted big downward correction {prev}->{new_val} ({reason})")
+                        else:
+                            logger_uma.debug(f"[stats] {key}: holding large drop {prev}->{new_val} (Δ={delta})")
                     continue
 
                 # non-negative delta
                 if delta <= MAX_UP_STEP:
                     # normal progression
                     current[key] = new_val
+                    self._stats_artificial.discard(key)
                     self._stats_pending[key] = None
                     self._stats_pending_count[key] = 0
+                    self._stats_pending_down[key] = None
+                    self._stats_pending_down_count[key] = 0
+                    self._stats_stable_count[key] = 0
+                    # normal moves are not "suspect"
+                    self._stats_suspect_until[key] = max(0, self._stats_suspect_until[key] - 1)
+
                     changed.append((key, prev, new_val))
                 else:
-                    # large upward jump → require persistence
-                    pend = self._stats_pending[key]
-                    if pend == new_val:
-                        self._stats_pending_count[key] += 1
-                    else:
-                        self._stats_pending[key] = new_val
-                        self._stats_pending_count[key] = 1
-
-                    if self._stats_pending_count[key] >= PERSIST_FRAMES:
+                    # large upward jump
+                    # Accept immediately if:
+                    #  - we are in warm-up for this key (value just accepted recently), or
+                    #  - the previous value was artificial (imputed placeholder).
+                    if self._stats_stable_count.get(key, 0) < WARMUP_FRAMES or prev_was_artificial:
                         current[key] = new_val
-                        changed.append((key, prev, new_val))
-                        logger_uma.debug(f"[stats] {key}: accepted confirmed big jump {prev}->{new_val} (Δ={delta})")
+                        self._stats_artificial.discard(key)
                         self._stats_pending[key] = None
                         self._stats_pending_count[key] = 0
+                        self._stats_pending_down[key] = None
+                        self._stats_pending_down_count[key] = 0
+                        self._stats_stable_count[key] = 0
+                        # Mark as suspect so we can accept a later big correction down.
+                        self._stats_suspect_until[key] = SUSPECT_FRAMES
+                        self._stats_prejump_value[key] = prev
+                        changed.append((key, prev, new_val))
+                        logger_uma.debug(f"[stats] {key}: accepted big correction {prev}->{new_val} (Δ={delta})")
                     else:
-                        logger_uma.debug(
-                            f"[stats] {key}: holding big jump {prev}->{new_val} (Δ={delta}); "
-                            f"need {PERSIST_FRAMES - self._stats_pending_count[key]} more confirm(s)"
-                        )
+                        # require persistence
+                        pend = self._stats_pending[key]
+                        if pend == new_val:
+                            self._stats_pending_count[key] += 1
+                        else:
+                            self._stats_pending[key] = new_val
+                            self._stats_pending_count[key] = 1
+
+                        if self._stats_pending_count[key] >= PERSIST_FRAMES_UP:
+                            current[key] = new_val
+                            changed.append((key, prev, new_val))
+                            logger_uma.debug(f"[stats] {key}: accepted confirmed big jump {prev}->{new_val} (Δ={delta})")
+                            self._stats_pending[key] = None
+                            self._stats_pending_count[key] = 0
+                            self._stats_stable_count[key] = 0
+                            self._stats_artificial.discard(key)
+                            # big confirmed upward jump → open suspect window
+                            self._stats_suspect_until[key] = SUSPECT_FRAMES
+                            self._stats_prejump_value[key] = prev
+                        else:
+                            logger_uma.debug(
+                                f"[stats] {key}: holding big jump {prev}->{new_val} (Δ={delta}); "
+                                f"need {PERSIST_FRAMES_UP - self._stats_pending_count[key]} more confirm(s)"
+                            )
+
+            # If some stats are still unknown, impute with the average of known ones
+            missing_keys = [k for k in KEYS if current.get(k, -1) == -1]
+            known_vals = [current[k] for k in KEYS if current.get(k, -1) != -1]
+            if missing_keys and known_vals:
+                avg_val = int(round(sum(known_vals) / max(1, len(known_vals))))
+                avg_val = max(STAT_MIN, min(STAT_MAX, avg_val))
+                for k in missing_keys:
+                    current[k] = avg_val
+                    self._stats_artificial.add(k)
+                logger_uma.debug(f"[stats] imputed {missing_keys} with avg={avg_val}")
+
+            # update stability counters (keys that didn’t change grow older)
+            for k in KEYS:
+                if current.get(k, -1) != -1 and current.get(k) == prev_snapshot.get(k):
+                    self._stats_stable_count[k] = self._stats_stable_count.get(k, 0) + 1
+                else:
+                    # when a value changes, shrink suspect window a bit
+                    if self._stats_suspect_until.get(k, 0) > 0:
+                        self._stats_suspect_until[k] = max(0, self._stats_suspect_until[k] - 1)
 
             # commit
             self.state.stats = current
             if changed:
                 chs = ", ".join(f"{k}:{a}->{b}" for k, a, b in changed)
                 logger_uma.info(f"[stats] update: {chs}")
+
         else:
             logger_uma.debug("[Optimization] Reusing previously calculated stats until new refresh interval")
             time.sleep(1.2)
@@ -307,7 +457,7 @@ class LobbyFlow:
         # Skill points, goal & energy
         self.state.skill_pts = extract_skill_points(self.ocr, img, dets)
         self.state.goal = extract_goal_text(self.ocr, img, dets)
-        self.state.energy = extract_energy_pct(self.ocr, img, dets)
+        self.state.energy = extract_energy_pct(img, dets)
 
         self._update_stats(img, dets)
         # Turns & career date parsing
@@ -319,12 +469,14 @@ class LobbyFlow:
 
     def _process_date_info(self, img, dets) -> None:
         """
-        1) OCR -> raw string
-        2) Parse to DateInfo (may be partial)
-        3) Accept only if not earlier than current state (monotonic)
-        4) Merge missing fields sensibly; compute is_summer
-        5) Keep last candidate for debugging/telemetry
+        Robust date updater with:
+          • Warm-up acceptance for backward corrections (like stats big-jump fix).
+          • 'Artificial' flag to allow overwriting auto-advanced dates.
+          • Turn-aware auto-advance when OCR returns nothing but a day was consumed.
         """
+        WARMUP_FRAMES = 2
+        PERSIST_FRAMES = 2
+        MAX_SUSP_JUMP_HALVES = 6  # same spirit as forward jump guard
         raw = extract_career_date(self.ocr, img, dets)
         cand = parse_career_date(raw) if raw else None
 
@@ -333,9 +485,47 @@ class LobbyFlow:
         # Store for debugging even if we reject
         self.state.career_date_raw = raw
 
-        # If nothing parsed, do nothing (keep previous stable)
+        # If OCR produced nothing, consider turn-based auto-advance (day consumed)
         if cand is None:
-            logger_uma.debug("Date OCR parse failed; keeping previous date_info unchanged.")
+            logger_uma.debug("Date OCR parse failed/empty.")
+            if prev and (prev.year_code in (1, 2, 3)):
+                try:
+                    curr_turn = int(self.state.turn)
+                except Exception:
+                    curr_turn = -1
+                lt = self._last_turn_at_date_update
+                # day likely progressed if turns decreased since last accepted date
+                if (lt is not None) and (curr_turn >= 0) and (curr_turn < lt):
+                    di = prev
+                    # advance by +1 half safely (reuse same logic as below)
+                    y, m, h = di.year_code, di.month, di.half
+                    advanced: Optional[DateInfo] = None
+                    if y in (1, 2, 3) and (m is not None):
+                        if h == 1:
+                            advanced = DateInfo(raw=di.raw, year_code=y, month=m, half=2)
+                        else:
+                            if m == 12:
+                                if y in (1, 2):
+                                    advanced = DateInfo(raw=di.raw, year_code=y + 1, month=1, half=1)
+                                else:
+                                    # Senior Late Dec -> Final Season
+                                    advanced = DateInfo(raw=di.raw, year_code=4, month=None, half=None)
+                            else:
+                                advanced = DateInfo(raw=di.raw, year_code=y, month=m + 1, half=1)
+                    if advanced:
+                        self.state.date_info = advanced
+                        self.state.is_summer = is_summer(advanced)
+                        self._date_stable_count = 0
+                        self._date_artificial = True
+                        self._last_turn_at_date_update = curr_turn
+                        # new key → clear raced-today memory
+                        new_key = self.state.date_info.as_key()
+                        if new_key != self._last_date_key:
+                            self._raced_keys_recent.clear()
+                            self._last_date_key = new_key
+                        logger_uma.info("[date] Auto-advanced by turns: %s -> %s", prev.as_key(), advanced.as_key())
+                        return
+            # Nothing to do, keep previous
             return
 
         # If we already reached Final Season, only accept Final→Final
@@ -343,6 +533,14 @@ class LobbyFlow:
             if cand.year_code == 4:
                 self.state.date_info = cand
                 self.state.is_summer = is_summer(cand)
+                self._date_stable_count = 0
+                self._date_artificial = False
+                self._last_turn_at_date_update = self.state.turn if isinstance(self.state.turn, int) else None
+                # new key guard
+                new_key = self.state.date_info.as_key()
+                if new_key != self._last_date_key:
+                    self._raced_keys_recent.clear()
+                    self._last_date_key = new_key
             else:
                 logger_uma.debug("Ignoring non-final date after Final Season lock.")
             return
@@ -352,7 +550,7 @@ class LobbyFlow:
             logger_uma.debug(f"Ignoring backward date {cand.as_key()} after {prev.as_key()}.")
             return
 
-        # Monotonic acceptance
+        # Monotonic acceptance (with warm-up/backfix)
         if not prev:
             # First observation: accept even if partial
             accepted = cand
@@ -360,17 +558,57 @@ class LobbyFlow:
         else:
             cmp = date_cmp(cand, prev)
             if cmp < 0:
-                # candidate is earlier -> reject
-                logger_uma.debug(f"Rejecting earlier date: {cand.as_key()} < {prev.as_key()}")
-                return
-
+                # Backward correction. Allow if we just accepted prev (warm-up) or prev was artificial.
+                idx_prev = date_index(prev)
+                idx_new  = date_index(cand)
+                big_back = (
+                    (idx_prev is not None)
+                    and (idx_new is not None)
+                    and ((idx_prev - idx_new) > MAX_SUSP_JUMP_HALVES)
+                )
+                if self._date_artificial or (self._date_stable_count < WARMUP_FRAMES):
+                    accepted = cand
+                    reason = "backfix (warmup/artificial)"
+                    self._pending_date_back = None
+                    self._pending_date_back_count = 0
+                else:
+                    # require persistence for suspicious backward jumps
+                    if big_back:
+                        if self._pending_date_back and date_cmp(cand, self._pending_date_back) == 0:
+                            self._pending_date_back_count += 1
+                        else:
+                            self._pending_date_back = cand
+                            self._pending_date_back_count = 1
+                        need = PERSIST_FRAMES - self._pending_date_back_count
+                        if self._pending_date_back_count >= PERSIST_FRAMES:
+                            accepted = cand
+                            reason = "backfix (confirmed)"
+                            self._pending_date_back = None
+                            self._pending_date_back_count = 0
+                        else:
+                            logger_uma.debug(
+                                f"Holding backward jump {prev.as_key()} -> {cand.as_key()} ; need {need} confirm(s)"
+                            )
+                            return
+                    else:
+                        # small/backward but reasonable → accept
+                        accepted = cand
+                        reason = "backfix (small)"
+            else:
+                # cmp >= 0 → monotonic or equal; proceed
+                pass
             # (Optional) sanity guard against gigantic jumps in one frame
             idx_prev = date_index(prev)
             idx_new  = date_index(cand)
             if (idx_prev is not None and idx_new is not None) and (idx_new - idx_prev > 6):
-                
-                if str(prev.as_key()).strip() == 'Y3-Dec-2' and str(cand.year_code) == 'Y4':
-                    # ok change to final season
+                # Legitimate boundary: Senior Dec (Early/Late) → Final Season
+                if (
+                    prev.year_code == 3
+                    and prev.month == 12
+                    and (prev.half in (1, 2) or prev.half is None)
+                    and cand.year_code == 4
+                ):
+                    # Accept immediately (no persistence required).
                     pass
                 else:
                     # more than ~3 months (6 halves) in one hop → likely OCR glitch; require persistence
@@ -401,7 +639,15 @@ class LobbyFlow:
         # Commit to state
         self.state.date_info = merged
         self.state.is_summer = is_summer(merged) if merged else None
-
+        self._date_stable_count = 0
+        # accepted from OCR → not artificial
+        self._date_artificial = False
+        self._last_turn_at_date_update = self.state.turn if isinstance(self.state.turn, int) else None
+        # new key guard
+        new_key_for_accept = merged.as_key() if merged else None
+        if new_key_for_accept and new_key_for_accept != self._last_date_key:
+            self._raced_keys_recent.clear()
+            self._last_date_key = new_key_for_accept
         prev_key  = prev.as_key() if prev else "None"
         merged_key = merged.as_key() if merged else "None"
         logger_uma.debug(f"[date] prev: {prev}. Cand: {cand}. accepted: {accepted}")
@@ -413,7 +659,8 @@ class LobbyFlow:
         #   Y2-Dec-2 -> Y3-Jan-1
         #   Y3-Dec-2 -> Y4 (Final Season)
         try:
-            if merged_key == prev_key and self.state.date_info and self.state.date_info.year_code not in (0, 4):
+            # IF merged_key and prev_key are the same, probably the prediction now is correct
+            if merged_key == "None" and self.state.date_info and self.state.date_info.year_code not in (0, 4):
                 di = self.state.date_info
                 if di.year_code in (1, 2, 3) and (di.month is not None) and (di.half in (1, 2)):
                     y, m, h = di.year_code, int(di.month), int(di.half)
@@ -431,17 +678,40 @@ class LobbyFlow:
                                 self.state.date_info = DateInfo(raw=di.raw, year_code=4, month=None, half=None)
                                 self.state.is_summer = is_summer(self.state.date_info)
                                 logger_uma.info("[date] No change detected; auto-advanced half: %s -> Y4", merged_key)
+                                self._date_stable_count = 0
+                                self._date_artificial = True
+                                self._last_turn_at_date_update = self.state.turn if isinstance(self.state.turn, int) else None
+                                # new key → clear raced-today memory
+                                if self.state.date_info.as_key() != self._last_date_key:
+                                    self._raced_keys_recent.clear()
+                                    self._last_date_key = self.state.date_info.as_key()
+
                                 return
                         else:
                             new_y, new_m, new_h = y, m + 1, 1
 
                     advanced = DateInfo(raw=di.raw, year_code=new_y, month=new_m, half=new_h)
+
+
                     self.state.date_info = advanced
                     self.state.is_summer = is_summer(advanced)
+                    self._date_stable_count = 0
+                    self._date_artificial = True
+                    self._last_turn_at_date_update = self.state.turn if isinstance(self.state.turn, int) else None
+                    # new key → clear raced-today memory
+                    if self.state.date_info.as_key() != self._last_date_key:
+                        self._raced_keys_recent.clear()
+                        self._last_date_key = self.state.date_info.as_key()
+
                     logger_uma.info("[date] No change detected; auto-advanced half: %s -> %s",
                                     merged_key, advanced.as_key())
         except Exception as _adv_e:
             logger_uma.debug(f"[date] auto-advance skipped due to error: {_adv_e}")
+        else:
+            # If we got here without committing a new date (i.e., different accepted path),
+            # increase stability counter.
+            if self.state.date_info:
+                self._date_stable_count += 1
 
     def _plan_race_today(self) -> None:
         """
@@ -456,7 +726,8 @@ class LobbyFlow:
             return
 
         # 1) explicit plan wins
-        if key in self.plan_races:
+        #    but skip if we already raced on this key (OCR didn’t tick yet)
+        if (key in self.plan_races) and (key not in self._raced_keys_recent):
             name = str(self.plan_races[key]).strip()
             if not RaceIndex.valid_date_for_race(name, key):
                 logger_uma.warning(
@@ -465,6 +736,14 @@ class LobbyFlow:
                 )
             self.state.planned_race_name = name
             return
+
+    # Allow Agent to mark that we already raced for this date key
+    def mark_raced_today(self, date_key: Optional[str]) -> None:
+        if not date_key:
+            return
+        self._raced_keys_recent.add(date_key)
+        # one-shot guard this loop as well
+        self._skip_race_once = True
 
     def _process_turns_left(self, img, dets):
         new_turn = extract_turns(self.ocr, img, dets)
@@ -489,7 +768,6 @@ class LobbyFlow:
 
         if self.process_on_demand:
             self.state.goal = extract_goal_text(self.ocr, img, dets)
-            self._process_turns_left(img, dets)
 
         goal = (self.state.goal or "").lower()
 

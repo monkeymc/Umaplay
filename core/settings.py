@@ -51,7 +51,7 @@ class Settings:
     ROOT_DIR: Path = CORE_DIR.parent
 
     # Common directories
-    ASSETS_DIR: Path = Path(_env("ASSETS_DIR") or (ROOT_DIR / "assets"))
+    ASSETS_DIR: Path = Path(_env("ASSETS_DIR") or (ROOT_DIR / "web/public"))
     MODELS_DIR: Path = Path(_env("MODELS_DIR") or (ROOT_DIR / "models"))
     DEBUG_DIR: Path = Path(_env("DEBUG_DIR") or (ROOT_DIR / "debug"))
 
@@ -75,7 +75,6 @@ class Settings:
     FAST_MODE = True
     USE_FAST_OCR = True
     USE_GPU = True
-    TRY_AGAIN_ON_FAILED_GOAL = True
     HINT_IS_IMPORTANT = False
     MAX_FAILURE = 20  # integer, no pct
 
@@ -89,15 +88,16 @@ class Settings:
 
     REFERENCE_STATS = {
         "SPD": 1150,
-        "STA": 1000,
-        "PWR": 530,
-        "GUTS": 270,
-        "WIT": 250,
+        "STA": 900,
+        "PWR": 700,
+        "GUTS": 300,
+        "WIT": 400,
     }
 
-    MINIMUM_SKILL_PTS = 600
+    MINIMUM_SKILL_PTS = 700
     ACCEPT_CONSECUTIVE_RACE = True
-    AUTO_REST_MINIMUM = 26
+    TRY_AGAIN_ON_FAILED_GOAL = True
+    AUTO_REST_MINIMUM = 20
 
     PRIORITY_STATS = ["SPD", "STA", "WIT", "PWR", "GUTS"]
 

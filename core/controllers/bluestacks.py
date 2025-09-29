@@ -1,8 +1,9 @@
 # core/controllers/bluestacks.py
 from __future__ import annotations
 
+import random
 import time
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import pyautogui
 import pygetwindow as gw
@@ -16,6 +17,7 @@ import win32con
 import win32gui
 
 from core.controllers.base import IController, RegionXYWH
+from core.types import XYXY
 
 user32 = ctypes.windll.user32
 class BlueStacksController(IController):
@@ -273,32 +275,71 @@ class BlueStacksController(IController):
     # -------------------------
     # Scroll
     # -------------------------
-    def scroll(self, dy: int, *, steps: int = 1, duration_range=(0.0, 0.0), end_hold_range=(0.0, 0.0)):
+    def scroll(
+        self,
+        delta_or_xyxy: Union[int, XYXY],
+        *,
+        steps: int = 1,
+        default_down: bool = True,
+        invert: bool = False,
+        min_px: int = 30,
+        jitter: int = 6,
+        duration_range: Tuple[float, float] = (0.16, 0.26),
+        pause_range: Tuple[float, float] = (0.03, 0.07),
+        end_hold_range: Tuple[float, float] = (
+            0.05,
+            0.12,
+        ),  # hold at end to kill inertia
+    ) -> None:
         """
-        Generic scroll for lists (e.g., Skills). For BlueStacks, mouse wheel
-        events work fine; negative dy scrolls down, positive scrolls up.
+        Drag-based scroll for scrcpy windows.
 
-        Args:
-            dy: Signed wheel amount per step (e.g., -1 to scroll down).
-            steps: Number of repeated wheel ticks.
-            duration_range/end_hold_range: kept to mirror ScrcpyController signature;
-                                           they are ignored here (wheel has no duration).
+        - scroll(-180)  -> scroll DOWN ~180 px (drag upward)
+        - scroll(+220)  -> scroll UP   ~220 px (drag downward)
+        - scroll((x1,y1,x2,y2)) -> use box height as distance (default DOWN)
         """
-        # Ensure pointer is inside client area to avoid scrolling other windows.
-        x, y, w, h = self._client_bbox_screen_xywh()
-        if w > 0 and h > 0:
-            cx, cy = x + w // 2, y + int(h * 0.65)
-            try:
-                pyautogui.moveTo(cx, cy, duration=0.05)
-            except Exception:
-                pass
+        xywh = self._client_bbox_screen_xywh()
+        if not xywh:
+            return
+        L, T, W, H = xywh
 
-        # Issue wheel events
-        try:
-            for _ in range(max(1, int(steps))):
-                pyautogui.scroll(int(dy))
-                # small inter-step pause to let BlueStacks consume events
-                time.sleep(0.01)
-        except Exception:
-            # Non-fatal: scrolling isn't critical to crash the loop
-            pass
+        use_xyxy = isinstance(delta_or_xyxy, (tuple, list)) and len(delta_or_xyxy) == 4
+        if use_xyxy:
+            x1, y1, x2, y2 = map(float, delta_or_xyxy)
+            cx, cy = self.center_from_xyxy((x1, y1, x2, y2))
+            px = max(min_px, int(abs(y2 - y1)))
+            down = default_down
+        else:
+            cx, cy = L + W // 2, T + H // 2
+            delta = int(delta_or_xyxy)
+            down = delta < 0
+            px = max(min_px, abs(delta))
+
+        if invert:
+            down = not down
+
+        def _clamp_y(y: int) -> int:
+            return max(T + 10, min(T + H - 10, y))
+
+        for _ in range(max(1, int(steps))):
+            half = px // 2
+            if down:
+                y0 = _clamp_y(cy + half)  # start lower
+                y1 = _clamp_y(cy - half)  # drag upward
+            else:
+                y0 = _clamp_y(cy - half)  # start upper
+                y1 = _clamp_y(cy + half)  # drag downward
+
+            j = int(jitter)
+            xj = cx + (random.randint(-j, j) if j else 0)
+            y0j = y0 + (random.randint(-j, j) if j else 0)
+            y1j = y1 + (random.randint(-j, j) if j else 0)
+
+            # Drag with a short HOLD at the end to dampen kinetic scrolling
+            self.move_to(xj, y0j, duration=random.uniform(0.05, 0.10))
+            pyautogui.mouseDown(xj, y0j)
+            self.move_to(xj, y1j, duration=random.uniform(*duration_range))
+            time.sleep(random.uniform(*end_hold_range))  # <<< hold here
+            pyautogui.mouseUp(xj, y1j)
+
+            time.sleep(random.uniform(*pause_range))

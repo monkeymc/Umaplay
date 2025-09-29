@@ -12,7 +12,7 @@ class DateInfo:
 
     raw: str
     year_code: (
-        int  # Y0..Y5 (0=Pre-debut, 1=Junior, 2=Classic, 3=Senior, 5=Final Season)
+        int  # Y0..Y4 (0=Pre-debut, 1=Junior, 2=Classic, 3=Senior, 4=Final Season)
     )
     month: Optional[int]  # 1..12 or None (Final Season etc.)
     half: Optional[int]  # 1=Early, 2=Late, else None
@@ -230,7 +230,7 @@ def parse_career_date(s: str) -> DateInfo:
     # ---- YEAR / ERA ----
     YEAR_ALIASES = {
         0: ["pre debut", "pre-debut", "predebut"],
-        4: ["final season", "final"],
+        4: ["final season", "final", "finale season", "finale"],
         1: ["junior year", "junior", "jr"],
         2: ["classic year", "classic", "clasic", "clossic"],
         3: ["senior year", "senior", "sr"],
@@ -294,3 +294,25 @@ def parse_career_date(s: str) -> DateInfo:
         month = best_m_num if best_m_score >= THR_MONTH else None
 
     return DateInfo(raw=raw, year_code=y, month=month, half=half)
+
+def score_date_like(s: str) -> float:
+    """
+    Return a fuzzy score [0..1] expressing how much `s` looks like a valid career date.
+    Used only to choose among multiple OCR variants.
+    """
+    t = (s or "").lower()
+    # very permissive patterns
+    keys_year  = ["junior year", "classic year", "senior year", "final season", "finale season", "pre debut", "pre-debut"]
+    keys_half  = ["early", "late"]
+    keys_month = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec","january","february","march","april","june","july","august","september","october","november","december"]
+
+    sy = max(fuzzy_ratio(t, k) for k in keys_year)
+    sh = max(fuzzy_ratio(t, k) for k in keys_half)
+    sm = max(fuzzy_ratio(t, k) for k in keys_month)
+
+    # Final/Pre don't need half/month; regular years do.
+    base = max(fuzzy_ratio(t, "final season"), fuzzy_ratio(t, "finale season"), fuzzy_ratio(t, "pre debut"), fuzzy_ratio(t, "pre-debut"))
+    if base >= 0.6:
+        return max(base, sy)
+    # Otherwise combine year + half + month (weights)
+    return 0.5*sy + 0.25*sh + 0.25*sm

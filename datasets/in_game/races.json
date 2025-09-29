@@ -15,7 +15,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_9002_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_00.png",
       "ribbon_code": "00",
-      "rank": "DEBUT"
+      "rank": "DEBUT",
+      "public_banner_path": "/race/DEBUT/Junior Make Debut-Y1-6-2.png"
     }
   ],
   "Junior Maiden Race": [
@@ -34,7 +35,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_9002_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_01.png",
       "ribbon_code": "01",
-      "rank": "MAIDEN"
+      "rank": "MAIDEN",
+      "public_banner_path": "/race/MAIDEN/Junior Maiden Race-Y1-7-1.png"
     }
   ],
   "Chukyo Junior Stakes": [
@@ -53,7 +55,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4068_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Chukyo Junior Stakes-Y1-7-2.png"
     }
   ],
   "Hakodate Junior Stakes": [
@@ -72,7 +75,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3041_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Hakodate Junior Stakes-Y1-7-2.png"
     }
   ],
   "Cosmos Sho": [
@@ -91,7 +95,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4075_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Cosmos Sho-Y1-8-1.png"
     }
   ],
   "Dahlia Sho": [
@@ -110,7 +115,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4070_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Dahlia Sho-Y1-8-1.png"
     }
   ],
   "Phoenix Sho": [
@@ -129,7 +135,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4074_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Phoenix Sho-Y1-8-1.png"
     }
   ],
   "Clover Sho": [
@@ -148,7 +155,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4077_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Clover Sho-Y1-8-2.png"
     }
   ],
   "Niigata Junior Stakes": [
@@ -167,7 +175,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3049_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Niigata Junior Stakes-Y1-8-2.png"
     }
   ],
   "Aster Sho": [
@@ -186,7 +195,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4501_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Aster Sho-Y1-9-1.png"
     }
   ],
   "Kokura Junior Stakes": [
@@ -205,7 +215,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3052_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Kokura Junior Stakes-Y1-9-1.png"
     }
   ],
   "Nojigiku Stakes": [
@@ -224,7 +235,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4085_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Nojigiku Stakes-Y1-9-1.png"
     }
   ],
   "Sapporo Junior Stakes": [
@@ -243,7 +255,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3051_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Sapporo Junior Stakes-Y1-9-1.png"
     }
   ],
   "Suzuran Sho": [
@@ -262,7 +275,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4083_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Suzuran Sho-Y1-9-1.png"
     }
   ],
   "Canna Stakes": [
@@ -281,7 +295,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4089_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Canna Stakes-Y1-9-2.png"
     }
   ],
   "Fuyo Stakes": [
@@ -300,7 +315,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4088_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Fuyo Stakes-Y1-9-2.png"
     }
   ],
   "Kikyo Stakes": [
@@ -319,7 +335,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4087_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Kikyo Stakes-Y1-9-2.png"
     }
   ],
   "Saffron Sho": [
@@ -338,7 +355,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4502_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Saffron Sho-Y1-9-2.png"
     }
   ],
   "Momiji Stakes": [
@@ -357,7 +375,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4093_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Momiji Stakes-Y1-10-1.png"
     }
   ],
   "Platanus Sho": [
@@ -376,7 +395,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4505_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Platanus Sho-Y1-10-1.png"
     }
   ],
   "Rindo Sho": [
@@ -395,7 +415,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4503_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Rindo Sho-Y1-10-1.png"
     }
   ],
   "Saudi Arabia Royal Cup": [
@@ -414,7 +435,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3057_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Saudi Arabia Royal Cup-Y1-10-1.png"
     }
   ],
   "Shigiku Sho": [
@@ -433,7 +455,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4504_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Shigiku Sho-Y1-10-1.png"
     }
   ],
   "Artemis Stakes": [
@@ -452,7 +475,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3059_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Artemis Stakes-Y1-10-2.png"
     }
   ],
   "Hagi Stakes": [
@@ -471,7 +495,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4099_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Hagi Stakes-Y1-10-2.png"
     }
   ],
   "Ivy Stakes": [
@@ -490,7 +515,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4096_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Ivy Stakes-Y1-10-2.png"
     }
   ],
   "Nadeshiko Sho": [
@@ -509,7 +535,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4506_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Nadeshiko Sho-Y1-10-2.png"
     }
   ],
   "Daily Hai Junior Stakes": [
@@ -528,7 +555,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2032_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Daily Hai Junior Stakes-Y1-11-1.png"
     }
   ],
   "Fantasy Stakes": [
@@ -547,7 +575,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3060_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Fantasy Stakes-Y1-11-1.png"
     }
   ],
   "Fukushima Junior Stakes": [
@@ -566,7 +595,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4103_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Fukushima Junior Stakes-Y1-11-1.png"
     }
   ],
   "Hyakunichiso Tokubetsu": [
@@ -585,7 +615,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4507_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Hyakunichiso Tokubetsu-Y1-11-1.png"
     }
   ],
   "Keio Hai Junior Stakes": [
@@ -604,7 +635,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2030_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Keio Hai Junior Stakes-Y1-11-1.png"
     }
   ],
   "Kigiku Sho": [
@@ -623,7 +655,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4510_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Kigiku Sho-Y1-11-1.png"
     }
   ],
   "Kimmokusei Tokubetsu": [
@@ -642,7 +675,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4508_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Kimmokusei Tokubetsu-Y1-11-1.png"
     }
   ],
   "Oxalis Sho": [
@@ -661,7 +695,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4509_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Oxalis Sho-Y1-11-1.png"
     }
   ],
   "Akamatsu Sho": [
@@ -681,7 +716,8 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
       "rank": "PRE-OP",
-      "order": 1
+      "order": 1,
+      "public_banner_path": "/race/PRE-OP/Akamatsu Sho-Y1-11-2.png"
     }
   ],
   "Begonia Sho": [
@@ -701,7 +737,8 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
       "rank": "PRE-OP",
-      "order": 2
+      "order": 2,
+      "public_banner_path": "/race/PRE-OP/Begonia Sho-Y1-11-2.png"
     }
   ],
   "Cattleya Sho": [
@@ -720,7 +757,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4514_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Cattleya Sho-Y1-11-2.png"
     }
   ],
   "Habotan Sho": [
@@ -739,7 +777,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4517_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Habotan Sho-Y1-11-2.png"
     }
   ],
   "Koyamaki Sho": [
@@ -758,7 +797,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4518_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Koyamaki Sho-Y1-11-2.png"
     }
   ],
   "Kyoto Junior Stakes": [
@@ -777,7 +817,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3065_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Kyoto Junior Stakes-Y1-11-2.png"
     }
   ],
   "Mochinoki Sho": [
@@ -796,7 +837,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4511_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Mochinoki Sho-Y1-11-2.png"
     }
   ],
   "Shiragiku Sho": [
@@ -815,7 +857,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4516_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Shiragiku Sho-Y1-11-2.png"
     }
   ],
   "Shumeigiku Sho": [
@@ -834,7 +877,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4513_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Shumeigiku Sho-Y1-11-2.png"
     }
   ],
   "Tokyo Sports Hai Junior Stakes": [
@@ -853,7 +897,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3064_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Tokyo Sports Hai Junior Stakes-Y1-11-2.png"
     }
   ],
   "Asahi Hai Futurity Stakes": [
@@ -873,7 +918,8 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
       "rank": "G1",
-      "order": 2
+      "order": 2,
+      "public_banner_path": "/race/G1/Asahi Hai Futurity Stakes-Y1-12-1.png"
     }
   ],
   "Erica Sho": [
@@ -892,7 +938,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4521_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Erica Sho-Y1-12-1.png"
     }
   ],
   "Hanshin Juvenile Fillies": [
@@ -912,7 +959,8 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
       "rank": "G1",
-      "order": 1
+      "order": 1,
+      "public_banner_path": "/race/G1/Hanshin Juvenile Fillies-Y1-12-1.png"
     }
   ],
   "Hiiragi Sho": [
@@ -931,7 +979,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4523_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Hiiragi Sho-Y1-12-1.png"
     }
   ],
   "Kantsubaki Sho": [
@@ -950,7 +999,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4525_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Kantsubaki Sho-Y1-12-1.png"
     }
   ],
   "Kuromatsu Sho": [
@@ -969,7 +1019,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4520_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Kuromatsu Sho-Y1-12-1.png"
     }
   ],
   "Manryo Sho": [
@@ -988,7 +1039,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4519_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Manryo Sho-Y1-12-1.png"
     }
   ],
   "Sazanka Sho": [
@@ -1007,7 +1059,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4524_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Sazanka Sho-Y1-12-1.png"
     }
   ],
   "Tsuwabuki Sho": [
@@ -1026,7 +1079,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4522_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Tsuwabuki Sho-Y1-12-1.png"
     }
   ],
   "Christmas Rose Stakes": [
@@ -1045,7 +1099,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4114_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Christmas Rose Stakes-Y1-12-2.png"
     }
   ],
   "Hopeful Stakes": [
@@ -1064,7 +1119,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1024_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Hopeful Stakes-Y1-12-2.png"
     }
   ],
   "Senryo Sho": [
@@ -1083,7 +1139,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4526_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
-      "rank": "PRE-OP"
+      "rank": "PRE-OP",
+      "public_banner_path": "/race/PRE-OP/Senryo Sho-Y1-12-2.png"
     }
   ],
   "Fairy Stakes": [
@@ -1102,7 +1159,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3004_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Fairy Stakes-Y2-1-1.png"
     }
   ],
   "Junior Cup": [
@@ -1121,7 +1179,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4002_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Junior Cup-Y2-1-1.png"
     }
   ],
   "Keisei Hai": [
@@ -1140,7 +1199,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3006_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Keisei Hai-Y2-1-1.png"
     }
   ],
   "Kobai Stakes": [
@@ -1159,7 +1219,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4007_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Kobai Stakes-Y2-1-1.png"
     }
   ],
   "Shinzan Kinen": [
@@ -1178,7 +1239,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3003_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Shinzan Kinen-Y2-1-1.png"
     }
   ],
   "Crocus Stakes": [
@@ -1197,7 +1259,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4012_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Crocus Stakes-Y2-1-2.png"
     }
   ],
   "Wakagoma Stakes": [
@@ -1216,7 +1279,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4009_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Wakagoma Stakes-Y2-1-2.png"
     }
   ],
   "Elfin Stakes": [
@@ -1235,7 +1299,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4014_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Elfin Stakes-Y2-2-1.png"
     }
   ],
   "Kisaragi Sho": [
@@ -1254,7 +1319,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3009_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Kisaragi Sho-Y2-2-1.png"
     }
   ],
   "Kyodo News Hai": [
@@ -1273,7 +1339,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3012_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Kyodo News Hai-Y2-2-1.png"
     }
   ],
   "Queen Cup": [
@@ -1292,7 +1359,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3011_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Queen Cup-Y2-2-1.png"
     }
   ],
   "Hyacinth Stakes": [
@@ -1311,7 +1379,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4018_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Hyacinth Stakes-Y2-2-2.png"
     }
   ],
   "Marguerite Stakes": [
@@ -1330,7 +1399,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4032_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Marguerite Stakes-Y2-2-2.png"
     }
   ],
   "Sumire Stakes": [
@@ -1349,7 +1419,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4020_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Sumire Stakes-Y2-2-2.png"
     }
   ],
   "Anemone Stakes": [
@@ -1368,7 +1439,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4024_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Anemone Stakes-Y2-3-1.png"
     }
   ],
   "Fillies' Revue": [
@@ -1387,7 +1459,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2008_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Fillies Revue-Y2-3-1.png"
     }
   ],
   "Shoryu Stakes": [
@@ -1406,7 +1479,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4025_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Shoryu Stakes-Y2-3-1.png"
     }
   ],
   "Tulip Sho": [
@@ -1425,7 +1499,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3018_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Tulip Sho-Y2-3-1.png"
     }
   ],
   "Yayoi Sho": [
@@ -1444,7 +1519,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2006_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Yayoi Sho-Y2-3-1.png"
     }
   ],
   "Falcon Stakes": [
@@ -1463,7 +1539,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3021_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Falcon Stakes-Y2-3-2.png"
     }
   ],
   "Flower Cup": [
@@ -1482,7 +1559,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3022_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Flower Cup-Y2-3-2.png"
     }
   ],
   "Mainichi Hai": [
@@ -1501,7 +1579,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3023_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Mainichi Hai-Y2-3-2.png"
     }
   ],
   "Spring Stakes": [
@@ -1520,7 +1599,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2010_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Spring Stakes-Y2-3-2.png"
     }
   ],
   "Wakaba Stakes": [
@@ -1539,7 +1619,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4027_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Wakaba Stakes-Y2-3-2.png"
     }
   ],
   "Arlington Cup": [
@@ -1558,7 +1639,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3016_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Arlington Cup-Y2-4-1.png"
     }
   ],
   "Fukuryu Stakes": [
@@ -1577,7 +1659,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4033_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Fukuryu Stakes-Y2-4-1.png"
     }
   ],
   "New Zealand Trophy": [
@@ -1596,7 +1679,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2013_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/New Zealand Trophy-Y2-4-1.png"
     }
   ],
   "Oka Sho": [
@@ -1615,7 +1699,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1004_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Oka Sho-Y2-4-1.png"
     }
   ],
   "Satsuki Sho": [
@@ -1634,7 +1719,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1005_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Satsuki Sho-Y2-4-1.png"
     }
   ],
   "Wasurenagusa Sho": [
@@ -1653,7 +1739,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4035_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Wasurenagusa Sho-Y2-4-1.png"
     }
   ],
   "Aoba Sho": [
@@ -1672,7 +1759,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2016_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Aoba Sho-Y2-4-2.png"
     }
   ],
   "Flora Stakes": [
@@ -1691,7 +1779,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2015_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Flora Stakes-Y2-4-2.png"
     }
   ],
   "Sweetpea Stakes": [
@@ -1710,7 +1799,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4043_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Sweetpea Stakes-Y2-4-2.png"
     }
   ],
   "Tachibana Stakes": [
@@ -1729,7 +1819,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4039_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Tachibana Stakes-Y2-4-2.png"
     }
   ],
   "Tango Stakes": [
@@ -1748,7 +1839,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4042_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Tango Stakes-Y2-4-2.png"
     }
   ],
   "Kyoto Shimbun Hai": [
@@ -1767,7 +1859,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2017_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Kyoto Shimbun Hai-Y2-5-1.png"
     }
   ],
   "NHK Mile Cup": [
@@ -1786,7 +1879,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1007_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/NHK Mile Cup-Y2-5-1.png"
     }
   ],
   "Principal Stakes": [
@@ -1805,7 +1899,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4045_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Principal Stakes-Y2-5-1.png"
     }
   ],
   "Seiryu Stakes": [
@@ -1824,7 +1919,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4052_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Seiryu Stakes-Y2-5-1.png"
     }
   ],
   "Aoi Stakes": [
@@ -1843,7 +1939,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4050_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Aoi Stakes-Y2-5-2.png"
     }
   ],
   "Hosu Stakes": [
@@ -1862,7 +1959,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4054_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Hosu Stakes-Y2-5-2.png"
     }
   ],
   "Japanese Oaks": [
@@ -1882,7 +1980,8 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
       "rank": "G1",
-      "order": 1
+      "order": 1,
+      "public_banner_path": "/race/G1/Japanese Oaks-Y2-5-2.png"
     }
   ],
   "Shirayuri Stakes": [
@@ -1901,7 +2000,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4056_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Shirayuri Stakes-Y2-5-2.png"
     }
   ],
   "Tokyo Yushun (Japanese Derby)": [
@@ -1921,7 +2021,8 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
       "rank": "G1",
-      "order": 2
+      "order": 2,
+      "public_banner_path": "/race/G1/Tokyo Yushun (Japanese Derby)-Y2-5-2.png"
     }
   ],
   "Epsom Cup": [
@@ -1940,7 +2041,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3032_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Epsom Cup-Y2-6-1.png"
     },
     {
       "year_label": "Third Year",
@@ -1957,7 +2059,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3032_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Epsom Cup-Y3-6-1.png"
     }
   ],
   "Mermaid Stakes": [
@@ -1977,7 +2080,8 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
       "rank": "G3",
-      "order": 1
+      "order": 1,
+      "public_banner_path": "/race/G3/Mermaid Stakes-Y2-6-1.png"
     },
     {
       "year_label": "Third Year",
@@ -1995,7 +2099,8 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
       "rank": "G3",
-      "order": 1
+      "order": 1,
+      "public_banner_path": "/race/G3/Mermaid Stakes-Y3-6-1.png"
     }
   ],
   "Naruo Kinen": [
@@ -2015,7 +2120,8 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
       "rank": "G3",
-      "order": 2
+      "order": 2,
+      "public_banner_path": "/race/G3/Naruo Kinen-Y2-6-1.png"
     },
     {
       "year_label": "Third Year",
@@ -2033,7 +2139,8 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
       "rank": "G3",
-      "order": 2
+      "order": 2,
+      "public_banner_path": "/race/G3/Naruo Kinen-Y3-6-1.png"
     }
   ],
   "Sleipnir Stakes": [
@@ -2052,7 +2159,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4119_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Sleipnir Stakes-Y2-6-1.png"
     },
     {
       "year_label": "Third Year",
@@ -2069,7 +2177,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4119_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Sleipnir Stakes-Y3-6-1.png"
     }
   ],
   "Tempozan Stakes": [
@@ -2088,7 +2197,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4060_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Tempozan Stakes-Y2-6-1.png"
     },
     {
       "year_label": "Third Year",
@@ -2105,7 +2215,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4060_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Tempozan Stakes-Y3-6-1.png"
     }
   ],
   "Yasuda Kinen": [
@@ -2124,7 +2235,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1011_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Yasuda Kinen-Y2-6-1.png"
     },
     {
       "year_label": "Third Year",
@@ -2141,7 +2253,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1011_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Yasuda Kinen-Y3-6-1.png"
     }
   ],
   "Akhalteke Stakes": [
@@ -2160,7 +2273,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4059_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Akhalteke Stakes-Y2-6-2.png"
     },
     {
       "year_label": "Third Year",
@@ -2177,7 +2291,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4059_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Akhalteke Stakes-Y3-6-2.png"
     }
   ],
   "Hakodate Sprint Stakes": [
@@ -2196,7 +2311,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3034_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Hakodate Sprint Stakes-Y2-6-2.png"
     },
     {
       "year_label": "Third Year",
@@ -2213,7 +2329,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3034_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Hakodate Sprint Stakes-Y3-6-2.png"
     }
   ],
   "Onuma Stakes": [
@@ -2232,7 +2349,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4062_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Onuma Stakes-Y2-6-2.png"
     },
     {
       "year_label": "Third Year",
@@ -2249,7 +2367,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4062_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Onuma Stakes-Y3-6-2.png"
     }
   ],
   "Paradise Stakes": [
@@ -2268,7 +2387,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4063_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Paradise Stakes-Y2-6-2.png"
     },
     {
       "year_label": "Third Year",
@@ -2285,7 +2405,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4063_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Paradise Stakes-Y3-6-2.png"
     }
   ],
   "Sannomiya Stakes": [
@@ -2304,7 +2425,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4120_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Sannomiya Stakes-Y2-6-2.png"
     },
     {
       "year_label": "Third Year",
@@ -2321,7 +2443,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4120_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Sannomiya Stakes-Y3-6-2.png"
     }
   ],
   "Takarazuka Kinen": [
@@ -2340,7 +2463,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1012_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Takarazuka Kinen-Y2-6-2.png"
     },
     {
       "year_label": "Third Year",
@@ -2357,7 +2481,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1012_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Takarazuka Kinen-Y3-6-2.png"
     }
   ],
   "Unicorn Stakes": [
@@ -2376,7 +2501,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3033_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Unicorn Stakes-Y2-6-2.png"
     }
   ],
   "Yonago Stakes": [
@@ -2395,7 +2521,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4061_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Yonago Stakes-Y2-6-2.png"
     },
     {
       "year_label": "Third Year",
@@ -2412,7 +2539,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4061_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Yonago Stakes-Y3-6-2.png"
     }
   ],
   "CBC Sho": [
@@ -2431,7 +2559,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3035_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/CBC Sho-Y2-7-1.png"
     },
     {
       "year_label": "Third Year",
@@ -2448,7 +2577,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3035_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/CBC Sho-Y3-7-1.png"
     }
   ],
   "Hakodate Kinen": [
@@ -2467,7 +2597,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3039_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Hakodate Kinen-Y2-7-1.png"
     },
     {
       "year_label": "Third Year",
@@ -2484,7 +2615,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3039_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Hakodate Kinen-Y3-7-1.png"
     }
   ],
   "Japan Dirt Derby": [
@@ -2503,7 +2635,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1102_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Japan Dirt Derby-Y2-7-1.png"
     }
   ],
   "Marine Stakes": [
@@ -2522,7 +2655,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4065_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Marine Stakes-Y2-7-1.png"
     },
     {
       "year_label": "Third Year",
@@ -2539,7 +2673,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4065_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Marine Stakes-Y3-7-1.png"
     }
   ],
   "Meitetsu Hai": [
@@ -2558,7 +2693,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4066_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Meitetsu Hai-Y2-7-1.png"
     },
     {
       "year_label": "Third Year",
@@ -2575,7 +2711,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4066_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Meitetsu Hai-Y3-7-1.png"
     }
   ],
   "Procyon Stakes": [
@@ -2594,7 +2731,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3037_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Procyon Stakes-Y2-7-1.png"
     },
     {
       "year_label": "Third Year",
@@ -2611,7 +2749,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3037_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Procyon Stakes-Y3-7-1.png"
     }
   ],
   "Radio Nikkei Sho": [
@@ -2630,7 +2769,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3036_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Radio Nikkei Sho-Y2-7-1.png"
     }
   ],
   "Tanabata Sho": [
@@ -2649,7 +2789,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3038_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Tanabata Sho-Y2-7-1.png"
     },
     {
       "year_label": "Third Year",
@@ -2666,7 +2807,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3038_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Tanabata Sho-Y3-7-1.png"
     }
   ],
   "Tomoe Sho": [
@@ -2685,7 +2827,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4064_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Tomoe Sho-Y2-7-1.png"
     },
     {
       "year_label": "Third Year",
@@ -2702,7 +2845,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4064_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Tomoe Sho-Y3-7-1.png"
     }
   ],
   "Chukyo Kinen": [
@@ -2721,7 +2865,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3040_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Chukyo Kinen-Y2-7-2.png"
     },
     {
       "year_label": "Third Year",
@@ -2738,7 +2883,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3040_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Chukyo Kinen-Y3-7-2.png"
     }
   ],
   "Fukushima TV Open": [
@@ -2757,7 +2903,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4069_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Fukushima TV Open-Y2-7-2.png"
     },
     {
       "year_label": "Third Year",
@@ -2774,7 +2921,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4069_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Fukushima TV Open-Y3-7-2.png"
     }
   ],
   "Ibis Summer Dash": [
@@ -2793,7 +2941,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3042_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Ibis Summer Dash-Y2-7-2.png"
     },
     {
       "year_label": "Third Year",
@@ -2810,7 +2959,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3042_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Ibis Summer Dash-Y3-7-2.png"
     }
   ],
   "Queen Stakes": [
@@ -2829,7 +2979,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3043_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Queen Stakes-Y2-7-2.png"
     },
     {
       "year_label": "Third Year",
@@ -2846,7 +2997,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3043_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Queen Stakes-Y3-7-2.png"
     }
   ],
   "Aso Stakes": [
@@ -2865,7 +3017,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4073_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Aso Stakes-Y2-8-1.png"
     },
     {
       "year_label": "Third Year",
@@ -2882,7 +3035,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4073_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Aso Stakes-Y3-8-1.png"
     }
   ],
   "Elm Stakes": [
@@ -2901,7 +3055,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3047_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Elm Stakes-Y2-8-1.png"
     },
     {
       "year_label": "Third Year",
@@ -2918,7 +3073,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3047_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Elm Stakes-Y3-8-1.png"
     }
   ],
   "Kanetsu Stakes": [
@@ -2937,7 +3093,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4121_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Kanetsu Stakes-Y2-8-1.png"
     },
     {
       "year_label": "Third Year",
@@ -2954,7 +3111,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4121_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Kanetsu Stakes-Y3-8-1.png"
     }
   ],
   "Kokura Kinen": [
@@ -2973,7 +3131,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3044_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Kokura Kinen-Y2-8-1.png"
     },
     {
       "year_label": "Third Year",
@@ -2990,7 +3149,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3044_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Kokura Kinen-Y3-8-1.png"
     }
   ],
   "Leopard Stakes": [
@@ -3009,7 +3169,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3045_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Leopard Stakes-Y2-8-1.png"
     }
   ],
   "Sapporo Nikkei Open": [
@@ -3028,7 +3189,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4071_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Sapporo Nikkei Open-Y2-8-1.png"
     },
     {
       "year_label": "Third Year",
@@ -3045,7 +3207,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4071_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Sapporo Nikkei Open-Y3-8-1.png"
     }
   ],
   "Sekiya Kinen": [
@@ -3064,7 +3227,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3046_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Sekiya Kinen-Y2-8-1.png"
     },
     {
       "year_label": "Third Year",
@@ -3081,7 +3245,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3046_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Sekiya Kinen-Y3-8-1.png"
     }
   ],
   "UHB Sho": [
@@ -3100,7 +3265,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4072_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/UHB Sho-Y2-8-1.png"
     },
     {
       "year_label": "Third Year",
@@ -3117,7 +3283,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4072_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/UHB Sho-Y3-8-1.png"
     }
   ],
   "BSN Sho": [
@@ -3136,7 +3303,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4079_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/BSN Sho-Y2-8-2.png"
     },
     {
       "year_label": "Third Year",
@@ -3153,7 +3321,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4079_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/BSN Sho-Y3-8-2.png"
     }
   ],
   "Keeneland Cup": [
@@ -3172,7 +3341,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3050_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Keeneland Cup-Y2-8-2.png"
     },
     {
       "year_label": "Third Year",
@@ -3189,7 +3359,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3050_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Keeneland Cup-Y3-8-2.png"
     }
   ],
   "Kitakyushu Kinen": [
@@ -3208,7 +3379,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3048_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Kitakyushu Kinen-Y2-8-2.png"
     },
     {
       "year_label": "Third Year",
@@ -3225,7 +3397,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3048_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Kitakyushu Kinen-Y3-8-2.png"
     }
   ],
   "Kokura Nikkei Open": [
@@ -3244,7 +3417,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4080_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Kokura Nikkei Open-Y2-8-2.png"
     },
     {
       "year_label": "Third Year",
@@ -3261,7 +3435,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4080_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Kokura Nikkei Open-Y3-8-2.png"
     }
   ],
   "NST Sho": [
@@ -3280,7 +3455,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4076_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/NST Sho-Y2-8-2.png"
     },
     {
       "year_label": "Third Year",
@@ -3297,7 +3473,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4076_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/NST Sho-Y3-8-2.png"
     }
   ],
   "Sapporo Kinen": [
@@ -3316,7 +3493,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2020_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Sapporo Kinen-Y2-8-2.png"
     },
     {
       "year_label": "Third Year",
@@ -3333,7 +3511,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2020_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Sapporo Kinen-Y3-8-2.png"
     }
   ],
   "Toki Stakes": [
@@ -3352,7 +3531,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4081_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Toki Stakes-Y2-8-2.png"
     },
     {
       "year_label": "Third Year",
@@ -3369,7 +3549,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4081_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Toki Stakes-Y3-8-2.png"
     }
   ],
   "Centaur Stakes": [
@@ -3388,7 +3569,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2021_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Centaur Stakes-Y2-9-1.png"
     },
     {
       "year_label": "Third Year",
@@ -3405,7 +3587,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2021_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Centaur Stakes-Y3-9-1.png"
     }
   ],
   "Enif Stakes": [
@@ -3424,7 +3607,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4084_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Enif Stakes-Y2-9-1.png"
     },
     {
       "year_label": "Third Year",
@@ -3441,7 +3625,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4084_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Enif Stakes-Y3-9-1.png"
     }
   ],
   "Keisei Hai Autumn Handicap": [
@@ -3460,7 +3645,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3055_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Keisei Hai Autumn Handicap-Y2-9-1.png"
     },
     {
       "year_label": "Third Year",
@@ -3477,7 +3663,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3055_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Keisei Hai Autumn Handicap-Y3-9-1.png"
     }
   ],
   "Niigata Kinen": [
@@ -3496,7 +3683,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3053_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Niigata Kinen-Y2-9-1.png"
     },
     {
       "year_label": "Third Year",
@@ -3513,7 +3701,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3053_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Niigata Kinen-Y3-9-1.png"
     }
   ],
   "Prix Niel": [
@@ -3532,7 +3721,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_17201_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Prix Niel-Y2-9-1.png"
     }
   ],
   "Radio Nippon Sho": [
@@ -3551,7 +3741,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4086_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Radio Nippon Sho-Y2-9-1.png"
     },
     {
       "year_label": "Third Year",
@@ -3568,7 +3759,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4086_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Radio Nippon Sho-Y3-9-1.png"
     }
   ],
   "Rose Stakes": [
@@ -3587,7 +3779,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2022_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Rose Stakes-Y2-9-1.png"
     }
   ],
   "Shion Stakes": [
@@ -3606,7 +3799,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3054_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Shion Stakes-Y2-9-1.png"
     }
   ],
   "Tancho Stakes": [
@@ -3625,7 +3819,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4082_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Tancho Stakes-Y2-9-1.png"
     },
     {
       "year_label": "Third Year",
@@ -3642,7 +3837,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4082_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Tancho Stakes-Y3-9-1.png"
     }
   ],
   "All Comers": [
@@ -3662,7 +3858,8 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
       "rank": "G2",
-      "order": 1
+      "order": 1,
+      "public_banner_path": "/race/G2/All Comers-Y2-9-2.png"
     },
     {
       "year_label": "Third Year",
@@ -3680,7 +3877,8 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
       "rank": "G2",
-      "order": 1
+      "order": 1,
+      "public_banner_path": "/race/G2/All Comers-Y3-9-2.png"
     }
   ],
   "Kobe Shimbun Hai": [
@@ -3699,7 +3897,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2024_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Kobe Shimbun Hai-Y2-9-2.png"
     }
   ],
   "Nagatsuki Stakes": [
@@ -3718,7 +3917,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4122_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Nagatsuki Stakes-Y2-9-2.png"
     },
     {
       "year_label": "Third Year",
@@ -3735,7 +3935,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4122_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Nagatsuki Stakes-Y3-9-2.png"
     }
   ],
   "Port Island Stakes": [
@@ -3754,7 +3955,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4090_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Port Island Stakes-Y2-9-2.png"
     },
     {
       "year_label": "Third Year",
@@ -3771,7 +3973,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4090_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Port Island Stakes-Y3-9-2.png"
     }
   ],
   "Sirius Stakes": [
@@ -3790,7 +3993,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3056_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Sirius Stakes-Y2-9-2.png"
     },
     {
       "year_label": "Third Year",
@@ -3807,7 +4011,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3056_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Sirius Stakes-Y3-9-2.png"
     }
   ],
   "Sprinters Stakes": [
@@ -3826,7 +4031,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1013_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Sprinters Stakes-Y2-9-2.png"
     },
     {
       "year_label": "Third Year",
@@ -3843,7 +4049,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1013_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Sprinters Stakes-Y3-9-2.png"
     }
   ],
   "St. Lite Kinen": [
@@ -3863,7 +4070,8 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
       "rank": "G2",
-      "order": 2
+      "order": 2,
+      "public_banner_path": "/race/G2/St. Lite Kinen-Y2-9-2.png"
     }
   ],
   "Fuchu Umamusume Stakes": [
@@ -3883,7 +4091,8 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
       "rank": "G2",
-      "order": 2
+      "order": 2,
+      "public_banner_path": "/race/G2/Fuchu Umamusume Stakes-Y2-10-1.png"
     },
     {
       "year_label": "Third Year",
@@ -3901,7 +4110,8 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
       "rank": "G2",
-      "order": 2
+      "order": 2,
+      "public_banner_path": "/race/G2/Fuchu Umamusume Stakes-Y3-10-1.png"
     }
   ],
   "Green Channel Cup": [
@@ -3920,7 +4130,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4092_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Green Channel Cup-Y2-10-1.png"
     },
     {
       "year_label": "Third Year",
@@ -3937,7 +4148,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4092_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Green Channel Cup-Y3-10-1.png"
     }
   ],
   "Kyoto Daishoten": [
@@ -3956,7 +4168,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2027_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Kyoto Daishoten-Y2-10-1.png"
     },
     {
       "year_label": "Third Year",
@@ -3973,7 +4186,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2027_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Kyoto Daishoten-Y3-10-1.png"
     }
   ],
   "Mainichi Okan": [
@@ -3993,7 +4207,8 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
       "rank": "G2",
-      "order": 1
+      "order": 1,
+      "public_banner_path": "/race/G2/Mainichi Okan-Y2-10-1.png"
     },
     {
       "year_label": "Third Year",
@@ -4011,7 +4226,8 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
       "rank": "G2",
-      "order": 1
+      "order": 1,
+      "public_banner_path": "/race/G2/Mainichi Okan-Y3-10-1.png"
     }
   ],
   "October Stakes": [
@@ -4030,7 +4246,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4094_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/October Stakes-Y2-10-1.png"
     },
     {
       "year_label": "Third Year",
@@ -4047,7 +4264,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4094_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/October Stakes-Y3-10-1.png"
     }
   ],
   "Opal Stakes": [
@@ -4066,7 +4284,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4091_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Opal Stakes-Y2-10-1.png"
     },
     {
       "year_label": "Third Year",
@@ -4083,7 +4302,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4091_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Opal Stakes-Y3-10-1.png"
     }
   ],
   "Shinetsu Stakes": [
@@ -4102,7 +4322,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4095_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Shinetsu Stakes-Y2-10-1.png"
     },
     {
       "year_label": "Third Year",
@@ -4119,7 +4340,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4095_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Shinetsu Stakes-Y3-10-1.png"
     }
   ],
   "Uzumasa Stakes": [
@@ -4138,7 +4360,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4123_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Uzumasa Stakes-Y2-10-1.png"
     },
     {
       "year_label": "Third Year",
@@ -4155,7 +4378,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4123_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Uzumasa Stakes-Y3-10-1.png"
     }
   ],
   "Brazil Cup": [
@@ -4174,7 +4398,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4098_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Brazil Cup-Y2-10-2.png"
     },
     {
       "year_label": "Third Year",
@@ -4191,7 +4416,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4098_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Brazil Cup-Y3-10-2.png"
     }
   ],
   "Cassiopeia Stakes": [
@@ -4210,7 +4436,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4100_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Cassiopeia Stakes-Y2-10-2.png"
     },
     {
       "year_label": "Third Year",
@@ -4227,7 +4454,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4100_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Cassiopeia Stakes-Y3-10-2.png"
     }
   ],
   "Fuji Stakes": [
@@ -4246,7 +4474,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3058_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Fuji Stakes-Y2-10-2.png"
     },
     {
       "year_label": "Third Year",
@@ -4263,7 +4492,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3058_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Fuji Stakes-Y3-10-2.png"
     }
   ],
   "Kikuka Sho": [
@@ -4282,7 +4512,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1015_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Kikuka Sho-Y2-10-2.png"
     }
   ],
   "Lumiere Autumn Dash": [
@@ -4301,7 +4532,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4101_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Lumiere Autumn Dash-Y2-10-2.png"
     },
     {
       "year_label": "Third Year",
@@ -4318,7 +4550,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4101_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Lumiere Autumn Dash-Y3-10-2.png"
     }
   ],
   "Muromachi Stakes": [
@@ -4337,7 +4570,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4097_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Muromachi Stakes-Y2-10-2.png"
     },
     {
       "year_label": "Third Year",
@@ -4354,7 +4588,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4097_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Muromachi Stakes-Y3-10-2.png"
     }
   ],
   "Shuka Sho": [
@@ -4373,7 +4608,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1014_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Shuka Sho-Y2-10-2.png"
     }
   ],
   "Swan Stakes": [
@@ -4392,7 +4628,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2029_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Swan Stakes-Y2-10-2.png"
     },
     {
       "year_label": "Third Year",
@@ -4409,7 +4646,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2029_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Swan Stakes-Y3-10-2.png"
     }
   ],
   "Tenno Sho (Autumn)": [
@@ -4428,7 +4666,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1016_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Tenno Sho (Autumn)-Y2-10-2.png"
     },
     {
       "year_label": "Third Year",
@@ -4445,7 +4684,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1016_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Tenno Sho (Autumn)-Y3-10-2.png"
     }
   ],
   "Copa Republica Argentina": [
@@ -4464,7 +4704,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2031_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Copa Republica Argentina-Y2-11-1.png"
     },
     {
       "year_label": "Third Year",
@@ -4481,7 +4722,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2031_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Copa Republica Argentina-Y3-11-1.png"
     }
   ],
   "Fukushima Kinen": [
@@ -4500,7 +4742,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3063_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Fukushima Kinen-Y2-11-1.png"
     },
     {
       "year_label": "Third Year",
@@ -4517,7 +4760,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3063_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Fukushima Kinen-Y3-11-1.png"
     }
   ],
   "JBC Classic": [
@@ -4536,7 +4780,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1105_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/JBC Classic-Y2-11-1.png"
     },
     {
       "year_label": "Third Year",
@@ -4553,7 +4798,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1105_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/JBC Classic-Y3-11-1.png"
     }
   ],
   "JBC Ladies’ Classic": [
@@ -4572,7 +4818,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1103_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/JBC Ladies Classic-Y2-11-1.png"
     },
     {
       "year_label": "Third Year",
@@ -4589,7 +4836,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1103_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/JBC Ladies Classic-Y3-11-1.png"
     }
   ],
   "JBC Sprint": [
@@ -4608,7 +4856,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1104_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/JBC Sprint-Y2-11-1.png"
     },
     {
       "year_label": "Third Year",
@@ -4625,7 +4874,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1104_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/JBC Sprint-Y3-11-1.png"
     }
   ],
   "Miyako Stakes": [
@@ -4644,7 +4894,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3061_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Miyako Stakes-Y2-11-1.png"
     },
     {
       "year_label": "Third Year",
@@ -4661,7 +4912,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3061_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Miyako Stakes-Y3-11-1.png"
     }
   ],
   "Musashino Stakes": [
@@ -4680,7 +4932,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3062_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Musashino Stakes-Y2-11-1.png"
     },
     {
       "year_label": "Third Year",
@@ -4697,7 +4950,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3062_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Musashino Stakes-Y3-11-1.png"
     }
   ],
   "Oro Cup": [
@@ -4716,7 +4970,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4102_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Oro Cup-Y2-11-1.png"
     },
     {
       "year_label": "Third Year",
@@ -4733,7 +4988,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4102_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Oro Cup-Y3-11-1.png"
     }
   ],
   "Queen Elizabeth II Cup": [
@@ -4752,7 +5008,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1017_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Queen Elizabeth II Cup-Y2-11-1.png"
     },
     {
       "year_label": "Third Year",
@@ -4769,7 +5026,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1017_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Queen Elizabeth II Cup-Y3-11-1.png"
     }
   ],
   "Andromeda Stakes": [
@@ -4788,7 +5046,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4104_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Andromeda Stakes-Y2-11-2.png"
     },
     {
       "year_label": "Third Year",
@@ -4805,7 +5064,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4104_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Andromeda Stakes-Y3-11-2.png"
     }
   ],
   "Autumn Leaf Stakes": [
@@ -4824,7 +5084,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4108_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Autumn Leaf Stakes-Y2-11-2.png"
     },
     {
       "year_label": "Third Year",
@@ -4841,7 +5102,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4108_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Autumn Leaf Stakes-Y3-11-2.png"
     }
   ],
   "Capital Stakes": [
@@ -4860,7 +5122,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4107_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Capital Stakes-Y2-11-2.png"
     },
     {
       "year_label": "Third Year",
@@ -4877,7 +5140,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4107_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Capital Stakes-Y3-11-2.png"
     }
   ],
   "Fukushima Minyu Cup": [
@@ -4896,7 +5160,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4106_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Fukushima Minyu Cup-Y2-11-2.png"
     },
     {
       "year_label": "Third Year",
@@ -4913,7 +5178,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4106_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Fukushima Minyu Cup-Y3-11-2.png"
     }
   ],
   "Japan Cup": [
@@ -4932,7 +5198,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1019_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Japan Cup-Y2-11-2.png"
     },
     {
       "year_label": "Third Year",
@@ -4949,7 +5216,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1019_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Japan Cup-Y3-11-2.png"
     }
   ],
   "Keihan Hai": [
@@ -4968,7 +5236,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3066_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Keihan Hai-Y2-11-2.png"
     },
     {
       "year_label": "Third Year",
@@ -4985,7 +5254,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3066_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Keihan Hai-Y3-11-2.png"
     }
   ],
   "Mile Championship": [
@@ -5004,7 +5274,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1018_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Mile Championship-Y2-11-2.png"
     },
     {
       "year_label": "Third Year",
@@ -5021,7 +5292,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1018_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Mile Championship-Y3-11-2.png"
     }
   ],
   "Shimotsuki Stakes": [
@@ -5040,7 +5312,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4105_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Shimotsuki Stakes-Y2-11-2.png"
     },
     {
       "year_label": "Third Year",
@@ -5057,7 +5330,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4105_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Shimotsuki Stakes-Y3-11-2.png"
     }
   ],
   "Capella Stakes": [
@@ -5076,7 +5350,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3069_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Capella Stakes-Y2-12-1.png"
     },
     {
       "year_label": "Third Year",
@@ -5093,7 +5368,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3069_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Capella Stakes-Y3-12-1.png"
     }
   ],
   "Challenge Cup": [
@@ -5112,7 +5388,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3067_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Challenge Cup-Y2-12-1.png"
     },
     {
       "year_label": "Third Year",
@@ -5129,7 +5406,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3067_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Challenge Cup-Y3-12-1.png"
     }
   ],
   "Champions Cup": [
@@ -5148,7 +5426,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1020_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Champions Cup-Y2-12-1.png"
     },
     {
       "year_label": "Third Year",
@@ -5165,7 +5444,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1020_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Champions Cup-Y3-12-1.png"
     }
   ],
   "Chunichi Shimbun Hai": [
@@ -5184,7 +5464,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3068_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Chunichi Shimbun Hai-Y2-12-1.png"
     },
     {
       "year_label": "Third Year",
@@ -5201,7 +5482,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3068_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Chunichi Shimbun Hai-Y3-12-1.png"
     }
   ],
   "December Stakes": [
@@ -5220,7 +5502,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4113_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/December Stakes-Y2-12-1.png"
     },
     {
       "year_label": "Third Year",
@@ -5237,7 +5520,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4113_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/December Stakes-Y3-12-1.png"
     }
   ],
   "Lapis Lazuli Stakes": [
@@ -5256,7 +5540,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4109_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Lapis Lazuli Stakes-Y2-12-1.png"
     },
     {
       "year_label": "Third Year",
@@ -5273,7 +5558,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4109_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Lapis Lazuli Stakes-Y3-12-1.png"
     }
   ],
   "Rigel Stakes": [
@@ -5292,7 +5578,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4111_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Rigel Stakes-Y2-12-1.png"
     },
     {
       "year_label": "Third Year",
@@ -5309,7 +5596,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4111_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Rigel Stakes-Y3-12-1.png"
     }
   ],
   "Shiwasu Stakes": [
@@ -5328,7 +5616,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4110_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Shiwasu Stakes-Y2-12-1.png"
     },
     {
       "year_label": "Third Year",
@@ -5345,7 +5634,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4110_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Shiwasu Stakes-Y3-12-1.png"
     }
   ],
   "Stayers Stakes": [
@@ -5364,7 +5654,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2033_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Stayers Stakes-Y2-12-1.png"
     },
     {
       "year_label": "Third Year",
@@ -5381,7 +5672,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2033_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Stayers Stakes-Y3-12-1.png"
     }
   ],
   "Tanzanite Stakes": [
@@ -5400,7 +5692,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4112_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Tanzanite Stakes-Y2-12-1.png"
     },
     {
       "year_label": "Third Year",
@@ -5417,7 +5710,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4112_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Tanzanite Stakes-Y3-12-1.png"
     }
   ],
   "Turquoise Stakes": [
@@ -5436,7 +5730,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3070_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Turquoise Stakes-Y2-12-1.png"
     },
     {
       "year_label": "Third Year",
@@ -5453,7 +5748,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3070_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Turquoise Stakes-Y3-12-1.png"
     }
   ],
   "Arima Kinen": [
@@ -5472,7 +5768,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1023_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Arima Kinen-Y2-12-2.png"
     },
     {
       "year_label": "Third Year",
@@ -5489,7 +5786,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1023_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Arima Kinen-Y3-12-2.png"
     }
   ],
   "Betelgeuse Stakes": [
@@ -5508,7 +5806,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4116_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Betelgeuse Stakes-Y2-12-2.png"
     },
     {
       "year_label": "Third Year",
@@ -5525,7 +5824,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4116_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Betelgeuse Stakes-Y3-12-2.png"
     }
   ],
   "Galaxy Stakes": [
@@ -5544,7 +5844,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4115_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Galaxy Stakes-Y2-12-2.png"
     },
     {
       "year_label": "Third Year",
@@ -5561,7 +5862,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4115_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Galaxy Stakes-Y3-12-2.png"
     }
   ],
   "Hanshin Cup": [
@@ -5580,7 +5882,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2034_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Hanshin Cup-Y2-12-2.png"
     },
     {
       "year_label": "Third Year",
@@ -5597,7 +5900,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2034_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Hanshin Cup-Y3-12-2.png"
     }
   ],
   "Tokyo Daishoten": [
@@ -5616,7 +5920,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1106_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Tokyo Daishoten-Y2-12-2.png"
     },
     {
       "year_label": "Third Year",
@@ -5633,7 +5938,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1106_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Tokyo Daishoten-Y3-12-2.png"
     }
   ],
   "Aichi Hai": [
@@ -5652,7 +5958,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3005_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Aichi Hai-Y3-1-1.png"
     }
   ],
   "Carbuncle Stakes": [
@@ -5671,7 +5978,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4010_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Carbuncle Stakes-Y3-1-1.png"
     }
   ],
   "January Stakes": [
@@ -5690,7 +5998,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4005_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/January Stakes-Y3-1-1.png"
     }
   ],
   "Kyoto Kimpai": [
@@ -5709,7 +6018,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3001_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Kyoto Kimpai-Y3-1-1.png"
     }
   ],
   "Manyo Stakes": [
@@ -5728,7 +6038,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4001_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Manyo Stakes-Y3-1-1.png"
     }
   ],
   "Nakayama Kimpai": [
@@ -5747,7 +6058,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3002_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Nakayama Kimpai-Y3-1-1.png"
     }
   ],
   "New Year Stakes": [
@@ -5766,7 +6078,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4006_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/New Year Stakes-Y3-1-1.png"
     }
   ],
   "Nikkei Shinshun Hai": [
@@ -5785,7 +6098,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2001_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Nikkei Shinshun Hai-Y3-1-1.png"
     }
   ],
   "Pollux Stakes": [
@@ -5804,7 +6118,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4004_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Pollux Stakes-Y3-1-1.png"
     }
   ],
   "Yodo Tankyori Stakes": [
@@ -5823,7 +6138,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4003_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Yodo Tankyori Stakes-Y3-1-1.png"
     }
   ],
   "American JCC": [
@@ -5842,7 +6158,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2003_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/American JCC-Y3-1-2.png"
     }
   ],
   "Negishi Stakes": [
@@ -5861,7 +6178,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3008_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Negishi Stakes-Y3-1-2.png"
     }
   ],
   "Shirafuji Stakes": [
@@ -5880,7 +6198,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4011_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Shirafuji Stakes-Y3-1-2.png"
     }
   ],
   "Silk Road Stakes": [
@@ -5899,7 +6218,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3007_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Silk Road Stakes-Y3-1-2.png"
     }
   ],
   "Subaru Stakes": [
@@ -5918,7 +6238,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4008_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Subaru Stakes-Y3-1-2.png"
     }
   ],
   "Tokai Stakes": [
@@ -5937,7 +6258,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2002_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Tokai Stakes-Y3-1-2.png"
     }
   ],
   "Aldebaran Stakes": [
@@ -5956,7 +6278,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4016_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Aldebaran Stakes-Y3-2-1.png"
     }
   ],
   "Kyoto Kinen": [
@@ -5975,7 +6298,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2004_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Kyoto Kinen-Y3-2-1.png"
     }
   ],
   "Rakuyo Stakes": [
@@ -5994,7 +6318,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4015_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Rakuyo Stakes-Y3-2-1.png"
     }
   ],
   "Tokyo Shimbun Hai": [
@@ -6013,7 +6338,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3010_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Tokyo Shimbun Hai-Y3-2-1.png"
     }
   ],
   "Valentine Stakes": [
@@ -6032,7 +6358,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4017_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Valentine Stakes-Y3-2-1.png"
     }
   ],
   "Yamato Stakes": [
@@ -6051,7 +6378,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4013_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Yamato Stakes-Y3-2-1.png"
     }
   ],
   "Diamond Stakes": [
@@ -6070,7 +6398,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3014_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Diamond Stakes-Y3-2-2.png"
     }
   ],
   "February Stakes": [
@@ -6089,7 +6418,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1001_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/February Stakes-Y3-2-2.png"
     }
   ],
   "Hankyu Hai": [
@@ -6108,7 +6438,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3017_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Hankyu Hai-Y3-2-2.png"
     }
   ],
   "Kitakyushu Tankyori Stakes": [
@@ -6127,7 +6458,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4117_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Kitakyushu Tankyori Stakes-Y3-2-2.png"
     }
   ],
   "Kokura Daishoten": [
@@ -6146,7 +6478,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3015_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Kokura Daishoten-Y3-2-2.png"
     }
   ],
   "Kyoto Umamusume Stakes": [
@@ -6165,7 +6498,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3013_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Kyoto Umamusume Stakes-Y3-2-2.png"
     }
   ],
   "Nakayama Kinen": [
@@ -6184,7 +6518,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2005_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Nakayama Kinen-Y3-2-2.png"
     }
   ],
   "Sobu Stakes": [
@@ -6203,7 +6538,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4019_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Sobu Stakes-Y3-2-2.png"
     }
   ],
   "Kinko Sho": [
@@ -6222,7 +6558,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2007_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Kinko Sho-Y3-3-1.png"
     }
   ],
   "Kochi Stakes": [
@@ -6241,7 +6578,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4026_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Kochi Stakes-Y3-3-1.png"
     }
   ],
   "Nakayama Umamusume Stakes": [
@@ -6260,7 +6598,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3020_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Nakayama Umamusume Stakes-Y3-3-1.png"
     }
   ],
   "Nigawa Stakes": [
@@ -6279,7 +6618,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4023_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Nigawa Stakes-Y3-3-1.png"
     }
   ],
   "Ocean Stakes": [
@@ -6298,7 +6638,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3019_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Ocean Stakes-Y3-3-1.png"
     }
   ],
   "Osakajo Stakes": [
@@ -6317,7 +6658,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4021_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Osakajo Stakes-Y3-3-1.png"
     }
   ],
   "Polaris Stakes": [
@@ -6336,7 +6678,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4022_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Polaris Stakes-Y3-3-1.png"
     }
   ],
   "Chiba Stakes": [
@@ -6355,7 +6698,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4028_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Chiba Stakes-Y3-3-2.png"
     }
   ],
   "Hanshin Daishoten": [
@@ -6374,7 +6718,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2009_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Hanshin Daishoten-Y3-3-2.png"
     }
   ],
   "March Stakes": [
@@ -6393,7 +6738,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3024_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/March Stakes-Y3-3-2.png"
     }
   ],
   "Nikkei Sho": [
@@ -6412,7 +6758,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2011_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Nikkei Sho-Y3-3-2.png"
     }
   ],
   "Osaka Hai": [
@@ -6431,7 +6778,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1003_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Osaka Hai-Y3-3-2.png"
     }
   ],
   "Rokko Stakes": [
@@ -6450,7 +6798,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4030_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Rokko Stakes-Y3-3-2.png"
     }
   ],
   "Takamatsunomiya Kinen": [
@@ -6469,7 +6818,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1002_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Takamatsunomiya Kinen-Y3-3-2.png"
     }
   ],
   "Antares Stakes": [
@@ -6488,7 +6838,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3026_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Antares Stakes-Y3-4-1.png"
     }
   ],
   "Azumakofuji Stakes": [
@@ -6507,7 +6858,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4118_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Azumakofuji Stakes-Y3-4-1.png"
     }
   ],
   "Coral Stakes": [
@@ -6526,7 +6878,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4031_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Coral Stakes-Y3-4-1.png"
     }
   ],
   "Fukushima Mimpo Hai": [
@@ -6545,7 +6898,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4038_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Fukushima Mimpo Hai-Y3-4-1.png"
     }
   ],
   "Hanshin Umamusume Stakes": [
@@ -6564,7 +6918,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2012_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Hanshin Umamusume Stakes-Y3-4-1.png"
     }
   ],
   "Keiyo Stakes": [
@@ -6583,7 +6938,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4036_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Keiyo Stakes-Y3-4-1.png"
     }
   ],
   "Lord Derby Challenge Trophy": [
@@ -6602,7 +6958,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3025_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Lord Derby Challenge Trophy-Y3-4-1.png"
     }
   ],
   "Shunrai Stakes": [
@@ -6621,7 +6978,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4037_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Shunrai Stakes-Y3-4-1.png"
     }
   ],
   "Fukushima Umamusume Stakes": [
@@ -6640,7 +6998,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3027_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Fukushima Umamusume Stakes-Y3-4-2.png"
     }
   ],
   "Milers Cup": [
@@ -6659,7 +7018,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2014_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Milers Cup-Y3-4-2.png"
     }
   ],
   "Oasis Stakes": [
@@ -6678,7 +7038,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4040_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Oasis Stakes-Y3-4-2.png"
     }
   ],
   "Tenno Sho (Spring)": [
@@ -6697,7 +7058,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1006_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Tenno Sho (Spring)-Y3-4-2.png"
     }
   ],
   "Tennozan Stakes": [
@@ -6716,7 +7078,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4041_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Tennozan Stakes-Y3-4-2.png"
     }
   ],
   "Brilliant Stakes": [
@@ -6735,7 +7098,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4048_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Brilliant Stakes-Y3-5-1.png"
     }
   ],
   "Keio Hai Spring Cup": [
@@ -6754,7 +7118,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2018_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Keio Hai Spring Cup-Y3-5-1.png"
     }
   ],
   "Kurama Stakes": [
@@ -6773,7 +7138,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4047_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Kurama Stakes-Y3-5-1.png"
     }
   ],
   "Metropolitan Stakes": [
@@ -6792,7 +7158,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4046_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Metropolitan Stakes-Y3-5-1.png"
     }
   ],
   "Miyakooji Stakes": [
@@ -6811,7 +7178,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4049_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Miyakooji Stakes-Y3-5-1.png"
     }
   ],
   "Niigata Daishoten": [
@@ -6830,7 +7198,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3028_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Niigata Daishoten-Y3-5-1.png"
     }
   ],
   "Ritto Stakes": [
@@ -6849,7 +7218,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4051_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Ritto Stakes-Y3-5-1.png"
     }
   ],
   "Tanigawadake Stakes": [
@@ -6868,7 +7238,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4044_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Tanigawadake Stakes-Y3-5-1.png"
     }
   ],
   "Victoria Mile": [
@@ -6887,7 +7258,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1008_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Victoria Mile-Y3-5-1.png"
     }
   ],
   "Azuchijo Stakes": [
@@ -6906,7 +7278,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4058_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Azuchijo Stakes-Y3-5-2.png"
     }
   ],
   "Heian Stakes": [
@@ -6925,7 +7298,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_3029_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
-      "rank": "G3"
+      "rank": "G3",
+      "public_banner_path": "/race/G3/Heian Stakes-Y3-5-2.png"
     }
   ],
   "Idaten Stakes": [
@@ -6944,7 +7318,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4055_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Idaten Stakes-Y3-5-2.png"
     }
   ],
   "Keyaki Stakes": [
@@ -6963,7 +7338,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4057_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/Keyaki Stakes-Y3-5-2.png"
     }
   ],
   "May Stakes": [
@@ -6982,7 +7358,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_4053_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_02.png",
       "ribbon_code": "02",
-      "rank": "OP"
+      "rank": "OP",
+      "public_banner_path": "/race/OP/May Stakes-Y3-5-2.png"
     }
   ],
   "Meguro Kinen": [
@@ -7001,7 +7378,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_2019_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Meguro Kinen-Y3-5-2.png"
     }
   ],
   "Teio Sho": [
@@ -7020,7 +7398,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_1101_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
-      "rank": "G1"
+      "rank": "G1",
+      "public_banner_path": "/race/G1/Teio Sho-Y3-6-2.png"
     }
   ],
   "Prix Foy": [
@@ -7039,7 +7418,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_17202_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
-      "rank": "G2"
+      "rank": "G2",
+      "public_banner_path": "/race/G2/Prix Foy-Y3-9-1.png"
     }
   ],
   "URA Finals Qualifier": [
@@ -7058,7 +7438,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_9020_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_07.png",
       "ribbon_code": "07",
-      "rank": "EX"
+      "rank": "EX",
+      "public_banner_path": "/race/EX/URA Finals Qualifier-Y0-0-0.png"
     }
   ],
   "URA Finals Semifinal": [
@@ -7077,7 +7458,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_9010_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_07.png",
       "ribbon_code": "07",
-      "rank": "EX"
+      "rank": "EX",
+      "public_banner_path": "/race/EX/URA Finals Semifinal-Y0-0-0.png"
     }
   ],
   "Grand Masters": [
@@ -7096,7 +7478,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_9063_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_07.png",
       "ribbon_code": "07",
-      "rank": "EX"
+      "rank": "EX",
+      "public_banner_path": "/race/EX/Grand Masters-Y0-0-0.png"
     }
   ],
   "Twinkle Star Climax": [
@@ -7115,7 +7498,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_9033_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_07.png",
       "ribbon_code": "07",
-      "rank": "EX"
+      "rank": "EX",
+      "public_banner_path": "/race/EX/Twinkle Star Climax-Y0-0-0.png"
     }
   ],
   "URA Finals Final (Aoharu)": [
@@ -7134,7 +7518,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_9001_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_07.png",
       "ribbon_code": "07",
-      "rank": "EX"
+      "rank": "EX",
+      "public_banner_path": "/race/EX/URA Finals Final (Aoharu)-Y0-0-0.png"
     }
   ],
   "URA Finals Final (Grand Live)": [
@@ -7153,7 +7538,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_9001_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_07.png",
       "ribbon_code": "07",
-      "rank": "EX"
+      "rank": "EX",
+      "public_banner_path": "/race/EX/URA Finals Final (Grand Live)-Y0-0-0.png"
     }
   ],
   "URA Finals Final (URA)": [
@@ -7172,7 +7558,8 @@
       "banner_url": "https://gametora.com/images/umamusume/en/race_banners/thum_race_rt_000_9001_00.png",
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_07.png",
       "ribbon_code": "07",
-      "rank": "EX"
+      "rank": "EX",
+      "public_banner_path": "/race/EX/URA Finals Final (URA)-Y0-0-0.png"
     }
   ]
 }

@@ -130,6 +130,8 @@ class LocalYOLOEngine(IDetector):
         imgsz: Optional[int] = None,
         conf: Optional[float] = None,
         iou: Optional[float] = None,
+        original_pil_img = None,
+        tag = "general"
     ) -> Tuple[Dict[str, Any], List[DetectionDict]]:
         imgsz = imgsz if imgsz is not None else Settings.YOLO_IMGSZ
         conf = conf if conf is not None else Settings.YOLO_CONF
@@ -138,6 +140,9 @@ class LocalYOLOEngine(IDetector):
         res_list = self.model.predict(source=bgr, imgsz=imgsz, conf=conf, iou=iou, verbose=False)
         result = res_list[0]
         dets = self._extract_dets(result, conf_min=conf)
+
+        if original_pil_img is not None:
+            self._maybe_store_debug(original_pil_img, dets, tag=tag, thr=Settings.STORE_FOR_TRAINING_THRESHOLD)
 
         meta = {"names": result.names, "imgsz": imgsz, "conf": conf, "iou": iou}
         return meta, dets
@@ -149,9 +154,13 @@ class LocalYOLOEngine(IDetector):
         imgsz: Optional[int] = None,
         conf: Optional[float] = None,
         iou: Optional[float] = None,
+        tag = "general"
     ) -> Tuple[Dict[str, Any], List[DetectionDict]]:
         bgr = pil_to_bgr(pil_img)
-        return self.detect_bgr(bgr, imgsz=imgsz, conf=conf, iou=iou)
+        
+        meta, dets = self.detect_bgr(bgr, imgsz=imgsz, conf=conf, iou=iou)
+        self._maybe_store_debug(pil_img, dets, tag=tag, thr=Settings.STORE_FOR_TRAINING_THRESHOLD)
+        return meta, dets
 
     def recognize(
         self,
@@ -171,5 +180,4 @@ class LocalYOLOEngine(IDetector):
             img = self.ctrl.screenshot(region=region)
 
         meta, dets = self.detect_pil(img, imgsz=imgsz, conf=conf, iou=iou)
-        self._maybe_store_debug(img, dets, tag=tag, thr=Settings.STORE_FOR_TRAINING_THRESHOLD)
         return img, meta, dets

@@ -12,7 +12,7 @@ from core.perception.ocr.interface import OCRInterface
 from core.perception.yolo.interface import IDetector
 from core.utils.geometry import crop_pil
 from core.utils.logger import logger_uma
-from core.utils.text import fuzzy_ratio
+from core.utils.text import fuzzy_contains, fuzzy_ratio
 from core.utils.yolo_objects import filter_by_classes as det_filter
 
 DetectionDict = dict
@@ -141,6 +141,105 @@ class Waiter:
                 return False
 
             time.sleep(interval)
+
+    def seen(
+        self,
+        *,
+        classes: Optional[Sequence[str]] = None,
+        texts: Optional[Sequence[str]] = None,
+        tag: Optional[str] = None,
+        conf_min: float = 0.0,
+        threshold: float = 0.58,
+    ) -> bool:
+        """
+        Snapshot once and return True if:
+          • ANY detection of the provided `classes` exists (when `texts` is not given), or
+          • ANY detection of the provided `classes` OCR-matches ANY of `texts` (fuzzy),
+            if `texts` is provided. If `classes` is None, OCR is applied to all detections.
+
+        No waiting/polling, no clicks.
+        """
+        img, dets = self._snap(tag=tag or (self.cfg.tag + "_seen"))
+
+        # Filter by classes when provided
+        candidates = det_filter(dets, classes, conf_min=conf_min) if classes else list(dets)
+
+        # Fast path: just checking for presence of classes
+        if not texts:
+            return bool(candidates)
+
+        # OCR path: fuzzy match any target text on any candidate bbox
+        texts = [t for t in (texts or []) if (t or "").strip()]
+        if not texts:
+            return bool(candidates)
+
+        for d in candidates:
+            try:
+                roi = d.get("xyxy")
+                if not roi:
+                    continue
+                crop = crop_pil(img, roi, pad=0)
+                txt = (self.ocr.text(crop) or "").strip()
+                if not txt:
+                    continue
+                for target in texts:
+                    if fuzzy_contains(txt, target, threshold=threshold):
+                        return True
+            except Exception:
+                # Be conservative; failure to OCR this box shouldn't stop others
+                continue
+        return False
+
+    def try_click_once(
+        self,
+        *,
+        classes: Sequence[str],
+        texts: Optional[Sequence[str]] = None,
+        threshold: float = 0.68,
+        prefer_bottom: bool = False,
+        tag: Optional[str] = None,
+        clicks: int = 1,
+        allow_greedy_click: bool = True,
+        forbid_texts: Optional[Sequence[str]] = None,
+        forbid_threshold: float = 0.65,
+    ) -> bool:
+        """
+        Single snapshot best-effort click using the same cascade as `click_when`,
+        but WITHOUT polling/waiting. Returns True if a click was performed.
+        """
+        if not classes:
+            return False
+        img, dets = self._snap(tag=tag or (self.cfg.tag + "_try"))
+        cand = det_filter(dets, classes)
+        texts = self._norm_seq(texts)
+        forbid_texts = self._norm_seq(forbid_texts)
+
+        if not cand:
+            return False
+
+        # 1) Single candidate fast path
+        if len(cand) == 1 and allow_greedy_click:
+            pick = cand[0]
+            if not self._is_forbidden(img, pick, forbid_texts, forbid_threshold):
+                self.ctrl.click_xyxy_center(pick["xyxy"], clicks=clicks)
+                return True
+
+        # 2) Bottom-most preference
+        if prefer_bottom and allow_greedy_click:
+            ordered = sorted(cand, key=lambda d: (d["xyxy"][1] + d["xyxy"][3]) * 0.5, reverse=True)
+            for d in ordered:
+                if not self._is_forbidden(img, d, forbid_texts, forbid_threshold):
+                    self.ctrl.click_xyxy_center(d["xyxy"], clicks=clicks)
+                    return True
+
+        # 3) OCR disambiguation
+        if texts and self.ocr:
+            pick = self._pick_by_text(img, cand, texts, threshold, forbid_texts, forbid_threshold)
+            if pick is not None:
+                self.ctrl.click_xyxy_center(pick["xyxy"], clicks=clicks)
+                return True
+
+        return False
 
     # ---------------------------
     # Internals

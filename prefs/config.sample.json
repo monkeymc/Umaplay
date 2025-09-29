@@ -1,0 +1,445 @@
+{
+  "version": 1,
+  "general": {
+    "mode": "steam",
+    "windowTitle": "Umamusume",
+    "fastMode": false,
+    "tryAgainOnFailedGoal": true,
+    "prioritizeHint": false,
+    "maxFailure": 20,
+    "skillPtsCheck": 700,
+    "acceptConsecutiveRace": true,
+    "advanced": {
+      "hotkey": "F2",
+      "debugMode": true,
+      "useExternalProcessor": false,
+      "externalProcessorUrl": "http://127.0.0.1:8001",
+      "autoRestMinimum": 19
+    }
+  },
+  "presets": [
+    {
+      "id": "85a1f7ef-3f51-4446-a107-5e3c63251cab",
+      "name": "Mihono",
+      "priorityStats": [
+        "SPD",
+        "STA",
+        "WIT",
+        "PWR",
+        "GUTS"
+      ],
+      "targetStats": {
+        "SPD": 1150,
+        "STA": 800,
+        "PWR": 700,
+        "GUTS": 300,
+        "WIT": 400
+      },
+      "minimalMood": "NORMAL",
+      "juniorStyle": "front",
+      "skillsToBuy": [
+        "Left-Handed \u25cb",
+        "Professor of Curvature",
+        "Corner Adept \u25cb",
+        "Corner Connoisseur",
+        "Corner Acceleration \u25cb",
+        "Front Runner Savvy \u25cb",
+        "Front Runner Corners \u25cb",
+        "Front Runner Straightaways \u25cb",
+        "Final Push",
+        "Groundwork",
+        "Focus"
+      ],
+      "plannedRaces": {
+        "Y1-12-1": "Asahi Hai Futurity Stakes",
+        "Y2-04-1": "Satsuki Sho",
+        "Y2-05-2": "Tokyo Yushun (Japanese Derby)",
+        "Y2-10-2": "Kikuka Sho",
+        "Y2-11-1": "Queen Elizabeth II Cup",
+        "Y3-03-2": "Osaka Hai",
+        "Y3-10-2": "Tenno Sho (Autumn)",
+        "Y3-04-2": "Tenno Sho (Spring)",
+        "Y3-06-2": "Takarazuka Kinen",
+        "Y3-11-2": "Japan Cup",
+        "Y3-12-2": "Arima Kinen"
+      },
+      "event_setup": {
+        "supports": [
+          {
+            "slot": 0,
+            "name": "Silence Suzuka",
+            "rarity": "SSR",
+            "attribute": "SPD"
+          },
+          {
+            "slot": 1,
+            "name": "Nishino Flower",
+            "rarity": "SSR",
+            "attribute": "SPD"
+          },
+          {
+            "slot": 2,
+            "name": "Gold Ship",
+            "rarity": "SSR",
+            "attribute": "STA"
+          },
+          {
+            "slot": 3,
+            "name": "Tokai Teio",
+            "rarity": "SSR",
+            "attribute": "SPD"
+          },
+          {
+            "slot": 4,
+            "name": "Mayano Top Gun",
+            "rarity": "SR",
+            "attribute": "STA"
+          },
+          {
+            "slot": 5,
+            "name": "Kitasan Black",
+            "rarity": "SSR",
+            "attribute": "SPD"
+          }
+        ],
+        "scenario": {
+          "name": "Ura Finale"
+        },
+        "trainee": {
+          "name": "Mihono Bourbon"
+        },
+        "prefs": {
+          "overrides": {
+            "support/Silence Suzuka/SPD/SSR/What Should I Do?#s1": 2,
+            "support/Kitasan Black/SPD/SSR/Ah, Home Sweet Home#s1": 1
+          },
+          "patterns": [],
+          "defaults": {
+            "support": 1,
+            "trainee": 1,
+            "scenario": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "a09728b0-a3ce-494c-bde7-ebe7f2d6d127",
+      "name": "ElCondorPasa",
+      "priorityStats": [
+        "STA",
+        "SPD",
+        "WIT",
+        "PWR",
+        "GUTS"
+      ],
+      "targetStats": {
+        "SPD": 1150,
+        "STA": 900,
+        "PWR": 800,
+        "GUTS": 270,
+        "WIT": 400
+      },
+      "minimalMood": "GOOD",
+      "juniorStyle": "pace",
+      "skillsToBuy": [
+        "Swinging Maestro",
+        "Professor of Curvature",
+        "Corner Acceleration \u25cb",
+        "Corner Connoisseur",
+        "Corner Recovery \u25cb",
+        "Homestretch Haste",
+        "Focus"
+      ],
+      "plannedRaces": {
+        "Y1-12-1": "Asahi Hai Futurity Stakes",
+        "Y2-05-2": "Tokyo Yushun (Japanese Derby)",
+        "Y2-10-2": "Kikuka Sho",
+        "Y3-03-2": "Osaka Hai",
+        "Y3-04-2": "Tenno Sho (Spring)",
+        "Y3-06-2": "Takarazuka Kinen",
+        "Y3-10-2": "Tenno Sho (Autumn)",
+        "Y3-11-2": "Japan Cup",
+        "Y3-12-2": "Arima Kinen"
+      },
+      "event_setup": {
+        "supports": [
+          {
+            "slot": 0,
+            "name": "Silence Suzuka",
+            "rarity": "SSR",
+            "attribute": "SPD"
+          },
+          {
+            "slot": 1,
+            "name": "Eishin Flash",
+            "rarity": "SR",
+            "attribute": "SPD"
+          },
+          {
+            "slot": 2,
+            "name": "Shinko Windy",
+            "rarity": "SR",
+            "attribute": "SPD"
+          },
+          {
+            "slot": 3,
+            "name": "Kitasan Black",
+            "rarity": "R",
+            "attribute": "SPD"
+          },
+          {
+            "slot": 4,
+            "name": "Twin Turbo",
+            "rarity": "SSR",
+            "attribute": "SPD"
+          },
+          null
+        ],
+        "scenario": {
+          "name": "Ura Finale"
+        },
+        "trainee": {
+          "name": "Daiwa Scarlet"
+        },
+        "prefs": {
+          "overrides": {},
+          "patterns": [],
+          "defaults": {
+            "support": 1,
+            "trainee": 1,
+            "scenario": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "930e0374-d039-4e99-8b89-d34442fd3050",
+      "name": "Oguri Cap",
+      "priorityStats": [
+        "STA",
+        "SPD",
+        "PWR",
+        "WIT",
+        "GUTS"
+      ],
+      "targetStats": {
+        "SPD": 1150,
+        "STA": 1000,
+        "PWR": 700,
+        "GUTS": 300,
+        "WIT": 400
+      },
+      "minimalMood": "NORMAL",
+      "juniorStyle": "pace",
+      "skillsToBuy": [
+        "Swinging Maestro",
+        "Professor of Curvature",
+        "Corner Acceleration \u25cb",
+        "Corner Connoisseur",
+        "Corner Recovery \u25cb",
+        "Homestretch Haste",
+        "Focus",
+        "Pace Chaser Straightaways \u25cb",
+        "Pace Chaser Corners \u25cb",
+        "Hydrate",
+        "Pace Chaser Savvy \u25cb",
+        "Slipstream",
+        "Rushing Gale!"
+      ],
+      "plannedRaces": {
+        "Y2-10-2": "Kikuka Sho",
+        "Y3-03-2": "Osaka Hai",
+        "Y3-04-2": "Tenno Sho (Spring)",
+        "Y3-10-2": "Tenno Sho (Autumn)",
+        "Y3-11-2": "Japan Cup",
+        "Y3-12-2": "Arima Kinen",
+        "Y2-04-1": "Satsuki Sho",
+        "Y2-05-2": "Tokyo Yushun (Japanese Derby)",
+        "Y3-06-2": "Takarazuka Kinen"
+      },
+      "event_setup": {
+        "supports": [
+          {
+            "slot": 0,
+            "name": "Tokai Teio",
+            "rarity": "SSR",
+            "attribute": "SPD"
+          },
+          {
+            "slot": 1,
+            "name": "Nishino Flower",
+            "rarity": "SSR",
+            "attribute": "SPD"
+          },
+          {
+            "slot": 2,
+            "name": "Sweep Tosho",
+            "rarity": "SR",
+            "attribute": "SPD"
+          },
+          {
+            "slot": 3,
+            "name": "Mayano Top Gun",
+            "rarity": "SR",
+            "attribute": "STA"
+          },
+          {
+            "slot": 4,
+            "name": "Zenno Rob Roy",
+            "rarity": "SR",
+            "attribute": "STA"
+          },
+          {
+            "slot": 5,
+            "name": "Kitasan Black",
+            "rarity": "SSR",
+            "attribute": "SPD"
+          }
+        ],
+        "scenario": {
+          "name": "Ura Finale"
+        },
+        "trainee": {
+          "name": "Oguri Cap"
+        },
+        "prefs": {
+          "overrides": {
+            "support/Tokai Teio/SPD/SSR/My Weapon#s1": 2,
+            "support/Sweep Tosho/SPD/SR/Premeditated Mischief#s2": 1,
+            "support/Kitasan Black/SPD/SSR/Ah, Home Sweet Home#s1": 1
+          },
+          "patterns": [],
+          "defaults": {
+            "support": 1,
+            "trainee": 1,
+            "scenario": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "8e1fd264-c342-4712-93a9-bb17a6b7a7c8",
+      "name": "Haru Urara",
+      "priorityStats": [
+        "SPD",
+        "STA",
+        "PWR",
+        "WIT",
+        "GUTS"
+      ],
+      "targetStats": {
+        "SPD": 1150,
+        "STA": 900,
+        "PWR": 900,
+        "GUTS": 300,
+        "WIT": 400
+      },
+      "minimalMood": "NORMAL",
+      "juniorStyle": "late",
+      "skillsToBuy": [
+        "Swinging Maestro",
+        "Professor of Curvature",
+        "Corner Acceleration \u25cb",
+        "Corner Connoisseur",
+        "Corner Recovery \u25cb",
+        "Homestretch Haste",
+        "Focus",
+        "Slipstream",
+        "Outer Swell",
+        "Late Surger Straightaways \u25cb",
+        "Late Surger Straightaways \u25ce",
+        "Later Surger Corners \u25ce",
+        "Late Surger Corners \u25cb",
+        "15,000,000 CC",
+        "1,500,000 CC",
+        "Late Surger Savvy \u25cb",
+        "Late Surger Savvy \u25ce"
+      ],
+      "plannedRaces": {},
+      "event_setup": {
+        "supports": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "scenario": null,
+        "trainee": null,
+        "prefs": {
+          "overrides": {},
+          "patterns": [],
+          "defaults": {
+            "support": 1,
+            "trainee": 1,
+            "scenario": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "569a7f83-80ed-4a69-940d-f20355c14d6a",
+      "name": "Daiwa",
+      "priorityStats": [
+        "SPD",
+        "STA",
+        "WIT",
+        "PWR",
+        "GUTS"
+      ],
+      "targetStats": {
+        "SPD": 1150,
+        "STA": 800,
+        "PWR": 700,
+        "GUTS": 300,
+        "WIT": 400
+      },
+      "minimalMood": "NORMAL",
+      "juniorStyle": "front",
+      "skillsToBuy": [
+        "Competitive Spirit \u25cb",
+        "Up-Tempo"
+      ],
+      "plannedRaces": {
+        "Y3-11-2": "Japan Cup"
+      },
+      "event_setup": {
+        "supports": [
+          {
+            "slot": 0,
+            "name": "Aoi Kiryuuin",
+            "rarity": "SR",
+            "attribute": "PAL"
+          },
+          {
+            "slot": 1,
+            "name": "Mejiro Dober",
+            "rarity": "SSR",
+            "attribute": "WIT"
+          },
+          null,
+          null,
+          null,
+          null
+        ],
+        "scenario": {
+          "name": "Ura Finale"
+        },
+        "trainee": {
+          "name": "Daiwa Scarlet"
+        },
+        "prefs": {
+          "overrides": {},
+          "patterns": [],
+          "defaults": {
+            "support": 1,
+            "trainee": 1,
+            "scenario": 1
+          }
+        }
+      }
+    }
+  ],
+  "activePresetId": "930e0374-d039-4e99-8b89-d34442fd3050"
+}

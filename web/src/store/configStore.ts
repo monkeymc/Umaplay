@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { appConfigSchema, defaultAppConfig, defaultPreset } from '@/models/config.schema'
+import { appConfigSchema, defaultAppConfig, defaultPreset, defaultEventSetup } from '@/models/config.schema'
 import type { AppConfig, GeneralConfig, Preset } from '@/models/types'
 
 const LS_KEY = 'uma:config:v1'
@@ -52,7 +52,9 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
 
   addPreset: () =>
     set((s) => {
-      const preset = defaultPreset(newId(), `Preset ${s.config.presets.length + 1}`)
+      // Make sure event_setup is a fresh object for every preset
+      const base = defaultPreset(newId(), `Preset ${s.config.presets.length + 1}`)
+      const preset: Preset = { ...base, event_setup: defaultEventSetup() }
       return { config: { ...s.config, presets: [...s.config.presets, preset], activePresetId: preset.id } }
     }),
 
@@ -60,7 +62,13 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
     set((s) => {
       const src = s.config.presets.find((p) => p.id === id)
       if (!src) return {}
-      const clone: Preset = { ...src, id: newId(), name: src.name + ' (copy)' }
+      // Deep-clone event_setup so copies don’t share references
+      const clone: Preset = {
+        ...src,
+        id: newId(),
+        name: src.name + ' (copy)',
+        event_setup: JSON.parse(JSON.stringify(src.event_setup ?? defaultEventSetup())),
+      }
       return { config: { ...s.config, presets: [...s.config.presets, clone], activePresetId: clone.id } }
     }),
 
@@ -88,7 +96,16 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
     })),
 
   // ---- io
-  replaceConfig: (cfg) => set({ config: cfg }),
+  replaceConfig: (cfg) => set({
+    // if someone calls replaceConfig directly, normalize here too
+    config: {
+      ...cfg,
+      presets: cfg.presets.map((p) => ({
+        ...p,
+        event_setup: p.event_setup ?? defaultEventSetup(),
+      })),
+    }
+  }),
 
   saveLocal: () => {
     const { config } = get()
@@ -97,11 +114,12 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
 
   loadLocal: () => {
     const raw = localStorage.getItem(LS_KEY)
+    console.log(LS_KEY, raw)
     if (!raw) return
     try {
       const parsed = JSON.parse(raw)
       const safe = appConfigSchema.parse(parsed)
-      set({ config: safe })
+      set({ config: safe })   // schema has already defaulted event_setup
     } catch {
       // ignore
     }
@@ -122,7 +140,14 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
   importJson: (raw) => {
     try {
       const safe = appConfigSchema.parse(raw)
-      set({ config: safe })
+      const normalized: AppConfig = {
+        ...safe,
+        presets: safe.presets.map((p) => ({
+          ...p,
+          event_setup: p.event_setup ?? defaultEventSetup(),
+        })),
+      }
+      set({ config: normalized })
       return { ok: true }
     } catch (e: any) {
       return { ok: false, error: String(e?.message || e) }

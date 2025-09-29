@@ -29,9 +29,11 @@ export default function PresetsTabs() {
   }
 
   const importPreset = async () => {
-    const raw = await openJsonFile()
+    const raw: any = await openJsonFile()
     if (!raw) return
     try {
+      raw.id = raw.id + "_i"
+      raw.name = raw.name + "_i"
       const safe = presetSchema.parse(raw)
       // add as new preset
       patchPreset(safe.id, 'name', safe.name) // ensure fields exist (no-op if id not in list)
@@ -50,7 +52,6 @@ export default function PresetsTabs() {
       config: { ...s.config, presets: [...s.config.presets, p], activePresetId: p.id },
     }))
   }
-
   return (
     <Stack spacing={1.5}>
       <Stack direction="row" alignItems="center" spacing={1} sx={{ flexWrap: 'wrap' }}>
