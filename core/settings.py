@@ -88,16 +88,16 @@ class Settings:
 
     REFERENCE_STATS = {
         "SPD": 1150,
-        "STA": 1000,
-        "PWR": 530,
-        "GUTS": 270,
-        "WIT": 250,
+        "STA": 900,
+        "PWR": 700,
+        "GUTS": 300,
+        "WIT": 400,
     }
 
-    MINIMUM_SKILL_PTS = 600
+    MINIMUM_SKILL_PTS = 700
     ACCEPT_CONSECUTIVE_RACE = True
     TRY_AGAIN_ON_FAILED_GOAL = True
-    AUTO_REST_MINIMUM = 26
+    AUTO_REST_MINIMUM = 20
 
     PRIORITY_STATS = ["SPD", "STA", "WIT", "PWR", "GUTS"]
 

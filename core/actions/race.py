@@ -144,7 +144,7 @@ class RaceFlow:
             if not found after scrolling up to max_scrolls, return (None, True) without fallback.
 
         """
-        MINIMUM_RACE_OCR_MATCH = 0.85
+        MINIMUM_RACE_OCR_MATCH = 0.91
         MIN_STARS = 2
         moved_cursor = False
         did_scroll = False

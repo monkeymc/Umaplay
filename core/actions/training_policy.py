@@ -281,7 +281,7 @@ def decide_action_training(
     # If a top-3 priority stat is undertrained vs. reference distribution
     # by ≥ 6% and its best SV is within 1.5 of the best overall, pick it.
     # -------------------------------------------------
-    UNDERTRAIN_DELTA = 0.06  # ≥ 7% gap vs reference share
+    UNDERTRAIN_DELTA = 0.06  # ≥ 6% gap vs reference share
     MAX_SV_GAP = 1.5
 
     try:
