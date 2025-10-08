@@ -22,7 +22,6 @@ from core.controllers.steam import SteamController
 from core.controllers.android import ScrcpyController
 from core.utils.abort import request_abort, clear_abort
 from core.utils.event_processor import UserPrefs
-from core.perception.yolo.yolo_local import LocalYOLOEngine
 
 try:
     # Optional; if your Bluestacks controller is a separate class
@@ -56,7 +55,7 @@ def make_controller_from_settings() -> IController:
         return ScrcpyController(window_title)
 
 
-def make_ocr_yolo_from_settings(ctrl: IController) -> tuple[OCRInterface, IDetector]:
+def make_ocr_yolo_from_settings(ctrl: IController, weights: str | None = None) -> tuple[OCRInterface, IDetector]:
     """Build fresh OCR and YOLO engines based on current Settings."""
     if Settings.USE_FAST_OCR:
         det_name = "PP-OCRv5_mobile_det"
@@ -70,7 +69,10 @@ def make_ocr_yolo_from_settings(ctrl: IController) -> tuple[OCRInterface, IDetec
         from core.perception.ocr.ocr_remote import RemoteOCREngine
         from core.perception.yolo.yolo_remote import RemoteYOLOEngine
         ocr = RemoteOCREngine(base_url=Settings.EXTERNAL_PROCESSOR_URL)
-        yolo_engine = RemoteYOLOEngine(ctrl=ctrl, base_url=Settings.EXTERNAL_PROCESSOR_URL)
+        if weights:
+            yolo_engine = RemoteYOLOEngine(ctrl=ctrl, base_url=Settings.EXTERNAL_PROCESSOR_URL, weights=weights)
+        else:
+            yolo_engine = RemoteYOLOEngine(ctrl=ctrl, base_url=Settings.EXTERNAL_PROCESSOR_URL)
         return ocr, yolo_engine
 
     logger_uma.info("[PERCEPTION] Using internal processors")
@@ -80,7 +82,11 @@ def make_ocr_yolo_from_settings(ctrl: IController) -> tuple[OCRInterface, IDetec
         text_detection_model_name=det_name,
         text_recognition_model_name=rec_name,
     )
-    yolo_engine = LocalYOLOEngine(ctrl=ctrl)
+    if weights:
+        yolo_engine = LocalYOLOEngine(ctrl=ctrl, weights=weights)
+    else:
+        yolo_engine = LocalYOLOEngine(ctrl=ctrl)
+
     return ocr, yolo_engine
 
 
@@ -217,6 +223,7 @@ class NavState:
         self.agent: AgentNav | None = None
         self.running: bool = False
         self._lock = threading.Lock()
+        self.current_action: str | None = None
 
     def start(self, action: str):
         with self._lock:
@@ -240,11 +247,7 @@ class NavState:
                 return
 
             # OCR from settings, YOLO engine for NAV specifically
-            ocr, _ = make_ocr_yolo_from_settings(ctrl)
-            yolo_engine_nav = LocalYOLOEngine(
-                ctrl=ctrl,
-                weights=Settings.YOLO_WEIGHTS_NAV,
-            )
+            ocr, yolo_engine_nav = make_ocr_yolo_from_settings(ctrl, weights=Settings.YOLO_WEIGHTS_NAV)
 
             self.agent = AgentNav(ctrl, ocr, yolo_engine_nav, action=action)
 
@@ -257,11 +260,48 @@ class NavState:
                 finally:
                     with self._lock:
                         self.running = False
+                        self.current_action = None
                         logger_uma.info("[AgentNav] Stopped.")
 
             self.thread = threading.Thread(target=_runner, daemon=True)
             self.running = True
+            self.current_action = action
             self.thread.start()
+
+    def stop(self):
+        with self._lock:
+            if not self.running or not self.agent:
+                logger_uma.info("[AgentNav] Not running.")
+                return
+            logger_uma.info(f"[AgentNav] Stopping current run (action={self.current_action}).")
+            try:
+                self.agent.stop()
+            except Exception:
+                pass
+            # Fallback: set internal stop event if exposed
+            try:
+                evt = getattr(self.agent, "_stop_event", None)
+                if evt is not None:
+                    evt.set()
+            except Exception:
+                pass
+            t = self.thread
+            if t is not None:
+                # Wait in small intervals so we can break early if stopped
+                for _ in range(30):  # ~3s total
+                    try:
+                        t.join(timeout=0.1)
+                    except Exception:
+                        break
+                    if not t.is_alive():
+                        break
+                if t.is_alive():
+                    logger_uma.warning("[AgentNav] Worker thread is still alive after stop request.")
+            self.running = False
+            self.thread = None
+            self.agent = None
+            self.current_action = None
+            logger_uma.info("[AgentNav] Stop requested.")
 
 
 # ---------------------------
@@ -299,7 +339,15 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
         if bot_state.running:
             logger_uma.warning("[AgentNav] Cannot start while Player is running. Stop the Player first (F2).")
             return
-        nav_state.start(action="team_trials")
+        # Toggle or switch
+        if nav_state.running:
+            if nav_state.current_action == "team_trials":
+                nav_state.stop()
+            else:
+                nav_state.stop()
+                nav_state.start(action="team_trials")
+        else:
+            nav_state.start(action="team_trials")
 
     def _debounced_daily(source: str):
         nonlocal last_ts_daily
@@ -311,7 +359,15 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
         if bot_state.running:
             logger_uma.warning("[AgentNav] Cannot start while Player is running. Stop the Player first (F2).")
             return
-        nav_state.start(action="daily_races")
+        # Toggle or switch
+        if nav_state.running:
+            if nav_state.current_action == "daily_races":
+                nav_state.stop()
+            else:
+                nav_state.stop()
+                nav_state.start(action="daily_races")
+        else:
+            nav_state.start(action="daily_races")
 
     # Try to register hooks
     for k in keys_bot:

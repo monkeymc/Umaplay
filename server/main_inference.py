@@ -4,8 +4,8 @@ from __future__ import annotations
 import base64
 import hashlib
 import io
-from tkinter import Image
 from typing import Any, Dict, List, Literal, Optional, Tuple
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field, validator
 from core.perception.ocr.ocr_local import LocalOCREngine
 from core.perception.yolo.yolo_local import LocalYOLOEngine
 from PIL import Image, ImageOps
+from core.settings import Settings
 
 app = FastAPI()
 engine = LocalOCREngine()  # load once; keeps models on CPU/GPU as configured
@@ -110,25 +111,40 @@ def ocr(req: OCRRequest) -> Dict[str, Any]:
 
 # Instantiate one YOLO engine for the service (no controller needed here)
 yolo_engine = LocalYOLOEngine(ctrl=None)
+yolo_engine_nav = LocalYOLOEngine(ctrl=None, weights=Settings.YOLO_WEIGHTS_NAV)
 
 class YoloRequest(BaseModel):
     img: str = Field(..., description="Base64-encoded PNG/JPEG image (BGR compatible)")
     imgsz: int = Field(832, ge=64, le=3072)
     conf: float = Field(0.66, ge=0.0, le=1.0)
     iou: float = Field(0.45, ge=0.0, le=1.0)
+    weights_path: Optional[str] = None
 
 @app.post("/yolo")
 def yolo_detect(req: YoloRequest):
     try:
+        # Normalize incoming weights selection (string) and compare against server's NAV path
+        w_in = req.weights_path or ""
+        try:
+            w_str = str(w_in)
+        except Exception:
+            w_str = ""
+        try:
+            nav_str = str(Settings.YOLO_WEIGHTS_NAV)
+            nav_match = (w_str == nav_str) or (Path(w_str).name == Path(nav_str).name)
+        except Exception:
+            nav_match = False
+
+        yolo_engine_req = yolo_engine_nav if nav_match else yolo_engine
         bgr, pil_img = _decode_b64_to_bgr(req.img)
-        meta, dets = yolo_engine.detect_bgr(bgr, imgsz=req.imgsz, conf=req.conf, iou=req.iou, original_pil_img=pil_img, tag="yolo_endpoint")
+        meta, dets = yolo_engine_req.detect_bgr(bgr, imgsz=req.imgsz, conf=req.conf, iou=req.iou, original_pil_img=pil_img, tag="yolo_endpoint")
          # tiny debug: checksum of raw BGR bytes
         sha = hashlib.sha256(bgr.tobytes()).hexdigest()[:12]
         meta.update({
             "shape": tuple(int(x) for x in bgr.shape),
             "checksum": sha,
-            "weights": getattr(yolo_engine, "weights_path", "unknown"),
-            "ultralytics": getattr(type(yolo_engine.model), "__module__", "ultralytics"),
+            "weights": w_str,
+            "ultralytics": getattr(type(yolo_engine_req.model), "__module__", "ultralytics"),
         })
         return {"meta": meta, "dets": dets}
     except HTTPException:

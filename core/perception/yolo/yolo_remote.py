@@ -50,11 +50,13 @@ class RemoteYOLOEngine(IDetector):
     No Ultralytics or CUDA required on the VM.
     """
 
-    def __init__(self, ctrl: IController, base_url: str, *, timeout: float = 30.0, session: Optional[requests.Session] = None):
+    def __init__(self, ctrl: IController, base_url: str, *, timeout: float = 30.0, session: Optional[requests.Session] = None, weights: str | None = None):
         self.ctrl = ctrl
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self.session = session or requests.Session()
+        # Ensure JSON-serializable type (avoid WindowsPath issues)
+        self.weights = str(weights) if weights is not None else None
 
     def _post(self, payload: Dict[str, any]) -> Dict[str, any]:
         r = self.session.post(f"{self.base_url}/yolo", json=payload, timeout=self.timeout)
@@ -75,7 +77,7 @@ class RemoteYOLOEngine(IDetector):
         iou = iou if iou is not None else Settings.YOLO_IOU
 
         img64 = _encode_image_to_base64(bgr)
-        data = self._post({"img": img64, "imgsz": imgsz, "conf": conf, "iou": iou})
+        data = self._post({"img": img64, "imgsz": imgsz, "conf": conf, "iou": iou, "weights_path": self.weights})
         meta = data.get("meta", {"backend": "remote", "imgsz": imgsz, "conf": conf, "iou": iou})
         dets: List[DetectionDict] = data.get("dets", [])
         return meta, dets

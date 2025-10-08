@@ -100,9 +100,7 @@ class TeamTrialsFlow:
             timeout_s=2.0,
         )
         logger_uma.debug(f"[TeamTrials] pre-start greens: {pre}")
-        sleep(1)
-        if isinstance(self.ctrl, ScrcpyController) or (BlueStacksController is not None and isinstance(self.ctrl, BlueStacksController)):
-            sleep(2)
+        sleep(1.3)
         # Try to hit 'RACE!' (avoid CANCEL)
         started = self.waiter.click_when(
             classes=("button_green",),
@@ -131,9 +129,9 @@ class TeamTrialsFlow:
             sleep_after_advance=0.40,
         )
         logger_uma.debug(f"[TeamTrials] advances performed: {adv}")
-        sleep(1.5)
+        sleep(2)
         if isinstance(self.ctrl, ScrcpyController) or (BlueStacksController is not None and isinstance(self.ctrl, BlueStacksController)):
-            sleep(2)
+            sleep(4)
 
         # Random center taps to finish result animation
         img, _ = nav.collect_snapshot(self.waiter, self.yolo_engine, tag="team_trials_midtap")

@@ -1,6 +1,7 @@
 # core/agent_nav.py
 from __future__ import annotations
 
+import threading
 from collections import Counter
 from time import sleep
 from typing import Dict, List, Tuple
@@ -49,6 +50,7 @@ class AgentNav:
         self.yolo_engine = yolo_engine
         self.waiter = Waiter(ctrl, ocr, yolo_engine, waiter_config)
         self.action = action
+        self._stop_event = threading.Event()
         self._thr = {
             "race_team_trials": 0.50,
             "race_daily_races": 0.50,
@@ -94,12 +96,17 @@ class AgentNav:
 
     def run(self) -> Tuple[ScreenName, ScreenInfo]:
         self.ctrl.focus()
+        # fresh start: ensure previous stop is cleared
+        try:
+            self._stop_event.clear()
+        except Exception:
+            pass
         self.is_running = True
         last_screen: ScreenName = "UnknownNav"
         last_info: ScreenInfo = {}
 
         counter = 60
-        while self.is_running or counter > 0:
+        while not self._stop_event.is_set() and counter > 0:
             
             img, dets = nav.collect_snapshot(self.waiter, self.yolo_engine, tag="agent_nav")
             screen, info = self.classify_nav_screen(dets)
@@ -137,6 +144,20 @@ class AgentNav:
                 counter -= 1
 
             last_screen, last_info = screen, info
-            sleep(2)
+            # Responsive sleep: wake early if stop requested
+            for _ in range(20):  # up to ~2.0s total
+                if self._stop_event.is_set():
+                    break
+                sleep(0.1)
 
+        self.is_running = False
         return last_screen, last_info
+
+    def stop(self) -> None:
+        """Signal the run loop to stop on the next iteration."""
+        try:
+            logger_uma.info("[AgentNav] Stop signal received.")
+        except Exception:
+            pass
+        self.is_running = False
+        self._stop_event.set()
