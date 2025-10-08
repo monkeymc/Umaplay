@@ -9,6 +9,7 @@ import uvicorn
 from core.utils.logger import logger_uma, setup_uma_logging
 from core.settings import Settings
 from core.agent import Player
+from core.agent_nav import AgentNav
 
 from server.main import app
 from server.utils import load_config, ensure_config_exists
@@ -21,6 +22,7 @@ from core.controllers.steam import SteamController
 from core.controllers.android import ScrcpyController
 from core.utils.abort import request_abort, clear_abort
 from core.utils.event_processor import UserPrefs
+from core.perception.yolo.yolo_local import LocalYOLOEngine
 
 try:
     # Optional; if your Bluestacks controller is a separate class
@@ -207,28 +209,112 @@ class BotState:
 
 
 # ---------------------------
+# AgentNav one-shot runner state
+# ---------------------------
+class NavState:
+    def __init__(self):
+        self.thread: threading.Thread | None = None
+        self.agent: AgentNav | None = None
+        self.running: bool = False
+        self._lock = threading.Lock()
+
+    def start(self, action: str):
+        with self._lock:
+            if self.running:
+                logger_uma.info(f"[AgentNav] Already running (action={getattr(self.agent, 'action', '?')}).")
+                return
+
+            # Re-hydrate settings and logging similar to Player start
+            try:
+                cfg = load_config()
+            except Exception:
+                cfg = {}
+            Settings.apply_config(cfg or {})
+            setup_uma_logging(debug=Settings.DEBUG)
+
+            ctrl = make_controller_from_settings()
+            if not ctrl.focus():
+                mode = Settings.MODE.lower()
+                miss = "Steam" if mode == "steam" else ("BlueStacks" if mode == "bluestack" else "SCRCPY")
+                logger_uma.error(f"[AgentNav] Could not find/focus the {miss} window (title='{Settings.resolve_window_title(mode)}').")
+                return
+
+            # OCR from settings, YOLO engine for NAV specifically
+            ocr, _ = make_ocr_yolo_from_settings(ctrl)
+            yolo_engine_nav = LocalYOLOEngine(
+                ctrl=ctrl,
+                weights=Settings.YOLO_WEIGHTS_NAV,
+            )
+
+            self.agent = AgentNav(ctrl, ocr, yolo_engine_nav, action=action)
+
+            def _runner():
+                try:
+                    logger_uma.info(f"[AgentNav] Started (action={action}).")
+                    self.agent.run()
+                except Exception as e:
+                    logger_uma.exception("[AgentNav] Crash: %s", e)
+                finally:
+                    with self._lock:
+                        self.running = False
+                        logger_uma.info("[AgentNav] Stopped.")
+
+            self.thread = threading.Thread(target=_runner, daemon=True)
+            self.running = True
+            self.thread.start()
+
+
+# ---------------------------
 # Hotkey loop (keyboard lib + polling fallback)
 # ---------------------------
-def hotkey_loop(state: BotState):
-    # We’ll support both the configured hotkey and F2 as a backup
+def hotkey_loop(bot_state: BotState, nav_state: NavState):
+    # Support configured hotkey and F2 as backup for Player; F6/F7 for AgentNav
     configured = str(getattr(Settings, "HOTKEY", "F2")).upper()
-    keys = sorted(set([configured, "F2"]))  # e.g. ["F1","F2"] (no duplicates)
-    logger_uma.info(f"[HOTKEY] Press {', '.join(keys)} to start/stop the bot.")
+    keys_bot = sorted(set([configured, "F2"]))
+    keys_nav = ["F6", "F7"]
+    logger_uma.info(f"[HOTKEY] Player: press {', '.join(keys_bot)} to start/stop.")
+    logger_uma.info("[HOTKEY] AgentNav: press F6=TeamTrials, F7=DailyRaces.")
 
-    # Debounce across both hook & poll paths
-    last_ts = 0.0
+    # Debounce across both hook & poll paths (separate for clarity)
+    last_ts_toggle = 0.0
+    last_ts_team = 0.0
+    last_ts_daily = 0.0
 
     def _debounced_toggle(source: str):
-        nonlocal last_ts
+        nonlocal last_ts_toggle
         now = time.time()
-        if now - last_ts < 0.35:
+        if now - last_ts_toggle < 0.35:
             logger_uma.debug(f"[HOTKEY] Debounced toggle from {source}.")
             return
-        last_ts = now
-        state.toggle(source=source)
+        last_ts_toggle = now
+        bot_state.toggle(source=source)
+
+    def _debounced_team(source: str):
+        nonlocal last_ts_team
+        now = time.time()
+        if now - last_ts_team < 0.35:
+            logger_uma.debug(f"[HOTKEY] Debounced team-trials from {source}.")
+            return
+        last_ts_team = now
+        if bot_state.running:
+            logger_uma.warning("[AgentNav] Cannot start while Player is running. Stop the Player first (F2).")
+            return
+        nav_state.start(action="team_trials")
+
+    def _debounced_daily(source: str):
+        nonlocal last_ts_daily
+        now = time.time()
+        if now - last_ts_daily < 0.35:
+            logger_uma.debug(f"[HOTKEY] Debounced daily-races from {source}.")
+            return
+        last_ts_daily = now
+        if bot_state.running:
+            logger_uma.warning("[AgentNav] Cannot start while Player is running. Stop the Player first (F2).")
+            return
+        nav_state.start(action="daily_races")
 
     # Try to register hooks
-    for k in keys:
+    for k in keys_bot:
         try:
             logger_uma.debug(f"[HOTKEY] Registering hook for {k}…")
             keyboard.add_hotkey(
@@ -240,8 +326,24 @@ def hotkey_loop(state: BotState):
             logger_uma.info(f"[HOTKEY] Hook active for '{k}'.")
         except PermissionError as e:
             logger_uma.warning(
-                f"[HOTKEY] PermissionError registering '{k}'. "
-                f"On Windows you may need to run as Administrator. {e}"
+                f"[HOTKEY] PermissionError registering '{k}'. On Windows you may need to run as Administrator. {e}"
+            )
+        except Exception as e:
+            logger_uma.warning(f"[HOTKEY] Could not register '{k}': {e}")
+
+    for k, fn in [("F6", _debounced_team), ("F7", _debounced_daily)]:
+        try:
+            logger_uma.debug(f"[HOTKEY] Registering hook for {k}…")
+            keyboard.add_hotkey(
+                k,
+                lambda key=k, cb=fn: cb(f"hook:{key}"),
+                suppress=False,
+                trigger_on_release=True,
+            )
+            logger_uma.info(f"[HOTKEY] Hook active for '{k}'.")
+        except PermissionError as e:
+            logger_uma.warning(
+                f"[HOTKEY] PermissionError registering '{k}'. On Windows you may need to run as Administrator. {e}"
             )
         except Exception as e:
             logger_uma.warning(f"[HOTKEY] Could not register '{k}': {e}")
@@ -251,13 +353,23 @@ def hotkey_loop(state: BotState):
     try:
         while True:
             fired = False
-            for k in keys:
+            for k in keys_bot:
                 try:
                     if keyboard.is_pressed(k):
                         logger_uma.debug(f"[HOTKEY] Poll detected '{k}'.")
                         _debounced_toggle(f"poll:{k}")
                         fired = True
-                        time.sleep(0.20)  # allow key release; prevents rapid repeats
+                        time.sleep(0.20)
+                except Exception as e:
+                    logger_uma.debug(f"[HOTKEY] Poll error on '{k}': {e}")
+            # Nav keys
+            for k, fn in [("F6", _debounced_team), ("F7", _debounced_daily)]:
+                try:
+                    if keyboard.is_pressed(k):
+                        logger_uma.debug(f"[HOTKEY] Poll detected '{k}'.")
+                        fn(f"poll:{k}")
+                        fired = True
+                        time.sleep(0.20)
                 except Exception as e:
                     logger_uma.debug(f"[HOTKEY] Poll error on '{k}': {e}")
             if not fired:
@@ -294,8 +406,9 @@ if __name__ == "__main__":
 
     # Launch hotkey listener and server
     state = BotState()
+    nav_state = NavState()
     logger_uma.debug("[INIT] Spawning hotkey thread…")
-    threading.Thread(target=hotkey_loop, args=(state,), daemon=True).start()
+    threading.Thread(target=hotkey_loop, args=(state, nav_state), daemon=True).start()
 
     try:
         boot_server()  # blocking
@@ -306,4 +419,6 @@ if __name__ == "__main__":
         state.stop()
         if state.thread:
             state.thread.join(timeout=2.0)
+        if nav_state.thread:
+            nav_state.thread.join(timeout=2.0)
         logger_uma.info("[SHUTDOWN] Bye.")
