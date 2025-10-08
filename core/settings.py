@@ -46,6 +46,14 @@ class Settings:
     _ROOT_DIR = Path(__file__).resolve().parents[1]  # repo root (parent of /core)
     RACE_DATA_PATH = _ROOT_DIR / "datasets" / "in_game" / "races.json"
 
+    # --------- Training Configuration ---------
+    # Undertrain threshold as a percentage (e.g., 6.0 for 6%)
+    UNDERTRAIN_THRESHOLD: float = _env_float("UNDERTRAIN_THRESHOLD", default=6.0)
+    # Number of top stats to focus on for undertraining
+    TOP_STATS_FOCUS: int = _env_int("TOP_STATS_FOCUS", default=3)
+    # Race if no good training options are available (default: False = skip race if no good training)
+    RACE_IF_NO_GOOD_VALUE: bool = _env_bool("RACE_IF_NO_GOOD_VALUE", default=False)
+
     # --------- Project roots & paths ---------
     CORE_DIR: Path = Path(__file__).resolve().parent
     ROOT_DIR: Path = CORE_DIR.parent
@@ -58,6 +66,9 @@ class Settings:
     # Models & weights
     YOLO_WEIGHTS: Path = Path(
         _env("YOLO_WEIGHTS") or (MODELS_DIR / "uma.pt")
+    )
+    YOLO_WEIGHTS_NAV: Path = Path(
+        _env("YOLO_WEIGHTS_NAV") or (MODELS_DIR / "uma_nav.pt")
     )
     IS_BUTTON_ACTIVE_CLF_PATH: Path = Path(
         _env("IS_BUTTON_ACTIVE_CLF_PATH") or (MODELS_DIR / "active_button_clf.joblib")
@@ -103,6 +114,9 @@ class Settings:
 
     MINIMAL_MOOD = "normal"
 
+    # Keep the last applied config so other modules can extract runtime preset safely
+    _last_config: dict | None = None
+
     @classmethod
     def resolve_window_title(cls, mode: str) -> str:
         if mode == "steam":
@@ -118,6 +132,12 @@ class Settings:
         Apply values coming from the web UI config.json into process Settings.
         Only the keys we care about on the Python side are mapped here.
         """
+        # Persist a copy for later retrieval (e.g., training policy runtime extraction)
+        try:
+            cls._last_config = dict(cfg or {})
+        except Exception:
+            cls._last_config = None
+
         g = (cfg or {}).get('general', {}) or {}
         adv = g.get('advanced', {}) or {}
 
@@ -142,6 +162,11 @@ class Settings:
         cls.MINIMAL_MOOD = str(preset.get('minimalMood', cls.MINIMAL_MOOD))
         cls.REFERENCE_STATS = preset.get('targetStats', cls.REFERENCE_STATS)
         cls.PRIORITY_STATS = preset.get('priorityStats', cls.PRIORITY_STATS)
+        # Prefer per-preset hint toggle; fallback to general for backward compatibility
+        try:
+            cls.HINT_IS_IMPORTANT = bool(preset.get('prioritizeHint', g.get('prioritizeHint', cls.HINT_IS_IMPORTANT)))
+        except Exception:
+            cls.HINT_IS_IMPORTANT = bool(g.get('prioritizeHint', cls.HINT_IS_IMPORTANT))
         # Advanced
         hk = adv.get('hotkey')
         if hk:
@@ -151,26 +176,48 @@ class Settings:
         url = adv.get('externalProcessorUrl')
         if url:
             cls.EXTERNAL_PROCESSOR_URL = url
-        cls.AUTO_REST_MINIMUM = int(adv.get('autoRestMin', cls.AUTO_REST_MINIMUM))
+        # Match UI/schema key: 'autoRestMinimum'
+        cls.AUTO_REST_MINIMUM = int(adv.get('autoRestMinimum', cls.AUTO_REST_MINIMUM))
+        # Update training configuration
+        undertrain_threshold = float(adv.get('undertrainThreshold', cls.UNDERTRAIN_THRESHOLD))
+        cls.UNDERTRAIN_THRESHOLD = max(1.0, min(20.0, undertrain_threshold))  # Clamp between 1% and 20%
+        
+        # Update top stats focus setting
+        top_stats_focus = int(adv.get('topStatsFocus', cls.TOP_STATS_FOCUS))
+        cls.TOP_STATS_FOCUS = max(1, min(5, top_stats_focus))  # Clamp between 1 and 5
 
     @classmethod
     def extract_runtime_preset(cls, cfg: dict) -> dict:
         """
         Pick the active preset (or first), and return a slim dict with things
-        the Python runtime cares about: plan_races, select_style, skill_list.
+        the Python runtime cares about: plan_races, select_style, skill_list, and other settings.
         """
         presets = (cfg or {}).get('presets') or []
         active_id = (cfg or {}).get('activePresetId')
         preset = next((p for p in presets if p.get('id') == active_id), None) or (presets[0] if presets else None)
         if not preset:
-            return {'plan_races': {}, 'skill_list': [], 'select_style': None}
+            return {
+                'plan_races': {},
+                'skill_list': [],
+                'select_style': None,
+                'raceIfNoGoodValue': cls.RACE_IF_NO_GOOD_VALUE
+            }
 
         plan_races = preset.get('plannedRaces', {}) or {}
         # skillsToBuy may be array of names or objects with {name}
         raw_skills = preset.get('skillsToBuy', []) or []
         skill_list = [s['name'] if isinstance(s, dict) else s for s in raw_skills]
         select_style = preset.get('selectStyle') or preset.get('juniorStyle') or None  # 'end'|'late'|'pace'|'front'|null
-        return {'plan_races': plan_races, 'skill_list': skill_list, 'select_style': select_style}
+        
+        # Get the race if no good value setting from preset or use the global default
+        race_if_no_good_value = preset.get('raceIfNoGoodValue', cls.RACE_IF_NO_GOOD_VALUE)
+        
+        return {
+            'plan_races': plan_races,
+            'skill_list': skill_list,
+            'select_style': select_style,
+            'raceIfNoGoodValue': race_if_no_good_value
+        }
 
 class Constants:
     map_tile_idx_to_type = {

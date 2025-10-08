@@ -18,7 +18,6 @@ from typing import Any
 from dataclasses import dataclass, asdict
 
 # ---- knobs you may want to tweak later (kept here for clarity) ----
-BASE_MAX_FAILURE = 20  # default risk cap (%) if not provided elsewhere
 GREEDY_THRESHOLD = 2.5  # "pick immediately" threshold (if you use it)
 HIGH_SV_THRESHOLD = 3.5  # when SV >= this, allow risk up to ×RISK_RELAX_FACTOR
 RISK_RELAX_FACTOR = 1.5  # e.g., 20% -> 30% when SV is high
@@ -676,7 +675,7 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
             notes.append(f"Rainbow combo +{combo_bonus}")
 
         # ---- risk gating with dynamic relax based on SV ----
-        base_limit = BASE_MAX_FAILURE
+        base_limit = Settings.MAX_FAILURE
         # Piecewise multiplier:
         #   SV ≥ 4.0 → x2.0
         #   SV > 3.0 → x1.5

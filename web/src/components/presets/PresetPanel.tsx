@@ -1,6 +1,6 @@
 import Section from '@/components/common/Section'
 import { useConfigStore } from '@/store/configStore'
-import { Stack, TextField } from '@mui/material'
+import { Stack, TextField, FormControlLabel, Switch } from '@mui/material'
 import PriorityStats from './PriorityStats'
 import TargetStats from './TargetStats'
 import MoodSelector from './MoodSelector'
@@ -11,7 +11,7 @@ import { useEventsData } from '@/hooks/useEventsData'
 import EventSetupSection from '../events/EventSetupSection'
 import { useEventsSetupStore } from '@/store/eventsSetupStore'
 import { useEffect } from 'react'
- 
+
 export default function PresetPanel({ compact = false }: { compact?: boolean }) {
   const cfg = useConfigStore((s) => s.config)
   const renamePreset = useConfigStore((s) => s.renamePreset)
@@ -52,6 +52,28 @@ export default function PresetPanel({ compact = false }: { compact?: boolean }) 
         <MoodSelector presetId={active.id} />
         <StyleSelector presetId={active.id} />
         <SkillsPicker presetId={active.id} />
+        <Section title="Strategy">
+          <Stack spacing={1}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={!!active.raceIfNoGoodValue}
+                  onChange={(e) => patchPreset(active.id!, 'raceIfNoGoodValue', e.target.checked)}
+                />
+              }
+              label="Allow Racing over low training"
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={!!active.prioritizeHint}
+                  onChange={(e) => patchPreset(active.id!, 'prioritizeHint', e.target.checked)}
+                />
+              }
+              label="Prioritize hint tiles"
+            />
+          </Stack>
+        </Section>
         {eventsIndex && <EventSetupSection index={eventsIndex} />}
         <RaceScheduler presetId={active.id} compact={compact} />
       </Stack>

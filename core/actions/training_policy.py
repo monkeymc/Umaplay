@@ -184,6 +184,8 @@ def decide_action_training(
     energy_rest_gate_mid: int = 50,  # URA branch
     energy_race_gate: int = 68,  # summer / late branch
     skip_race=False,
+    # Runtime settings from preset
+    race_if_no_good_value: bool = False,
 ) -> Tuple[TrainAction, Optional[int], str]:
     """
     Return the decided action and the target tile index (or None when not applicable).
@@ -279,9 +281,10 @@ def decide_action_training(
     # -------------------------------------------------
     # Distribution-aware nudge (before step 1)
     # If a top-3 priority stat is undertrained vs. reference distribution
-    # by ≥ 6% and its best SV is within 1.5 of the best overall, pick it.
+    # by ≥ (UNDERTRAIN_THRESHOLD)% and its best SV is within 1.5 of the best overall, pick it.
     # -------------------------------------------------
-    UNDERTRAIN_DELTA = 0.06  # ≥ 6% gap vs reference share
+    # Use the configurable threshold from Settings, defaulting to 6% if not set
+    UNDERTRAIN_DELTA = getattr(Settings, 'UNDERTRAIN_THRESHOLD', 6.0) / 100.0  # Convert percentage to decimal
     MAX_SV_GAP = 1.5
 
     try:
@@ -307,24 +310,42 @@ def decide_action_training(
                     k: ref_dist[k] - cur_dist[k] for k in known_keys
                 }  # +ve → undertrained
                 logger_uma.debug(f"STATS deltas respect 'ideal' distribution: {deltas}")
-                top3 = [
-                    t.upper()
-                    for t in (
-                        priority_stats[:3] if priority_stats else ["SPD", "STA", "WIT"]
-                    )
-                ]
+                # Get the top N stats to focus on, based on priority_stats or default order
+                default_priority = ["SPD", "STA", "WIT", "PWR", "GUTS"]
+                effective_priority = priority_stats if priority_stats else default_priority
+                top_n = effective_priority[:Settings.TOP_STATS_FOCUS]
+                
+                # Log which stats we're focusing on
+                logger_uma.debug(f"Focusing on top {Settings.TOP_STATS_FOCUS} stats: {top_n}")
+                
+                # Find stats that are undertrained and in our focus list
                 cand = [
                     (k, deltas[k])
                     for k in known_keys
-                    if k in top3 and deltas[k] >= UNDERTRAIN_DELTA
+                    if k in top_n and deltas[k] >= UNDERTRAIN_DELTA
                 ]
+                
+                # If no candidates in top N, consider all stats but with lower priority
+                if not cand and Settings.TOP_STATS_FOCUS < 5:  # Only if we're not already considering all
+                    cand = [
+                        (k, deltas[k] * 0.5)  # Reduce priority for non-focus stats
+                        for k in known_keys
+                        if deltas[k] >= UNDERTRAIN_DELTA
+                    ]
 
                 if cand:
                     
                     logger_uma.debug(f"Undertrain candidates: {cand}")
-                    # Most undertrained among top-3 priorities
+                    # Sort by how undertrained they are (highest gap first)
                     cand.sort(key=lambda kv: kv[1], reverse=True)
                     under_stat, gap = cand[0]
+                    
+                    # Log decision making
+                    if len(cand) > 1:
+                        logger_uma.debug(
+                            f"Selected {under_stat} (gap: {gap:.2f}) from candidates: "
+                            f"{', '.join(f'{k}({v:.2f})' for k, v in cand)}"
+                        )
 
                     # Best allowed overall
                     top_allowed_idx = best_allowed_any
@@ -496,6 +517,29 @@ def decide_action_training(
     ):
         dk = date_key_from_dateinfo(di)
         if dk and RaceIndex.has_g1(dk):
+            # Check if we should skip racing due to no good training options
+            if not race_if_no_good_value:
+                # Check if we have any good training options (SV > 0)
+                has_good_training = any(
+                    float(r.get("sv_total", 0)) > 0 
+                    for r in allowed_rows_filtered
+                )
+                
+                if not has_good_training:
+                    # Find the best training option even if it's not great
+                    best_tile = _best_tile(
+                        allowed_rows_filtered,
+                        min_sv=0,  # Consider any training option
+                        prefer_types=priority_stats,
+                        tile_to_type=tile_to_type,
+                    )
+                    if best_tile is not None:
+                        best_sv = next((r.get("sv_total", 0) for r in allowed_rows_filtered 
+                                     if r.get("tile_idx") == best_tile), 0)
+                        because(f"No good training options (best SV: {best_sv:.2f} ≤ 0.1) and race_if_no_good_value is disabled")
+                        return (TrainAction.TRAIN_MAX, best_tile, "; ".join(reasons))
+                    # If no training options at all, fall through to race
+            
             because("Prioritize G1 enabled, G1 available today → try race")
             return (TrainAction.RACE, None, "; ".join(reasons))
 
@@ -594,6 +638,29 @@ def decide_action_training(
         and not is_final_season(di)
     ):
         if not (is_junior_year(di) or is_pre_debut(di) or is_final_season(di)) and not skip_race:
+            # Check if we should skip racing due to no good training options
+            if not race_if_no_good_value:
+                # Check if we have any good training options (SV > 0)
+                has_good_training = any(
+                    float(r.get("sv_total", 0)) >= 0 
+                    for r in allowed_rows_filtered
+                )
+                
+                if not has_good_training:
+                    # Find the best training option even if it's not great
+                    best_tile = _best_tile(
+                        allowed_rows_filtered,
+                        min_sv=0,  # Consider any training option
+                        prefer_types=priority_stats,
+                        tile_to_type=tile_to_type,
+                    )
+                    if best_tile is not None:
+                        best_sv = next((r.get("sv_total", 0) for r in allowed_rows_filtered 
+                                     if r.get("tile_idx") == best_tile), 0)
+                        because(f"No good training options (best SV: {best_sv:.2f} ≤ 0.1) and race_if_no_good_value is disabled")
+                        return (TrainAction.TRAIN_MAX, best_tile, "; ".join(reasons))
+                    # If no training options at all, fall through to race
+            
             because(
                 f"Not summer, energy ≥ {energy_race_gate}% and not Junior Pre-Debut → try race (collect skill pts + minimal stat)"
             )
@@ -603,7 +670,7 @@ def decide_action_training(
                 because("Racing is skipped for external reasons")
             else:
                 because(
-                    "Racing is canceled either for energy, comming summer or debut/junior year"
+                    "Racing is canceled either for energy, coming summer or debut/junior year"
                 )
     else:
         because(
@@ -725,12 +792,16 @@ def check_training(player, *, skip_race: bool = False) -> Optional[TrainingDecis
         for note in r["notes"]:
             logger_uma.info(f"   - {note}")
 
-    # 3) Build policy inputs from live player state
+    # 3) Build policy inputs from live player state and config
     mood = player.lobby.state.mood if player.lobby else ("UNKNOWN", -1)
     turns_left = player.lobby.state.turn if player.lobby else -1
     career_date = player.lobby.state.date_info if player.lobby else None
     energy_pct = player.lobby.state.energy if player.lobby else None
     stats = player.lobby.state.stats if player.lobby else None
+    
+    # Get the current preset's runtime settings from the last applied config
+    preset_settings = Settings.extract_runtime_preset(getattr(Settings, '_last_config', {}) or {})
+    race_if_no_good_value = preset_settings.get('raceIfNoGoodValue', False)
 
     # 4) Decide the action (no side effects here)
     action, tidx, why = decide_action_training(
@@ -746,6 +817,7 @@ def check_training(player, *, skip_race: bool = False) -> Optional[TrainingDecis
         priority_stats=Settings.PRIORITY_STATS,
         minimal_mood=Settings.MINIMAL_MOOD,
         skip_race=bool(skip_race),
+        race_if_no_good_value=race_if_no_good_value,
     )
     logger_uma.info(
         "[training] Decision: %s  tile=%s because=|%s|", action.value, tidx, why

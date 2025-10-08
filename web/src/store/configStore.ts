@@ -96,20 +96,31 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
     })),
 
   // ---- io
-  replaceConfig: (cfg) => set({
-    // if someone calls replaceConfig directly, normalize here too
-    config: {
-      ...cfg,
-      presets: cfg.presets.map((p) => ({
+  replaceConfig: (cfg) => set(() => {
+    // Normalize presets, migrate prioritizeHint from general -> preset if needed
+    const migrated = (() => {
+      const presets = (cfg.presets || []).map((p) => ({
         ...p,
         event_setup: p.event_setup ?? defaultEventSetup(),
-      })),
-    }
+        prioritizeHint: typeof p.prioritizeHint === 'boolean' ? p.prioritizeHint : (cfg.general as any)?.prioritizeHint ?? false,
+      }))
+      const activeId = cfg.activePresetId ?? presets[0]?.id
+      const active = presets.find((p) => p.id === activeId)
+      // Mirror back to general for backward compat on-disk
+      const general = { ...cfg.general, prioritizeHint: active ? !!active.prioritizeHint : (cfg.general as any)?.prioritizeHint ?? false }
+      return { ...cfg, general, presets }
+    })()
+    return { config: migrated }
   }),
 
   saveLocal: () => {
     const { config } = get()
-    localStorage.setItem(LS_KEY, JSON.stringify(config))
+    const activeId = config.activePresetId ?? config.presets[0]?.id
+    const active = config.presets.find((p) => p.id === activeId)
+    const data = JSON.parse(JSON.stringify(config)) as AppConfig
+    // Mirror active preset's prioritizeHint into general for backward compat
+    ;(data.general as any).prioritizeHint = active ? !!active.prioritizeHint : (data.general as any)?.prioritizeHint ?? false
+    localStorage.setItem(LS_KEY, JSON.stringify(data))
   },
 
   loadLocal: () => {
@@ -119,7 +130,16 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
     try {
       const parsed = JSON.parse(raw)
       const safe = appConfigSchema.parse(parsed)
-      set({ config: safe })   // schema has already defaulted event_setup
+      // Migrate general.prioritizeHint -> preset.prioritizeHint, and mirror back
+      const presets = safe.presets.map((p) => ({
+        ...p,
+        event_setup: p.event_setup ?? defaultEventSetup(),
+        prioritizeHint: typeof p.prioritizeHint === 'boolean' ? p.prioritizeHint : (safe.general as any)?.prioritizeHint ?? false,
+      }))
+      const activeId = safe.activePresetId ?? presets[0]?.id
+      const active = presets.find((p) => p.id === activeId)
+      const general = { ...safe.general, prioritizeHint: active ? !!active.prioritizeHint : (safe.general as any)?.prioritizeHint ?? false }
+      set({ config: { ...safe, general, presets } })
     } catch {
       // ignore
     }
@@ -127,7 +147,11 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
 
   exportJson: () => {
     const { config } = get()
-    const data = JSON.parse(JSON.stringify(config))
+    const data = JSON.parse(JSON.stringify(config)) as AppConfig
+    const activeId = data.activePresetId ?? data.presets[0]?.id
+    const active = data.presets.find((p) => p.id === activeId)
+    // Mirror active preset's prioritizeHint into general for backward compat
+    ;(data.general as any).prioritizeHint = active ? !!active.prioritizeHint : (data.general as any)?.prioritizeHint ?? false
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -140,13 +164,16 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
   importJson: (raw) => {
     try {
       const safe = appConfigSchema.parse(raw)
-      const normalized: AppConfig = {
-        ...safe,
-        presets: safe.presets.map((p) => ({
-          ...p,
-          event_setup: p.event_setup ?? defaultEventSetup(),
-        })),
-      }
+      // Normalize + migrate prioritizeHint
+      const presets = safe.presets.map((p) => ({
+        ...p,
+        event_setup: p.event_setup ?? defaultEventSetup(),
+        prioritizeHint: typeof p.prioritizeHint === 'boolean' ? p.prioritizeHint : (safe.general as any)?.prioritizeHint ?? false,
+      }))
+      const activeId = safe.activePresetId ?? presets[0]?.id
+      const active = presets.find((p) => p.id === activeId)
+      const general = { ...safe.general, prioritizeHint: active ? !!active.prioritizeHint : (safe.general as any)?.prioritizeHint ?? false }
+      const normalized: AppConfig = { ...safe, general, presets }
       set({ config: normalized })
       return { ok: true }
     } catch (e: any) {

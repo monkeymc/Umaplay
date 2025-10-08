@@ -182,21 +182,7 @@ export default function GeneralForm() {
           info="If the agent fails to read the goal text, reattempt once."
         />
 
-        <FieldRow
-          label="Prioritize hint"
-          control={
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={g.prioritizeHint}
-                  onChange={(e) => setGeneral({ prioritizeHint: e.target.checked })}
-                />
-              }
-              label={g.prioritizeHint ? 'Enabled' : 'Disabled'}
-            />
-          }
-          info="Treat hint tiles as more valuable during training decisions."
-        />
+        {/* Moved to per-preset Strategy section: prioritizeHint */}
         <FieldRow
           label="Max Failure %"
           info="Upper bound for allowed failure% on a tile."

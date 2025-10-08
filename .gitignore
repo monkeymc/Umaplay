@@ -29,13 +29,16 @@ dist_ssr
 
 internal.md
 temp
-dev_utils
+dev_utils/*
+!dev_utils/recursive_context.py
+!dev_utils/recursive_context_ts.py
 dev.ipynb
 debug
 runs
 
 datasets/coco8/**
 datasets/uma/*
+datasets/uma_nav/*
 !datasets/uma/raw/
 datasets/uma/raw/*
 models/base/*
@@ -50,3 +53,10 @@ tests/outputs/*
 prepare_uma_yolo_dataset.py
 
 dev_train.ipynb
+docs/ai/feature/*
+!docs/ai/feature/.gitkeep
+
+capture_steam.py
+change.patch
+
+.windsurf
