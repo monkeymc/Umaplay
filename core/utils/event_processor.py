@@ -14,22 +14,26 @@ from PIL.Image import Image as PILImage
 # Paths (adjust if needed)
 # -----------------------------
 DATASETS_EVENTS = Path("datasets/in_game/events.json")
-ASSETS_EVENTS_DIR = Path("assets/events")  # /{support|trainee|scenario}/<name>_<rarity>.png
-BUILD_DIR = Path("build")                  # will hold event_catalog.json
+ASSETS_EVENTS_DIR = Path(
+    "assets/events"
+)  # /{support|trainee|scenario}/<name>_<rarity>.png
+BUILD_DIR = Path("build")  # will hold event_catalog.json
 CATALOG_JSON = Path("datasets/in_game/event_catalog.json")
 
 
 def safe_phash_from_image(img: PILImage) -> Optional[int]:
-   """Compute 64-bit pHash from an in-memory PIL image."""
-   try:
-       ph = imagehash.phash(img)
-       return int(str(ph), 16)
-   except Exception:
-       return None
+    """Compute 64-bit pHash from an in-memory PIL image."""
+    try:
+        ph = imagehash.phash(img)
+        return int(str(ph), 16)
+    except Exception:
+        return None
+
 
 # -----------------------------
 # Utilities
 # -----------------------------
+
 
 def normalize_text(s: str) -> str:
     """Basic normalization robust to punctuation and spacing differences."""
@@ -37,10 +41,17 @@ def normalize_text(s: str) -> str:
         return ""
     # unify punctuation commonly seen in Uma text (music notes, arrows, full/half width)
     rep = {
-        "≫": ">>", "«": "<<", "»": ">>", "♪": " note ",
-        "☆": "*", "★": "*",
+        "≫": ">>",
+        "«": "<<",
+        "»": ">>",
+        "♪": " note ",
+        "☆": "*",
+        "★": "*",
         "　": " ",  # full-width space
-        "–": "-", "—": "-", "―": "-", "-": "-",
+        "–": "-",
+        "—": "-",
+        "―": "-",
+        "-": "-",
         "…": "...",
     }
     s2 = s.strip().lower()
@@ -57,7 +68,7 @@ def safe_phash(img_path: Path) -> Optional[int]:
     try:
         with Image.open(img_path) as im:
             ph = imagehash.phash(im)  # 64-bit by default
-            return int(str(ph), 16)   # store hex→int for portability
+            return int(str(ph), 16)  # store hex→int for portability
     except Exception:
         return None
 
@@ -72,7 +83,9 @@ def hamming_similarity64(a_int: Optional[int], b_int: Optional[int]) -> float:
     return 1.0 - (dist / 64.0)
 
 
-def find_event_image_path(ev_type: str, name: str, rarity: str, attribute: str) -> Optional[Path]:
+def find_event_image_path(
+    ev_type: str, name: str, rarity: str, attribute: str
+) -> Optional[Path]:
     """
     Find an image under assets/events/{ev_type}/<name>_<attribute>_<rarity>.(png|jpg|jpeg|webp).
     ev_type is one of: support|trainee|scenario
@@ -81,7 +94,7 @@ def find_event_image_path(ev_type: str, name: str, rarity: str, attribute: str) 
     exts = (".png", ".jpg", ".jpeg", ".webp")
 
     attr = (attribute or "None").strip()
-    rar  = (rarity or "None").strip()
+    rar = (rarity or "None").strip()
     attr_up = attr.upper()
 
     candidates: List[str] = []
@@ -117,25 +130,30 @@ def find_event_image_path(ev_type: str, name: str, rarity: str, attribute: str) 
 # Data structures
 # -----------------------------
 
+
 @dataclass
 class EventRecord:
     # Stable key: "type/name/rarity/event_name"
     key: str
-    key_step: str            # new: step-aware key → ".../event_name#s<step>"
-    type: str              # support|trainee|scenario
-    name: str              # e.g., "Kitasan Black", "Vodka", "Ura Finale", or "general"
-    rarity: str            # e.g., "SSR", "SR", "R", "None"
-    attribute: str    # e.g., "SPD", "STA", "PWR", "GUTS", "WIT", "None"
-    event_name: str        # e.g., "Paying It Forward"
+    key_step: str  # new: step-aware key → ".../event_name#s<step>"
+    type: str  # support|trainee|scenario
+    name: str  # e.g., "Kitasan Black", "Vodka", "Ura Finale", or "general"
+    rarity: str  # e.g., "SSR", "SR", "R", "None"
+    attribute: str  # e.g., "SPD", "STA", "PWR", "GUTS", "WIT", "None"
+    event_name: str  # e.g., "Paying It Forward"
     chain_step: Optional[int]
     default_preference: Optional[int]  # which option number to pick by default
-    options: Dict[str, List[Dict]]     # as-is from JSON (stringified keys for safety)
-    title_norm: str                    # normalized event_name for fast match
-    image_path: Optional[str]          # representative icon path (per name+rarity)
-    phash64: Optional[int]             # 64-bit pHash int
+    options: Dict[str, List[Dict]]  # as-is from JSON (stringified keys for safety)
+    title_norm: str  # normalized event_name for fast match
+    image_path: Optional[str]  # representative icon path (per name+rarity)
+    phash64: Optional[int]  # 64-bit pHash int
 
     @staticmethod
-    def from_json_item(parent: Dict, ev_item: Dict, phash_map: Dict[Tuple[str, str, str, str], Tuple[Optional[str], Optional[int]]]) -> "EventRecord":
+    def from_json_item(
+        parent: Dict,
+        ev_item: Dict,
+        phash_map: Dict[Tuple[str, str, str, str], Tuple[Optional[str], Optional[int]]],
+    ) -> "EventRecord":
         ev_type = parent.get("type", "")
         name = parent.get("name", "")
         rarity = parent.get("rarity", "None") or "None"
@@ -151,7 +169,9 @@ class EventRecord:
         title_norm = normalize_text(ev_name)
         key = f"{ev_type}/{name}/{attribute}/{rarity}/{ev_name}"
 
-        img_path, phash = phash_map.get((ev_type, name, rarity, attribute), (None, None))
+        img_path, phash = phash_map.get(
+            (ev_type, name, rarity, attribute), (None, None)
+        )
         return EventRecord(
             key=key,
             key_step=f"{key}#s{chain_step if chain_step is not None else 1}",
@@ -173,6 +193,7 @@ class EventRecord:
 # Build step (offline, local)
 # -----------------------------
 
+
 def build_catalog() -> None:
     """
     Parse datasets/in_game/events.json, compute representative image pHashes once per (type,name,rarity,attribute),
@@ -186,7 +207,9 @@ def build_catalog() -> None:
         root = json.load(f)
 
     # Precompute phash for each (type,name,rarity)
-    set_data_to_file_and_phash: Dict[Tuple[str, str, str, str], Tuple[Optional[str], Optional[int]]] = {}
+    set_data_to_file_and_phash: Dict[
+        Tuple[str, str, str, str], Tuple[Optional[str], Optional[int]]
+    ] = {}
     seen_set_data = set()
 
     for parent in root:
@@ -201,7 +224,10 @@ def build_catalog() -> None:
 
         img_path = find_event_image_path(ev_type, name, rarity, attribute)
         phash = safe_phash(img_path) if img_path else None
-        set_data_to_file_and_phash[set_data] = (str(img_path) if img_path else None, phash)
+        set_data_to_file_and_phash[set_data] = (
+            str(img_path) if img_path else None,
+            phash,
+        )
 
     # Expand to event records
     records: List[EventRecord] = []
@@ -222,6 +248,7 @@ def build_catalog() -> None:
 # -----------------------------
 # Preferences (overrides)
 # -----------------------------
+
 
 @dataclass
 class UserPrefs:
@@ -251,10 +278,13 @@ class UserPrefs:
         else:
             # expect list of {"pattern": "support/Kitasan*/SSR/*", "pick": 2}
             patterns = [(d.get("pattern", ""), int(d.get("pick", 1))) for d in patt_src]
-        default_by_type = raw.get("defaults", {"support": 1, "trainee": 1, "scenario": 1})
-        return UserPrefs(overrides=overrides, patterns=patterns, default_by_type=default_by_type)
+        default_by_type = raw.get(
+            "defaults", {"support": 1, "trainee": 1, "scenario": 1}
+        )
+        return UserPrefs(
+            overrides=overrides, patterns=patterns, default_by_type=default_by_type
+        )
 
- 
     # ---- build UserPrefs from the active preset inside config.json ----
     @staticmethod
     def from_config(cfg: dict | None) -> "UserPrefs":
@@ -265,10 +295,16 @@ class UserPrefs:
         cfg = cfg or {}
         presets = cfg.get("presets") or []
         active_id = cfg.get("activePresetId")
-        preset = next((p for p in presets if p.get("id") == active_id), None) or (presets[0] if presets else None)
+        preset = next((p for p in presets if p.get("id") == active_id), None) or (
+            presets[0] if presets else None
+        )
         if not preset:
             # no presets at all
-            return UserPrefs(overrides={}, patterns=[], default_by_type={"support": 1, "trainee": 1, "scenario": 1})
+            return UserPrefs(
+                overrides={},
+                patterns=[],
+                default_by_type={"support": 1, "trainee": 1, "scenario": 1},
+            )
 
         setup = preset.get("event_setup") or {}
         prefs = setup.get("prefs") or {}
@@ -317,8 +353,9 @@ class UserPrefs:
             "trainee": int(d.get("trainee", 1) or 1),
             "scenario": int(d.get("scenario", 1) or 1),
         }
-        return UserPrefs(overrides=overrides, patterns=patterns, default_by_type=default_by_type)
-
+        return UserPrefs(
+            overrides=overrides, patterns=patterns, default_by_type=default_by_type
+        )
 
     def pick_for(self, rec: EventRecord) -> int:
         """
@@ -354,6 +391,7 @@ class UserPrefs:
 # Runtime: load catalog
 # -----------------------------
 
+
 @dataclass
 class Catalog:
     records: List[EventRecord]
@@ -374,19 +412,20 @@ class Catalog:
 # Retrieval + Reranking
 # -----------------------------
 
+
 @dataclass
 class Query:
     # Minimal info you’ll have from OCR/UI
     ocr_title: str
     # Optional hints (help scoring if provided)
-    type_hint: Optional[str] = None        # support|trainee|scenario
-    name_hint: Optional[str] = None        # e.g., "Kitasan Black"
-    rarity_hint: Optional[str] = None      # "SSR"/"SR"/"R"/"None"
-    attribute_hint: Optional[str] = None   # "SPD"/"STA"/"PWR"/"GUTS"/"WIT"/"None"
+    type_hint: Optional[str] = None  # support|trainee|scenario
+    name_hint: Optional[str] = None  # e.g., "Kitasan Black"
+    rarity_hint: Optional[str] = None  # "SSR"/"SR"/"R"/"None"
+    attribute_hint: Optional[str] = None  # "SPD"/"STA"/"PWR"/"GUTS"/"WIT"/"None"
     chain_step_hint: Optional[int] = None  # e.g., 1/2/3 for chain events
-    portrait_path: Optional[str] = None    # optional: path to portrait/icon
+    portrait_path: Optional[str] = None  # optional: path to portrait/icon
     portrait_image: Optional[PILImage] = None  # optional: PIL image crop (in-memory)
-    portrait_phash: Optional[int] = None   # optional: precomputed 64-bit pHash
+    portrait_phash: Optional[int] = None  # optional: precomputed 64-bit pHash
 
 
 @dataclass
@@ -398,7 +437,9 @@ class MatchResult:
     hint_bonus: float
 
 
-def score_candidate(q: Query, rec: EventRecord, portrait_phash: Optional[int]) -> MatchResult:
+def score_candidate(
+    q: Query, rec: EventRecord, portrait_phash: Optional[int]
+) -> MatchResult:
     # 1) text similarity on titles (normalized)
     qt = normalize_text(q.ocr_title)
     ts1 = fuzz.partial_ratio(qt, rec.title_norm) / 100.0
@@ -406,7 +447,9 @@ def score_candidate(q: Query, rec: EventRecord, portrait_phash: Optional[int]) -
     text_sim = max(ts1, ts2)  # robust on short/noisy titles
 
     # 2) image similarity (pHash) if we have a portrait crop
-    img_sim = hamming_similarity64(portrait_phash, rec.phash64) if portrait_phash else 0.0
+    img_sim = (
+        hamming_similarity64(portrait_phash, rec.phash64) if portrait_phash else 0.0
+    )
 
     # 3) hint bonus (soft constraints, deck-agnostic)
     hint_bonus = 0.0
@@ -416,7 +459,9 @@ def score_candidate(q: Query, rec: EventRecord, portrait_phash: Optional[int]) -
         hint_bonus += 0.08
     if q.rarity_hint and normalize_text(q.rarity_hint) == normalize_text(rec.rarity):
         hint_bonus += 0.12
-    if q.attribute_hint and normalize_text(q.attribute_hint) == normalize_text(rec.attribute):
+    if q.attribute_hint and normalize_text(q.attribute_hint) == normalize_text(
+        rec.attribute
+    ):
         hint_bonus += 0.12
     if q.chain_step_hint is not None and (rec.chain_step or 1) == q.chain_step_hint:
         hint_bonus += 0.12
@@ -424,7 +469,9 @@ def score_candidate(q: Query, rec: EventRecord, portrait_phash: Optional[int]) -
     # Text carries most of the weight; image breaks ties when portrait is present.
     score = 0.82 * text_sim + 0.11 * img_sim + hint_bonus
 
-    return MatchResult(rec=rec, score=score, text_sim=text_sim, img_sim=img_sim, hint_bonus=hint_bonus)
+    return MatchResult(
+        rec=rec, score=score, text_sim=text_sim, img_sim=img_sim, hint_bonus=hint_bonus
+    )
 
 
 def retrieve_best(
@@ -458,16 +505,21 @@ def retrieve_best(
         if subset:
             pool = subset
     if q.name_hint:
-        subset = [r for r in pool if normalize_text(r.name) == normalize_text(q.name_hint)]
+        subset = [
+            r for r in pool if normalize_text(r.name) == normalize_text(q.name_hint)
+        ]
         if subset:
             pool = subset
     if q.rarity_hint:
-        subset = [r for r in pool if normalize_text(r.rarity) == normalize_text(q.rarity_hint)]
+        subset = [
+            r for r in pool if normalize_text(r.rarity) == normalize_text(q.rarity_hint)
+        ]
         if subset:
             pool = subset
     if q.attribute_hint:
         subset = [
-            r for r in pool
+            r
+            for r in pool
             if normalize_text(r.attribute) == normalize_text(q.attribute_hint)
         ]
         if subset:
@@ -480,7 +532,9 @@ def retrieve_best(
     if not pool:
         pool = list(catalog.records)
 
-    results: List[MatchResult] = [score_candidate(q, rec, portrait_phash) for rec in pool]
+    results: List[MatchResult] = [
+        score_candidate(q, rec, portrait_phash) for rec in pool
+    ]
     results.sort(key=lambda r: r.score, reverse=True)
     # Filter low-confidence candidates
     if min_score is not None:

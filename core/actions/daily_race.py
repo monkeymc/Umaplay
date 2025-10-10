@@ -7,6 +7,7 @@ from typing import List
 
 from core.controllers.base import IController
 from core.controllers.android import ScrcpyController
+
 try:
     from core.controllers.bluestacks import BlueStacksController
 except Exception:
@@ -24,7 +25,13 @@ class DailyRaceFlow:
     Daily Races navigation: enter menu, pick a 'monies' card/row, confirm, race, results.
     """
 
-    def __init__(self, ctrl: IController, ocr: OCRInterface, yolo_engine: IDetector, waiter: Waiter) -> None:
+    def __init__(
+        self,
+        ctrl: IController,
+        ocr: OCRInterface,
+        yolo_engine: IDetector,
+        waiter: Waiter,
+    ) -> None:
         self.ctrl = ctrl
         self.ocr = ocr
         self.yolo_engine = yolo_engine
@@ -56,7 +63,9 @@ class DailyRaceFlow:
         """
         Click the first valid 'race_daily_races_monies_row' (topmost above threshold).
         """
-        img, dets = nav.collect_snapshot(self.waiter, self.yolo_engine, tag="daily_race_rows")
+        img, dets = nav.collect_snapshot(
+            self.waiter, self.yolo_engine, tag="daily_race_rows"
+        )
         rows = nav.rows_top_to_bottom(dets, "race_daily_races_monies_row")
         for row in rows:
             if float(row.get("conf", 0.0)) >= self._thr["row"]:
@@ -99,7 +108,10 @@ class DailyRaceFlow:
         counter = 5
         while race_again and counter > 0:
             sleep(1.5)
-            if isinstance(self.ctrl, ScrcpyController) or (BlueStacksController is not None and isinstance(self.ctrl, BlueStacksController)):
+            if isinstance(self.ctrl, ScrcpyController) or (
+                BlueStacksController is not None
+                and isinstance(self.ctrl, BlueStacksController)
+            ):
                 sleep(3.0)
             if self.waiter.click_when(
                 classes=("button_green",),
@@ -112,7 +124,6 @@ class DailyRaceFlow:
                 race_again = False
                 continue
             sleep(1.5)
-
 
             if self.waiter.click_when(
                 classes=("button_green",),
@@ -127,7 +138,9 @@ class DailyRaceFlow:
             counter -= 1
             sleep(2.0)
             # After race, click 'View Results' / proceed with white button spamming
-            img, _ = nav.collect_snapshot(self.waiter, self.yolo_engine, tag="daily_race_view_results")
+            img, _ = nav.collect_snapshot(
+                self.waiter, self.yolo_engine, tag="daily_race_view_results"
+            )
             self.waiter.click_when(
                 classes=("button_white",),
                 prefer_bottom=True,
@@ -136,9 +149,10 @@ class DailyRaceFlow:
                 tag="daily_race_view_results_white",
             )
             sleep(2.0)
-            nav.random_center_tap(self.ctrl, img, clicks=random.randint(3, 4), dev_frac=0.20)
+            nav.random_center_tap(
+                self.ctrl, img, clicks=random.randint(3, 4), dev_frac=0.20
+            )
             sleep(2.0)
-
 
             # Then green to continue
             if self.waiter.click_when(
@@ -183,7 +197,10 @@ class DailyRaceFlow:
                         tag="daily_race_advance",
                     )
                     sleep(2)
-                    if isinstance(self.ctrl, ScrcpyController) or (BlueStacksController is not None and isinstance(self.ctrl, BlueStacksController)):
+                    if isinstance(self.ctrl, ScrcpyController) or (
+                        BlueStacksController is not None
+                        and isinstance(self.ctrl, BlueStacksController)
+                    ):
                         sleep(4.0)
                     # Click object with class ui_home
                     self.waiter.click_when(

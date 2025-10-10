@@ -19,17 +19,21 @@ def _patch_pytorchcv_utf8() -> None:
     try:
         import csv
         from pytorchcv.models.common import model_store as _ms
+
         def _load_csv_utf8(path: str):
             with open(path, "r", encoding="utf-8", newline="") as f:
                 return list(csv.reader(f))
+
         _ms.load_csv = _load_csv_utf8  # type: ignore[attr-defined]
     except Exception as e:
         # Non-fatal: just log; fallback to user's environment solution
         try:
             from core.utils.logger import logger_uma
+
             logger_uma.debug("pytorchcv UTF-8 patch not applied: %s", e)
         except Exception:
             pass
+
 
 # ----------------------------
 # Utilities
@@ -37,8 +41,10 @@ def _patch_pytorchcv_utf8() -> None:
 def load_image(path: str) -> Image.Image:
     return Image.open(path).convert("RGB")
 
+
 def pil_to_cv(img: Image.Image) -> np.ndarray:
     return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+
 
 def preprocess_32x32_rgb(pil_img: Image.Image) -> torch.Tensor:
     """
@@ -50,14 +56,17 @@ def preprocess_32x32_rgb(pil_img: Image.Image) -> torch.Tensor:
     x = torch.from_numpy(x).permute(2, 0, 1).unsqueeze(0)  # 1x3x32x32
     return x
 
+
 def softmax_top1(logits: torch.Tensor) -> Tuple[int, float]:
     probs = F.softmax(logits, dim=1)
     p, idx = torch.max(probs, dim=1)
     return int(idx.item()), float(p.item())
 
+
 def clamp_valid_or_neg1(val: int, allow=(0, 30)) -> int:
     lo, hi = allow
     return val if lo <= val <= hi else -1
+
 
 # %% [code]
 # ----------------------------
@@ -100,7 +109,7 @@ def split_digit_boxes(pil_img: Image.Image, max_digits: int = 2) -> List[np.ndar
     boxes = sorted(boxes, key=lambda b: b[0])
 
     crops = []
-    for (x, y, w, h) in boxes:
+    for x, y, w, h in boxes:
         pad = 4
         x1 = max(0, x - pad)
         y1 = max(0, y - pad)
@@ -120,9 +129,6 @@ class TorchClassifier:
     net: torch.nn.Module
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
 
-
-
-
     @torch.no_grad()
     def predict_number(self, pil_img: Image.Image) -> Tuple[int, float]:
         """
@@ -132,8 +138,8 @@ class TorchClassifier:
           - Combine two digits if present; reject if low confidence or >30
         Returns: (value or -1, confidence)
         """
-        ALLOW_RANGE = (0, 30)          # valid output range
-        CLASSIFIER_THRESHOLD = 0.70    # softmax threshold per digit
+        ALLOW_RANGE = (0, 30)  # valid output range
+        CLASSIFIER_THRESHOLD = 0.70  # softmax threshold per digit
 
         crops = split_digit_boxes(pil_img, max_digits=2)
 
@@ -144,7 +150,6 @@ class TorchClassifier:
             logits = self.net(x)
             cls, p = softmax_top1(logits)
             if p < CLASSIFIER_THRESHOLD:
-                
                 # TODO: debug. print("cls", cls)
                 return -1, p
             digits.append(cls)
@@ -158,17 +163,17 @@ class TorchClassifier:
         conf = min(confs)  # conservative
         if val < ALLOW_RANGE[0]:
             return -1, conf
-        
+
         if val > ALLOW_RANGE[1]:
             val_str = str(val)
             if len(val_str) == 2:
                 return val_str[-1], conf
             elif len(val_str) == 3 and set(val_str) == 1:
-
                 return val_str[-1], conf
             else:
                 return -1, conf
         return val, conf
+
 
 def load_svhn_resnet20() -> TorchClassifier:
     _patch_pytorchcv_utf8()
@@ -176,5 +181,6 @@ def load_svhn_resnet20() -> TorchClassifier:
     net = ptcv_get_model("resnet20_svhn", pretrained=True)
     net.eval().to(device)
     return TorchClassifier("resnet20_svhn", net, device)
+
 
 resnet20 = load_svhn_resnet20()

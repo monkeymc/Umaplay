@@ -78,7 +78,9 @@ def _run_pipeline(img_path: Path) -> Tuple[Image.Image, List[dict], int]:
 def _assert_turns(pred: int, expected: int, tol: int) -> None:
     assert pred != -1, f"Turns not recognized (pred=-1). Expected {expected}."
     assert 0 <= pred <= 30, f"Turns out of range: {pred}"
-    assert abs(pred - expected) <= tol, f"Turns pred={pred}, expected={expected}, tol={tol}"
+    assert abs(pred - expected) <= tol, (
+        f"Turns pred={pred}, expected={expected}, tol={tol}"
+    )
 
 
 # ----------------------------

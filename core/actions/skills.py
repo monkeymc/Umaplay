@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import random
 import time
-from typing import List, Optional, Sequence, Tuple, Dict, Any
+from typing import List, Optional, Sequence, Tuple, Dict
 from collections import Counter
 from PIL import Image
 
@@ -14,11 +14,16 @@ from core.perception.yolo.interface import IDetector
 from core.settings import Settings
 from core.utils.logger import logger_uma
 from core.utils.geometry import crop_pil
-from core.utils.text import fuzzy_contains, fuzzy_best_match
+from core.utils.text import (
+    fuzzy_contains,
+    fuzzy_best_match,
+    fix_common_ocr_confusions,
+    fuzzy_ratio,
+)
 from core.perception.is_button_active import ActiveButtonClassifier
 from core.types import DetectionDict
 from core.utils.yolo_objects import inside, yolo_signature
-from core.utils.waiter import Waiter, PollConfig
+from core.utils.waiter import Waiter
 
 
 class SkillsFlow:
@@ -30,7 +35,13 @@ class SkillsFlow:
     - Mitigates scroll inertia by clicking the BUY button slightly above center
     """
 
-    def __init__(self, ctrl: IController, ocr: OCRInterface, yolo_engine: IDetector, waiter: Waiter) -> None:
+    def __init__(
+        self,
+        ctrl: IController,
+        ocr: OCRInterface,
+        yolo_engine: IDetector,
+        waiter: Waiter,
+    ) -> None:
         self.ctrl = ctrl
         self.ocr = ocr
         self.yolo_engine = yolo_engine
@@ -65,10 +76,21 @@ class SkillsFlow:
         prev_sig: Optional[List[Tuple[str, int, int]]] = None
         prev_ocr_sig: Optional[List[Tuple[str, int, int]]] = None
 
+        # Desired counts per target: "◎" requires at least 2 buys, otherwise 1.
+        desired_counts: Dict[str, int] = {}
+        for t in skill_list:
+            if "◎" in t:
+                desired_counts[t] = 2
+            else:
+                desired_counts[t] = 1
+        purchases_made: Dict[str, int] = {t: 0 for t in skill_list}
+
         for i in range(max_scrolls):
             clicked, game_img, dets, cur_ocr_sig = self._scan_and_click_buys(
                 targets=skill_list,
                 ocr_threshold=ocr_threshold,
+                desired_counts=desired_counts,
+                purchases_made=purchases_made,
             )
             any_clicked |= clicked
 
@@ -84,6 +106,11 @@ class SkillsFlow:
                 break
             prev_sig = cur_sig
             prev_ocr_sig = cur_ocr_sig
+
+            # Stop if we've satisfied all purchase requirements
+            if all(purchases_made[t] >= desired_counts[t] for t in skill_list):
+                logger_uma.info("[skills] All target purchase counts satisfied.")
+                break
 
             # First pass focus nudge if nothing clicked
             if i == 0 and not any_clicked:
@@ -114,7 +141,10 @@ class SkillsFlow:
 
     def _collect(self, tag: str) -> Tuple[Image.Image, List[DetectionDict]]:
         img, _, dets = self.yolo_engine.recognize(
-            imgsz=self.waiter.cfg.imgsz, conf=self.waiter.cfg.conf, iou=self.waiter.cfg.iou, tag=tag
+            imgsz=self.waiter.cfg.imgsz,
+            conf=self.waiter.cfg.conf,
+            iou=self.waiter.cfg.iou,
+            tag=tag,
         )
         return img, dets
 
@@ -167,14 +197,18 @@ class SkillsFlow:
         if a_ocr is not None and b_ocr is not None:
             if not a_ocr or not b_ocr:
                 return False  # no text seen → cannot assert sameness robustly
+
             # Treat each entry as (norm_text, cx_bucket, cy_bucket).
             # Build multisets of texts, optionally requiring coarse spatial consistency.
             # We'll count matches by text first, then filter with a loose spatial check.
-            def by_text_map(sig: List[Tuple[str, int, int]]) -> Dict[str, List[Tuple[int, int]]]:
+            def by_text_map(
+                sig: List[Tuple[str, int, int]],
+            ) -> Dict[str, List[Tuple[int, int]]]:
                 d: Dict[str, List[Tuple[int, int]]] = {}
                 for t, x, y in sig:
                     d.setdefault(t, []).append((x, y))
                 return d
+
             A = by_text_map(a_ocr)
             B = by_text_map(b_ocr)
             matched = 0
@@ -208,7 +242,9 @@ class SkillsFlow:
         return True
 
     @staticmethod
-    def _skill_title_roi(square_xyxy: Tuple[int, int, int, int]) -> Tuple[int, int, int, int]:
+    def _skill_title_roi(
+        square_xyxy: Tuple[int, int, int, int],
+    ) -> Tuple[int, int, int, int]:
         """
         Tight crop for the *title line* within a skills_square:
           - Skip left icon (~10%)
@@ -218,10 +254,10 @@ class SkillsFlow:
         x1, y1, x2, y2 = square_xyxy
         w = max(1, x2 - x1)
         h = max(1, y2 - y1)
-        left  = x1 + int(w * 0.10)
+        left = x1 + int(w * 0.10)
         right = x2 - int(w * 0.25)
-        top   = y1 + int(h * 0.08)
-        bot   = y1 + int(h * 0.38)
+        top = y1 + int(h * 0.08)
+        bot = y1 + int(h * 0.38)
         if right <= left:
             right = left + 1
         if bot <= top:
@@ -229,7 +265,9 @@ class SkillsFlow:
         return (left, top, right, bot)
 
     @staticmethod
-    def _find_buy_inside(square: DetectionDict, candidates: List[DetectionDict]) -> Optional[DetectionDict]:
+    def _find_buy_inside(
+        square: DetectionDict, candidates: List[DetectionDict]
+    ) -> Optional[DetectionDict]:
         sq_xyxy = square.get("xyxy")
         if not sq_xyxy:
             return None
@@ -243,6 +281,8 @@ class SkillsFlow:
         *,
         targets: Sequence[str],
         ocr_threshold: float,
+        desired_counts: Dict[str, int],
+        purchases_made: Dict[str, int],
     ) -> Tuple[bool, Image.Image, List[DetectionDict], List[Tuple[str, int, int]]]:
         """
         Single pass: find all skills_square + their BUY button; OCR title-band and
@@ -279,10 +319,25 @@ class SkillsFlow:
                 ocr_titles_sig.append((norm_text, cx, cy))
 
             # quick contains or fallback to best fuzzy match
-            contains_any = any(fuzzy_contains(raw_text, t, threshold=ocr_threshold) for t in targets)
-            best_name, best_score = fuzzy_best_match(raw_text, targets)
+            contains_any = any(
+                fuzzy_contains(norm_text, self._norm_title(t), threshold=ocr_threshold)
+                for t in targets
+            )
+            # Weighted best match: prioritize certain key terms
+            KEY_UPWEIGHT = ("groundwork", "left-handed", "corner connoisseur")
+            best_name, best_score = None, 0.0
+            for t in targets:
+                base_score = fuzzy_ratio(norm_text, self._norm_title(t))
+                if any(k in self._norm_title(t) for k in KEY_UPWEIGHT):
+                    base_score += 0.05
+                if base_score > best_score:
+                    best_score = base_score
+                    best_name = t
 
-            if contains_any or best_score >= ocr_threshold:
+            # Respect purchase quotas before clicking
+            if best_name is not None and (contains_any or best_score >= ocr_threshold):
+                if purchases_made.get(best_name, 0) >= desired_counts.get(best_name, 1):
+                    continue
                 # Click: center + slight upward offset to counter inertia
                 bx1, by1, bx2, by2 = buy["xyxy"]
                 bh = max(1, by2 - by1)
@@ -294,7 +349,14 @@ class SkillsFlow:
                 dy = max(2, int(bh * upward_offset))  # ~X% upward
                 shifted = (bx1, by1 - dy, bx2, by2 - dy)
                 self.ctrl.click_xyxy_center(shifted, clicks=1, jitter=0)
-                logger_uma.info("Clicked BUY for '%s' (score=%.2f)", best_name or "?", best_score)
+                purchases_made[best_name] = purchases_made.get(best_name, 0) + 1
+                logger_uma.info(
+                    "Clicked BUY for '%s' (score=%.2f) [%d/%d]",
+                    best_name or "?",
+                    best_score,
+                    purchases_made.get(best_name, 0),
+                    desired_counts.get(best_name, 1),
+                )
                 clicked_any = True
 
         return clicked_any, game_img, dets, ocr_titles_sig
@@ -310,13 +372,15 @@ class SkillsFlow:
           - collapse spaces
           - remove trivial punctuation
         """
-        s = (s or "").strip().lower()
+        s = fix_common_ocr_confusions(s or "")
+        s = s.strip().lower()
         if not s:
             return ""
         # collapse whitespace
         s = " ".join(s.split())
         # drop superfluous punctuation commonly introduced by OCR
-        TABLE = str.maketrans("", "", "·•|[](){}:;,.!?\"'`’“”")
+        # also strip skill-rank symbols which OCR may miss (○ ◎ ×)
+        TABLE = str.maketrans("", "", "·•|[](){}:;,.!?\"'`’“”○◎×")
         s = s.translate(TABLE)
         return s
 
@@ -346,7 +410,7 @@ class SkillsFlow:
         ):
             logger_uma.warning("Confirm button not found")
             return False
-            
+
         time.sleep(waiting_popup * 2)
 
         # Close
@@ -390,7 +454,11 @@ class SkillsFlow:
                 cx, cy = W // 2, H // 2
                 sx, sy = self.ctrl.local_to_screen(cx, cy)
                 j = 10
-                self.ctrl.move_to(sx + random.randint(-j, j), sy + random.randint(-j, j), duration=0.18)
+                self.ctrl.move_to(
+                    sx + random.randint(-j, j),
+                    sy + random.randint(-j, j),
+                    duration=0.18,
+                )
                 logger_uma.debug("[skills] Focus nudge: moved to screen center")
             time.sleep(0.07)
         except Exception as e:
@@ -409,7 +477,12 @@ class SkillsFlow:
             cx, cy = (x + w // 2), (y + h // 2)
             self.ctrl.move_to(cx, cy)
             time.sleep(0.5)
-            self.ctrl.scroll(-h // 10, steps=4, duration_range=(0.2, 0.4), end_hold_range=(0.15, 0.22))
+            self.ctrl.scroll(
+                -h // 10,
+                steps=4,
+                duration_range=(0.2, 0.4),
+                end_hold_range=(0.15, 0.22),
+            )
             # Inertia wait
             time.sleep(0.12)
         else:

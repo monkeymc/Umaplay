@@ -19,7 +19,9 @@ from typing import Iterable, List, Optional, Tuple
 
 # Match the trailing confidence number just before the extension:
 # ..._0.66.png  | ..._1.0.JPG | ..._0.700.jpeg | case-insensitive
-CONF_RE = re.compile(r"_([0-9]+(?:\.[0-9]+)?)\.(?:png|jpg|jpeg|bmp|webp)$", re.IGNORECASE)
+CONF_RE = re.compile(
+    r"_([0-9]+(?:\.[0-9]+)?)\.(?:png|jpg|jpeg|bmp|webp)$", re.IGNORECASE
+)
 
 # Allowed image extensions (lowercase)
 EXTS = {".png", ".jpg", ".jpeg", ".bmp", ".webp"}
@@ -68,7 +70,9 @@ def safe_move(src: Path, dest_dir: Path) -> Path:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Collect low-confidence images from 'raw' folders.")
+    ap = argparse.ArgumentParser(
+        description="Collect low-confidence images from 'raw' folders."
+    )
     ap.add_argument(
         "--src",
         default="debug/training",

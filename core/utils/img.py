@@ -29,6 +29,7 @@ def shrink(im_bgr: np.ndarray, max_w: int = 800) -> np.ndarray:
         interpolation=cv2.INTER_AREA,
     )
 
+
 def to_bgr(img: Any) -> np.ndarray:
     """
     Accept a file path, PIL.Image, or numpy array (RGB/BGR/RGBA/BGRA/GRAY) and

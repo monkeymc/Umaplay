@@ -53,10 +53,7 @@ tests/outputs/*
 prepare_uma_yolo_dataset.py
 
 dev_train.ipynb
-docs/ai/feature/*
 !docs/ai/feature/.gitkeep
 
 capture_steam.py
 change.patch
-
-.windsurf

@@ -11,7 +11,17 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 from PIL import Image
 from core.actions.training_check import compute_support_values, scan_training_screen
 from core.constants import DEFAULT_TILE_TO_TYPE, MOOD_MAP
-from core.utils.date_uma import DateInfo, is_final_season, is_junior_year, is_pre_debut, is_summer, is_summer_in_next_turn, is_summer_in_two_or_less_turns, near_mood_up_event, parse_career_date
+from core.utils.date_uma import (
+    DateInfo,
+    is_final_season,
+    is_junior_year,
+    is_pre_debut,
+    is_summer,
+    is_summer_in_next_turn,
+    is_summer_in_two_or_less_turns,
+    near_mood_up_event,
+    parse_career_date,
+)
 from core.utils.logger import logger_uma
 from core.settings import Constants, Settings
 from core.utils.race_index import RaceIndex, date_key_from_dateinfo
@@ -37,6 +47,7 @@ class TrainAction(enum.Enum):
 
 
 # ---------- Date parsing & helpers ----------
+
 
 def normalize_mood(mood: object) -> Tuple[str, int]:
     """
@@ -234,22 +245,38 @@ def decide_action_training(
         capped_stats = set()
 
     def _exclude_capped(rows):
-        return [r for r in rows if _stat_of_tile(int(r["tile_idx"])) not in capped_stats]
+        return [
+            r for r in rows if _stat_of_tile(int(r["tile_idx"])) not in capped_stats
+        ]
 
     allowed_rows_filtered = _exclude_capped(allowed_rows)
 
     # WIT helpers respect caps too
-    best_wit_any = None if "WIT" in capped_stats else _best_wit_tile(
-        sv_rows, allowed_only=True, min_sv=0.0, tile_to_type=tile_to_type
+    best_wit_any = (
+        None
+        if "WIT" in capped_stats
+        else _best_wit_tile(
+            sv_rows, allowed_only=True, min_sv=0.0, tile_to_type=tile_to_type
+        )
     )
-    best_wit_low = None if "WIT" in capped_stats else _best_wit_tile(
-        sv_rows, allowed_only=True, min_sv=low_pick_sv_gate, tile_to_type=tile_to_type
+    best_wit_low = (
+        None
+        if "WIT" in capped_stats
+        else _best_wit_tile(
+            sv_rows,
+            allowed_only=True,
+            min_sv=low_pick_sv_gate,
+            tile_to_type=tile_to_type,
+        )
     )
 
     # Hinted tiles that pass risk AND are not capped
     hint_tiles = [
-        t for t in _tiles_with_hint(sv_rows)
-        if any((r["tile_idx"] == t) and r.get("allowed_by_risk", False) for r in sv_rows)
+        t
+        for t in _tiles_with_hint(sv_rows)
+        if any(
+            (r["tile_idx"] == t) and r.get("allowed_by_risk", False) for r in sv_rows
+        )
         and _stat_of_tile(int(t)) not in capped_stats
     ]
     best_allowed_tile_25 = _best_tile(
@@ -284,7 +311,9 @@ def decide_action_training(
     # by ≥ (UNDERTRAIN_THRESHOLD)% and its best SV is within 1.5 of the best overall, pick it.
     # -------------------------------------------------
     # Use the configurable threshold from Settings, defaulting to 6% if not set
-    UNDERTRAIN_DELTA = getattr(Settings, 'UNDERTRAIN_THRESHOLD', 6.0) / 100.0  # Convert percentage to decimal
+    UNDERTRAIN_DELTA = (
+        getattr(Settings, "UNDERTRAIN_THRESHOLD", 6.0) / 100.0
+    )  # Convert percentage to decimal
     MAX_SV_GAP = 1.5
 
     try:
@@ -312,21 +341,27 @@ def decide_action_training(
                 logger_uma.debug(f"STATS deltas respect 'ideal' distribution: {deltas}")
                 # Get the top N stats to focus on, based on priority_stats or default order
                 default_priority = ["SPD", "STA", "WIT", "PWR", "GUTS"]
-                effective_priority = priority_stats if priority_stats else default_priority
-                top_n = effective_priority[:Settings.TOP_STATS_FOCUS]
-                
+                effective_priority = (
+                    priority_stats if priority_stats else default_priority
+                )
+                top_n = effective_priority[: Settings.TOP_STATS_FOCUS]
+
                 # Log which stats we're focusing on
-                logger_uma.debug(f"Focusing on top {Settings.TOP_STATS_FOCUS} stats: {top_n}")
-                
+                logger_uma.debug(
+                    f"Focusing on top {Settings.TOP_STATS_FOCUS} stats: {top_n}"
+                )
+
                 # Find stats that are undertrained and in our focus list
                 cand = [
                     (k, deltas[k])
                     for k in known_keys
                     if k in top_n and deltas[k] >= UNDERTRAIN_DELTA
                 ]
-                
+
                 # If no candidates in top N, consider all stats but with lower priority
-                if not cand and Settings.TOP_STATS_FOCUS < 5:  # Only if we're not already considering all
+                if (
+                    not cand and Settings.TOP_STATS_FOCUS < 5
+                ):  # Only if we're not already considering all
                     cand = [
                         (k, deltas[k] * 0.5)  # Reduce priority for non-focus stats
                         for k in known_keys
@@ -334,12 +369,11 @@ def decide_action_training(
                     ]
 
                 if cand:
-                    
                     logger_uma.debug(f"Undertrain candidates: {cand}")
                     # Sort by how undertrained they are (highest gap first)
                     cand.sort(key=lambda kv: kv[1], reverse=True)
                     under_stat, gap = cand[0]
-                    
+
                     # Log decision making
                     if len(cand) > 1:
                         logger_uma.debug(
@@ -399,7 +433,9 @@ def decide_action_training(
                             f"but the TOP option is better {top_allowed_sv:.2f}, gap={gap} ) or is not worth it to train under_stat"
                         )
                 else:
-                    logger_uma.debug(f"No undertrain candidates, Threshold: {UNDERTRAIN_DELTA}. Keys: {known_keys}. Stats checked: {top3}")
+                    logger_uma.debug(
+                        f"No undertrain candidates, Threshold: {UNDERTRAIN_DELTA}. Keys: {known_keys}. Stats checked: {top3}"
+                    )
     except Exception as _e:
         # Be permissive—never break the policy due to stats math
         because(f"Distribution check skipped due to stats error: {_e}")
@@ -425,7 +461,8 @@ def decide_action_training(
 
         def _best_tile_of_type(rows, stat: str, min_sv: float, tmap: Dict[int, str]):
             pool = [
-                r for r in rows
+                r
+                for r in rows
                 if str(tmap.get(int(r["tile_idx"]), "")).upper() == stat.upper()
                 and float(r.get("sv_total", 0.0)) >= min_sv
             ]
@@ -438,9 +475,13 @@ def decide_action_training(
         for stat_name in top3_prio:
             curv = int(stats.get(stat_name, -1))
             if curv >= 0 and curv < 600:
-                idx600, sv600 = _best_tile_of_type(allowed_rows, stat_name, -1.0, tile_to_type)
+                idx600, sv600 = _best_tile_of_type(
+                    allowed_rows, stat_name, -1.0, tile_to_type
+                )
                 if idx600 is not None:
-                    because(f"URA Finale: raise {stat_name} towards 600 (cur={curv}) → tile {idx600}")
+                    because(
+                        f"URA Finale: raise {stat_name} towards 600 (cur={curv}) → tile {idx600}"
+                    )
                     return (TrainAction.TRAIN_MAX, idx600, "; ".join(reasons))
 
         # (b) if all ≥ 600, pick the top-3 stat closest to 1200 but < 1170
@@ -452,9 +493,13 @@ def decide_action_training(
         if near_candidates:
             # Choose the one with the largest current value (closest to 1200)
             target_stat = max(near_candidates, key=lambda kv: kv[1])[0]
-            idx1170, sv1170 = _best_tile_of_type(allowed_rows, target_stat, -1.0, tile_to_type)
+            idx1170, sv1170 = _best_tile_of_type(
+                allowed_rows, target_stat, -1.0, tile_to_type
+            )
             if idx1170 is not None:
-                because(f"URA Finale: push {target_stat} closer to 1200 (cur={int(stats.get(target_stat, -1))}) but <1170 → tile {idx1170}")
+                because(
+                    f"URA Finale: push {target_stat} closer to 1200 (cur={int(stats.get(target_stat, -1))}) but <1170 → tile {idx1170}"
+                )
                 return (TrainAction.TRAIN_MAX, idx1170, "; ".join(reasons))
 
         # (c) last resort in URA: WIT soft-skip if available (uses cap-aware best_wit_low above)
@@ -462,7 +507,9 @@ def decide_action_training(
             because("URA Finale: no threshold targets; soft-skip with WIT")
             return (TrainAction.TRAIN_WIT, best_wit_low, "; ".join(reasons))
 
-    because("Not a IMPRESIVE option to train (>= 2.5 in SV), checking for other oportunities")
+    because(
+        "Not a IMPRESIVE option to train (>= 2.5 in SV), checking for other oportunities"
+    )
     # 2) Mood check → recreation
     min_mood_score = MOOD_MAP.get(str(minimal_mood).upper(), 3)
     if (
@@ -483,12 +530,15 @@ def decide_action_training(
                 sv_rows, allowed_only=True, min_sv=0.0, tile_to_type=tile_to_type
             )
             if idx is not None:
-                because(f"Summer in 1 turn and energy {energy_pct} % → recover a little with soft-skip with WIT")
+                because(
+                    f"Summer in 1 turn and energy {energy_pct} % → recover a little with soft-skip with WIT"
+                )
                 return (TrainAction.TRAIN_WIT, idx, "; ".join(reasons))
         elif energy_pct <= 70:
-            because(f"Summer in 1 turn and energy {energy_pct} % → recover a lot with soft-skip with WIT")
+            because(
+                f"Summer in 1 turn and energy {energy_pct} % → recover a lot with soft-skip with WIT"
+            )
             return (TrainAction.REST, None, "; ".join(reasons))
-
 
     # 4) Summer within ≤2 turns and (energy<=90 and WIT SV>=1) → TRAIN_WIT
     if is_summer_in_two_or_less_turns(di) and energy_pct <= 90:
@@ -521,10 +571,9 @@ def decide_action_training(
             if not race_if_no_good_value:
                 # Check if we have any good training options (SV > 0)
                 has_good_training = any(
-                    float(r.get("sv_total", 0)) > 0 
-                    for r in allowed_rows_filtered
+                    float(r.get("sv_total", 0)) > 0 for r in allowed_rows_filtered
                 )
-                
+
                 if not has_good_training:
                     # Find the best training option even if it's not great
                     best_tile = _best_tile(
@@ -534,12 +583,20 @@ def decide_action_training(
                         tile_to_type=tile_to_type,
                     )
                     if best_tile is not None:
-                        best_sv = next((r.get("sv_total", 0) for r in allowed_rows_filtered 
-                                     if r.get("tile_idx") == best_tile), 0)
-                        because(f"No good training options (best SV: {best_sv:.2f} ≤ 0.1) and race_if_no_good_value is disabled")
+                        best_sv = next(
+                            (
+                                r.get("sv_total", 0)
+                                for r in allowed_rows_filtered
+                                if r.get("tile_idx") == best_tile
+                            ),
+                            0,
+                        )
+                        because(
+                            f"No good training options (best SV: {best_sv:.2f} ≤ 0.1) and race_if_no_good_value is disabled"
+                        )
                         return (TrainAction.TRAIN_MAX, best_tile, "; ".join(reasons))
                     # If no training options at all, fall through to race
-            
+
             because("Prioritize G1 enabled, G1 available today → try race")
             return (TrainAction.RACE, None, "; ".join(reasons))
 
@@ -559,12 +616,15 @@ def decide_action_training(
                 # Require Director tile to be one of the top-3 priority stats
                 if dir_stat in top3_priorities:
                     # Also skip if this stat is capped already
-                    if dir_stat in capped_stats and director_color not in ("orange", ):
-                        because(f"Director present but {dir_stat} already at/above target and is not orange → skip Director rule")
+                    if dir_stat in capped_stats and director_color not in ("orange",):
+                        because(
+                            f"Director present but {dir_stat} already at/above target and is not orange → skip Director rule"
+                        )
                     else:
                         # Still respect risk for that tile:
                         if any(
-                            (r.get("tile_idx") == director_idx) and r.get("allowed_by_risk", False)
+                            (r.get("tile_idx") == director_idx)
+                            and r.get("allowed_by_risk", False)
                             for r in sv_rows
                         ):
                             because(
@@ -637,15 +697,17 @@ def decide_action_training(
         and (not is_pre_debut(di) or not is_junior_year(di))
         and not is_final_season(di)
     ):
-        if not (is_junior_year(di) or is_pre_debut(di) or is_final_season(di)) and not skip_race:
+        if (
+            not (is_junior_year(di) or is_pre_debut(di) or is_final_season(di))
+            and not skip_race
+        ):
             # Check if we should skip racing due to no good training options
             if not race_if_no_good_value:
                 # Check if we have any good training options (SV > 0)
                 has_good_training = any(
-                    float(r.get("sv_total", 0)) >= 0 
-                    for r in allowed_rows_filtered
+                    float(r.get("sv_total", 0)) >= 0 for r in allowed_rows_filtered
                 )
-                
+
                 if not has_good_training:
                     # Find the best training option even if it's not great
                     best_tile = _best_tile(
@@ -655,12 +717,20 @@ def decide_action_training(
                         tile_to_type=tile_to_type,
                     )
                     if best_tile is not None:
-                        best_sv = next((r.get("sv_total", 0) for r in allowed_rows_filtered 
-                                     if r.get("tile_idx") == best_tile), 0)
-                        because(f"No good training options (best SV: {best_sv:.2f} ≤ 0.1) and race_if_no_good_value is disabled")
+                        best_sv = next(
+                            (
+                                r.get("sv_total", 0)
+                                for r in allowed_rows_filtered
+                                if r.get("tile_idx") == best_tile
+                            ),
+                            0,
+                        )
+                        because(
+                            f"No good training options (best SV: {best_sv:.2f} ≤ 0.1) and race_if_no_good_value is disabled"
+                        )
                         return (TrainAction.TRAIN_MAX, best_tile, "; ".join(reasons))
                     # If no training options at all, fall through to race
-            
+
             because(
                 f"Not summer, energy ≥ {energy_race_gate}% and not Junior Pre-Debut → try race (collect skill pts + minimal stat)"
             )
@@ -798,10 +868,12 @@ def check_training(player, *, skip_race: bool = False) -> Optional[TrainingDecis
     career_date = player.lobby.state.date_info if player.lobby else None
     energy_pct = player.lobby.state.energy if player.lobby else None
     stats = player.lobby.state.stats if player.lobby else None
-    
+
     # Get the current preset's runtime settings from the last applied config
-    preset_settings = Settings.extract_runtime_preset(getattr(Settings, '_last_config', {}) or {})
-    race_if_no_good_value = preset_settings.get('raceIfNoGoodValue', False)
+    preset_settings = Settings.extract_runtime_preset(
+        getattr(Settings, "_last_config", {}) or {}
+    )
+    race_if_no_good_value = preset_settings.get("raceIfNoGoodValue", False)
 
     # 4) Decide the action (no side effects here)
     action, tidx, why = decide_action_training(

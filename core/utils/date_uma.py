@@ -6,6 +6,7 @@ from core.constants import MONTHS
 from core.utils.text import fuzzy_ratio
 from core.utils.logger import logger_uma
 
+
 @dataclass(frozen=True)
 class DateInfo:
     """Normalized career date information."""
@@ -295,6 +296,7 @@ def parse_career_date(s: str) -> DateInfo:
 
     return DateInfo(raw=raw, year_code=y, month=month, half=half)
 
+
 def score_date_like(s: str) -> float:
     """
     Return a fuzzy score [0..1] expressing how much `s` looks like a valid career date.
@@ -302,17 +304,54 @@ def score_date_like(s: str) -> float:
     """
     t = (s or "").lower()
     # very permissive patterns
-    keys_year  = ["junior year", "classic year", "senior year", "final season", "finale season", "pre debut", "pre-debut"]
-    keys_half  = ["early", "late"]
-    keys_month = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec","january","february","march","april","june","july","august","september","october","november","december"]
+    keys_year = [
+        "junior year",
+        "classic year",
+        "senior year",
+        "final season",
+        "finale season",
+        "pre debut",
+        "pre-debut",
+    ]
+    keys_half = ["early", "late"]
+    keys_month = [
+        "jan",
+        "feb",
+        "mar",
+        "apr",
+        "may",
+        "jun",
+        "jul",
+        "aug",
+        "sep",
+        "oct",
+        "nov",
+        "dec",
+        "january",
+        "february",
+        "march",
+        "april",
+        "june",
+        "july",
+        "august",
+        "september",
+        "october",
+        "november",
+        "december",
+    ]
 
     sy = max(fuzzy_ratio(t, k) for k in keys_year)
     sh = max(fuzzy_ratio(t, k) for k in keys_half)
     sm = max(fuzzy_ratio(t, k) for k in keys_month)
 
     # Final/Pre don't need half/month; regular years do.
-    base = max(fuzzy_ratio(t, "final season"), fuzzy_ratio(t, "finale season"), fuzzy_ratio(t, "pre debut"), fuzzy_ratio(t, "pre-debut"))
+    base = max(
+        fuzzy_ratio(t, "final season"),
+        fuzzy_ratio(t, "finale season"),
+        fuzzy_ratio(t, "pre debut"),
+        fuzzy_ratio(t, "pre-debut"),
+    )
     if base >= 0.6:
         return max(base, sy)
     # Otherwise combine year + half + month (weights)
-    return 0.5*sy + 0.25*sh + 0.25*sm
+    return 0.5 * sy + 0.25 * sh + 0.25 * sm

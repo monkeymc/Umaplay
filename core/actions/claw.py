@@ -123,7 +123,12 @@ class ClawGame:
     Debug frames are saved to <Settings.DEBUG_DIR>/claw_test/ (or ./debug/claw_test).
     """
 
-    def __init__(self, ctrl: IController, yolo_engine: IDetector, cfg: Optional[ClawConfig] = None) -> None:
+    def __init__(
+        self,
+        ctrl: IController,
+        yolo_engine: IDetector,
+        cfg: Optional[ClawConfig] = None,
+    ) -> None:
         self.ctrl = ctrl
         self.yolo_engine = yolo_engine
         self.cfg = cfg or ClawConfig()

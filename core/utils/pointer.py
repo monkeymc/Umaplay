@@ -45,7 +45,12 @@ def smart_scroll_small(
         time.sleep(settle_mid_s)
 
         drag_px = max(20, int(h * fraction_android))
-        ctrl.scroll(-drag_px, steps=max(1, steps_android), duration_range=(0.20, 0.40), end_hold_range=(0.10, 0.20))
+        ctrl.scroll(
+            -drag_px,
+            steps=max(1, steps_android),
+            duration_range=(0.20, 0.40),
+            end_hold_range=(0.10, 0.20),
+        )
     else:
         for _ in range(max(1, steps_pc)):
             ctrl.scroll(-1)

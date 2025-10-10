@@ -17,7 +17,6 @@ export const generalSchema = z.object({
   windowTitle: z.string().default('Umamusume'),
   fastMode: z.boolean().default(false),
   tryAgainOnFailedGoal: z.boolean().default(true),
-  prioritizeHint: z.boolean().default(false),
   maxFailure: z.number().int().min(0).max(99).default(20),
   skillPtsCheck: z.number().int().min(0).default(600),
   acceptConsecutiveRace: z.boolean().default(true),
@@ -29,6 +28,8 @@ export const generalSchema = z.object({
     autoRestMinimum: z.number().int().min(0).max(100).default(26),
     undertrainThreshold: z.number().min(0).max(100).default(6),
     topStatsFocus: z.number().int().min(1).max(5).default(3),
+    skillCheckInterval: z.number().int().min(1).max(12).default(3),
+    skillPtsDelta: z.number().int().min(0).max(1000).default(60),
   }).default({
     hotkey: 'F2',
     debugMode: true,
@@ -37,6 +38,8 @@ export const generalSchema = z.object({
     autoRestMinimum: 18,
     undertrainThreshold: 6,
     topStatsFocus: 3,
+    skillCheckInterval: 3,
+    skillPtsDelta: 60,
   }),
 })
 

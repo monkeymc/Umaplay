@@ -100,6 +100,7 @@ def _center_x(xyxy):
     x1, y1, x2, y2 = xyxy
     return 0.5 * (x1 + x2)
 
+
 def scan_training_screen(
     ctrl,
     ocr,  # OCRInterface
@@ -208,7 +209,9 @@ def scan_training_screen(
             if not dets:
                 return dets
             # sort by confidence DESC (missing conf -> 0.0)
-            ordered = sorted(dets, key=lambda d: float(d.get("conf", 0.0)), reverse=True)
+            ordered = sorted(
+                dets, key=lambda d: float(d.get("conf", 0.0)), reverse=True
+            )
             kept = []
             for d in ordered:
                 dx = d.get("xyxy")
@@ -287,7 +290,9 @@ def scan_training_screen(
                 piece_type_bgr=type_crop,
             )
 
-            has_rainbow = s["name"].endswith("_rainbow") or (s["name"] == "support_card_rainbow")
+            has_rainbow = s["name"].endswith("_rainbow") or (
+                s["name"] == "support_card_rainbow"
+            )
             any_rainbow |= has_rainbow
 
             enriched.append(
@@ -360,7 +365,11 @@ def scan_training_screen(
     results: List[Dict] = []
 
     # -------- 1.5) FAST_MODE: low-energy fast path (raised + WIT only) --------
-    if Settings.FAST_MODE and isinstance(energy, (int, float)) and 0 <= int(energy) <= 35:
+    if (
+        Settings.FAST_MODE
+        and isinstance(energy, (int, float))
+        and 0 <= int(energy) <= 35
+    ):
         # Identify raised and WIT (last) indices
         ridx_fast = _raised_training_ltr_index(cur_parsed)
         last_idx = len(scan) - 1 if len(scan) > 0 else None
@@ -379,7 +388,9 @@ def scan_training_screen(
                         **tile,
                         "supports": supps,
                         "has_any_rainbow": any_rainbow,
-                        "failure_pct": _failure_pct(cur_img, cur_parsed, tile["tile_xyxy"]),
+                        "failure_pct": _failure_pct(
+                            cur_img, cur_parsed, tile["tile_xyxy"]
+                        ),
                         "skipped_click": True,
                     }
                 )
@@ -403,7 +414,11 @@ def scan_training_screen(
                         scan[j]["tile_center_x"] = float(_center_x(b["xyxy"]))
                 # Determine effective raised after click
                 ridx_now = _raised_training_ltr_index(cur_parsed)
-                eff_idx = ridx_now if (ridx_now is not None and 0 <= ridx_now < len(scan)) else idx
+                eff_idx = (
+                    ridx_now
+                    if (ridx_now is not None and 0 <= ridx_now < len(scan))
+                    else idx
+                )
                 eff_tile = scan[eff_idx]
                 supps, any_rainbow = _collect_supports_enriched(cur_img, cur_parsed)
                 results.append(
@@ -411,14 +426,18 @@ def scan_training_screen(
                         **eff_tile,
                         "supports": supps,
                         "has_any_rainbow": any_rainbow,
-                        "failure_pct": _failure_pct(cur_img, cur_parsed, eff_tile["tile_xyxy"]),
+                        "failure_pct": _failure_pct(
+                            cur_img, cur_parsed, eff_tile["tile_xyxy"]
+                        ),
                         "skipped_click": False,
                     }
                 )
 
         # Normalize tile indices by current geometry to prevent duplicates
         results = _reindex_left_to_right(results)
-        logger_uma.info("FAST MODE: Only analyzing WIT; everything else may have high risk")
+        logger_uma.info(
+            "FAST MODE: Only analyzing WIT; everything else may have high risk"
+        )
         return results, cur_img, cur_parsed
 
     # -------- 2) Already-raised tile (no click) --------
@@ -442,9 +461,10 @@ def scan_training_screen(
                 # Compute SV for just this tile and check greedy
                 sv_rows_one = compute_support_values([tile_record])
                 if sv_rows_one and sv_rows_one[0].get("greedy_hit", False):
-                    
                     notes = sv_rows_one[-1].get("notes", "")
-                    logger_uma.info(f"FAST MODE: Found a greedy training option, not analizing nothing more. notes={notes}")
+                    logger_uma.info(
+                        f"FAST MODE: Found a greedy training option, not analizing nothing more. notes={notes}"
+                    )
                     # Return results so far, don't waste time checking other options; caller will act immediately
                     return results, cur_img, cur_parsed
             except Exception as e:
@@ -508,7 +528,9 @@ def scan_training_screen(
                 sv_rows_one = compute_support_values([tile_record])
                 if sv_rows_one and sv_rows_one[0].get("greedy_hit", False):
                     notes = sv_rows_one[-1].get("notes", "")
-                    logger_uma.info(f"FAST MODE: Found a greedy training option, not analizing nothing more. notes={notes}")
+                    logger_uma.info(
+                        f"FAST MODE: Found a greedy training option, not analizing nothing more. notes={notes}"
+                    )
                     # Return results so far, don't waste time checking other options; caller will act immediately
                     return results, cur_img, cur_parsed
             except Exception as e:
@@ -692,7 +714,9 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
 
         risk_limit = int(min(100, base_limit * risk_mult))
         allowed = failure_pct <= risk_limit
-        notes.append(f"Dynamic risk: SV={sv_total:.2f} → base {base_limit}% × {risk_mult:.2f} = {risk_limit}%")
+        notes.append(
+            f"Dynamic risk: SV={sv_total:.2f} → base {base_limit}% × {risk_mult:.2f} = {risk_limit}%"
+        )
 
         # ---- 5) greedy mark (optional early exit logic can use this) ----
         greedy_hit = (sv_total >= GREEDY_THRESHOLD) and allowed

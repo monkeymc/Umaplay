@@ -6,7 +6,6 @@
     "fastMode": false,
     "tryAgainOnFailedGoal": true,
     "prioritizeHint": false,
-    "maxFailure": 20,
     "skillPtsCheck": 700,
     "acceptConsecutiveRace": true,
     "advanced": {
@@ -14,7 +13,9 @@
       "debugMode": true,
       "useExternalProcessor": false,
       "externalProcessorUrl": "http://127.0.0.1:8001",
-      "autoRestMinimum": 19
+      "autoRestMinimum": 19,
+      "skillCheckInterval": 3,
+      "skillPtsDelta": 60
     }
   },
   "presets": [

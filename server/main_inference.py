@@ -24,6 +24,7 @@ engine = LocalOCREngine()  # load once; keeps models on CPU/GPU as configured
 
 # run: uvicorn server.main_inference:app --host 0.0.0.0 --port 8001
 
+
 @app.get("/health")
 def health():
     return {"ok": True, "cuda": torch.cuda.is_available()}
@@ -31,9 +32,15 @@ def health():
 
 # -------- OCR endpoint --------
 class OCRRequest(BaseModel):
-    mode: Literal["raw", "text", "digits", "batch_text", "batch_digits"] = Field(..., description="OCR operation")
-    img: Optional[str] = Field(None, description="Base64-encoded single image (PNG/JPEG)")
-    imgs: Optional[List[str]] = Field(None, description="Base64-encoded images for batch ops")
+    mode: Literal["raw", "text", "digits", "batch_text", "batch_digits"] = Field(
+        ..., description="OCR operation"
+    )
+    img: Optional[str] = Field(
+        None, description="Base64-encoded single image (PNG/JPEG)"
+    )
+    imgs: Optional[List[str]] = Field(
+        None, description="Base64-encoded images for batch ops"
+    )
     joiner: str = " "
     min_conf: float = 0.2
 
@@ -41,7 +48,6 @@ class OCRRequest(BaseModel):
     def _clip_min_conf(cls, v: float) -> float:
         # keep a sane range
         return max(0.0, min(1.0, float(v)))
-
 
 
 def _decode_b64_to_bgr(b64: str) -> Tuple[np.ndarray, Image.Image]:
@@ -80,7 +86,9 @@ def ocr(req: OCRRequest) -> Dict[str, Any]:
     try:
         if req.mode in ("raw", "text", "digits"):
             if not req.img:
-                raise HTTPException(status_code=400, detail="Field 'img' is required for this mode.")
+                raise HTTPException(
+                    status_code=400, detail="Field 'img' is required for this mode."
+                )
             img, pil_img = _decode_b64_to_bgr(req.img)
             if req.mode == "raw":
                 data = engine.raw(img)
@@ -93,7 +101,9 @@ def ocr(req: OCRRequest) -> Dict[str, Any]:
 
         elif req.mode in ("batch_text", "batch_digits"):
             if not req.imgs:
-                raise HTTPException(status_code=400, detail="Field 'imgs' is required for this mode.")
+                raise HTTPException(
+                    status_code=400, detail="Field 'imgs' is required for this mode."
+                )
             imgs = [_decode_b64_to_bgr(b) for b in req.imgs]
             if req.mode == "batch_text":
                 data = engine.batch_text(imgs, joiner=req.joiner, min_conf=req.min_conf)
@@ -109,9 +119,11 @@ def ocr(req: OCRRequest) -> Dict[str, Any]:
         # Keep a short message; logs on server should have the stacktrace
         raise HTTPException(status_code=500, detail=f"OCR failure: {e}")
 
+
 # Instantiate one YOLO engine for the service (no controller needed here)
 yolo_engine = LocalYOLOEngine(ctrl=None)
 yolo_engine_nav = LocalYOLOEngine(ctrl=None, weights=Settings.YOLO_WEIGHTS_NAV)
+
 
 class YoloRequest(BaseModel):
     img: str = Field(..., description="Base64-encoded PNG/JPEG image (BGR compatible)")
@@ -119,6 +131,7 @@ class YoloRequest(BaseModel):
     conf: float = Field(0.66, ge=0.0, le=1.0)
     iou: float = Field(0.45, ge=0.0, le=1.0)
     weights_path: Optional[str] = None
+
 
 @app.post("/yolo")
 def yolo_detect(req: YoloRequest):
@@ -137,15 +150,26 @@ def yolo_detect(req: YoloRequest):
 
         yolo_engine_req = yolo_engine_nav if nav_match else yolo_engine
         bgr, pil_img = _decode_b64_to_bgr(req.img)
-        meta, dets = yolo_engine_req.detect_bgr(bgr, imgsz=req.imgsz, conf=req.conf, iou=req.iou, original_pil_img=pil_img, tag="yolo_endpoint")
-         # tiny debug: checksum of raw BGR bytes
+        meta, dets = yolo_engine_req.detect_bgr(
+            bgr,
+            imgsz=req.imgsz,
+            conf=req.conf,
+            iou=req.iou,
+            original_pil_img=pil_img,
+            tag="yolo_endpoint",
+        )
+        # tiny debug: checksum of raw BGR bytes
         sha = hashlib.sha256(bgr.tobytes()).hexdigest()[:12]
-        meta.update({
-            "shape": tuple(int(x) for x in bgr.shape),
-            "checksum": sha,
-            "weights": w_str,
-            "ultralytics": getattr(type(yolo_engine_req.model), "__module__", "ultralytics"),
-        })
+        meta.update(
+            {
+                "shape": tuple(int(x) for x in bgr.shape),
+                "checksum": sha,
+                "weights": w_str,
+                "ultralytics": getattr(
+                    type(yolo_engine_req.model), "__module__", "ultralytics"
+                ),
+            }
+        )
         return {"meta": meta, "dets": dets}
     except HTTPException:
         raise

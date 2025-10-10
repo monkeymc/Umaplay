@@ -22,7 +22,9 @@ class SteamController(IController):
     def __init__(
         self, window_title: str = "Umamusume", capture_client_only: bool = True
     ):
-        super().__init__(window_title=window_title, capture_client_only=capture_client_only)
+        super().__init__(
+            window_title=window_title, capture_client_only=capture_client_only
+        )
 
     # --- window discovery ---
     def _find_window(self):

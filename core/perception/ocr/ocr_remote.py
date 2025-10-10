@@ -13,6 +13,7 @@ from core.utils.img import to_bgr  # if you prefer, you can inline conversion he
 from core.utils.logger import logger_uma
 from PIL import Image
 
+
 def _prepare_bgr3(img: Any) -> np.ndarray:
     if isinstance(img, Image.Image):
         bgr = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
@@ -20,6 +21,7 @@ def _prepare_bgr3(img: Any) -> np.ndarray:
         bgr = img
     else:
         from core.utils.img import to_bgr
+
         bgr = to_bgr(img)
     if bgr.ndim == 2:
         bgr = cv2.cvtColor(bgr, cv2.COLOR_GRAY2BGR)
@@ -27,12 +29,14 @@ def _prepare_bgr3(img: Any) -> np.ndarray:
         bgr = cv2.cvtColor(bgr, cv2.COLOR_BGRA2BGR)
     return bgr
 
+
 def _encode_image_to_base64(img: Any, *, fmt: str = ".png") -> str:
     bgr = _prepare_bgr3(img)
     ok, buf = cv2.imencode(fmt, bgr)
     if not ok:
         raise ValueError("Failed to encode image")
     return base64.b64encode(buf.tobytes()).decode("ascii")
+
 
 def _local_checksum(img: Any) -> str:
     bgr = _prepare_bgr3(img)
@@ -45,7 +49,13 @@ class RemoteOCREngine(OCRInterface):
     Keeps the same method signatures as the local engine.
     """
 
-    def __init__(self, base_url: str, *, timeout: float = 30.0, session: Optional[requests.Session] = None) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        *,
+        timeout: float = 30.0,
+        session: Optional[requests.Session] = None,
+    ) -> None:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self.session = session or requests.Session()
@@ -56,7 +66,9 @@ class RemoteOCREngine(OCRInterface):
         try:
             r.raise_for_status()
         except Exception:
-            logger_uma.exception("RemoteOCR request failed: %s %s", r.status_code, r.text[:2000])
+            logger_uma.exception(
+                "RemoteOCR request failed: %s %s", r.status_code, r.text[:2000]
+            )
             raise
         data = r.json()
         if "data" not in data:
@@ -70,15 +82,33 @@ class RemoteOCREngine(OCRInterface):
 
     def text(self, img: Any, joiner: str = " ", min_conf: float = 0.2) -> str:
         img64 = _encode_image_to_base64(img)
-        return self._post({"mode": "text", "img": img64, "joiner": joiner, "min_conf": float(min_conf)})["data"]
+        return self._post(
+            {
+                "mode": "text",
+                "img": img64,
+                "joiner": joiner,
+                "min_conf": float(min_conf),
+            }
+        )["data"]
 
     def digits(self, img: Any) -> int:
         img64 = _encode_image_to_base64(img)
         return int(self._post({"mode": "digits", "img": img64})["data"])
 
-    def batch_text(self, imgs: List[Any], *, joiner: str = " ", min_conf: float = 0.2) -> List[str]:
+    def batch_text(
+        self, imgs: List[Any], *, joiner: str = " ", min_conf: float = 0.2
+    ) -> List[str]:
         imgs64 = [_encode_image_to_base64(im) for im in imgs]
-        return list(self._post({"mode": "batch_text", "imgs": imgs64, "joiner": joiner, "min_conf": float(min_conf)})["data"])
+        return list(
+            self._post(
+                {
+                    "mode": "batch_text",
+                    "imgs": imgs64,
+                    "joiner": joiner,
+                    "min_conf": float(min_conf),
+                }
+            )["data"]
+        )
 
     def batch_digits(self, imgs: List[Any]) -> List[str]:
         imgs64 = [_encode_image_to_base64(im) for im in imgs]

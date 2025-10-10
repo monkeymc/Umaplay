@@ -15,7 +15,12 @@ from core.controllers.static_image import StaticImageController
 from core.settings import Settings
 from core.constants import CLASS_UI_TURNS
 from core.utils.geometry import xyxy_int
-from core.utils.preprocessors import tighten_to_pill, career_date_crop_box, preprocess_digits, read_date_pill_robust
+from core.utils.preprocessors import (
+    tighten_to_pill,
+    career_date_crop_box,
+    preprocess_digits,
+    read_date_pill_robust,
+)
 
 from core.utils.date_uma import parse_career_date
 
@@ -71,7 +76,10 @@ def _run_pipeline(img_path: Path):
     ocr = LocalOCREngine(DET_NAME, REC_NAME)
 
     pil_img, _, parsed = yolo.recognize(
-        imgsz=YOLO_IMGSZ, conf=YOLO_CONF, iou=YOLO_IOU, tag=f"career_date::{img_path.name}"
+        imgsz=YOLO_IMGSZ,
+        conf=YOLO_CONF,
+        iou=YOLO_IOU,
+        tag=f"career_date::{img_path.name}",
     )
 
     turns_det = find_best(parsed, CLASS_UI_TURNS, conf_min=0.20)
@@ -118,12 +126,16 @@ CASES = [
 
 @pytest.mark.parametrize("img_path,expected_key", CASES, ids=[p[0].name for p in CASES])
 def test_career_date_end_to_end(img_path: Path, expected_key: str) -> None:
-    pil_img, parsed, turns_xyxy, banner_box, pill_box_abs, raw, di = _run_pipeline(img_path)
+    pil_img, parsed, turns_xyxy, banner_box, pill_box_abs, raw, di = _run_pipeline(
+        img_path
+    )
 
     # Save artifacts per image
     out_dir = _ensure_dir(OUT_DIR / img_path.stem)
     # viz
-    _draw_turns_and_boxes(pil_img, turns_xyxy, banner_box, pill_box_abs).save(out_dir / "viz_boxes.png")
+    _draw_turns_and_boxes(pil_img, turns_xyxy, banner_box, pill_box_abs).save(
+        out_dir / "viz_boxes.png"
+    )
     # crops
     pil_img.crop(banner_box).save(out_dir / "banner.png")
     pil_img.crop(pill_box_abs).save(out_dir / "pill.png")

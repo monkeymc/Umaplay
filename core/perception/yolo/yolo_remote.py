@@ -50,7 +50,15 @@ class RemoteYOLOEngine(IDetector):
     No Ultralytics or CUDA required on the VM.
     """
 
-    def __init__(self, ctrl: IController, base_url: str, *, timeout: float = 30.0, session: Optional[requests.Session] = None, weights: str | None = None):
+    def __init__(
+        self,
+        ctrl: IController,
+        base_url: str,
+        *,
+        timeout: float = 30.0,
+        session: Optional[requests.Session] = None,
+        weights: str | None = None,
+    ):
         self.ctrl = ctrl
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
@@ -59,7 +67,9 @@ class RemoteYOLOEngine(IDetector):
         self.weights = str(weights) if weights is not None else None
 
     def _post(self, payload: Dict[str, any]) -> Dict[str, any]:
-        r = self.session.post(f"{self.base_url}/yolo", json=payload, timeout=self.timeout)
+        r = self.session.post(
+            f"{self.base_url}/yolo", json=payload, timeout=self.timeout
+        )
         r.raise_for_status()
         return r.json()
 
@@ -77,8 +87,18 @@ class RemoteYOLOEngine(IDetector):
         iou = iou if iou is not None else Settings.YOLO_IOU
 
         img64 = _encode_image_to_base64(bgr)
-        data = self._post({"img": img64, "imgsz": imgsz, "conf": conf, "iou": iou, "weights_path": self.weights})
-        meta = data.get("meta", {"backend": "remote", "imgsz": imgsz, "conf": conf, "iou": iou})
+        data = self._post(
+            {
+                "img": img64,
+                "imgsz": imgsz,
+                "conf": conf,
+                "iou": iou,
+                "weights_path": self.weights,
+            }
+        )
+        meta = data.get(
+            "meta", {"backend": "remote", "imgsz": imgsz, "conf": conf, "iou": iou}
+        )
         dets: List[DetectionDict] = data.get("dets", [])
         return meta, dets
 
@@ -102,6 +122,7 @@ class RemoteYOLOEngine(IDetector):
         thr: float,
     ) -> None:
         import os, time
+
         if not Settings.STORE_FOR_TRAINING or not dets:
             return
         lows = [d for d in dets if float(d.get("conf", 0.0)) <= float(thr)]
@@ -114,7 +135,9 @@ class RemoteYOLOEngine(IDetector):
             os.makedirs(out_dir_raw, exist_ok=True)
             os.makedirs(out_dir_overlay, exist_ok=True)
 
-            ts = time.strftime("%Y%m%d-%H%M%S") + f"_{int((time.time() % 1) * 1000):03d}"
+            ts = (
+                time.strftime("%Y%m%d-%H%M%S") + f"_{int((time.time() % 1) * 1000):03d}"
+            )
 
             ov = pil_img.copy()
             draw = ImageDraw.Draw(ov)
@@ -144,13 +167,17 @@ class RemoteYOLOEngine(IDetector):
                 bx2 = x1 + tw + 2 * pad
                 draw.rectangle([x1, by1, bx2, by1 + total_h], fill=(255, 0, 0))
                 draw.text((x1 + pad, by1 + pad), name_line, fill=(255, 255, 255))
-                draw.text((x1 + pad, by1 + pad + h1 + gap), conf_line, fill=(255, 255, 255))
+                draw.text(
+                    (x1 + pad, by1 + pad + h1 + gap), conf_line, fill=(255, 255, 255)
+                )
 
             raw_path = out_dir_raw / f"{tag}_{ts}_{conf_line}.png"
             pil_img.save(raw_path)
             ov_path = out_dir_overlay / f"{tag}_{ts}_{conf_line}.png"
             ov.save(ov_path)
-            logger_uma.debug("saved low-conf training debug -> %s | %s", raw_path, ov_path)
+            logger_uma.debug(
+                "saved low-conf training debug -> %s | %s", raw_path, ov_path
+            )
         except Exception as e:
             logger_uma.debug("failed saving training debug: %s", e)
 
@@ -172,5 +199,7 @@ class RemoteYOLOEngine(IDetector):
 
         if not Settings.USE_EXTERNAL_PROCESSOR:
             # otherwise it is already saved in external processor
-            self._maybe_store_debug(img, dets, tag=tag, thr=Settings.STORE_FOR_TRAINING_THRESHOLD)
+            self._maybe_store_debug(
+                img, dets, tag=tag, thr=Settings.STORE_FOR_TRAINING_THRESHOLD
+            )
         return img, meta, dets

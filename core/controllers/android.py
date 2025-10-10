@@ -28,7 +28,9 @@ class ScrcpyController(IController):
     def __init__(
         self, window_title: str = "23117RA68G", capture_client_only: bool = True
     ):
-        super().__init__(window_title=window_title, capture_client_only=capture_client_only)
+        super().__init__(
+            window_title=window_title, capture_client_only=capture_client_only
+        )
 
     # --- window discovery ---
 
