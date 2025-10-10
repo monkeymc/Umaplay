@@ -36,6 +36,7 @@ from core.utils.date_uma import (
     is_summer_in_two_or_less_turns,
     is_summer,
     parse_career_date,
+    date_is_confident,
 )
 
 
@@ -167,17 +168,46 @@ class LobbyFlow:
             # First-Junior-Day guard (no races available there)
             is_first_junior_date = (
                 bool(self.state.date_info)
+                and date_is_confident(self.state.date_info)
                 and self.state.date_info.year_code == 1
                 and self.state.date_info.month == 7
                 and self.state.date_info.half == 1
             )
+            guard_extra = {
+                "first_junior": is_first_junior_date,
+                "skip_guard": self._skip_race_once,
+            }
+            self._log_planned_race_decision(
+                action="guard_evaluate",
+                plan_name=self.state.planned_race_name,
+                extra=guard_extra,
+            )
             if not is_first_junior_date and not self._skip_race_once:
                 reason = f"Planned race: {self.state.planned_race_name}"
+                self._log_planned_race_decision(
+                    action="enter_race",
+                    plan_name=self.state.planned_race_name,
+                    reason="guard_passed",
+                    extra=guard_extra,
+                )
+                self._skip_race_once = False
                 return "TO_RACE", reason
             else:
+                suppression_reasons = []
+                if is_first_junior_date:
+                    suppression_reasons.append("first_junior_date")
+                if self._skip_race_once:
+                    suppression_reasons.append("skip_guard")
+                self._log_planned_race_decision(
+                    action="guard_suppressed",
+                    plan_name=self.state.planned_race_name,
+                    reason=",".join(suppression_reasons) or "unknown",
+                    extra=guard_extra,
+                )
                 logger_uma.debug(
                     "[lobby] Planned race suppressed by first-junior-day/skip flag."
                 )
+            self._skip_race_once = False
 
         if self.process_on_demand:
             self._process_turns_left(img, dets)
@@ -828,6 +858,39 @@ class LobbyFlow:
             if self.state.date_info:
                 self._date_stable_count += 1
 
+    def _log_planned_race_decision(
+        self,
+        *,
+        action: str,
+        reason: Optional[str] = None,
+        plan_name: Optional[str] = None,
+        extra: Optional[dict] = None,
+    ) -> None:
+        di = getattr(self.state, "date_info", None)
+        date_key = date_key_from_dateinfo(di) if di else None
+        date_label = di.as_key() if di else None
+        payload = [
+            f"action={action}",
+            f"plan={plan_name or self.state.planned_race_name or '-'}",
+        ]
+        if reason:
+            payload.append(f"reason={reason}")
+        payload.extend(
+            [
+                f"date_key={date_key or '-'}",
+                f"date_label={date_label or '-'}",
+                f"raw={self.state.career_date_raw or '-'}",
+                f"skip={self._skip_race_once}",
+                f"artificial={self._date_artificial}",
+                f"stable={self._date_stable_count}",
+                f"turn={self.state.turn}",
+            ]
+        )
+        if extra:
+            for key, value in extra.items():
+                payload.append(f"{key}={value}")
+        logger_uma.info("[planned_race] %s", " ".join(str(p) for p in payload))
+
     def _plan_race_today(self) -> None:
         """
         Decide (and cache) whether today has a planned race; explicit date->name
@@ -852,7 +915,22 @@ class LobbyFlow:
                     key,
                 )
             self.state.planned_race_name = name
+            self._log_planned_race_decision(
+                action="plan_selected",
+                plan_name=name,
+                extra={"already_raced": False},
+            )
             return
+        if key in self.plan_races and key in self._raced_keys_recent:
+            name = str(self.plan_races[key]).strip()
+            self._log_planned_race_decision(
+                action="plan_already_completed",
+                plan_name=name,
+                extra={"already_raced": True},
+            )
+            return
+
+        self._log_planned_race_decision(action="plan_missing_for_date", extra={"date_key": key})
 
     # Allow Agent to mark that we already raced for this date key
     def mark_raced_today(self, date_key: Optional[str]) -> None:

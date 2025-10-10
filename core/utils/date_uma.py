@@ -40,6 +40,17 @@ def date_is_regular_year(di: Optional[DateInfo]) -> bool:
     return bool(di and di.year_code in (1, 2, 3))
 
 
+def date_is_confident(di: Optional[DateInfo]) -> bool:
+    """Return True when the parsed date has enough structure to trust month/half guards."""
+    if not di:
+        return False
+    # Regular years require both month and half to be known.
+    if di.year_code in (1, 2, 3):
+        return di.month is not None and di.half in (1, 2)
+    # Pre-debut / Final Season do not use month/half-specific guards; treat as confident.
+    return True
+
+
 def date_index(di: DateInfo) -> Optional[int]:
     """
     Map a date to a linear index for reasonableness checks.

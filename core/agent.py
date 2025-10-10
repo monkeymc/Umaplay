@@ -120,6 +120,9 @@ class Player:
         self._last_skill_check_turn: int | None = None
         self._last_skill_pts_seen: int | None = None
         self._last_skill_buy_succeeded: bool = False
+        self._planned_skip_release_pending: bool = False
+        self._planned_skip_release_key: Optional[str] = None
+        self._planned_skip_cooldown: int = 0
 
     def _desired_race_today(self) -> str | None:
         """
@@ -141,6 +144,58 @@ class Player:
         if not di or di.month is None or (getattr(di, "half", None) not in (1, 2)):
             return None
         return f"Y{di.year_code}-{int(di.month):02d}-{int(di.half)}"
+
+    def _schedule_planned_skip_release(self) -> None:
+        self._planned_skip_release_pending = True
+        self._planned_skip_release_key = self._today_date_key()
+        self._planned_skip_cooldown = max(self._planned_skip_cooldown, 2)
+        logger_uma.info(
+            "[planned_race] scheduled skip reset key=%s cooldown=%d",
+            self._planned_skip_release_key,
+            self._planned_skip_cooldown,
+        )
+
+    def _clear_planned_skip_release(self) -> None:
+        if self._planned_skip_release_pending:
+            logger_uma.info(
+                "[planned_race] cleared pending skip reset key=%s",
+                self._planned_skip_release_key,
+            )
+        self._planned_skip_release_pending = False
+        self._planned_skip_release_key = None
+        self._planned_skip_cooldown = 0
+
+    def _tick_planned_skip_release(self) -> None:
+        if not self._planned_skip_release_pending:
+            return
+        if not self.lobby._skip_race_once:
+            self._clear_planned_skip_release()
+            return
+        if self._planned_skip_cooldown > 0:
+            self._planned_skip_cooldown -= 1
+            return
+
+        current_key = self._today_date_key()
+        if (
+            self._planned_skip_release_key
+            and current_key
+            and current_key != self._planned_skip_release_key
+        ):
+            logger_uma.info(
+                "[planned_race] date advanced (%s -> %s); releasing skip guard",
+                self._planned_skip_release_key,
+                current_key,
+            )
+            self.lobby._skip_race_once = False
+            self._clear_planned_skip_release()
+            return
+
+        logger_uma.info(
+            "[planned_race] releasing skip guard for key=%s",
+            current_key or self._planned_skip_release_key,
+        )
+        self.lobby._skip_race_once = False
+        self._clear_planned_skip_release()
 
     # --------------------------
     # Main loop
@@ -171,6 +226,8 @@ class Player:
 
             is_lobby_summer = screen == "LobbySummer"
             unknown_screen = screen.lower() == "unknown"
+
+            self._tick_planned_skip_release()
 
             if unknown_screen:
                 threshold = 0.65
@@ -379,6 +436,12 @@ class Player:
                         desired_race_name = self._desired_race_today()
                         if desired_race_name:
                             # Planned race
+                            logger_uma.info(
+                                "[planned_race] attempting desired='%s' key=%s skip=%s",
+                                desired_race_name,
+                                self._today_date_key(),
+                                self.lobby._skip_race_once,
+                            )
                             try:
                                 ok = self.race.run(
                                     prioritize_g1=self.prioritize_g1,
@@ -393,6 +456,12 @@ class Player:
                                 )
                                 self.lobby._go_back()
                                 self.lobby._skip_race_once = True
+                                logger_uma.info(
+                                    "[planned_race] skip_guard=1 after refusal desired='%s' key=%s",
+                                    desired_race_name,
+                                    self._today_date_key(),
+                                )
+                                self._schedule_planned_skip_release()
                                 continue
                             if not ok:
                                 logger_uma.error(
@@ -400,11 +469,23 @@ class Player:
                                 )
                                 self.lobby._go_back()
                                 self.lobby._skip_race_once = True
+                                logger_uma.info(
+                                    "[planned_race] skip_guard=1 after failure desired='%s' key=%s",
+                                    desired_race_name,
+                                    self._today_date_key(),
+                                )
+                                self._schedule_planned_skip_release()
                                 # TODO: smart Continue with training instead of continue
                                 continue
 
                             # Clean planned
                             self.lobby.mark_raced_today(self._today_date_key())
+                            logger_uma.info(
+                                "[planned_race] completed desired='%s' key=%s",
+                                desired_race_name,
+                                self._today_date_key(),
+                            )
+                            self._clear_planned_skip_release()
 
                     elif "FANS" in reason.upper():
                         logger_uma.info(reason)
