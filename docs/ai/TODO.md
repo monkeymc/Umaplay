@@ -4,15 +4,6 @@ This document tracks actionable requirements for the next release. Items are gro
 
 ## AgentNav + Team Trials
 
-- **[Loop back-and-retry on missing expected button]**
-  - Where: `core/actions/team_trials.py::TeamTrialsFlow.process_banners_screen()`, helpers in `core/utils/nav.py`.
-  - Behavior:
-    - During multi-click sequences, if after two advances/clicks the expected next-state button isn’t seen, press BACK and restart this Team Trials attempt.
-    - Expected cues: after pre-start greens, expect `button_green` "RACE!" or an advance chain; during advances expect one of `button_advance`, `button_pink` ("RACE AGAIN"), or `button_white` "BACK" within a small timeout.
-    - Add helper `nav.advance_sequence_with_backoff(...)` wrapping `advance_sequence_with_mid_taps()` with periodic checks and a back-and-retry path.
-  - Acceptance:
-    - When flow derails, we back out and retry instead of stalling. Max 2 retries per banner.
-
 - **[Composite classification during multi-clicks]**
   - Where: `core/agent_nav.py::AgentNav.classify_nav_screen()`.
   - Rule: if we see `button_pink` + `button_advance` + `button_white` (text="BACK") over last two polls, classify `RaceSequenceScreen`.
@@ -56,19 +47,9 @@ This document tracks actionable requirements for the next release. Items are gro
   - Wire via `Settings.YOLO_WEIGHTS_NAV`.
   - Acceptance: better recall on WIT rainbow; fewer false positives.
 
-## Strategy Plugin (User-Pluggable)
+## Policy Plugin (User-Pluggable)
 
-- **[Configurable strategy selector]**
-  - Where: `core/actions/race.py::set_strategy()` and `core/agent.py` (preset extraction).
-  - Config: `general.advanced.strategyPlugin` = "module.path:callable".
-  - Behavior: import callable and get `"end"|"late"|"pace"|"front"` before clicking; fallback to preset if absent/errors.
-  - Provide `plugins/strategy_example.py` as reference.
 
-## Requirements File
-
-- **[Refresh requirements.txt]**
-  - Ensure: `opencv-python`, `imagehash`, `paddleocr`, `paddlepaddle` (CPU default), `rapidfuzz`, `Pillow`, `numpy`.
-  - Note GPU caveats in README (Paddle/Torch env separation).
 
 ## Events: Auguri Cap Chain Step
 
@@ -77,31 +58,3 @@ This document tracks actionable requirements for the next release. Items are gro
   - Behavior: if `_count_chain_steps()` is None but an `event_card` is present, set `chain_step_hint=1`.
   - Acceptance: events with same title but different chain steps match correct `#s1` vs `#s2`.
 
-## Config Keys (Samples + Settings)
-
-- Add to `prefs/config.sample.json` and map in `core/settings.py::apply_config()`:
-  - `general.advanced.skillCheckInterval` (int, default 3)
-  - `general.advanced.skillPtsDelta` (int, default 60)
-  - `general.advanced.lowPriorityStatMargin` (float, default 0.5)
-  - `general.advanced.raceTemplateTiebreak` (bool, default true)
-  - `general.advanced.strategyPlugin` (string, default empty)
-
-## Tests
-
-- **[Skills OCR]** `tests/test_text_normalization.py` for noisy "Groundwork", "Left‑Handed" cases.
-- **[Training gate]** Add unit to prefer top-3 when 4th/5th advantage < margin.
-- **[Events chain]** Simulate `chain_step_hint=None`, ensure default=1 improves retrieval.
-- **[Race tie-breaker]** Optional harness under `dev_utils/` to score two candidates with/without templates.
-
-## Implementation Order (suggested)
-
-1. AgentNav/Team Trials loop safety + composite classification.
-2. Skills interval optimization + config.
-3. OCR domain fixes (skills).
-4. Training policy gate.
-5. Events chain bug.
-6. Web UI distance.
-7. Races DB validator + template tie-breaker.
-8. Strategy plugin (+ sample).
-9. YOLO retrain + model swap.
-10. requirements.txt refresh.
