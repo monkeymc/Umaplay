@@ -114,9 +114,10 @@ I usually push new updates, bug fixes, etc. To update just run these commands:
 ```bash
 git reset --hard
 git pull
+pip install -r requirements.txt
 ```
 
-Reset hard is just in case you modified some files.
+Reset hard is just in case you modified some files. Pip install may be needed because I could install new libraries.
 
 Good news, you (maybe) can use this button in WEB UI to pull from github directly also there is another button to 'force' the update. You still need to restart the full script after that:
 
