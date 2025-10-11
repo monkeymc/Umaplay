@@ -244,24 +244,44 @@ def decide_action_training(
     except Exception:
         capped_stats = set()
 
+    raw_hint_tiles = _tiles_with_hint(sv_rows)
+    hint_override_stats = set()
+    if Settings.HINT_IS_IMPORTANT:
+        for t in raw_hint_tiles:
+            stat = _stat_of_tile(int(t))
+            if not stat:
+                continue
+            passes_risk = any(
+                (r.get("tile_idx") == t) and r.get("allowed_by_risk", False)
+                for r in sv_rows
+            )
+            if stat in capped_stats and passes_risk:
+                hint_override_stats.add(stat)
+
     def _exclude_capped(rows):
         return [
-            r for r in rows if _stat_of_tile(int(r["tile_idx"])) not in capped_stats
+            r
+            for r in rows
+            if (
+                (stat := _stat_of_tile(int(r["tile_idx"]))) not in capped_stats
+                or stat in hint_override_stats
+            )
         ]
 
     allowed_rows_filtered = _exclude_capped(allowed_rows)
 
     # WIT helpers respect caps too
+    wit_capped_without_hint = "WIT" in capped_stats and "WIT" not in hint_override_stats
     best_wit_any = (
         None
-        if "WIT" in capped_stats
+        if wit_capped_without_hint
         else _best_wit_tile(
             sv_rows, allowed_only=True, min_sv=0.0, tile_to_type=tile_to_type
         )
     )
     best_wit_low = (
         None
-        if "WIT" in capped_stats
+        if wit_capped_without_hint
         else _best_wit_tile(
             sv_rows,
             allowed_only=True,
@@ -270,14 +290,17 @@ def decide_action_training(
         )
     )
 
-    # Hinted tiles that pass risk AND are not capped
+    # Hinted tiles that pass risk and are uncapped (or explicitly allowed via hint override)
     hint_tiles = [
         t
-        for t in _tiles_with_hint(sv_rows)
+        for t in raw_hint_tiles
         if any(
             (r["tile_idx"] == t) and r.get("allowed_by_risk", False) for r in sv_rows
         )
-        and _stat_of_tile(int(t)) not in capped_stats
+        and (
+            _stat_of_tile(int(t)) not in capped_stats
+            or _stat_of_tile(int(t)) in hint_override_stats
+        )
     ]
     best_allowed_tile_25 = _best_tile(
         allowed_rows_filtered,
@@ -362,7 +385,7 @@ def decide_action_training(
     UNDERTRAIN_DELTA = (
         getattr(Settings, "UNDERTRAIN_THRESHOLD", 6.0) / 100.0
     )  # Convert percentage to decimal
-    MAX_SV_GAP = 1.5
+    MAX_SV_GAP = 1.25
 
     try:
         # Consider only known stats (ignore -1/0)
@@ -675,7 +698,7 @@ def decide_action_training(
                 top3_priorities = [s.upper() for s in (priority_stats or [])][:3]
 
                 # Require Director tile to be one of the top-3 priority stats
-                if dir_stat in top3_priorities:
+                if dir_stat in top3_priorities or director_color in ("orange", ):
                     # Also skip if this stat is capped already
                     if dir_stat in capped_stats and director_color not in ("orange",):
                         because(
@@ -701,6 +724,17 @@ def decide_action_training(
                     because(
                         f"Director present but tile stat {dir_stat} not in top-3 priorities {top3_priorities} → skip Director rule"
                     )
+    
+    any_wit_rb = _any_wit_rainbow(sv_rows, tile_to_type=tile_to_type)
+    idx_wit_1_5 = _best_wit_tile(
+        sv_rows,
+        allowed_only=True,
+        min_sv=1.5,
+        tile_to_type=tile_to_type,
+    )
+    if any_wit_rb and idx_wit_1_5 is not None:
+        because("WIT has rainbow support and SV ≥ 1.5 → Skip turn with good wit value")
+        return (TrainAction.TRAIN_WIT, idx_wit_1_5, "; ".join(reasons))
 
     # 8) If energy <= 35% → REST
     if energy_pct <= energy_rest_gate_lo:
@@ -708,22 +742,17 @@ def decide_action_training(
         return (TrainAction.REST, None, "; ".join(reasons))
 
     # 9) Soft-skip: WIT SV >= 1.5 or WIT rainbow → TRAIN_WIT
-    if _any_wit_rainbow(sv_rows, tile_to_type=tile_to_type):
+    if any_wit_rb:
         if best_wit_any is not None:
             because("WIT has rainbow support → Skip turn with little energy recover")
             return (TrainAction.TRAIN_WIT, best_wit_any, "; ".join(reasons))
     else:
-        idx = _best_wit_tile(
-            sv_rows,
-            allowed_only=True,
-            min_sv=1.5,
-            tile_to_type=tile_to_type,
-        )
-        if idx is not None:
+        
+        if idx_wit_1_5 is not None:
             because(
                 f"Decent WIT SV ≥ {late_pick_sv_top} and risk ok → WIT (aka skip turn)"
             )
-            return (TrainAction.TRAIN_WIT, idx, "; ".join(reasons))
+            return (TrainAction.TRAIN_WIT, idx_wit_1_5, "; ".join(reasons))
 
     # 11)
     if best_wit_low is not None:
