@@ -268,12 +268,12 @@ class TeamTrialsFlow:
             self.yolo_engine,
             self.ctrl,
             tag_prefix="team_trials_adv",
-            iterations_max=5,
+            iterations_max=6,
             advance_class="button_advance",
             advance_texts=None,
             taps_each_click=(3, 4),
-            tap_dev_frac=0.20,
-            sleep_after_advance=0.40,
+            tap_dev_frac=0.12,
+            sleep_after_advance=0.30,
         )
         logger_uma.debug(f"[TeamTrials] advances performed: {adv}")
         sleep(5)
