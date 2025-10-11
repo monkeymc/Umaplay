@@ -188,6 +188,8 @@ class EventFlow:
         # 1) Collect detections
         card = _pick_event_card(parsed_objects_screen)
         chain_step_hint = _count_chain_steps(parsed_objects_screen)
+        if chain_step_hint is None and card is not None:
+            chain_step_hint = 1
         choices = _choices(parsed_objects_screen, conf_min=self.conf_min_choice)
         choices_sorted = _sort_top_to_bottom(choices)
 

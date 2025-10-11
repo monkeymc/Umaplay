@@ -571,9 +571,17 @@ def score_candidate(
 ) -> MatchResult:
     # 1) text similarity on titles (normalized)
     qt = normalize_text(q.ocr_title)
-    ts1 = fuzz.partial_ratio(qt, rec.title_norm) / 100.0
-    ts2 = fuzz.token_set_ratio(qt, rec.title_norm) / 100.0
-    text_sim = max(ts1, ts2)  # robust on short/noisy titles
+    if qt:
+        ts_token = fuzz.token_set_ratio(qt, rec.title_norm) / 100.0
+        ts_ratio = fuzz.ratio(qt, rec.title_norm) / 100.0
+        ts_partial = fuzz.partial_ratio(qt, rec.title_norm) / 100.0
+        text_sim = (
+            0.5 * ts_token + 0.3 * ts_ratio + 0.2 * ts_partial
+        )
+        if qt == rec.title_norm:
+            text_sim = 1.0
+    else:
+        text_sim = 0.0
 
     # 2) image similarity (pHash) if we have a portrait crop
     img_sim = (
