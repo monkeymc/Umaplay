@@ -6,6 +6,10 @@ import time
 import webbrowser
 import keyboard
 import uvicorn
+import subprocess
+import sys
+from pathlib import Path
+import shutil
 
 from core.utils.logger import logger_uma, setup_uma_logging
 from core.settings import Settings
@@ -113,6 +117,60 @@ def boot_server():
     except Exception as exc:
         logger_uma.debug(f"[SERVER] Failed to open browser automatically: {exc}")
     uvicorn.run(app, host=Settings.HOST, port=Settings.PORT, log_level="warning")
+
+
+# ---------------------------
+# Cleanup helpers
+# ---------------------------
+def cleanup_debug_training_if_needed():
+    debug_dir = Path("debug/training")
+    if not debug_dir.exists():
+        return
+    total_bytes = 0
+    for path in debug_dir.rglob("*"):
+        if path.is_file():
+            try:
+                total_bytes += path.stat().st_size
+            except OSError:
+                continue
+    if total_bytes <= 250 * 1024 * 1024:
+        return
+    timestamp = time.strftime("%y%m%d_%H%M%S")
+    set_name = f"set_low_{timestamp}"
+    cmd = [
+        sys.executable,
+        "collect_data_training.py",
+        "--set-name",
+        set_name,
+        "--percentile",
+        "5",
+        "--min-per-folder",
+        "3",
+        "--max-per-folder",
+        "10",
+        "--action",
+        "move",
+        "--exclude",
+        "general",
+        "agent_unknown_advance",
+        "screen",
+    ]
+    logger_uma.info(
+        f"[CLEANUP] debug/training size={total_bytes / (1024 * 1024):.1f} MB exceeds threshold. Running cleanup to {set_name}."
+    )
+    try:
+        subprocess.run(cmd, check=True)
+        for child in debug_dir.iterdir():
+            if child.is_dir():
+                try:
+                    shutil.rmtree(child)
+                    logger_uma.info(f"[CLEANUP] Removed folder {child}")
+                except Exception as exc:
+                    logger_uma.warning(f"[CLEANUP] Failed to remove folder {child}: {exc}")
+    except subprocess.CalledProcessError as exc:
+        logger_uma.warning(f"[CLEANUP] Cleanup command exited with status {exc.returncode}: {exc}")
+    except Exception as exc:
+        logger_uma.warning(f"[CLEANUP] Cleanup command failed: {exc}")
 
 
 # ---------------------------
@@ -503,6 +561,11 @@ if __name__ == "__main__":
         cfg0 = {}
     Settings.apply_config(cfg0 or {})
     setup_uma_logging(debug=Settings.DEBUG)
+
+    try:
+        cleanup_debug_training_if_needed()
+    except Exception as e:
+        logger_uma.warning(f"[SERVER] Could not cleanup debug training: {e}")
 
     # Launch hotkey listener and server
     state = BotState()
