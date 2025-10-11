@@ -76,7 +76,7 @@ class DailyRaceFlow:
 
     def confirm_and_next_to_race(self) -> bool:
         """
-        NEXT -> RACE -> NEXT
+        NEXT -> RACE
         """
         sleep(1.5)
         ok = self.waiter.click_when(
@@ -107,12 +107,12 @@ class DailyRaceFlow:
         finalized = False
         counter = 5
         while race_again and counter > 0:
-            sleep(1.5)
+            sleep(3)
             if isinstance(self.ctrl, ScrcpyController) or (
                 BlueStacksController is not None
                 and isinstance(self.ctrl, BlueStacksController)
             ):
-                sleep(3.0)
+                sleep(2.0)
             if self.waiter.click_when(
                 classes=("button_green",),
                 prefer_bottom=True,
@@ -143,8 +143,11 @@ class DailyRaceFlow:
             )
             self.waiter.click_when(
                 classes=("button_white",),
-                prefer_bottom=True,
-                timeout_s=2.0,
+                prefer_bottom=False,
+                timeout_s=2.3,
+                texts=("VIEW RESULTS",),
+                forbid_texts=("BACK",),
+                allow_greedy_click=False,
                 clicks=random.randint(3, 4),
                 tag="daily_race_view_results_white",
             )
@@ -163,53 +166,66 @@ class DailyRaceFlow:
             ):
                 logger_uma.info("[DailyRace] Results: continued")
 
-            if not self.waiter.click_when(
-                classes=("button_pink",),
-                texts=("RACE AGAIN",),
-                prefer_bottom=False,
-                timeout_s=2.2,
-                clicks=1,
-                allow_greedy_click=False,
-                tag="team_trials_race_again",
-            ):
-                logger_uma.info("[TeamTrials] RACE AGAIN NOT FOUND")
+            # check for shop, reuse the nav method
+            did_shop = nav.handle_shop_exchange_on_clock_row(
+                self.waiter,
+                self.yolo_engine,
+                self.ctrl,
+                tag_prefix="daily_race_shop",
+                ensure_enter=True,
+            )
+            if did_shop:
+                logger_uma.info("[DailyRace] Completed shop exchange flow")
             else:
-                sleep(2.0)
-                if self.waiter.seen(
-                    classes=("button_green",),
-                    texts=("OK",),
-                    tag="agent_nav_daily_race_ok",
+                if not self.waiter.click_when(
+                    classes=("button_pink",),
+                    texts=("RACE AGAIN",),
+                    prefer_bottom=False,
+                    timeout_s=2.2,
+                    clicks=1,
+                    allow_greedy_click=False,
+                    tag="team_trials_race_again",
                 ):
-                    logger_uma.info("[DailyRace] OK seen no more dailys")
-                    # Click in button_white using the waiter
-                    self.waiter.click_when(
-                        classes=("button_white",),
-                        prefer_bottom=True,
-                        timeout_s=2.0,
-                        tag="daily_race_ok",
-                    )
-                    sleep(1.5)
-                    # Click in button_advance using the waiter
-                    self.waiter.click_when(
-                        classes=("button_advance",),
-                        prefer_bottom=True,
-                        timeout_s=2.0,
-                        tag="daily_race_advance",
-                    )
-                    sleep(2)
-                    if isinstance(self.ctrl, ScrcpyController) or (
-                        BlueStacksController is not None
-                        and isinstance(self.ctrl, BlueStacksController)
-                    ):
-                        sleep(4.0)
-                    # Click object with class ui_home
-                    self.waiter.click_when(
-                        classes=("ui_home",),
-                        prefer_bottom=True,
-                        timeout_s=2.0,
-                        tag="daily_race_home",
-                    )
+                    logger_uma.info("[TeamTrials] RACE AGAIN NOT FOUND")
                     finalized = True
-                    race_again = False
-                continue
+                    break
+                else:
+                    sleep(2.0)
+                    if self.waiter.seen(
+                        classes=("button_green",),
+                        texts=("OK",),
+                        tag="agent_nav_daily_race_ok",
+                    ):
+                        logger_uma.info("[DailyRace] OK seen no more dailys")
+                        # Click in button_white using the waiter
+                        self.waiter.click_when(
+                            classes=("button_white",),
+                            prefer_bottom=True,
+                            timeout_s=2.0,
+                            tag="daily_race_ok",
+                        )
+                        sleep(1.5)
+                        # Click in button_advance using the waiter
+                        self.waiter.click_when(
+                            classes=("button_advance",),
+                            prefer_bottom=True,
+                            timeout_s=2.0,
+                            tag="daily_race_advance",
+                        )
+                        sleep(2)
+                        if isinstance(self.ctrl, ScrcpyController) or (
+                            BlueStacksController is not None
+                            and isinstance(self.ctrl, BlueStacksController)
+                        ):
+                            sleep(4.0)
+                        # Click object with class ui_home
+                        self.waiter.click_when(
+                            classes=("ui_home",),
+                            prefer_bottom=True,
+                            timeout_s=2.0,
+                            tag="daily_race_home",
+                        )
+                        finalized = True
+                        race_again = False
+                    continue
         return finalized
