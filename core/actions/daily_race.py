@@ -81,13 +81,33 @@ class DailyRaceFlow:
         sleep(1.5)
         ok = self.waiter.click_when(
             classes=("button_green",),
-            prefer_bottom=True,
-            allow_greedy_click=True,
+            prefer_bottom=False,
+            allow_greedy_click=False,
+            texts=("RACE", "RACE!", "RACEL"),
+            forbid_texts=("OK", "PURCHASE", "BUY", "RESTORE"),
             timeout_s=2.0,
             tag="daily_race_next_0",
         )
         if not ok:
-            logger_uma.debug("[DailyRace] Confirm not found (continuing anyway)")
+            # Check with waiter if there are the next button with texts: button_white 'CANCEL' , button_green 'OK'. If that is the case, click in Cancel, wait 1 sec, capture /recognize objects in screen and press ui_home
+            if self.waiter.click_when(
+                classes=("button_white",),
+                prefer_bottom=False,
+                allow_greedy_click=False,
+                texts=("CANCEL",),
+                forbid_texts=("OK", "PURCHASE", "BUY", "RESTORE"),
+                timeout_s=2.0,
+                tag="daily_race_cancel",
+            ):
+                sleep(1.5)
+                img, dets = nav.collect_snapshot(
+                    self.waiter, self.yolo_engine, tag="daily_race_cancel"
+                )
+                # Click ui_home  that may be inside dets
+                self.ctrl.click_xyxy_center(nav.find_object(dets, "ui_home")["xyxy"])
+                sleep(1.5)
+                logger_uma.debug("[DailyRace] Canceling races")
+                return False
         sleep(1.5)
         if self.waiter.click_when(
             classes=("button_green",),
@@ -96,7 +116,8 @@ class DailyRaceFlow:
             tag="daily_race_race",
         ):
             logger_uma.info("[DailyRace] RACE 1")
-        return True
+            return True
+        return False
 
     def run_race_and_collect(self) -> bool:
         """
@@ -176,6 +197,8 @@ class DailyRaceFlow:
             )
             if did_shop:
                 logger_uma.info("[DailyRace] Completed shop exchange flow")
+                finalized = False  # Shop, uncertain if finalized
+                break
             else:
                 if not self.waiter.click_when(
                     classes=("button_pink",),

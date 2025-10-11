@@ -226,11 +226,18 @@ class AgentNav:
             elif screen == "RaceDailyRows":
                 if self.daily_race.pick_first_row():
                     sleep(1.0)
-                    self.daily_race.confirm_and_next_to_race()
-                    sleep(1.0)
-                    self.daily_race.run_race_and_collect()
-                self.is_running = False
-                counter = 0
+                    if self.daily_race.confirm_and_next_to_race():
+                        sleep(1.0)
+                        finalized = self.daily_race.run_race_and_collect()
+
+                        if finalized:
+                            self.is_running = False
+                        counter = 0
+                    else:
+                        logger_uma.info("[AgentNav] DailyRace confirm_and_next_to_race HARD stopped for safety.")
+                        self.is_running = False
+                        counter = 0
+                        break
 
             elif self.action == "team_trials" and screen == "TeamTrialsBanners":
                 logger_uma.info("[AgentNav] TeamTrials banners detected")
@@ -254,9 +261,11 @@ class AgentNav:
 
             elif screen == "DailyRaceResume":
                 logger_uma.info("[AgentNav] DailyRace resume detected")
-                self.daily_race.run_race_and_collect()
-                self.is_running = False
-                counter = 0
+                finalized = self.daily_race.run_race_and_collect()
+
+                if finalized:
+                    self.is_running = False
+                    counter = 0
             else:
                 # Stop if we don't know what we're seeing; extend rules as needed
                 counter -= 1
