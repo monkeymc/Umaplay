@@ -85,6 +85,7 @@ class SkillsFlow:
                 desired_counts[t] = 1
         purchases_made: Dict[str, int] = {t: 0 for t in skill_list}
 
+        patience = 3
         for i in range(max_scrolls):
             clicked, game_img, dets, cur_ocr_sig = self._scan_and_click_buys(
                 targets=skill_list,
@@ -102,8 +103,13 @@ class SkillsFlow:
                 and (prev_sig is not None)
                 and self._nearly_same(prev_sig, cur_sig, prev_ocr_sig, cur_ocr_sig)
             ):
-                logger_uma.info("[skills] Early stop (same view twice).")
-                break
+                logger_uma.info("[skills] Early stop (same view twice) patience -1.")
+                patience -= 1
+                if patience == 0:
+                    logger_uma.info("[skills] Early stop buying.")
+                    break
+            else:
+                patience = 3
             prev_sig = cur_sig
             prev_ocr_sig = cur_ocr_sig
 
@@ -196,7 +202,7 @@ class SkillsFlow:
         # If we have OCR title fingerprints, enforce overlap to assert "same view".
         if a_ocr is not None and b_ocr is not None:
             if not a_ocr or not b_ocr:
-                return False  # no text seen → cannot assert sameness robustly
+                return True
 
             # Treat each entry as (norm_text, cx_bucket, cy_bucket).
             # Build multisets of texts, optionally requiring coarse spatial consistency.
