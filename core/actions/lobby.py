@@ -53,6 +53,7 @@ class LobbyState:
     mood: Tuple[str, float] = ("UNKNOWN", -1.0)
     stats = {"SPD": -1, "STA": -1, "PWR": -1, "GUTS": -1, "WIT": -1}
     planned_race_name: Optional[str] = None
+    planned_race_canonical: Optional[str] = None
 
 
 @dataclass
@@ -254,7 +255,7 @@ class LobbyFlow:
         # --- Energy management (rest) ---
         if self.state.energy is not None:
             if self.state.energy <= self.auto_rest_minimum:
-                reason = "Energy too low, resting"
+                reason = f"Energy too low, resting: auto_rest_minimum={self.auto_rest_minimum}"
                 if self._go_rest(reason=reason):
                     return "RESTED", reason
             elif (
@@ -921,24 +922,27 @@ class LobbyFlow:
         key = date_key_from_dateinfo(di) if di else None
         self._last_date_key = key
         self.state.planned_race_name = None
+        self.state.planned_race_canonical = None
         if not key:
             return
 
         # 1) explicit plan wins
         #    but skip if we already raced on this key (OCR didn’t tick yet)
         if (key in self.plan_races) and (key not in self._raced_keys_recent):
-            name = str(self.plan_races[key]).strip()
-            if not RaceIndex.valid_date_for_race(name, key):
+            raw_name = str(self.plan_races[key]).strip()
+            canon = RaceIndex.canonicalize(raw_name)
+            if not RaceIndex.valid_date_for_race(canon or raw_name, key):
                 logger_uma.warning(
                     "[lobby] RACES plan '%s' is not present on %s in dataset; "
                     "will attempt OCR match anyway.",
-                    name,
+                    raw_name,
                     key,
                 )
-            self.state.planned_race_name = name
+            self.state.planned_race_name = raw_name
+            self.state.planned_race_canonical = canon or raw_name.lower()
             self._log_planned_race_decision(
                 action="plan_selected",
-                plan_name=name,
+                plan_name=raw_name,
                 extra={"already_raced": False},
             )
             return

@@ -407,6 +407,23 @@ class RaceFlow:
                             for expected_title, expected_rank in expected_cards:
                                 expected_title_n = clean_race_name(expected_title)
                                 s = fuzzy_ratio(txt, expected_title_n.upper())
+
+                                if "varies" in expected_title_n:
+                                    tokens_actual = txt.split()
+                                    tokens_expected = [
+                                        token
+                                        for token in expected_title_n.split()
+                                        if token and token != "varies"
+                                    ]
+                                    if tokens_expected and tokens_actual:
+                                        matched = sum(
+                                            1 for token in tokens_expected if token in tokens_actual
+                                        )
+                                        if matched:
+                                            token_ratio = matched / len(tokens_expected)
+                                            if matched == len(tokens_expected):
+                                                token_ratio += 0.15
+                                            s = max(s, token_ratio)
                                 if expected_rank in ("G1", "G2", "G3", "OP", "EX"):
                                     if badge_label.upper() == expected_rank.upper():
                                         s += 0.10

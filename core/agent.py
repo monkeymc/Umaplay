@@ -31,7 +31,7 @@ from core.utils.waiter import PollConfig, Waiter
 from core.actions.race import ConsecutiveRaceRefused
 from core.utils.abort import abort_requested
 from core.utils.event_processor import CATALOG_JSON, Catalog, UserPrefs
-
+from core.utils.race_index import RaceIndex
 
 class Player:
     def __init__(
@@ -123,6 +123,7 @@ class Player:
         self._planned_skip_release_pending: bool = False
         self._planned_skip_release_key: Optional[str] = None
         self._planned_skip_cooldown: int = 0
+        self._first_race_day = True
 
     def _desired_race_today(self) -> str | None:
         """
@@ -134,10 +135,16 @@ class Player:
             return None
         key = f"Y{di.year_code}-{int(di.month):02d}-{int(di.half)}"
         plan = getattr(self.lobby, "plan_races", None) or self.plan_races
-        race = plan.get(key)
-        if race:
-            logger_uma.info(f"[agent] Planned race for {key}: {race}")
-        return race
+        raw_race = plan.get(key)
+        if raw_race:
+            canon = RaceIndex.canonicalize(raw_race)
+            logger_uma.info(
+                f"[agent] Planned race for {key}: raw='{raw_race}' canon='{canon}'"
+            )
+            self.lobby.state.planned_race_canonical = canon or raw_race.lower()
+            self.lobby.state.planned_race_name = str(raw_race)
+            return str(raw_race)
+        return None
 
     def _today_date_key(self) -> Optional[str]:
         di = getattr(self.lobby.state, "date_info", None)
@@ -342,7 +349,8 @@ class Player:
                     logger_uma.debug(
                         f"[skills] check interval={interval} turn={current_turn} turn_gate={turn_gate} delta={pts_delta} delta_gate={delta_gate} last_ok={self._last_skill_buy_succeeded}"
                     )
-                    if should_open_skills:
+                    if should_open_skills or self._first_race_day:
+                        self._first_race_day = False
                         self.lobby._go_skills()
                         bought = self.skills_flow.buy(self.skill_list)
                         self._last_skill_buy_succeeded = bool(bought)

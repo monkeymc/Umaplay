@@ -54,6 +54,30 @@ def _normalize_ocr(s: str) -> str:
     return s
 
 
+def normalize_race_card_text(s: str) -> str:
+    """Specialized normalization for race-card OCR output."""
+
+    base = _normalize_ocr(s)
+    if not base:
+        return ""
+
+    text = base
+    # Common misreads: "Deer/Deered/Dirf" -> "dirt"
+    text = re.sub(r"\bdeer(?:ed)?\b", "dirt", text)
+    text = re.sub(r"\bdirf\b", "dirt", text)
+
+    # "War barrier(s)" often mis-OCRs "Varies"; collapse a few variants.
+    text = re.sub(r"\bwar\s+barriers?\b", "varies", text)
+    text = re.sub(r"\bvar\s+barriers?\b", "varies", text)
+
+    # Single-token variants of "Varies" (e.g., var, varl, varie, vari, varles).
+    text = re.sub(r"\bwar\b", "var", text)
+    text = re.sub(r"\bvar(?:i|ie|ies|les)?\b", "varies", text)
+
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
 def fix_common_ocr_confusions(s: str) -> str:
     """
     Domain-aware OCR fixes specifically tuned for skill titles.

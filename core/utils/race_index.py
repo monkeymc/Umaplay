@@ -2,11 +2,39 @@
 from __future__ import annotations
 
 import json
+import re
+import unicodedata
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from core.settings import Settings
 from core.utils.logger import logger_uma
+
+
+_CANON_TRANSLATION = str.maketrans(
+    {
+        "’": "'",
+        "‘": "'",
+        "“": '"',
+        "”": '"',
+        "–": "-",
+        "—": "-",
+    }
+)
+_CANON_NON_WORD = re.compile(r"[^a-z0-9]+")
+
+
+def canonicalize_race_name(name: object) -> str:
+    """Return a lowercase, punctuation-stripped key for race name matching."""
+
+    if not name:
+        return ""
+    text = unicodedata.normalize("NFKC", str(name)).translate(_CANON_TRANSLATION)
+    text = unicodedata.normalize("NFKD", text)
+    text = text.encode("ascii", "ignore").decode("ascii")
+    text = text.lower()
+    text = _CANON_NON_WORD.sub(" ", text)
+    return " ".join(text.split())
 
 DateKey = str  # "Y{year}-{MM}-{half}"
 
@@ -92,6 +120,10 @@ class RaceIndex:
     _name_to_dates: Dict[str, List[DateKey]] = {}
     _name_to_entries: Dict[str, List[Dict]] = {}
 
+    @staticmethod
+    def canonicalize(name: object) -> str:
+        return canonicalize_race_name(name)
+
     @classmethod
     def _ensure_loaded(cls) -> None:
         if cls._loaded:
@@ -107,7 +139,7 @@ class RaceIndex:
         # data is { race_name: [ {year_int, month, day, rank, order?, ...}, ... ], ... }
         for race_name, occs in (data or {}).items():
             name = str(race_name).strip()
-            low = name.lower()
+            canon_name = canonicalize_race_name(name)
             for oc in occs or []:
                 try:
                     y = int(oc.get("year_int"))
@@ -115,6 +147,7 @@ class RaceIndex:
                     d = int(oc.get("day"))  # "half" in our policy
                     key = f"Y{y}-{m:02d}-{d:d}"
                     entry = {"name": name, **oc}
+                    entry["canonical_name"] = canon_name
                     # pre-compute display title used on the card
                     entry["display_title"] = build_display_title(entry)
                     # normalize optional order (1-based)
@@ -125,8 +158,10 @@ class RaceIndex:
                     # pre-compute display title used on the card
                     entry["display_title"] = build_display_title(entry)
                     cls._date_to_entries.setdefault(key, []).append(entry)
-                    cls._name_to_dates.setdefault(low, []).append(key)
-                    cls._name_to_entries.setdefault(low, []).append(entry)
+                    map_key = canon_name or canonicalize_race_name(name)
+                    if map_key:
+                        cls._name_to_dates.setdefault(map_key, []).append(key)
+                        cls._name_to_entries.setdefault(map_key, []).append(entry)
                 except Exception:
                     continue
 
@@ -162,9 +197,10 @@ class RaceIndex:
         Includes pre-computed 'display_title', 'rank', and optional 'order' (default 1).
         """
         cls._ensure_loaded()
-        low = (race_name or "").strip().lower()
+        canon = canonicalize_race_name(race_name)
         for e in cls._date_to_entries.get(key, []):
-            if (e.get("name") or "").strip().lower() == low:
+            stored = e.get("canonical_name") or canonicalize_race_name(e.get("name"))
+            if stored == canon:
                 return e
         return None
 
@@ -181,7 +217,8 @@ class RaceIndex:
     @classmethod
     def valid_date_for_race(cls, race_name: str, key: DateKey) -> bool:
         cls._ensure_loaded()
-        return key in cls._name_to_dates.get((race_name or "").lower(), [])
+        canon = canonicalize_race_name(race_name)
+        return key in cls._name_to_dates.get(canon, [])
 
     @classmethod
     def expected_titles_for_race(cls, race_name: str) -> List[Tuple[str, str]]:
@@ -190,9 +227,10 @@ class RaceIndex:
         Useful as a general fallback when date_key is unknown.
         """
         cls._ensure_loaded()
-        low = (race_name or "").lower()
+        canon = canonicalize_race_name(race_name)
         out: List[Tuple[str, str]] = []
-        for e in cls._name_to_entries.get(low, []) or []:
+        entries = cls._name_to_entries.get(canon, []) or []
+        for e in entries:
             title = str(e.get("display_title") or "").strip()
             rank = str(e.get("rank") or "").strip().upper() or "UNK"
             if title:
