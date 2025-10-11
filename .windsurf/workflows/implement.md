@@ -6,6 +6,7 @@ auto_execution_mode: 1
 > **Task:** Implement Step 1 of the feature defined in `docs/ai/feature/PLAN.md`.
 
 Use as references:
+- `docs/ai/feature/RESEARCH.md` - initial research
 - `docs/ai/feature/PLAN.md` — authoritative definition of all steps and target files.  
 - `docs/ai/feature/progress.md` — optional tracker if it exists and contains progress.
 
