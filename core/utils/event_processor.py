@@ -1,7 +1,7 @@
 import json
 import fnmatch
 import os
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -9,6 +9,8 @@ from PIL import Image
 import imagehash
 from rapidfuzz import fuzz, process
 from PIL.Image import Image as PILImage
+
+from core.utils.logger import logger_uma
 
 # -----------------------------
 # Paths (adjust if needed)
@@ -250,6 +252,113 @@ def build_catalog() -> None:
 # -----------------------------
 
 
+def _generalize_trainee_key(key: str) -> Optional[str]:
+    """Map a trainee-specific override key (with optional step suffix) to its general equivalent."""
+    try:
+        base, sep, step = key.partition("#")
+        parts = base.split("/")
+        if len(parts) < 5:
+            return None
+        typ = str(parts[0]).strip().lower()
+        name = str(parts[1]).strip().lower()
+        attribute = str(parts[2]).strip().lower()
+        rarity = str(parts[3]).strip().lower()
+        if typ != "trainee":
+            return None
+        if name in {"general", "", "none", "null"}:
+            return None
+        if attribute not in {"none", "", "null"}:
+            return None
+        if rarity not in {"none", "", "null"}:
+            return None
+        generalized_parts = [
+            "trainee",
+            "general",
+            "None",
+            "None",
+        ] + parts[4:]
+        generalized = "/".join(generalized_parts)
+        if sep:
+            generalized += sep + step
+        return generalized
+    except Exception:
+        return None
+
+
+def _build_alias_overrides(overrides: Dict[str, int]) -> Dict[str, int]:
+    alias_overrides: Dict[str, int] = {}
+    for key, pick in overrides.items():
+        alias = _generalize_trainee_key(key)
+        if not alias:
+            continue
+        base_alias, sep, step = alias.partition("#")
+
+        def _store(candidate: str) -> None:
+            if not candidate:
+                return
+            if candidate in overrides or candidate in alias_overrides:
+                return
+            alias_overrides[candidate] = pick
+            logger_uma.debug(
+                "[event_prefs] alias override mapped %s → %s (pick=%s)",
+                candidate,
+                key,
+                pick,
+            )
+
+        _store(alias)
+        _store(base_alias)
+        if sep != "#" and base_alias:
+            _store(f"{base_alias}#s1")
+        elif sep == "#" and base_alias and step and not step.lower().startswith("s"):
+            _store(f"{base_alias}#s{step}")
+    return alias_overrides
+
+
+def _match_specific_trainee_override(
+    overrides: Dict[str, int], rec: "EventRecord"
+) -> Optional[int]:
+    target_name = normalize_text(rec.event_name)
+    target_step = rec.chain_step or 1
+    for key, pick in overrides.items():
+        base, _, step = key.partition("#")
+        parts = base.split("/")
+        if len(parts) < 5:
+            continue
+        if parts[0].strip().lower() != "trainee":
+            continue
+        trainee_name = parts[1].strip().lower()
+        if trainee_name in {"general", "", "none", "null"}:
+            continue
+        attribute = parts[2].strip().lower()
+        rarity = parts[3].strip().lower()
+        if attribute not in {"none", "", "null"}:
+            continue
+        if rarity not in {"none", "", "null"}:
+            continue
+        override_event = normalize_text(parts[4])
+        if override_event != target_name:
+            continue
+        step_norm = step.strip().lower()
+        step_idx: Optional[int]
+        if not step_norm:
+            step_idx = 1
+        elif step_norm.startswith("s"):
+            try:
+                step_idx = int(step_norm[1:])
+            except ValueError:
+                step_idx = None
+        else:
+            try:
+                step_idx = int(step_norm)
+            except ValueError:
+                step_idx = None
+        if step_idx is not None and step_idx != target_step:
+            continue
+        return int(pick)
+    return None
+
+
 @dataclass
 class UserPrefs:
     # exact key → option_number
@@ -258,6 +367,8 @@ class UserPrefs:
     patterns: List[Tuple[str, int]]
     # fallback per type if nothing else found
     default_by_type: Dict[str, int]
+    # alias keys (e.g., trainee/general) derived from overrides
+    alias_overrides: Dict[str, int] = field(default_factory=dict)
 
     @staticmethod
     def load(path: Path) -> "UserPrefs":
@@ -281,8 +392,13 @@ class UserPrefs:
         default_by_type = raw.get(
             "defaults", {"support": 1, "trainee": 1, "scenario": 1}
         )
+        alias_overrides = _build_alias_overrides(overrides)
+
         return UserPrefs(
-            overrides=overrides, patterns=patterns, default_by_type=default_by_type
+            overrides=overrides,
+            patterns=patterns,
+            default_by_type=default_by_type,
+            alias_overrides=alias_overrides,
         )
 
     # ---- build UserPrefs from the active preset inside config.json ----
@@ -321,6 +437,8 @@ class UserPrefs:
                 except Exception:
                     # ignore malformed values
                     continue
+
+        alias_overrides = _build_alias_overrides(overrides)
 
         # --- patterns ---
         patt_src = prefs.get("patterns", []) or []
@@ -372,6 +490,17 @@ class UserPrefs:
         # 2) exact (legacy)
         if rec.key in self.overrides:
             return int(self.overrides[rec.key])
+        # alias (trainee → general)
+        if not self.alias_overrides and self.overrides:
+            self.alias_overrides = _build_alias_overrides(self.overrides)
+        if rec.key_step in self.alias_overrides:
+            return int(self.alias_overrides[rec.key_step])
+        if rec.key in self.alias_overrides:
+            return int(self.alias_overrides[rec.key])
+        if rec.type == "trainee" and normalize_text(rec.name) == "general":
+            specific_pick = _match_specific_trainee_override(self.overrides, rec)
+            if specific_pick is not None:
+                return int(specific_pick)
         # 3) wildcard patterns
         for patt, pick in self.patterns:
             if fnmatch.fnmatch(rec.key_step, patt):
