@@ -133,11 +133,11 @@ class DailyRaceFlow:
                 BlueStacksController is not None
                 and isinstance(self.ctrl, BlueStacksController)
             ):
-                sleep(2.0)
+                sleep(1.5)
             if self.waiter.click_when(
                 classes=("button_green",),
                 prefer_bottom=True,
-                timeout_s=2.0,
+                timeout_s=6.0,
                 tag="daily_race_next_1",
             ):
                 logger_uma.info("[DailyRace] NEXT (1)")

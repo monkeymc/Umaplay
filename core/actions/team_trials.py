@@ -76,7 +76,7 @@ class TeamTrialsFlow:
         ok_go = self.waiter.click_when(
             classes=("race_team_trials_go",),
             prefer_bottom=False,
-            timeout_s=2.0,
+            timeout_s=4.5,
             tag="team_trials_go",
         )
         if ok_go:
@@ -126,6 +126,19 @@ class TeamTrialsFlow:
             prefer_bottom=True,
             timeout_s=4.0,
         )
+        if pre == 0:
+            pre_2 = nav.click_button_loop(
+                self.waiter,
+                classes=("button_green",),
+                tag_prefix="team_trials_prestart",
+                max_clicks=1,
+                sleep_between_s=0.30,
+                prefer_bottom=True,
+                timeout_s=4.0,
+            )
+            if pre_2 == 0:
+                logger_uma.warning("[TeamTrials] Could not press Start button of race in second intent")
+                return
         logger_uma.debug(f"[TeamTrials] pre-start greens: {pre}")
         sleep(1.3)
         # Try to hit 'RACE!' (avoid CANCEL)
@@ -305,7 +318,7 @@ class TeamTrialsFlow:
                 self.waiter.click_when(
                     classes=("button_green",),
                     prefer_bottom=True,
-                    timeout_s=2.0,
+                    timeout_s=5,
                     clicks=1,
                     tag="team_trials_reward_next_green",
                 )

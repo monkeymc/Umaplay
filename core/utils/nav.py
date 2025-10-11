@@ -171,7 +171,14 @@ def handle_shop_exchange_on_clock_row(
 
     clocks = by_name(dets, "shop_clock")
     if not clocks:
-        logger_uma.debug("[nav] shop: no clock detected")
+        logger_uma.debug("[nav] shop: no clock detected try 1")
+        sleep(3)
+        img, dets = collect_snapshot(waiter, yolo_engine, tag=f"{tag_prefix}_scan")
+
+        clocks = by_name(dets, "shop_clock")
+        if not clocks:
+            logger_uma.debug("[nav] shop: no clock detected try 2, leaving...")
+            return False
         return False
 
     clock = max(clocks, key=lambda d: float(d.get("conf", 0.0)))
