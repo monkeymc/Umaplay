@@ -10,14 +10,15 @@ from core.perception.ocr.interface import OCRInterface
 from core.types import OCRItem
 
 # Disable if facing multi-process error
-os.environ["OMP_NUM_THREADS"]="4"
-os.environ["MKL_NUM_THREADS"]="4"
+os.environ["OMP_NUM_THREADS"] = "4"
+os.environ["MKL_NUM_THREADS"] = "4"
 
 from paddleocr import PaddleOCR
 import paddle
 
 from core.utils.img import to_bgr
 from core.utils.logger import logger_uma
+
 
 class LocalOCREngine(OCRInterface):
     """
@@ -26,15 +27,16 @@ class LocalOCREngine(OCRInterface):
       - text(...) -> single string of concatenated words
       - digits(...) -> digits-only string (handy for counters)
     """
+
     def __init__(
-            self,
-            text_detection_model_name="PP-OCRv5_mobile_det",
-            text_recognition_model_name="en_PP-OCRv5_mobile_rec",
-            use_doc_orientation_classify=False,
-            use_doc_unwarping=False,
-            use_textline_orientation=False,
-            return_word_box=False,
-        ):
+        self,
+        text_detection_model_name="PP-OCRv5_mobile_det",
+        text_recognition_model_name="en_PP-OCRv5_mobile_rec",
+        use_doc_orientation_classify=False,
+        use_doc_unwarping=False,
+        use_textline_orientation=False,
+        return_word_box=False,
+    ):
         lang = "en"
         gpu = False
         # enable_hpi = False
@@ -54,7 +56,9 @@ class LocalOCREngine(OCRInterface):
         try:
             has_cuda = bool(getattr(paddle, "is_compiled_with_cuda", lambda: False)())
             if requested_gpu and not has_cuda:
-                logger_uma.warning("OCRInterface: GPU requested but PaddlePaddle is not CUDA-enabled → falling back to CPU.")
+                logger_uma.warning(
+                    "OCRInterface: GPU requested but PaddlePaddle is not CUDA-enabled → falling back to CPU."
+                )
                 device_str = "cpu"
         except Exception:
             # If Paddle import check fails, we’ll still try device=... below and catch errors there.
@@ -94,11 +98,19 @@ class LocalOCREngine(OCRInterface):
             try:
                 self.reader = PaddleOCR(lang=self.lang, use_gpu=use_gpu)
             except Exception as e:
-                logger_uma.exception("OCRInterface: failed to initialize PaddleOCR (use_gpu=%s). Error: %s", use_gpu, e)
+                logger_uma.exception(
+                    "OCRInterface: failed to initialize PaddleOCR (use_gpu=%s). Error: %s",
+                    use_gpu,
+                    e,
+                )
                 raise
         except Exception as e:
             # If 'device' fails for any other reason, try CPU as last resort
-            logger_uma.warning("OCRInterface: device='%s' failed (%s). Retrying with CPU.", self.device, e)
+            logger_uma.warning(
+                "OCRInterface: device='%s' failed (%s). Retrying with CPU.",
+                self.device,
+                e,
+            )
             try:
                 self.reader = PaddleOCR(lang=self.lang, device="cpu", enable_hpi=False)
                 self.device = "cpu"
@@ -116,6 +128,7 @@ class LocalOCREngine(OCRInterface):
                         paddlex_ver = "unknown"
                     try:
                         import paddleocr as _pocr
+
                         paddleocr_ver = getattr(_pocr, "__version__", "unknown")
                     except Exception:
                         paddleocr_ver = "unknown"
@@ -123,13 +136,16 @@ class LocalOCREngine(OCRInterface):
                         "Paddle/PaddleOCR/PaddleX possible version mismatch. "
                         "Installed: paddle=%s, paddleocr=%s, paddlex=%s. "
                         "PaddleOCR 3.x + PaddleX 3.x require PaddlePaddle >= 3.0.",
-                        paddle_ver, paddleocr_ver, paddlex_ver
+                        paddle_ver,
+                        paddleocr_ver,
+                        paddlex_ver,
                     )
                 logger_uma.exception("OCRInterface: CPU fallback also failed: %s", e2)
                 raise
 
-        logger_uma.info("OCRInterface initialized | lang=%s device=%s", self.lang, self.device)
-
+        logger_uma.info(
+            "OCRInterface initialized | lang=%s device=%s", self.lang, self.device
+        )
 
     @staticmethod
     def _ensure_bgr3(img: Any) -> np.ndarray:
@@ -178,7 +194,9 @@ class LocalOCREngine(OCRInterface):
             return -1
 
     # -------- Batch APIs --------
-    def batch_text(self, imgs: List[Any], *, joiner: str = " ", min_conf: float = 0.2) -> List[str]:
+    def batch_text(
+        self, imgs: List[Any], *, joiner: str = " ", min_conf: float = 0.2
+    ) -> List[str]:
         if not imgs:
             return []
         bgr_list = [self._ensure_bgr3(im) for im in imgs]
@@ -187,11 +205,19 @@ class LocalOCREngine(OCRInterface):
         for o in outs:
             if isinstance(o, list) and o:
                 o = o[0]
-            j = o._to_json() if hasattr(o, "_to_json") else (o if isinstance(o, dict) else {})
+            j = (
+                o._to_json()
+                if hasattr(o, "_to_json")
+                else (o if isinstance(o, dict) else {})
+            )
             res = j.get("res", {})
             rec_texts = res.get("rec_texts", []) or []
             rec_scores = res.get("rec_scores", []) or []
-            kept = [t for i, t in enumerate(rec_texts) if i < len(rec_scores) and rec_scores[i] >= min_conf]
+            kept = [
+                t
+                for i, t in enumerate(rec_texts)
+                if i < len(rec_scores) and rec_scores[i] >= min_conf
+            ]
             texts.append((joiner.join(kept)).strip())
         return texts
 

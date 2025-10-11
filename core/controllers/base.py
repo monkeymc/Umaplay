@@ -11,7 +11,6 @@ from core.types import XYXY, RegionXYWH
 from core.utils.geometry import calculate_jitter
 
 
-
 class IController(ABC):
     """
     Abstract device/window controller.
@@ -28,8 +27,11 @@ class IController(ABC):
     def __init__(self, window_title: str, capture_client_only: bool = True) -> None:
         self.window_title = window_title
         self.capture_client_only = capture_client_only
-        self._last_origin: Tuple[int, int] = (0, 0)      # (left, top) of last capture in SCREEN coords
-        self._last_bbox:   Tuple[int, int, int, int] = (0, 0, 0, 0)  # (L, T, W, H)
+        self._last_origin: Tuple[int, int] = (
+            0,
+            0,
+        )  # (left, top) of last capture in SCREEN coords
+        self._last_bbox: Tuple[int, int, int, int] = (0, 0, 0, 0)  # (L, T, W, H)
 
     # ---- Abstracts that depend on platform/window system ----
     @abstractmethod

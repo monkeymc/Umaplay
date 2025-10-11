@@ -78,7 +78,9 @@ def _run_pipeline(img_path: Path) -> Tuple[Image.Image, List[dict], int]:
 def _assert_with_tolerance(pred: int, expected: int, tol: int) -> None:
     assert pred != -1, f"Skill points not recognized (pred=-1). Expected {expected}."
     assert 0 <= pred <= 9999, f"Skill points out of range: {pred}"
-    assert abs(pred - expected) <= tol, f"SkillPts pred={pred}, expected={expected}, tol={tol}"
+    assert abs(pred - expected) <= tol, (
+        f"SkillPts pred={pred}, expected={expected}, tol={tol}"
+    )
 
 
 # ----------------------------

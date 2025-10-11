@@ -35,6 +35,7 @@ TOL = 25  # acceptable absolute delta per stat
 
 # pytest tests/test_stats.py
 
+
 # ----------------------------
 # Helpers
 # ----------------------------
@@ -55,7 +56,9 @@ def _draw_detections(pil_img: Image.Image, parsed: List[dict]) -> Image.Image:
     return out
 
 
-def _save_segments_strip(seg_info: Dict[str, Dict[str, object]], out_path: Path) -> None:
+def _save_segments_strip(
+    seg_info: Dict[str, Dict[str, object]], out_path: Path
+) -> None:
     """Save the 5 cropped segments as a single horizontal strip."""
     keys = ["SPD", "STA", "PWR", "GUTS", "WIT"]
     segs = [seg_info[k]["seg"] for k in keys]
@@ -72,7 +75,9 @@ def _save_segments_strip(seg_info: Dict[str, Dict[str, object]], out_path: Path)
     strip.save(out_path)
 
 
-def _run_pipeline(img_path: Path) -> Tuple[Image.Image, List[dict], Dict[str, int], Dict[str, Dict[str, object]]]:
+def _run_pipeline(
+    img_path: Path,
+) -> Tuple[Image.Image, List[dict], Dict[str, int], Dict[str, Dict[str, object]]]:
     """YOLO detect + extract stats (with & without segments)."""
     img = Image.open(img_path).convert("RGB")
     ctrl = StaticImageController(img)

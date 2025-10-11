@@ -122,6 +122,72 @@ export default function AdvancedSettings() {
         />
 
         <FieldRow
+          label="Skills: check interval"
+          info="Only open Skills every N turns on Raceday (1 = every turn)."
+          control={
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Slider
+                value={a.skillCheckInterval}
+                onChange={(_, v) =>
+                  setGeneral({ advanced: { ...a, skillCheckInterval: Number(v) } })
+                }
+                min={1}
+                max={12}
+                sx={{ flex: 1 }}
+                valueLabelDisplay="auto"
+              />
+              <TextField
+                size="small"
+                type="number"
+                value={a.skillCheckInterval}
+                onChange={(e) =>
+                  setGeneral({
+                    advanced: {
+                      ...a,
+                      skillCheckInterval: Math.min(12, Math.max(1, Number(e.target.value))),
+                    },
+                  })
+                }
+                inputProps={{ min: 1, max: 12, step: 1 }}
+                sx={{ width: 80 }}
+              />
+            </Box>
+          }
+        />
+
+        <FieldRow
+          label="Skills: points delta"
+          info="Open Skills only if points increased by at least this amount since last check."
+          control={
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Slider
+                value={a.skillPtsDelta}
+                onChange={(_, v) => setGeneral({ advanced: { ...a, skillPtsDelta: Number(v) } })}
+                min={0}
+                max={1000}
+                sx={{ flex: 1 }}
+                valueLabelDisplay="auto"
+              />
+              <TextField
+                size="small"
+                type="number"
+                value={a.skillPtsDelta}
+                onChange={(e) =>
+                  setGeneral({
+                    advanced: {
+                      ...a,
+                      skillPtsDelta: Math.min(1000, Math.max(0, Number(e.target.value))),
+                    },
+                  })
+                }
+                inputProps={{ min: 0, max: 1000, step: 10 }}
+                sx={{ width: 100 }}
+              />
+            </Box>
+          }
+        />
+
+        <FieldRow
           label="Undertrain threshold"
           info="Stats below this percentage of their target will be prioritized during training."
           control={

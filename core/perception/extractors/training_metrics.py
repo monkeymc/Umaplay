@@ -164,12 +164,11 @@ def extract_failure_pct_for_tile(
     ocr_text_split = ocr.text(band_bgr, joiner="|").split("|")
 
     if len(ocr_text_split) > 1:
-
         if "%" in ocr_text_split[0]:
             swap = ocr_text_split[0]
             ocr_text_split[0] = ocr_text_split[1]
             ocr_text_split[1] = swap
-        
+
         val = " ".join(ocr_text_split[1:])
     else:
         val = ocr_text_split[-1]
@@ -189,7 +188,7 @@ def extract_failure_pct_for_tile(
         .replace("f", "")
         .replace("failure", "")
     )
-    if val == '':
+    if val == "":
         val = (
             " ".join(ocr_text_split)
             .replace("%", "")

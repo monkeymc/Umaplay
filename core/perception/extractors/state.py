@@ -24,7 +24,12 @@ from core.utils.logger import logger_uma
 from core.perception.is_button_active import ActiveButtonClassifier
 from PIL import ImageStat
 
-from core.utils.preprocessors import tighten_to_pill, career_date_crop_box, preprocess_digits, read_date_pill_robust
+from core.utils.preprocessors import (
+    tighten_to_pill,
+    career_date_crop_box,
+    preprocess_digits,
+    read_date_pill_robust,
+)
 from core.utils.text import fuzzy_contains
 
 
@@ -136,9 +141,9 @@ def extract_turns(
         final_pil, _steps = preprocess_digits(
             turns_img,
             scale=4,
-            drop_top_frac=0.12,   # was ~0.35; too aggressive -> '2' looked like a 'Z'
+            drop_top_frac=0.12,  # was ~0.35; too aggressive -> '2' looked like a 'Z'
             trim_right_frac=0.00,
-            dilate_iters=0,       # keep strokes thin for single digits
+            dilate_iters=0,  # keep strokes thin for single digits
             focus_largest_cc=True,
         )
         # OCR with a loose text fallback that maps I/l/| -> 1 (helps ultra-thin '1')
@@ -166,6 +171,7 @@ def extract_turns(
 # Turns
 # ------------------------------
 
+
 # ------------------------------
 # Career date (raw OCR)
 # ------------------------------
@@ -190,12 +196,18 @@ def extract_career_date(
     #    Heuristic: in HSV, the pill is a bright, low-saturation blob near the lower half.
     pill_box = tighten_to_pill(banner)
     cx1, cy1, cx2, cy2 = pill_box
-    cx1, cy1, cx2, cy2 = (rx1 + cx1, ry1 + cy1, rx1 + cx2, ry1 + cy2)  # map to full image coords (for debugging)
+    cx1, cy1, cx2, cy2 = (
+        rx1 + cx1,
+        ry1 + cy1,
+        rx1 + cx2,
+        ry1 + cy2,
+    )  # map to full image coords (for debugging)
     pill = banner.crop((pill_box))
 
     # 3) OCR the pill with low-res friendly pre-processing and choose best candidate
     career_date_raw = read_date_pill_robust(ocr, pill)
     return (career_date_raw or "").strip()
+
 
 # ------------------------------
 # Stats (SPD/STA/PWR/GUTS/WIT)
@@ -243,13 +255,23 @@ def _parse_stat_segment(ocr: OCRInterface, seg_img: Image.Image) -> int:
 
     # Common OCR confusions -> digits
     MAP = {
-        "O": "0","o": "0","D": "0","Q": "0",
-        "I": "1","l": "1","|": "1","!": "1",
+        "O": "0",
+        "o": "0",
+        "D": "0",
+        "Q": "0",
+        "I": "1",
+        "l": "1",
+        "|": "1",
+        "!": "1",
         "Z": "2",
-        "S": "5","s": "5",
-        "E": "6","e": "6","G": "6",
+        "S": "5",
+        "s": "5",
+        "E": "6",
+        "e": "6",
+        "G": "6",
         "B": "8",
-        "g": "9","q": "9",
+        "g": "9",
+        "q": "9",
         "A": "4",
     }
 
@@ -291,7 +313,8 @@ def _parse_stat_segment(ocr: OCRInterface, seg_img: Image.Image) -> int:
         if not trailing_letter:
             logger_uma.debug(
                 "Stat %s < 90 without trailing letter; treating as unrecognized (raw='%s')",
-                val, raw,
+                val,
+                raw,
             )
         val = -1
 
@@ -362,7 +385,9 @@ def extract_stats(
                         focus_largest_cc=False,
                     )
                 except Exception as e:
-                    logger_uma.debug(f"[stats] preprocess_digits failed ({e}); using raw segment")
+                    logger_uma.debug(
+                        f"[stats] preprocess_digits failed ({e}); using raw segment"
+                    )
 
             out[key] = {"value": _parse_stat_segment(ocr, seg_for_ocr), "seg": seg}
         return out
@@ -383,7 +408,9 @@ def extract_stats(
                     focus_largest_cc=False,
                 )
             except Exception as e:
-                logger_uma.debug(f"[stats] preprocess_digits failed ({e}); using raw segment")
+                logger_uma.debug(
+                    f"[stats] preprocess_digits failed ({e}); using raw segment"
+                )
 
         out2[key] = _parse_stat_segment(ocr, seg_for_ocr)
 
@@ -475,7 +502,7 @@ def extract_skill_points(
             drop_top_frac=0.30,
             trim_right_frac=0.15,
             dilate_iters=1,
-            focus_largest_cc=True,   # helps isolate the digits block
+            focus_largest_cc=True,  # helps isolate the digits block
         )
         v2 = ocr.digits(final_pil)
         if 0 <= v2 <= 9999:
@@ -484,6 +511,7 @@ def extract_skill_points(
     except Exception as e:
         logger_uma.debug("SkillPts PP failed: %s", e)
         return v
+
 
 # ------------------------------
 # Goal text

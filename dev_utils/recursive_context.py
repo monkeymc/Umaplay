@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-python dev_utils/recursive_context.py --target core/actions/lobby.py 
+python dev_utils/recursive_context.py --target core/actions/lobby.py
  --repo-root . --depth 1 --output dev_utils/recursive_out_agent.md
 """
 # ---------------------------------------------------------------------
@@ -42,20 +42,32 @@ from importlib import metadata
 
 DEFAULT_REPO_ROOT = "."
 DEFAULT_DEPTH = 2
-DEFAULT_MAX_FILES = 300                # safety brake for runaway graphs
-DEFAULT_MAX_ANCHORS_PER_FILE = 12      # metadata only (kept for anchors list)
-DEFAULT_OUTPUT = "-"                   # "-" = stdout
-DEFAULT_MAX_BYTES_PER_FILE = 500_000   # truncate with a note if exceeded
+DEFAULT_MAX_FILES = 300  # safety brake for runaway graphs
+DEFAULT_MAX_ANCHORS_PER_FILE = 12  # metadata only (kept for anchors list)
+DEFAULT_OUTPUT = "-"  # "-" = stdout
+DEFAULT_MAX_BYTES_PER_FILE = 500_000  # truncate with a note if exceeded
 
 # Heuristic keywords to classify "first-order essentials"
 ESSENTIAL_KEYWORDS = (
-    "interface", "interfaces",
-    "model", "models",
-    "serializer", "serializers",
-    "validator", "validators",
-    "base", "abstract",
-    "feature_flag", "feature-flags", "featureflags", "feature", "flags",
-    "schema", "schemas", "dto", "dtos",
+    "interface",
+    "interfaces",
+    "model",
+    "models",
+    "serializer",
+    "serializers",
+    "validator",
+    "validators",
+    "base",
+    "abstract",
+    "feature_flag",
+    "feature-flags",
+    "featureflags",
+    "feature",
+    "flags",
+    "schema",
+    "schemas",
+    "dto",
+    "dtos",
     "core",
 )
 
@@ -106,12 +118,14 @@ THIRDPARTY_ROLE_HINTS: Dict[str, str] = {
 
 # ---------- Data structures ----------
 
+
 @dataclass
 class Anchor:
-    kind: str           # "class" | "def" | "const"
+    kind: str  # "class" | "def" | "const"
     name: str
     start: int
     end: Optional[int]  # may be None if end not available
+
 
 @dataclass
 class FileSummary:
@@ -120,10 +134,12 @@ class FileSummary:
     anchors: List[Anchor] = field(default_factory=list)
     depth: int = 0
 
+
 @dataclass
 class VisitNode:
     path: Path
     depth: int
+
 
 @dataclass
 class BuildStats:
@@ -134,12 +150,15 @@ class BuildStats:
     files_truncated: int = 0
     third_party_unique: int = 0
 
+
 # ---------- Repo helpers ----------
+
 
 def detect_code_root(repo_root: Path) -> Path:
     """Prefer <repo>/src as code root; otherwise use repo root."""
     src = repo_root / "src"
     return src if src.exists() and src.is_dir() else repo_root
+
 
 def discover_local_packages(code_root: Path) -> Set[str]:
     """Discover first-party top-level modules under code_root.
@@ -169,7 +188,9 @@ def discover_local_packages(code_root: Path) -> Set[str]:
             pkgs.add(child.stem)
     return pkgs
 
+
 # ---------- Import parsing ----------
+
 
 def parse_imports(py_path: Path) -> Tuple[Set[str], List[Tuple[str, int, List[str]]]]:
     """
@@ -203,14 +224,16 @@ def parse_imports(py_path: Path) -> Tuple[Set[str], List[Tuple[str, int, List[st
             # Collect all imported names from this import statement
             imported_names = [alias.name for alias in node.names if alias.name]
             from_imports.append((mod, lvl, imported_names))
-            
+
             # For from-imports, track the full module path for better resolution
             if mod:
                 top_imports.add(f"{'.' * lvl}{mod}" if lvl > 0 else mod)
 
     return top_imports, from_imports
 
+
 # ---------- Resolve modules to files (LOCAL ONLY) ----------
+
 
 def resolve_absolute_module_to_path(code_root: Path, module: str) -> Optional[Path]:
     """Resolve absolute module (e.g., 'app.foo.bar') to a file path under code_root."""
@@ -220,12 +243,15 @@ def resolve_absolute_module_to_path(code_root: Path, module: str) -> Optional[Pa
     candidate = (code_root / rel).with_suffix(".py")
     if candidate.exists():
         return candidate
-    pkg_init = (code_root / rel / "__init__.py")
+    pkg_init = code_root / rel / "__init__.py"
     if pkg_init.exists():
         return pkg_init
     return None
 
-def resolve_relative_module_to_path(base_file: Path, level: int, module: str, code_root: Path) -> Optional[Path]:
+
+def resolve_relative_module_to_path(
+    base_file: Path, level: int, module: str, code_root: Path
+) -> Optional[Path]:
     """
     Resolve a relative import (e.g., from .models import X).
     `level` indicates how many package levels to go up from base_file's package.
@@ -248,7 +274,9 @@ def resolve_relative_module_to_path(base_file: Path, level: int, module: str, co
             return init
     return None
 
+
 # ---------- Essentials heuristics ----------
+
 
 def looks_like_essential_path(p: Path) -> bool:
     name = p.name.lower()
@@ -261,17 +289,27 @@ def looks_like_essential_path(p: Path) -> bool:
         return True
     return False
 
+
 def classify_role_from_name(p: Path) -> str:
     n = p.name.lower()
-    if "interface" in n: return "Interfaces / contracts"
-    if "serializer" in n: return "Serializers"
-    if "validator" in n: return "Validators"
-    if "model" in n: return "Models / ORM"
-    if "schema" in n or "dto" in n: return "Schemas / DTOs"
-    if "feature" in n or "flags" in n: return "Feature flags"
-    if "base" in n or "abstract" in n: return "Base / abstract classes"
-    if n == "__init__.py": return "Package init / exports"
+    if "interface" in n:
+        return "Interfaces / contracts"
+    if "serializer" in n:
+        return "Serializers"
+    if "validator" in n:
+        return "Validators"
+    if "model" in n:
+        return "Models / ORM"
+    if "schema" in n or "dto" in n:
+        return "Schemas / DTOs"
+    if "feature" in n or "flags" in n:
+        return "Feature flags"
+    if "base" in n or "abstract" in n:
+        return "Base / abstract classes"
+    if n == "__init__.py":
+        return "Package init / exports"
     return "Core module"
+
 
 def extract_anchors(py_path: Path, max_anchors: int) -> List[Anchor]:
     """Top-level classes, functions, and feature flag constants with line ranges."""
@@ -284,17 +322,23 @@ def extract_anchors(py_path: Path, max_anchors: int) -> List[Anchor]:
 
     for node in getattr(tree, "body", []):
         if isinstance(node, ast.ClassDef):
-            anchors.append(Anchor(
-                kind="class", name=node.name,
-                start=getattr(node, "lineno", 1),
-                end=getattr(node, "end_lineno", None),
-            ))
+            anchors.append(
+                Anchor(
+                    kind="class",
+                    name=node.name,
+                    start=getattr(node, "lineno", 1),
+                    end=getattr(node, "end_lineno", None),
+                )
+            )
         elif isinstance(node, ast.FunctionDef):
-            anchors.append(Anchor(
-                kind="def", name=node.name,
-                start=getattr(node, "lineno", 1),
-                end=getattr(node, "end_lineno", None),
-            ))
+            anchors.append(
+                Anchor(
+                    kind="def",
+                    name=node.name,
+                    start=getattr(node, "lineno", 1),
+                    end=getattr(node, "end_lineno", None),
+                )
+            )
         elif isinstance(node, ast.Assign):
             names = []
             for t in node.targets:
@@ -302,18 +346,25 @@ def extract_anchors(py_path: Path, max_anchors: int) -> List[Anchor]:
                     names.append(t.id)
             for nm in names:
                 if nm in FEATURE_FLAG_NAMES:
-                    anchors.append(Anchor(
-                        kind="const", name=nm,
-                        start=getattr(node, "lineno", 1),
-                        end=getattr(node, "end_lineno", None),
-                    ))
+                    anchors.append(
+                        Anchor(
+                            kind="const",
+                            name=nm,
+                            start=getattr(node, "lineno", 1),
+                            end=getattr(node, "end_lineno", None),
+                        )
+                    )
 
     anchors.sort(key=lambda a: a.start)
     return anchors[:max_anchors]
 
+
 # ---------- Third-party detection (names only) ----------
 
-def third_party_deps_for_file(py_path: Path, code_root: Path, local_roots: Set[str]) -> Set[str]:
+
+def third_party_deps_for_file(
+    py_path: Path, code_root: Path, local_roots: Set[str]
+) -> Set[str]:
     """Guess third-party deps imported by py_path.
 
     We consider ONLY the top-level package segment when deciding if something is
@@ -334,7 +385,9 @@ def third_party_deps_for_file(py_path: Path, code_root: Path, local_roots: Set[s
         if resolve_absolute_module_to_path(code_root, mod):
             continue
         top = mod.split(".", 1)[0]
-        if top and (top in local_roots or resolve_absolute_module_to_path(code_root, top)):
+        if top and (
+            top in local_roots or resolve_absolute_module_to_path(code_root, top)
+        ):
             continue
         if top:
             deps.add(top)
@@ -347,12 +400,15 @@ def third_party_deps_for_file(py_path: Path, code_root: Path, local_roots: Set[s
         if resolve_absolute_module_to_path(code_root, mod):
             continue
         top = mod.split(".", 1)[0]
-        if top and (top in local_roots or resolve_absolute_module_to_path(code_root, top)):
+        if top and (
+            top in local_roots or resolve_absolute_module_to_path(code_root, top)
+        ):
             continue
         if top:
             deps.add(top)
 
     return deps
+
 
 def describe_dep(name: str) -> str:
     role = THIRDPARTY_ROLE_HINTS.get(name.lower(), "Third-party dependency")
@@ -362,7 +418,9 @@ def describe_dep(name: str) -> str:
     except Exception:
         return f"{name} — {role}"
 
+
 # ---------- Traversal ----------
+
 
 def build_360_context(
     target: Path,
@@ -381,6 +439,7 @@ def build_360_context(
       - visited_count: number of distinct files visited
       - visited_set: actual visited set (for stats)
     """
+
     def _skippable(p: Path) -> bool:
         parts = set(x.lower() for x in p.parts)
         if exclude_tests and ("tests" in parts or "__tests__" in parts):
@@ -388,7 +447,10 @@ def build_360_context(
         if exclude_migrations and "migrations" in parts:
             return True
         # skip obvious non-source dirs
-        if any(seg in parts for seg in {".venv", "venv", "__pycache__", ".mypy_cache", ".pytest_cache"}):
+        if any(
+            seg in parts
+            for seg in {".venv", "venv", "__pycache__", ".mypy_cache", ".pytest_cache"}
+        ):
             return True
         return False
 
@@ -421,10 +483,15 @@ def build_360_context(
                     candidates.append(cand)
             else:
                 # If full path resolution fails, try with just the top-level package
-                top_level = mod.split('.')[0]
+                top_level = mod.split(".")[0]
                 if top_level != mod:  # Only try if it was a dotted import
                     cand = resolve_absolute_module_to_path(code_root, top_level)
-                    if cand and cand.exists() and cand not in visited and not _skippable(cand):
+                    if (
+                        cand
+                        and cand.exists()
+                        and cand not in visited
+                        and not _skippable(cand)
+                    ):
                         if node.depth >= max_depth:
                             far_nodes.append(cand)
                         else:
@@ -434,26 +501,50 @@ def build_360_context(
         for mod, lvl, _ in froms:
             if node.depth >= max_depth:
                 # For far nodes, just collect them without traversing
-                cand = resolve_relative_module_to_path(node.path, lvl, mod, code_root) if lvl > 0 else resolve_absolute_module_to_path(code_root, mod)
-                if cand and cand.exists() and cand not in visited and not _skippable(cand):
+                cand = (
+                    resolve_relative_module_to_path(node.path, lvl, mod, code_root)
+                    if lvl > 0
+                    else resolve_absolute_module_to_path(code_root, mod)
+                )
+                if (
+                    cand
+                    and cand.exists()
+                    and cand not in visited
+                    and not _skippable(cand)
+                ):
                     far_nodes.append(cand)
                 continue
-                
+
             if lvl > 0:
                 # Relative import (from .x.y import ...)
                 cand = resolve_relative_module_to_path(node.path, lvl, mod, code_root)
-                if cand and cand not in candidates and cand not in visited and not _skippable(cand):
+                if (
+                    cand
+                    and cand not in candidates
+                    and cand not in visited
+                    and not _skippable(cand)
+                ):
                     candidates.append(cand)
             elif mod:  # Absolute from-import (from x.y import ...)
                 cand = resolve_absolute_module_to_path(code_root, mod)
-                if cand and cand not in candidates and cand not in visited and not _skippable(cand):
+                if (
+                    cand
+                    and cand not in candidates
+                    and cand not in visited
+                    and not _skippable(cand)
+                ):
                     candidates.append(cand)
-                    
+
             # Also try to import the parent package if this is a deep import
-            if '.' in mod:
-                parent_mod = mod.rsplit('.', 1)[0]
+            if "." in mod:
+                parent_mod = mod.rsplit(".", 1)[0]
                 cand = resolve_absolute_module_to_path(code_root, parent_mod)
-                if cand and cand not in candidates and cand not in visited and not _skippable(cand):
+                if (
+                    cand
+                    and cand not in candidates
+                    and cand not in visited
+                    and not _skippable(cand)
+                ):
                     if node.depth >= max_depth:
                         far_nodes.append(cand)
                     else:
@@ -483,18 +574,22 @@ def build_360_context(
 
     return essentials, uniq_far, len(visited), visited
 
+
 def summarize_file(p: Path, depth: int, max_anchors: int) -> FileSummary:
     role = classify_role_from_name(p)
     anchors = extract_anchors(p, max_anchors=max_anchors)
     return FileSummary(path=p, role=role, anchors=anchors, depth=depth)
 
+
 # ---------- Rendering (FULL CODE) ----------
+
 
 def _rel(base: Path, p: Path) -> str:
     try:
         return p.resolve().relative_to(base.resolve()).as_posix()
     except Exception:
         return p.as_posix()
+
 
 def _normalize_newlines(text: str) -> str:
     """
@@ -503,6 +598,7 @@ def _normalize_newlines(text: str) -> str:
     """
     # Convert CRLF/CR to LF
     return text.replace("\r\n", "\n").replace("\r", "\n")
+
 
 def _read_with_cap(p: Path, max_bytes: int) -> Tuple[str, bool, int]:
     """Return (content, truncated?, bytes_included)."""
@@ -517,8 +613,10 @@ def _read_with_cap(p: Path, max_bytes: int) -> Tuple[str, bool, int]:
     note = f"\n\n# [Truncated at {max_bytes} bytes to fit context]\n"
     return head + note, True, max_bytes
 
+
 def _lang_for(p: Path) -> str:
     return "python"
+
 
 def render_markdown_full(
     target: Path,
@@ -533,7 +631,9 @@ def render_markdown_full(
 ) -> str:
     rel_t = _rel(code_root, target)
     lines: List[str] = []
-    lines.append(f"I'm working on this project, here are some parts of it so you have some context\n\n## 360° Context — `{rel_t}` (depth {depth})\n")
+    lines.append(
+        f"I'm working on this project, here are some parts of it so you have some context\n\n## 360° Context — `{rel_t}` (depth {depth})\n"
+    )
 
     # Target first (full code)
     tgt = next((e for e in essentials if e.path == target), None)
@@ -561,17 +661,25 @@ def render_markdown_full(
     if far_nodes:
         lines.append("### Far nodes (beyond depth)")
         if not include_far_code:
-            lines.append("_Summary only (enable `--include-far-code` to inline code)_:\n")
+            lines.append(
+                "_Summary only (enable `--include-far-code` to inline code)_:\n"
+            )
             for p in far_nodes[:50]:
                 lines.append(f"- `{_rel(code_root, p)}`")
             if len(far_nodes) > 50:
                 lines.append(f"- … (+{len(far_nodes) - 50} more)")
             lines.append("")
         else:
-            lines.append("_Full code inlined for far nodes (use with care; can be large)_:\n")
+            lines.append(
+                "_Full code inlined for far nodes (use with care; can be large)_:\n"
+            )
             for p in far_nodes:
-                fsu = summarize_file(p, depth + 1, max_anchors=DEFAULT_MAX_ANCHORS_PER_FILE)
-                lines.extend(_render_file_block(code_root, fsu, max_bytes_per_file, stats))
+                fsu = summarize_file(
+                    p, depth + 1, max_anchors=DEFAULT_MAX_ANCHORS_PER_FILE
+                )
+                lines.extend(
+                    _render_file_block(code_root, fsu, max_bytes_per_file, stats)
+                )
             lines.append("")
 
     # # Third-party deps (compact)
@@ -588,7 +696,10 @@ def render_markdown_full(
 
     return "".join(lines).rstrip() + "\n"
 
-def _render_file_block(code_root: Path, fsu: FileSummary, max_bytes: int, stats: BuildStats) -> List[str]:
+
+def _render_file_block(
+    code_root: Path, fsu: FileSummary, max_bytes: int, stats: BuildStats
+) -> List[str]:
     r = _rel(code_root, fsu.path)
     lines: List[str] = []
     lines.append(f"#### `{r}` — {fsu.role} (depth {fsu.depth})")
@@ -607,22 +718,68 @@ def _render_file_block(code_root: Path, fsu: FileSummary, max_bytes: int, stats:
     lines.append("")
     return lines
 
+
 # ---------- CLI ----------
+
 
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="Build a 360° context around a target Python file (full code markdown + terminal stats)."
     )
-    ap.add_argument("--target", required=True, help="Path to the target Python file (e.g., src/app/foo.py)")
-    ap.add_argument("--repo-root", default=DEFAULT_REPO_ROOT, help="Repository root (default: current directory)")
-    ap.add_argument("--depth", type=int, default=DEFAULT_DEPTH, help=f"Max traversal depth (default: {DEFAULT_DEPTH})")
-    ap.add_argument("--max-files", type=int, default=DEFAULT_MAX_FILES, help=f"Safety cap on files visited (default: {DEFAULT_MAX_FILES})")
-    ap.add_argument("--max-anchors", type=int, default=DEFAULT_MAX_ANCHORS_PER_FILE, help=f"Max anchors per file (metadata only; default: {DEFAULT_MAX_ANCHORS_PER_FILE})")
-    ap.add_argument("--output", default=DEFAULT_OUTPUT, help="Output path for Markdown (or '-' for stdout)")
-    ap.add_argument("--include-far-code", action="store_true", help="Inline full code for far nodes beyond depth")
-    ap.add_argument("--max-bytes-per-file", type=int, default=DEFAULT_MAX_BYTES_PER_FILE, help="Per-file cap before truncation (default: 500k)")
-    ap.add_argument("--exclude-tests", action="store_true", help="Exclude tests/__tests__ from traversal")
-    ap.add_argument("--exclude-migrations", action="store_true", help="Exclude Django-style migrations from traversal")
+    ap.add_argument(
+        "--target",
+        required=True,
+        help="Path to the target Python file (e.g., src/app/foo.py)",
+    )
+    ap.add_argument(
+        "--repo-root",
+        default=DEFAULT_REPO_ROOT,
+        help="Repository root (default: current directory)",
+    )
+    ap.add_argument(
+        "--depth",
+        type=int,
+        default=DEFAULT_DEPTH,
+        help=f"Max traversal depth (default: {DEFAULT_DEPTH})",
+    )
+    ap.add_argument(
+        "--max-files",
+        type=int,
+        default=DEFAULT_MAX_FILES,
+        help=f"Safety cap on files visited (default: {DEFAULT_MAX_FILES})",
+    )
+    ap.add_argument(
+        "--max-anchors",
+        type=int,
+        default=DEFAULT_MAX_ANCHORS_PER_FILE,
+        help=f"Max anchors per file (metadata only; default: {DEFAULT_MAX_ANCHORS_PER_FILE})",
+    )
+    ap.add_argument(
+        "--output",
+        default=DEFAULT_OUTPUT,
+        help="Output path for Markdown (or '-' for stdout)",
+    )
+    ap.add_argument(
+        "--include-far-code",
+        action="store_true",
+        help="Inline full code for far nodes beyond depth",
+    )
+    ap.add_argument(
+        "--max-bytes-per-file",
+        type=int,
+        default=DEFAULT_MAX_BYTES_PER_FILE,
+        help="Per-file cap before truncation (default: 500k)",
+    )
+    ap.add_argument(
+        "--exclude-tests",
+        action="store_true",
+        help="Exclude tests/__tests__ from traversal",
+    )
+    ap.add_argument(
+        "--exclude-migrations",
+        action="store_true",
+        help="Exclude Django-style migrations from traversal",
+    )
     args = ap.parse_args()
 
     repo_root = Path(args.repo_root).resolve()
@@ -650,14 +807,18 @@ def main() -> int:
     local_roots = discover_local_packages(code_root)
     third_index: Dict[Path, Set[str]] = {}
     for fs in essentials:
-        third_index[fs.path] = third_party_deps_for_file(fs.path, code_root, local_roots)
+        third_index[fs.path] = third_party_deps_for_file(
+            fs.path, code_root, local_roots
+        )
 
     # Prepare stats (filled during render)
     stats = BuildStats(
         visited_count=visited_count,
         included_count=len(essentials),
         far_nodes_count=len(far_nodes),
-        third_party_unique=len(set().union(*third_index.values()) if third_index else set())
+        third_party_unique=len(
+            set().union(*third_index.values()) if third_index else set()
+        ),
     )
 
     md = render_markdown_full(
@@ -697,6 +858,7 @@ def main() -> int:
         out_path.write_text(md, encoding="utf-8")
         print(f"[ok] Wrote 360° context → {out_path}", file=sys.stderr)
     return 0
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

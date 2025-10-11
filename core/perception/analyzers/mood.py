@@ -112,7 +112,9 @@ def mood_label_by_color(img: Image.Image, xyxy: XYXY) -> Tuple[str, float]:
     return best_lab, conf
 
 
-def mood_label_by_ocr(ocr: OCRInterface, img: Image.Image, xyxy: XYXY) -> Tuple[str, float]:
+def mood_label_by_ocr(
+    ocr: OCRInterface, img: Image.Image, xyxy: XYXY
+) -> Tuple[str, float]:
     """
     OCR fallback. Returns (label, fuzzy_score).
     """

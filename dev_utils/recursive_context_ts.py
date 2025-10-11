@@ -26,31 +26,65 @@ DEFAULT_MAX_BYTES_PER_FILE = 500_000
 
 TS_EXTS = (".ts", ".tsx", ".js", ".jsx", ".d.ts")
 STYLE_EXTS = {".css", ".scss", ".sass", ".less"}
-ASSET_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".ico", ".ttf", ".woff", ".woff2"}
+ASSET_EXTS = {
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".svg",
+    ".webp",
+    ".ico",
+    ".ttf",
+    ".woff",
+    ".woff2",
+}
 
 ESSENTIAL_KEYWORDS = (
-    "interface", "interfaces",
-    "type", "types",
-    "model", "models",
-    "schema", "schemas",
-    "validator", "validators",
-    "base", "abstract",
-    "feature", "flags",
+    "interface",
+    "interfaces",
+    "type",
+    "types",
+    "model",
+    "models",
+    "schema",
+    "schemas",
+    "validator",
+    "validators",
+    "base",
+    "abstract",
+    "feature",
+    "flags",
 )
 ESSENTIAL_FILENAMES = {
-    "interfaces.ts", "interfaces.tsx",
+    "interfaces.ts",
+    "interfaces.tsx",
     "interface.ts",
-    "types.ts", "types.tsx",
-    "models.ts", "models.tsx",
-    "schema.ts", "schemas.ts",
-    "validator.ts", "validators.ts",
-    "base.ts", "abstract.ts",
-    "feature_flags.ts", "flags.ts",
+    "types.ts",
+    "types.tsx",
+    "models.ts",
+    "models.tsx",
+    "schema.ts",
+    "schemas.ts",
+    "validator.ts",
+    "validators.ts",
+    "base.ts",
+    "abstract.ts",
+    "feature_flags.ts",
+    "flags.ts",
     "index.d.ts",
 }
 
 # Default UI-ish directories to treat as essentials (configurable via CLI)
-DEFAULT_ESSENTIAL_DIRS = {"components", "pages", "routes", "context", "hooks", "widgets", "ui", "layouts"}
+DEFAULT_ESSENTIAL_DIRS = {
+    "components",
+    "pages",
+    "routes",
+    "context",
+    "hooks",
+    "widgets",
+    "ui",
+    "layouts",
+}
 
 ROLE_HINTS: Dict[str, str] = {
     "react": "UI library",
@@ -77,12 +111,14 @@ ROLE_HINTS: Dict[str, str] = {
 
 FEATURE_FLAG_NAME_RE = re.compile(r"(?:FEATURE|FLAGS|FEATURE_FLAGS|featureFlags)")
 
+
 @dataclass
 class Anchor:
     kind: str
     name: str
     start: int
     end: Optional[int]
+
 
 @dataclass
 class FileSummary:
@@ -91,10 +127,12 @@ class FileSummary:
     anchors: List[Anchor] = field(default_factory=list)
     depth: int = 0
 
+
 @dataclass
 class VisitNode:
     path: Path
     depth: int
+
 
 @dataclass
 class BuildStats:
@@ -105,18 +143,22 @@ class BuildStats:
     total_bytes_inlined: int = 0
     files_truncated: int = 0
 
+
 def detect_code_root(repo_root: Path) -> Path:
     src = repo_root / "src"
     return src if src.exists() and src.is_dir() else repo_root
 
-def read_tsconfig(repo_root: Path) -> Tuple[Optional[Path], Dict[str, List[str]], Optional[Path]]:
+
+def read_tsconfig(
+    repo_root: Path,
+) -> Tuple[Optional[Path], Dict[str, List[str]], Optional[Path]]:
     base_url: Optional[Path] = None
     paths: Dict[str, List[str]] = {}
     tsconfig = repo_root / "tsconfig.json"
     if tsconfig.exists():
         try:
             cfg = json.loads(tsconfig.read_text(encoding="utf-8"))
-            co = (cfg.get("compilerOptions") or {})
+            co = cfg.get("compilerOptions") or {}
             bu = co.get("baseUrl")
             if bu:
                 base_url = (repo_root / bu).resolve()
@@ -128,8 +170,11 @@ def read_tsconfig(repo_root: Path) -> Tuple[Optional[Path], Dict[str, List[str]]
                     paths[k] = [v]
         except Exception:
             pass
-    at_alias_root = (repo_root / "src").resolve() if (repo_root / "src").exists() else None
+    at_alias_root = (
+        (repo_root / "src").resolve() if (repo_root / "src").exists() else None
+    )
     return base_url, paths, at_alias_root
+
 
 def read_package_json(repo_root: Path) -> Dict[str, str]:
     pj = repo_root / "package.json"
@@ -137,12 +182,18 @@ def read_package_json(repo_root: Path) -> Dict[str, str]:
         try:
             data = json.loads(pj.read_text(encoding="utf-8"))
             deps = {}
-            for sect in ("dependencies", "devDependencies", "peerDependencies", "optionalDependencies"):
+            for sect in (
+                "dependencies",
+                "devDependencies",
+                "peerDependencies",
+                "optionalDependencies",
+            ):
                 deps.update(data.get(sect) or {})
             return {str(k): str(v) for k, v in deps.items()}
         except Exception:
             return {}
     return {}
+
 
 IMPORT_SPEC_RE = re.compile(
     r"""(?P<kind>\bimport\b|\bexport\b)\s+[^'";]*?\bfrom\b\s*['"](?P<spec>[^'"]+)['"]\s*;?|
@@ -151,10 +202,12 @@ IMPORT_SPEC_RE = re.compile(
     re.VERBOSE,
 )
 
+
 def strip_ts_comments(text: str) -> str:
     text = re.sub(r"//.*?$", "", text, flags=re.MULTILINE)
     text = re.sub(r"/\*.*?\*/", "", text, flags=re.DOTALL)
     return text
+
 
 def parse_ts_imports(ts_path: Path) -> Tuple[List[str], List[str]]:
     try:
@@ -168,11 +221,17 @@ def parse_ts_imports(ts_path: Path) -> Tuple[List[str], List[str]]:
         spec = m.group("spec") or m.group("spec2")
         if not spec:
             continue
-        if spec.startswith("./") or spec.startswith("../") or spec.startswith("@/") or spec.startswith("/"):
+        if (
+            spec.startswith("./")
+            or spec.startswith("../")
+            or spec.startswith("@/")
+            or spec.startswith("/")
+        ):
             local_specs.append(spec)
         else:
             third_specs.append(spec)
     return local_specs, third_specs
+
 
 def resolve_with_exts(candidate: Path) -> Optional[Path]:
     if candidate.suffix in TS_EXTS and candidate.exists():
@@ -188,7 +247,10 @@ def resolve_with_exts(candidate: Path) -> Optional[Path]:
                 return idx
     return None
 
-def apply_ts_paths(spec: str, base_url: Optional[Path], paths: Dict[str, List[str]]) -> List[Path]:
+
+def apply_ts_paths(
+    spec: str, base_url: Optional[Path], paths: Dict[str, List[str]]
+) -> List[Path]:
     out: List[Path] = []
     if not paths or not base_url:
         return out
@@ -205,6 +267,7 @@ def apply_ts_paths(spec: str, base_url: Optional[Path], paths: Dict[str, List[st
                     out.append((base_url / t).resolve())
     return out
 
+
 def is_under(path_obj: Path, root: Path) -> bool:
     try:
         path_obj.resolve().relative_to(root.resolve())
@@ -212,9 +275,15 @@ def is_under(path_obj: Path, root: Path) -> bool:
     except Exception:
         return False
 
-def resolve_import(from_file: Path, spec: str, code_root: Path,
-                   base_url: Optional[Path], paths: Dict[str, List[str]],
-                   at_alias_root: Optional[Path]) -> Optional[Path]:
+
+def resolve_import(
+    from_file: Path,
+    spec: str,
+    code_root: Path,
+    base_url: Optional[Path],
+    paths: Dict[str, List[str]],
+    at_alias_root: Optional[Path],
+) -> Optional[Path]:
     if spec.startswith("./") or spec.startswith("../"):
         base = (from_file.parent / spec).resolve()
         hit = resolve_with_exts(base)
@@ -238,8 +307,10 @@ def resolve_import(from_file: Path, spec: str, code_root: Path,
     hit = resolve_with_exts(base)
     return hit if hit and is_under(hit, code_root) else None
 
-def looks_like_essential_path(p: Path, include_services: bool, include_ui: bool,
-                              essential_dirs: Set[str]) -> bool:
+
+def looks_like_essential_path(
+    p: Path, include_services: bool, include_ui: bool, essential_dirs: Set[str]
+) -> bool:
     base = p.name.lower()
     if base in ESSENTIAL_FILENAMES:
         return True
@@ -253,21 +324,33 @@ def looks_like_essential_path(p: Path, include_services: bool, include_ui: bool,
         return True
     return False
 
-def classify_role_from_name(p: Path, include_services: bool, include_ui: bool,
-                            essential_dirs: Set[str]) -> str:
+
+def classify_role_from_name(
+    p: Path, include_services: bool, include_ui: bool, essential_dirs: Set[str]
+) -> str:
     base = p.name.lower()
     stem = base.rsplit(".", 1)[0] if "." in base else base
     dirs = {seg.lower() for seg in p.parts}
-    if base in ESSENTIAL_FILENAMES: return "Essential module"
-    if "interface" in stem or "types" in stem: return "Interfaces / Types"
-    if "model" in stem: return "Models"
-    if "schema" in stem: return "Schemas"
-    if "validator" in stem: return "Validators"
-    if "base" in stem or "abstract" in stem: return "Base / Abstract"
-    if "feature" in stem or "flag" in stem: return "Feature flags"
-    if include_services and "services" in dirs: return "Service (API contracts)"
-    if include_ui and (dirs & essential_dirs): return "UI component/module"
+    if base in ESSENTIAL_FILENAMES:
+        return "Essential module"
+    if "interface" in stem or "types" in stem:
+        return "Interfaces / Types"
+    if "model" in stem:
+        return "Models"
+    if "schema" in stem:
+        return "Schemas"
+    if "validator" in stem:
+        return "Validators"
+    if "base" in stem or "abstract" in stem:
+        return "Base / Abstract"
+    if "feature" in stem or "flag" in stem:
+        return "Feature flags"
+    if include_services and "services" in dirs:
+        return "Service (API contracts)"
+    if include_ui and (dirs & essential_dirs):
+        return "UI component/module"
     return "Core module"
+
 
 ANCHOR_PATTERNS = [
     (r"^\s*export\s+interface\s+([A-Za-z0-9_]+)", "interface"),
@@ -279,6 +362,7 @@ ANCHOR_PATTERNS = [
     (r"^\s*export\s+let\s+([A-Za-z0-9_]+)\s*=", "const"),
     (r"^\s*export\s+var\s+([A-Za-z0-9_]+)\s*=", "const"),
 ]
+
 
 def extract_ts_anchors(ts_path: Path, max_anchors: int) -> List[Anchor]:
     try:
@@ -307,6 +391,7 @@ def extract_ts_anchors(ts_path: Path, max_anchors: int) -> List[Anchor]:
     anchors.sort(key=lambda a: a.start)
     return anchors[:max_anchors]
 
+
 def third_party_for_file(ts_path: Path) -> List[str]:
     _, third_specs = parse_ts_imports(ts_path)
     pkgs: List[str] = []
@@ -318,16 +403,21 @@ def third_party_for_file(ts_path: Path) -> List[str]:
             pkgs.append(spec.split("/", 1)[0])
     return pkgs
 
+
 def is_skippable(p: Path, include_styles: bool, include_tests: bool) -> bool:
     parts_lower = [seg.lower() for seg in p.parts]
     if not include_tests and any(seg in ("__tests__", "tests") for seg in parts_lower):
         return True
-    if any(seg in (".git", "node_modules", "coverage", ".next", "dist", "build") for seg in parts_lower):
+    if any(
+        seg in (".git", "node_modules", "coverage", ".next", "dist", "build")
+        for seg in parts_lower
+    ):
         return True
     ext = p.suffix.lower()
     if (ext in STYLE_EXTS and not include_styles) or ext in ASSET_EXTS:
         return True
     return False
+
 
 def build_360(
     target: Path,
@@ -354,7 +444,9 @@ def build_360(
         essentials.append(
             FileSummary(
                 path=p,
-                role=classify_role_from_name(p, include_services, include_ui, essential_dirs),
+                role=classify_role_from_name(
+                    p, include_services, include_ui, essential_dirs
+                ),
                 anchors=extract_ts_anchors(p, max_anchors),
                 depth=d,
             )
@@ -370,8 +462,14 @@ def build_360(
 
         next_files: List[Path] = []
         for spec in local_specs:
-            resolved = resolve_import(node.path, spec, code_root, base_url, paths, at_alias_root)
-            if resolved and is_under(resolved, code_root) and not is_skippable(resolved, include_styles, include_tests):
+            resolved = resolve_import(
+                node.path, spec, code_root, base_url, paths, at_alias_root
+            )
+            if (
+                resolved
+                and is_under(resolved, code_root)
+                and not is_skippable(resolved, include_styles, include_tests)
+            ):
                 next_files.append(resolved)
 
         if node.depth >= depth_cap:
@@ -390,7 +488,9 @@ def build_360(
             if next_depth == 1 and include_direct_imports:
                 include_summary_for(nf, next_depth)
             # Also include if it matches "essentials" heuristics/dirs.
-            elif looks_like_essential_path(nf, include_services, include_ui, essential_dirs):
+            elif looks_like_essential_path(
+                nf, include_services, include_ui, essential_dirs
+            ):
                 include_summary_for(nf, next_depth)
 
             queue.append(VisitNode(path=nf, depth=next_depth))
@@ -408,20 +508,28 @@ def build_360(
 
     return essentials, uniq_far, len(visited), visited
 
+
 def rel(base: Path, p: Path) -> str:
     try:
         return p.resolve().relative_to(base.resolve()).as_posix()
     except Exception:
         return p.as_posix()
 
+
 def lang_for(p: Path) -> str:
     ext = p.suffix.lower()
-    if ext == ".tsx": return "tsx"
-    if ext in (".ts", ".d.ts"): return "ts"
-    if ext == ".jsx": return "jsx"
-    if ext == ".js": return "js"
-    if ext in STYLE_EXTS: return ext[1:]
+    if ext == ".tsx":
+        return "tsx"
+    if ext in (".ts", ".d.ts"):
+        return "ts"
+    if ext == ".jsx":
+        return "jsx"
+    if ext == ".js":
+        return "js"
+    if ext in STYLE_EXTS:
+        return ext[1:]
     return ""
+
 
 def read_with_cap(p: Path, max_bytes: int) -> Tuple[str, bool, int]:
     data = p.read_bytes()
@@ -431,7 +539,10 @@ def read_with_cap(p: Path, max_bytes: int) -> Tuple[str, bool, int]:
     note = f"\n\n/* [Truncated at {max_bytes} bytes to fit context] */\n"
     return head + note, True, max_bytes
 
-def render_file_block(code_root: Path, fsu: FileSummary, max_bytes: int, stats: BuildStats) -> List[str]:
+
+def render_file_block(
+    code_root: Path, fsu: FileSummary, max_bytes: int, stats: BuildStats
+) -> List[str]:
     r = rel(code_root, fsu.path)
     out: List[str] = []
     out.append(f"#### `{r}` — {fsu.role} (depth {fsu.depth})")
@@ -452,6 +563,7 @@ def render_file_block(code_root: Path, fsu: FileSummary, max_bytes: int, stats: 
     out.append("")
     return out
 
+
 def third_party_for_file(ts_path: Path) -> List[str]:
     _, third_specs = parse_ts_imports(ts_path)
     pkgs: List[str] = []
@@ -462,6 +574,7 @@ def third_party_for_file(ts_path: Path) -> List[str]:
         else:
             pkgs.append(spec.split("/", 1)[0])
     return pkgs
+
 
 def render_markdown_full(
     target: Path,
@@ -476,7 +589,9 @@ def render_markdown_full(
     stats: BuildStats,
 ) -> str:
     lines: List[str] = []
-    lines.append(f"I'm working on this project, here are some parts of it so you have some context\n\n")
+    lines.append(
+        f"I'm working on this project, here are some parts of it so you have some context\n\n"
+    )
     lines.append(f"## 360° Context — `{rel(code_root, target)}` (depth {depth_cap})\n")
 
     tgt = next((e for e in essentials if e.path == target), None)
@@ -502,7 +617,9 @@ def render_markdown_full(
     if far_nodes:
         lines.append("### Far nodes (beyond depth)")
         if not include_far_code:
-            lines.append("_Summary only (enable `--include-far-code` to inline code)_:\n")
+            lines.append(
+                "_Summary only (enable `--include-far-code` to inline code)_:\n"
+            )
             for p in far_nodes[:50]:
                 lines.append(f"- `{rel(code_root, p)}`")
             if len(far_nodes) > 50:
@@ -511,8 +628,15 @@ def render_markdown_full(
         else:
             lines.append("_Full code inlined for far nodes (can be large)_:\n")
             for p in far_nodes:
-                fsu = FileSummary(path=p, role="Beyond depth", anchors=extract_ts_anchors(p, DEFAULT_MAX_ANCHORS), depth=depth_cap+1)
-                lines.extend(render_file_block(code_root, fsu, max_bytes_per_file, stats))
+                fsu = FileSummary(
+                    path=p,
+                    role="Beyond depth",
+                    anchors=extract_ts_anchors(p, DEFAULT_MAX_ANCHORS),
+                    depth=depth_cap + 1,
+                )
+                lines.extend(
+                    render_file_block(code_root, fsu, max_bytes_per_file, stats)
+                )
             lines.append("")
 
     # if all_third_party:
@@ -526,30 +650,95 @@ def render_markdown_full(
 
     return "\n".join(lines).rstrip() + "\n"
 
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="Build a 360° TypeScript/React context (full code markdown + terminal stats)."
     )
     ap.add_argument("--target", required=True, help="Path to target TS/TSX/JS/JSX file")
-    ap.add_argument("--repo-root", default=DEFAULT_REPO_ROOT, help="Repository root (default: .)")
-    ap.add_argument("--depth", type=int, default=DEFAULT_DEPTH, help=f"Max traversal depth (default: {DEFAULT_DEPTH})")
-    ap.add_argument("--max-files", type=int, default=DEFAULT_MAX_FILES, help=f"Safety cap on files visited (default: {DEFAULT_MAX_FILES})")
-    ap.add_argument("--max-anchors", type=int, default=DEFAULT_MAX_ANCHORS, help=f"Max anchors per file (metadata only; default: {DEFAULT_MAX_ANCHORS})")
-    ap.add_argument("--output", default=DEFAULT_OUTPUT, help="Output Markdown path or '-' for stdout")
-    ap.add_argument("--include-services", action="store_true", default=True, help="Treat services/* as essentials (default: true)")
-    ap.add_argument("--no-include-services", dest="include_services", action="store_false")
-    ap.add_argument("--include-ui", action="store_true", default=True, help="Treat UI dirs as essentials (default: true)")
+    ap.add_argument(
+        "--repo-root", default=DEFAULT_REPO_ROOT, help="Repository root (default: .)"
+    )
+    ap.add_argument(
+        "--depth",
+        type=int,
+        default=DEFAULT_DEPTH,
+        help=f"Max traversal depth (default: {DEFAULT_DEPTH})",
+    )
+    ap.add_argument(
+        "--max-files",
+        type=int,
+        default=DEFAULT_MAX_FILES,
+        help=f"Safety cap on files visited (default: {DEFAULT_MAX_FILES})",
+    )
+    ap.add_argument(
+        "--max-anchors",
+        type=int,
+        default=DEFAULT_MAX_ANCHORS,
+        help=f"Max anchors per file (metadata only; default: {DEFAULT_MAX_ANCHORS})",
+    )
+    ap.add_argument(
+        "--output",
+        default=DEFAULT_OUTPUT,
+        help="Output Markdown path or '-' for stdout",
+    )
+    ap.add_argument(
+        "--include-services",
+        action="store_true",
+        default=True,
+        help="Treat services/* as essentials (default: true)",
+    )
+    ap.add_argument(
+        "--no-include-services", dest="include_services", action="store_false"
+    )
+    ap.add_argument(
+        "--include-ui",
+        action="store_true",
+        default=True,
+        help="Treat UI dirs as essentials (default: true)",
+    )
     ap.add_argument("--no-include-ui", dest="include_ui", action="store_false")
-    ap.add_argument("--essential-dirs", type=str, default=",".join(sorted(DEFAULT_ESSENTIAL_DIRS)),
-                    help="Comma-separated dir names treated as essentials when --include-ui (default: components,pages,routes,context,hooks,layouts,widgets,ui)")
-    ap.add_argument("--include-direct-imports", action="store_true", default=True,
-                    help="Inline ALL depth-1 local imports (default: true)")
-    ap.add_argument("--no-include-direct-imports", dest="include_direct_imports", action="store_false")
-    ap.add_argument("--include-far-code", action="store_true", help="Inline full code for far nodes beyond depth")
-    ap.add_argument("--max-bytes-per-file", type=int, default=DEFAULT_MAX_BYTES_PER_FILE, help="Per-file size cap before truncation (default: 500k)")
-    ap.add_argument("--include-tests", action="store_true", default=True, help="Include __tests__/tests (default: true)")
+    ap.add_argument(
+        "--essential-dirs",
+        type=str,
+        default=",".join(sorted(DEFAULT_ESSENTIAL_DIRS)),
+        help="Comma-separated dir names treated as essentials when --include-ui (default: components,pages,routes,context,hooks,layouts,widgets,ui)",
+    )
+    ap.add_argument(
+        "--include-direct-imports",
+        action="store_true",
+        default=True,
+        help="Inline ALL depth-1 local imports (default: true)",
+    )
+    ap.add_argument(
+        "--no-include-direct-imports",
+        dest="include_direct_imports",
+        action="store_false",
+    )
+    ap.add_argument(
+        "--include-far-code",
+        action="store_true",
+        help="Inline full code for far nodes beyond depth",
+    )
+    ap.add_argument(
+        "--max-bytes-per-file",
+        type=int,
+        default=DEFAULT_MAX_BYTES_PER_FILE,
+        help="Per-file size cap before truncation (default: 500k)",
+    )
+    ap.add_argument(
+        "--include-tests",
+        action="store_true",
+        default=True,
+        help="Include __tests__/tests (default: true)",
+    )
     ap.add_argument("--no-include-tests", dest="include_tests", action="store_false")
-    ap.add_argument("--include-styles", action="store_true", default=False, help="Include imported CSS/SCSS (default: false)")
+    ap.add_argument(
+        "--include-styles",
+        action="store_true",
+        default=False,
+        help="Include imported CSS/SCSS (default: false)",
+    )
     args = ap.parse_args()
 
     repo_root = Path(args.repo_root).resolve()
@@ -566,7 +755,11 @@ def main() -> int:
     base_url, paths, at_alias_root = read_tsconfig(repo_root)
     pkg_versions = read_package_json(repo_root)
 
-    essential_dirs = {seg.strip().lower() for seg in (args.essential_dirs or "").split(",") if seg.strip()}
+    essential_dirs = {
+        seg.strip().lower()
+        for seg in (args.essential_dirs or "").split(",")
+        if seg.strip()
+    }
 
     essentials, far_nodes, visited_count, visited_set = build_360(
         target=target,
@@ -644,6 +837,7 @@ def main() -> int:
         out_path.write_text(md, encoding="utf-8")
         print(f"[ok] Wrote 360° context → {out_path}", file=sys.stderr)
     return 0
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

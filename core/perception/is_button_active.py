@@ -16,13 +16,19 @@ from sklearn.metrics import classification_report
 # Feature extraction
 # -----------------
 
+
 def _pil_to_bgr(img: Image.Image) -> np.ndarray:
     return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+
 
 def _hsv_feats(bgr: np.ndarray) -> np.ndarray:
     """HSV summary + hue histogram with color-mask."""
     hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
-    H, S, V = hsv[...,0].astype(np.float32), hsv[...,1].astype(np.float32), hsv[...,2].astype(np.float32)
+    H, S, V = (
+        hsv[..., 0].astype(np.float32),
+        hsv[..., 1].astype(np.float32),
+        hsv[..., 2].astype(np.float32),
+    )
 
     # mask: "colored" pixels (ignore gray/white text/border)
     colored = (S >= 60) & (V >= 70)
@@ -32,7 +38,7 @@ def _hsv_feats(bgr: np.ndarray) -> np.ndarray:
     if h_col.size == 0:
         hue_hist = np.zeros(12, dtype=np.float32)
     else:
-        hue_hist, _ = np.histogram(h_col, bins=12, range=(0,180), density=False)
+        hue_hist, _ = np.histogram(h_col, bins=12, range=(0, 180), density=False)
         hue_hist = (hue_hist / float(h_col.size)).astype(np.float32)
 
     # purple-ish fraction (OpenCV H≈140–165 for “purple” used by ON state)
@@ -49,30 +55,53 @@ def _hsv_feats(bgr: np.ndarray) -> np.ndarray:
     frac_high_sat = float(np.count_nonzero((S >= 100) & colored)) / float(colored.size)
     frac_high_val = float(np.count_nonzero((V >= 120) & colored)) / float(colored.size)
 
-    return np.concatenate([
-        hue_hist,                              # 12
-        np.array([s_mean, s_std, v_mean, v_std,
-                  frac_purple, frac_high_sat, frac_high_val], dtype=np.float32)  # 7
-    ])  # total = 19 dims
+    return np.concatenate(
+        [
+            hue_hist,  # 12
+            np.array(
+                [
+                    s_mean,
+                    s_std,
+                    v_mean,
+                    v_std,
+                    frac_purple,
+                    frac_high_sat,
+                    frac_high_val,
+                ],
+                dtype=np.float32,
+            ),  # 7
+        ]
+    )  # total = 19 dims
+
 
 def _lab_feats(bgr: np.ndarray) -> np.ndarray:
     """LAB mean channels; 'a' tends to be higher for magenta/purple."""
     lab = cv2.cvtColor(bgr, cv2.COLOR_BGR2LAB)
-    L, A, B = lab[...,0].astype(np.float32), lab[...,1].astype(np.float32), lab[...,2].astype(np.float32)
-    return np.array([L.mean(), L.std(), A.mean(), A.std(), B.mean(), B.std()], dtype=np.float32)  # 6 dims
+    L, A, B = (
+        lab[..., 0].astype(np.float32),
+        lab[..., 1].astype(np.float32),
+        lab[..., 2].astype(np.float32),
+    )
+    return np.array(
+        [L.mean(), L.std(), A.mean(), A.std(), B.mean(), B.std()], dtype=np.float32
+    )  # 6 dims
+
 
 def featurize(img: Image.Image) -> np.ndarray:
     bgr = _pil_to_bgr(img)
     # trim a tiny border to reduce background influence
     h, w = bgr.shape[:2]
-    pad = max(1, int(0.03 * min(h,w)))
-    bgr = bgr[pad:h-pad, pad:w-pad].copy() if h > 2*pad and w > 2*pad else bgr
+    pad = max(1, int(0.03 * min(h, w)))
+    bgr = (
+        bgr[pad : h - pad, pad : w - pad].copy() if h > 2 * pad and w > 2 * pad else bgr
+    )
     return np.concatenate([_hsv_feats(bgr), _lab_feats(bgr)])  # 25 dims
 
 
 # -----------------
 # Model wrapper
 # -----------------
+
 
 @dataclass
 class ActiveButtonClassifier:
@@ -105,7 +134,7 @@ def _load_labeled_images(data_dir: str) -> Tuple[List[Image.Image], List[int]]:
     """
     imgs, ys = [], []
 
-    on_globs  = glob.glob(os.path.join(data_dir, "on", "*.*"))
+    on_globs = glob.glob(os.path.join(data_dir, "on", "*.*"))
     off_globs = glob.glob(os.path.join(data_dir, "off", "*.*"))
 
     if not on_globs and not off_globs:
@@ -129,12 +158,13 @@ def _load_labeled_images(data_dir: str) -> Tuple[List[Image.Image], List[int]]:
 
     return imgs, ys
 
+
 def train_active_button_model(
     data_dir: str,
     out_path: str = "models/active_button_clf.joblib",
     C: float = 2.0,
     max_iter: int = 200,
-    cv_folds: int = 5
+    cv_folds: int = 5,
 ) -> ActiveButtonClassifier:
     """
     Trains a tiny logistic regression. With very few samples, CV will be noisy,
@@ -160,7 +190,7 @@ def train_active_button_model(
 
     # quick report
     y_hat = clf.predict(X)
-    print(classification_report(y, y_hat, target_names=["OFF","ON"]))
+    print(classification_report(y, y_hat, target_names=["OFF", "ON"]))
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     joblib.dump(clf, out_path)

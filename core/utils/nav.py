@@ -14,7 +14,9 @@ from core.utils.logger import logger_uma
 from core.utils.waiter import Waiter
 
 
-def collect_snapshot(waiter: Waiter, yolo_engine: IDetector, *, tag: str) -> Tuple[Image.Image, List[DetectionDict]]:
+def collect_snapshot(
+    waiter: Waiter, yolo_engine: IDetector, *, tag: str
+) -> Tuple[Image.Image, List[DetectionDict]]:
     img, _, dets = yolo_engine.recognize(
         imgsz=waiter.cfg.imgsz, conf=waiter.cfg.conf, iou=waiter.cfg.iou, tag=tag
     )
@@ -22,20 +24,32 @@ def collect_snapshot(waiter: Waiter, yolo_engine: IDetector, *, tag: str) -> Tup
 
 
 def has(dets: List[DetectionDict], name: str, *, conf_min: float = 0.0) -> bool:
-    return any(d.get("name") == name and float(d.get("conf", 0.0)) >= conf_min for d in dets)
+    return any(
+        d.get("name") == name and float(d.get("conf", 0.0)) >= conf_min for d in dets
+    )
 
 
-def by_name(dets: List[DetectionDict], name: str, *, conf_min: float = 0.0) -> List[DetectionDict]:
-    return [d for d in dets if d.get("name") == name and float(d.get("conf", 0.0)) >= conf_min]
+def by_name(
+    dets: List[DetectionDict], name: str, *, conf_min: float = 0.0
+) -> List[DetectionDict]:
+    return [
+        d
+        for d in dets
+        if d.get("name") == name and float(d.get("conf", 0.0)) >= conf_min
+    ]
 
 
-def rows_top_to_bottom(dets: List[DetectionDict], name: str, *, conf_min: float = 0.0) -> List[DetectionDict]:
+def rows_top_to_bottom(
+    dets: List[DetectionDict], name: str, *, conf_min: float = 0.0
+) -> List[DetectionDict]:
     rows = by_name(dets, name, conf_min=conf_min)
     rows.sort(key=lambda d: d["xyxy"][1])
     return rows
 
 
-def random_center_tap(ctrl: IController, img: Image.Image, *, clicks: int, dev_frac: float = 0.20) -> None:
+def random_center_tap(
+    ctrl: IController, img: Image.Image, *, clicks: int, dev_frac: float = 0.20
+) -> None:
     """Tap near the center with random deviation."""
     W, H = img.size
     cx = W * 0.5 + random.uniform(-W * dev_frac, W * dev_frac)
@@ -97,23 +111,25 @@ def advance_sequence_with_mid_taps(
     Returns number of advances performed.
     """
     advances = 0
-    for _ in range(iterations_max):
+    for i in range(iterations_max):
         did = waiter.click_when(
             classes=(advance_class,),
             texts=advance_texts,
             prefer_bottom=True,
             allow_greedy_click=True,
-            timeout_s=2.0,
+            timeout_s=3.0,
             clicks=random.randint(*taps_each_click),
             tag=f"{tag_prefix}_advance",
         )
-        if not did:
+        if not did and i > 5:
             break
         sleep(sleep_after_advance)
         img, _ = collect_snapshot(waiter, yolo_engine, tag=f"{tag_prefix}_tap")
-        random_center_tap(ctrl, img, clicks=random.randint(*taps_each_click), dev_frac=tap_dev_frac)
+        random_center_tap(
+            ctrl, img, clicks=random.randint(*taps_each_click), dev_frac=tap_dev_frac
+        )
         advances += 1
-        sleep(1.0)
+        sleep(sleep_after_advance / 2)
     return advances
 
 
@@ -123,6 +139,7 @@ def handle_shop_exchange_on_clock_row(
     ctrl: IController,
     *,
     tag_prefix: str = "shop",
+    ensure_enter: bool = True,
 ) -> bool:
     """
     If the SHOP prompt appears (green button with 'SHOP'), enter the shop and:
@@ -133,18 +150,23 @@ def handle_shop_exchange_on_clock_row(
     Returns True if an exchange click was attempted.
     """
     # Enter shop if prompted
-    shop_appeared = waiter.click_when(
-        classes=("button_green",),
-        texts=("SHOP",),
-        prefer_bottom=False,
-        allow_greedy_click=False,
-        timeout_s=2.0,
-        clicks=2,
-        tag=f"{tag_prefix}_enter",
-    )
-    if not shop_appeared:
-        return False
-
+    shop_appeared = True
+    if ensure_enter:
+        shop_appeared = waiter.click_when(
+            classes=("button_green",),
+            texts=("SHOP",),
+            prefer_bottom=False,
+            allow_greedy_click=False,
+            timeout_s=3.0,
+            clicks=2,
+            tag=f"{tag_prefix}_enter",
+        )
+        if not shop_appeared:
+            return False
+        sleep(3)
+    else:
+        # Already inside the shop; ensure UI elements settle before detection.
+        sleep(1.0)
     img, dets = collect_snapshot(waiter, yolo_engine, tag=f"{tag_prefix}_scan")
 
     clocks = by_name(dets, "shop_clock")
@@ -157,12 +179,15 @@ def handle_shop_exchange_on_clock_row(
     cy_clock = 0.5 * (y1c + y2c)
 
     # restrict to the row containing the clock, if any
-    rows = [d for d in by_name(dets, "shop_row") if d["xyxy"][1] <= cy_clock <= d["xyxy"][3]]
+    rows = [
+        d for d in by_name(dets, "shop_row") if d["xyxy"][1] <= cy_clock <= d["xyxy"][3]
+    ]
     if rows:
         row = max(rows, key=lambda d: float(d.get("conf", 0.0)))
         ry1, ry2 = row["xyxy"][1], row["xyxy"][3]
         exchanges = [
-            d for d in by_name(dets, "shop_exchange")
+            d
+            for d in by_name(dets, "shop_exchange")
             if ry1 <= (0.5 * (d["xyxy"][1] + d["xyxy"][3])) <= ry2
         ]
     else:
@@ -172,7 +197,9 @@ def handle_shop_exchange_on_clock_row(
         logger_uma.debug("[nav] shop: no exchange buttons found")
         return False
 
-    target = min(exchanges, key=lambda d: abs((0.5 * (d["xyxy"][1] + d["xyxy"][3])) - cy_clock))
+    target = min(
+        exchanges, key=lambda d: abs((0.5 * (d["xyxy"][1] + d["xyxy"][3])) - cy_clock)
+    )
 
     # y-proximity tolerance (~6% screen height or >=12px)
     img_h = img.height if isinstance(img, Image.Image) else 1080

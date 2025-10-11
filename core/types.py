@@ -13,20 +13,25 @@ from typing import Dict, List, Literal, Tuple, TypedDict
 
 # ---------- Basic geometric aliases ----------
 
-XYXY = Tuple[float, float, float, float]       # (x1, y1, x2, y2)
-XYWH = Tuple[int, int, int, int]               # (x, y, w, h) integers (screen/client coords)
+XYXY = Tuple[float, float, float, float]  # (x1, y1, x2, y2)
+XYWH = Tuple[int, int, int, int]  # (x, y, w, h) integers (screen/client coords)
 
 # ---------- Detection & screen classification ----------
 
+
 class DetectionDict(TypedDict):
     """Normalized YOLO detection for a single box in last-screenshot coordinates."""
+
     idx: int
     name: str
     conf: float
     xyxy: XYXY
 
 
-ScreenName = Literal["Raceday", "Inspiration", "Lobby", "LobbySummer", "Event", "Training", "Unknown"]
+ScreenName = Literal[
+    "Raceday", "Inspiration", "Lobby", "LobbySummer", "Event", "Training", "Unknown"
+]
+
 
 class ScreenInfo(TypedDict, total=False):
     """
@@ -37,6 +42,7 @@ class ScreenInfo(TypedDict, total=False):
       - infirmary: bool
       - counts: {class_name: count}
     """
+
     training_buttons: int
     tazuna: bool
     infirmary: bool
@@ -45,6 +51,7 @@ class ScreenInfo(TypedDict, total=False):
 
 # ---------- Training scan structures ----------
 
+
 @dataclass(frozen=True)
 class TileScanEntry:
     """
@@ -52,6 +59,7 @@ class TileScanEntry:
     - tile_xyxy is in the same coordinate system as the last screenshot (left half capture).
     - supports is a list of raw detections (support_* classes) for that tile's overlay.
     """
+
     tile_idx: int
     tile_xyxy: XYXY
     tile_center_x: float
@@ -62,11 +70,12 @@ class TileScanEntry:
 
 FriendshipColor = Literal["gray", "blue", "green", "yellow", "pink", "unknown"]
 
+
 @dataclass(frozen=True)
 class FriendshipBarInfo:
     color: FriendshipColor
-    progress_pct: int         # 0..100
-    fill_ratio: float         # 0.0..1.0
+    progress_pct: int  # 0..100
+    fill_ratio: float  # 0.0..1.0
     is_max: bool
 
 
@@ -75,6 +84,7 @@ class SupportAttributes:
     """
     Attributes extracted for a single support crop via analyzers.
     """
+
     support_type: str
     support_type_score: float
     friendship_bar: FriendshipBarInfo
@@ -91,6 +101,7 @@ class ScanTileEnriched:
       - has_any_rainbow is a convenience flag aggregated from supports_enriched.
       - skipped_click tells whether we reused a pre-raised tile and avoided clicking.
     """
+
     tile_idx: int
     tile_xyxy: XYXY
     tile_center_x: float
@@ -98,6 +109,7 @@ class ScanTileEnriched:
     has_any_rainbow: bool
     failure_pct: int
     skipped_click: bool
+
 
 # Mood categories and a simple numeric mapping used for downstream logic.
 MoodName = Literal["AWFUL", "BAD", "NORMAL", "GOOD", "GREAT", "UNKNOWN"]

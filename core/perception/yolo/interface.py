@@ -5,6 +5,7 @@ from PIL import Image
 from core.controllers.base import IController, RegionXYWH
 from core.types import DetectionDict
 
+
 @runtime_checkable
 class IDetector(Protocol):
     """
