@@ -120,6 +120,7 @@ class LobbyFlow:
         self._raced_keys_recent: set[str] = (
             set()
         )  # keys we already raced on (avoid double-race if OCR didn’t tick)
+        self._skip_guard_key: Optional[str] = None  # date key that armed skip guard
 
     # --------------------------
     # Public entry point
@@ -162,6 +163,25 @@ class LobbyFlow:
 
         # --- Race planning (explicit list takes precedence; else G1 if available) ---
         self._plan_race_today()
+
+        current_date_key = (
+            date_key_from_dateinfo(self.state.date_info)
+            if self.state and getattr(self.state, "date_info", None)
+            else None
+        )
+        if (
+            self._skip_race_once
+            and self._skip_guard_key
+            and current_date_key
+            and current_date_key != self._skip_guard_key
+        ):
+            logger_uma.info(
+                "[planned_race] skip guard released: %s -> %s",
+                self._skip_guard_key,
+                current_date_key,
+            )
+            self._skip_race_once = False
+            self._skip_guard_key = None
 
         # If we have a planned race today, go race (subject to early-guard rules)
         if self.state.planned_race_name:
@@ -208,6 +228,7 @@ class LobbyFlow:
                     "[lobby] Planned race suppressed by first-junior-day/skip flag."
                 )
             self._skip_race_once = False
+            self._skip_guard_key = None
 
         if self.process_on_demand:
             self._process_turns_left(img, dets)
@@ -939,6 +960,7 @@ class LobbyFlow:
         self._raced_keys_recent.add(date_key)
         # one-shot guard this loop as well
         self._skip_race_once = True
+        self._skip_guard_key = date_key
 
     def _process_turns_left(self, img, dets):
         new_turn = extract_turns(self.ocr, img, dets)
