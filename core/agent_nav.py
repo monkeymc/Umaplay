@@ -122,6 +122,11 @@ class AgentNav:
         ):
             return "TeamTrialsResults", {"counts": dict(counts)}
 
+        # If it only has a 'Back' button_white button in screen, is TeamTrialsStale
+        # and No pink, no advance
+        if nav.has(dets, "button_white", conf_min=self._thr["button_back"]) and not nav.has(dets, "button_pink", conf_min=self._thr["button_pink"]) and not nav.has(dets, "button_advance", conf_min=self._thr["button_advance"]):
+            return "TeamTrialsStale", {"counts": dict(counts)}
+
         return "UnknownNav", {"counts": dict(counts)}
 
     # --------------------------
@@ -171,6 +176,7 @@ class AgentNav:
                 "TeamTrialsGo",
                 "TeamTrialsShop",
                 "TeamTrialsResults",
+                "TeamTrialsStale",
             }:
                 logger_uma.info(
                     f"[AgentNav] TeamTrials recovery state detected: {screen}"

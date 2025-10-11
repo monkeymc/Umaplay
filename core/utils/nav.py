@@ -129,7 +129,7 @@ def advance_sequence_with_mid_taps(
             ctrl, img, clicks=random.randint(*taps_each_click), dev_frac=tap_dev_frac
         )
         advances += 1
-        sleep(1.0)
+        sleep(sleep_after_advance / 2)
     return advances
 
 

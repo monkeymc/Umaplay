@@ -27,6 +27,7 @@ class TeamTrialsState(Enum):
     BANNERS = "banners"
     RESULTS = "results"
     SHOP = "shop"
+    STALE = "stale"
 
 
 class TeamTrialsFlow:
@@ -53,6 +54,9 @@ class TeamTrialsFlow:
             "shop_exchange": 0.35,
             "button_pink": 0.35,
             "button_advance": 0.35,
+            "button_white": 0.35,
+            "button_back": 0.35,
+            "button_green": 0.35,
         }
 
     # ---------- High-level entry points ----------
@@ -167,6 +171,8 @@ class TeamTrialsFlow:
                 self._handle_results_screen()
             elif state is TeamTrialsState.SHOP:
                 self._handle_shop_in_place()
+            elif state is TeamTrialsState.STALE:
+                self._handle_stale_screen()
 
             sleep(1.0)
 
@@ -196,8 +202,20 @@ class TeamTrialsFlow:
         ):
             return TeamTrialsState.RESULTS
 
+        if nav.has(dets, "button_white", conf_min=self._thr["button_white"]) and not nav.has(dets, "button_pink", conf_min=self._thr["button_pink"]) and not nav.has(dets, "button_advance", conf_min=self._thr["button_advance"]):
+            return TeamTrialsState.STALE
+
         return TeamTrialsState.UNKNOWN
 
+    def _handle_stale_screen(self) -> None:
+        logger_uma.info("[TeamTrials] Stale screen detected; clicking 'Back'.")
+        self.waiter.click_when(
+            classes=("button_white",),
+            texts=("BACK",),
+            prefer_bottom=True,
+            timeout_s=2.0,
+            tag="team_trials_stale_back",
+        )
     def _handle_home_screen(self) -> None:
         logger_uma.info("[TeamTrials] Home screen detected; clicking 'Team Race'.")
         clicked = self.waiter.click_when(
@@ -250,7 +268,7 @@ class TeamTrialsFlow:
             self.yolo_engine,
             self.ctrl,
             tag_prefix="team_trials_adv",
-            iterations_max=6,
+            iterations_max=5,
             advance_class="button_advance",
             advance_texts=None,
             taps_each_click=(3, 4),
@@ -258,17 +276,40 @@ class TeamTrialsFlow:
             sleep_after_advance=0.40,
         )
         logger_uma.debug(f"[TeamTrials] advances performed: {adv}")
-        sleep(3)
-        sleep(4)
+        sleep(5)
 
-        img, _ = nav.collect_snapshot(
+        img, dets = nav.collect_snapshot(
             self.waiter, self.yolo_engine, tag="team_trials_midtap"
         )
         nav.random_center_tap(
             self.ctrl, img, clicks=random.randint(4, 5), dev_frac=0.01
         )
-        sleep(1.0)
-        sleep(2)
+        sleep(4)
+        img, dets = nav.collect_snapshot(
+            self.waiter, self.yolo_engine, tag="team_trials_especial_reward"
+        )
+        logger_uma.debug(f"[TeamTrials] especial reward detected: {len(dets) == 1}. dets: {dets}")
+        
+        # if len(dets) == 1 or not button_pink in dets
+        if len(dets) == 1 or not nav.has(dets, "button_pink"):
+            did_next = self.waiter.click_when(
+                classes=("button_advance",),
+                prefer_bottom=True,
+                clicks=1,
+                forbid_texts=("VIEW RACE",),
+                allow_greedy_click=True,
+                timeout_s=2.3,
+                tag="team_trials_reward_next",
+            )
+            if did_next:
+                self.waiter.click_when(
+                    classes=("button_green",),
+                    prefer_bottom=True,
+                    timeout_s=2.0,
+                    clicks=1,
+                    tag="team_trials_reward_next_green",
+                )
+                sleep(0.5)
 
         did_shop = nav.handle_shop_exchange_on_clock_row(
             self.waiter,
@@ -279,30 +320,6 @@ class TeamTrialsFlow:
         )
         if did_shop:
             logger_uma.info("[TeamTrials] Completed shop exchange flow")
-        else:
-            _, dets = nav.collect_snapshot(
-                self.waiter, self.yolo_engine, tag="team_trials_especial_reward check"
-            )
-
-            if len(dets) == 1:
-                did_next = self.waiter.click_when(
-                    classes=("button_advance",),
-                    prefer_bottom=True,
-                    clicks=1,
-                    forbid_texts=("VIEW RACE",),
-                    allow_greedy_click=True,
-                    timeout_s=2.3,
-                    tag="team_trials_reward_next",
-                )
-                if did_next:
-                    self.waiter.click_when(
-                        classes=("button_green",),
-                        prefer_bottom=True,
-                        timeout_s=2.0,
-                        clicks=1,
-                        tag="team_trials_reward_next_green",
-                    )
-                    sleep(0.3)
 
         if not self.waiter.click_when(
             classes=("button_pink",),
