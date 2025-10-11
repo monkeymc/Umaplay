@@ -3,6 +3,8 @@ description: Generate a Standard Operating Procedure
 auto_execution_mode: 3
 ---
 
+Every fix teaches your future self.
+
 > **Task:** Generate a complete, team-ready Standard Operating Procedure (SOP) for the work implemented during this session.
 
 The SOP must be factual, minimal, and reproducible — suitable for on-call, maintenance, or handoff scenarios.

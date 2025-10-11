@@ -298,6 +298,54 @@ def decide_action_training(
         tile_to_type=tile_to_type,
     )
 
+    top3_stats = [s.upper() for s in priority_stats[:3]]
+
+    def _best_tile_for_stats(
+        rows: Sequence[Dict], stats_subset: Sequence[str], min_sv: float = -1.0
+    ) -> Tuple[Optional[int], float]:
+        if not stats_subset:
+            return None, 0.0
+        stats_set = {s.upper() for s in stats_subset}
+        pool = [
+            r
+            for r in rows
+            if _stat_of_tile(int(r["tile_idx"])) in stats_set
+            and float(r.get("sv_total", 0.0)) >= min_sv
+        ]
+        if not pool:
+            return None, 0.0
+        rbest = max(pool, key=lambda rr: float(rr.get("sv_total", 0.0)))
+        return int(rbest["tile_idx"]), float(rbest.get("sv_total", 0.0))
+
+    top3_tile_idx, top3_tile_sv = _best_tile_for_stats(
+        allowed_rows_filtered, top3_stats, -1.0
+    )
+    top3_tile_stat = _stat_of_tile(int(top3_tile_idx)) if top3_tile_idx is not None else None
+
+    PRIORITY_SV_DIFF_THRESHOLD = 0.75
+    PRIORITY_TOP3_MIN_SV = 0.5
+    PRIORITY_EXCEPTIONAL_SV = 4.1
+
+    def _apply_priority_guard(candidate_idx: Optional[int], *, context: str) -> Optional[int]:
+        if candidate_idx is None or top3_tile_idx is None:
+            return candidate_idx
+        candidate_stat = _stat_of_tile(int(candidate_idx))
+        if candidate_stat in top3_stats:
+            return candidate_idx
+        candidate_sv = sv_of(candidate_idx)
+        if candidate_sv >= PRIORITY_EXCEPTIONAL_SV:
+            because(
+                f"Priority guard skipped: {candidate_stat} SV {candidate_sv:.2f} ≥ {PRIORITY_EXCEPTIONAL_SV:.2f} considered exceptional"
+            )
+            return candidate_idx
+        diff = candidate_sv - top3_tile_sv
+        if top3_tile_sv >= PRIORITY_TOP3_MIN_SV and diff <= PRIORITY_SV_DIFF_THRESHOLD:
+            because(
+                f"Priority guard: {context} best option {candidate_stat} SV {candidate_sv:.2f} is only {diff:.2f} above top-3 {top3_tile_stat} SV {top3_tile_sv:.2f} → prefer top-3 stat"
+            )
+            return top3_tile_idx
+        return candidate_idx
+
     def sv_of(idx: Optional[int]) -> float:
         return sv_by_tile.get(int(idx), 0.0) if idx is not None else 0.0
 
@@ -413,14 +461,14 @@ def decide_action_training(
                     if under_idx is not None and under_sv and under_sv > 0:
                         if gap > UNDERTRAIN_DELTA * 1.5:
                             # accept more gap respect to best play
-                            flexible_gap += 0.5
+                            flexible_gap += 0.25
                         if gap > UNDERTRAIN_DELTA and (
                             (top_allowed_idx is None or gap_top_under < flexible_gap)
                             and under_sv >= max(0.5, low_pick_sv_gate / 2)
                         ):
                             because(
                                 f"Undertrained {under_stat} by {gap:.1%} vs reference; "
-                                f"choosing its best SV {under_sv:.2f} (overall best {top_allowed_sv:.2f}, flexible_gap < {flexible_gap})"
+                                f"choosing its best SV {under_sv:.2f} (overall best {top_allowed_sv:.2f}, current gap between best option and undertrained option={gap_top_under:.2f} < flexible_gap={flexible_gap}). So let's train under stat tile"
                             )
                             return (
                                 TrainAction.TRAIN_MAX,
@@ -434,17 +482,21 @@ def decide_action_training(
                         )
                 else:
                     logger_uma.debug(
-                        f"No undertrain candidates, Threshold: {UNDERTRAIN_DELTA}. Keys: {known_keys}. Stats checked: {top3}"
+                        f"No undertrain candidates, Threshold: {UNDERTRAIN_DELTA}. Keys: {known_keys}. Stats checked: {top_n}"
                     )
     except Exception as _e:
         # Be permissive—never break the policy due to stats math
         because(f"Distribution check skipped due to stats error: {_e}")
+        logger_uma.error(f"Distribution check skipped due to stats error: {_e}")
     # 1) If max SV option is >= 2.5 → select TRAIN_MAX (tie → priority order)
     if best_allowed_tile_25 is not None:
         because(
             f"Top SV ≥ {max_pick_sv_top} allowed by risk → pick tile {best_allowed_tile_25}"
         )
-        return (TrainAction.TRAIN_MAX, best_allowed_tile_25, "; ".join(reasons))
+        target_tile = _apply_priority_guard(
+            best_allowed_tile_25, context=f"SV ≥ {max_pick_sv_top}"
+        )
+        return (TrainAction.TRAIN_MAX, target_tile, "; ".join(reasons))
 
     # URA Finale branch
     if is_final_season(di):
@@ -508,7 +560,7 @@ def decide_action_training(
             return (TrainAction.TRAIN_WIT, best_wit_low, "; ".join(reasons))
 
     because(
-        "Not a IMPRESIVE option to train (>= 2.5 in SV), checking for other oportunities"
+        "Not a IMPRESIVE option to train (>= 2.5 in SV)"
     )
     # 2) Mood check → recreation
     min_mood_score = MOOD_MAP.get(str(minimal_mood).upper(), 3)
@@ -521,6 +573,8 @@ def decide_action_training(
             f"Mood {mood_txt} below minimal {minimal_mood} and < GREAT → recreation"
         )
         return (TrainAction.RECREATION, None, "; ".join(reasons))
+    else:
+        because("Mood may be ok for now, so skipping recreation unless SV is low...")
 
     # 3) Summer close? (1 turn) → TRAIN_WIT if rest is excesive
     if is_summer_in_next_turn(di):
@@ -539,23 +593,30 @@ def decide_action_training(
                 f"Summer in 1 turn and energy {energy_pct} % → recover a lot with soft-skip with WIT"
             )
             return (TrainAction.REST, None, "; ".join(reasons))
+        else:
+            because(f"Summer in 1 turn and energy {energy_pct} % → skipping rest")
 
     # 4) Summer within ≤2 turns and (energy<=90 and WIT SV>=1) → TRAIN_WIT
     if is_summer_in_two_or_less_turns(di) and energy_pct <= 90:
-        because("Summer is in ≤2 turns away, checking for good opportunities in with")
+        because("Summer is in ≤2 turns away")
         idx = _best_wit_tile(
             sv_rows, allowed_only=True, min_sv=0.50, tile_to_type=tile_to_type
         )
         if idx is not None:
             because("Valuable WIT found for summer, SV >= 0.5")
             return (TrainAction.TRAIN_WIT, idx, "; ".join(reasons))
+        else:
+            because("No valuable WIT found for summer, SV < 0.5")
 
     # 6) If max SV option >= 2.0 → TRAIN_MAX
     if best_allowed_tile_20 is not None:
         because(
             f"Top SV ≥ {next_pick_sv_top} allowed by risk → tile {best_allowed_tile_20}"
         )
-        return (TrainAction.TRAIN_MAX, best_allowed_tile_20, "; ".join(reasons))
+        target_tile = _apply_priority_guard(
+            best_allowed_tile_20, context=f"SV ≥ {next_pick_sv_top}"
+        )
+        return (TrainAction.TRAIN_MAX, target_tile, "; ".join(reasons))
 
     # 7) If prioritize G1 and not Junior Year AND there is a G1 today → RACE
     if (
@@ -666,10 +727,10 @@ def decide_action_training(
 
     # 11)
     if best_wit_low is not None:
-        because("The best decision is to skip turn with WIT training")
+        because("The best decision is to SKIP turn with WIT training")
         return (TrainAction.TRAIN_WIT, best_wit_low, "; ".join(reasons))
 
-    because("There is no value in training WIT, checking other options")
+    because("There is no value in training WIT unless no good option in top 3 stats")
     # 12) If max SV ≥ 1.5 → TRAIN_MAX
     best_allowed_tile_15 = _best_tile(
         allowed_rows_filtered,
@@ -681,14 +742,24 @@ def decide_action_training(
         because(
             f"Top training SV ≥ {late_pick_sv_top} allowed by risk → tile {best_allowed_tile_15}"
         )
-        return (TrainAction.TRAIN_MAX, best_allowed_tile_15, "; ".join(reasons))
+        target_tile = _apply_priority_guard(
+            best_allowed_tile_15, context=f"SV ≥ {late_pick_sv_top}"
+        )
+        return (TrainAction.TRAIN_MAX, target_tile, "; ".join(reasons))
 
     # 13) Mood < Great and NOT near mood-up window → RECREATION
     if (mood_score < MOOD_MAP["GREAT"]) and not near_mood_up_event(di):
-        because(
-            "Mood < GREAT and not near mood-up window → recreation for future better training bonus"
-        )
-        return (TrainAction.RECREATION, None, "; ".join(reasons))
+
+        if is_summer(di) and energy_pct <= 65:
+            because(
+                "Summer, Mood < GREAT and energy <= 60% → recreation for future better training bonus"
+            )
+            return (TrainAction.RECREATION, None, "; ".join(reasons))
+        elif not is_summer(di) and energy_pct <= 90:
+            because(
+                "Mood < GREAT and not near mood-up window and energy <= 90% → recreation for future better training bonus"
+            )
+            return (TrainAction.RECREATION, None, "; ".join(reasons))
 
     # 14) Summer gate: if NOT summer and energy >= 70 and NOT Junior Pre-Debut → RACE
     if (
@@ -708,7 +779,7 @@ def decide_action_training(
                     float(r.get("sv_total", 0)) >= 0 for r in allowed_rows_filtered
                 )
 
-                if not has_good_training:
+                if has_good_training:
                     # Find the best training option even if it's not great
                     best_tile = _best_tile(
                         allowed_rows_filtered,
@@ -717,18 +788,14 @@ def decide_action_training(
                         tile_to_type=tile_to_type,
                     )
                     if best_tile is not None:
-                        best_sv = next(
-                            (
-                                r.get("sv_total", 0)
-                                for r in allowed_rows_filtered
-                                if r.get("tile_idx") == best_tile
-                            ),
-                            0,
+                        target_tile = _apply_priority_guard(
+                            best_tile, context="race fallback (no good training)"
                         )
+                        target_sv = sv_of(target_tile)
                         because(
-                            f"No good training options (best SV: {best_sv:.2f} ≤ 0.1) and race_if_no_good_value is disabled"
+                            f"No good training options (best SV: {target_sv:.2f} ≤ 0.1) and race_if_no_good_value is disabled"
                         )
-                        return (TrainAction.TRAIN_MAX, best_tile, "; ".join(reasons))
+                        return (TrainAction.TRAIN_MAX, target_tile, "; ".join(reasons))
                     # If no training options at all, fall through to race
 
             because(
@@ -758,7 +825,12 @@ def decide_action_training(
         because(
             f"Selecting any train SV ≥ {low_pick_sv_gate} on top-3 priority stat → tile {best_allowed_tile_10}"
         )
-        return (TrainAction.TRAIN_MAX, best_allowed_tile_10, "; ".join(reasons))
+        target_tile = _apply_priority_guard(
+            best_allowed_tile_10, context=f"SV ≥ {low_pick_sv_gate}"
+        )
+        return (TrainAction.TRAIN_MAX, target_tile, "; ".join(reasons))
+    else:
+        because("No training options in top-3 priorities with at least a SV of 1")
 
     # 16) Fallback: TRAIN_WIT (skip-turn/low-value)
     if is_summer(di) and best_wit_any:
@@ -771,7 +843,8 @@ def decide_action_training(
         return (TrainAction.REST, None, "; ".join(reasons))
     elif best_allowed_any is not None:
         because("Last resort: take best allowed training")
-        return (TrainAction.TRAIN_MAX, best_allowed_any, "; ".join(reasons))
+        target_tile = _apply_priority_guard(best_allowed_any, context="fallback")
+        return (TrainAction.TRAIN_MAX, target_tile, "; ".join(reasons))
 
     because("No allowed options → NOOP")
     return (TrainAction.NOOP, None, "; ".join(reasons))

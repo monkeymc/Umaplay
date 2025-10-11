@@ -472,7 +472,7 @@ class UserPrefs:
             "scenario": int(d.get("scenario", 1) or 1),
         }
         return UserPrefs(
-            overrides=overrides, patterns=patterns, default_by_type=default_by_type
+            overrides=overrides, patterns=patterns, default_by_type=default_by_type, alias_overrides=alias_overrides
         )
 
     def pick_for(self, rec: EventRecord) -> int:
