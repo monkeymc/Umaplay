@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import threading
 import time
+import webbrowser
 import keyboard
 import uvicorn
 
@@ -107,6 +108,10 @@ def make_ocr_yolo_from_settings(
 def boot_server():
     url = f"http://{Settings.HOST}:{Settings.PORT}"
     logger_uma.info(f"[SERVER] {url}")
+    try:
+        webbrowser.open(url, new=2)
+    except Exception as exc:
+        logger_uma.debug(f"[SERVER] Failed to open browser automatically: {exc}")
     uvicorn.run(app, host=Settings.HOST, port=Settings.PORT, log_level="warning")
 
 
@@ -343,12 +348,12 @@ class NavState:
 # Hotkey loop (keyboard lib + polling fallback)
 # ---------------------------
 def hotkey_loop(bot_state: BotState, nav_state: NavState):
-    # Support configured hotkey and F2 as backup for Player; F6/F7 for AgentNav
+    # Support configured hotkey and F2 as backup for Player; F7/F8 for AgentNav
     configured = str(getattr(Settings, "HOTKEY", "F2")).upper()
     keys_bot = sorted(set([configured, "F2"]))
-    keys_nav = ["F6", "F7"]
+    keys_nav = ["F7", "F8"]
     logger_uma.info(f"[HOTKEY] Player: press {', '.join(keys_bot)} to start/stop.")
-    logger_uma.info("[HOTKEY] AgentNav: press F6=TeamTrials, F7=DailyRaces.")
+    logger_uma.info("[HOTKEY] AgentNav: press F7=TeamTrials, F8=DailyRaces.")
 
     # Debounce across both hook & poll paths (separate for clarity)
     last_ts_toggle = 0.0
@@ -426,7 +431,7 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
         except Exception as e:
             logger_uma.warning(f"[HOTKEY] Could not register '{k}': {e}")
 
-    for k, fn in [("F6", _debounced_team), ("F7", _debounced_daily)]:
+    for k, fn in [("F7", _debounced_team), ("F8", _debounced_daily)]:
         try:
             logger_uma.debug(f"[HOTKEY] Registering hook for {k}…")
             keyboard.add_hotkey(
@@ -458,7 +463,7 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
                 except Exception as e:
                     logger_uma.debug(f"[HOTKEY] Poll error on '{k}': {e}")
             # Nav keys
-            for k, fn in [("F6", _debounced_team), ("F7", _debounced_daily)]:
+            for k, fn in [("F7", _debounced_team), ("F8", _debounced_daily)]:
                 try:
                     if keyboard.is_pressed(k):
                         logger_uma.debug(f"[HOTKEY] Poll detected '{k}'.")
