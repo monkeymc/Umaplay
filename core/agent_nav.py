@@ -232,7 +232,7 @@ class AgentNav:
 
                         if finalized:
                             self.is_running = False
-                        counter = 0
+                            counter = 0
                     else:
                         logger_uma.info("[AgentNav] DailyRace confirm_and_next_to_race HARD stopped for safety.")
                         self.is_running = False
