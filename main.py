@@ -249,20 +249,23 @@ class BotState:
                 re_init = False
                 try:
                     logger_uma.info("[BOT] Started.")
-                    self.player.run(
-                        delay=getattr(Settings, "MAIN_LOOP_DELAY", 0.4),
-                        max_iterations=getattr(Settings, "MAX_ITERATIONS", None),
-                    )
+                    # if not none
+                    if self.player:
+                        self.player.run(
+                            delay=getattr(Settings, "MAIN_LOOP_DELAY", 0.4),
+                            max_iterations=getattr(Settings, "MAX_ITERATIONS", None),
+                        )
                 except Exception as e:
                     if "connection aborted" in str(e).lower():
                         logger_uma.info(
                             "Trying to recover from bot crash, connection to host was lost"
                         )
                         time.sleep(2)
-                        self.player.run(
-                            delay=getattr(Settings, "MAIN_LOOP_DELAY", 0.4),
-                            max_iterations=getattr(Settings, "MAX_ITERATIONS", None),
-                        )
+                        if self.player:
+                            self.player.run(
+                                delay=getattr(Settings, "MAIN_LOOP_DELAY", 0.4),
+                                max_iterations=getattr(Settings, "MAX_ITERATIONS", None),
+                            )
                     else:
                         logger_uma.exception("[BOT] Crash: %s", e)
                 finally:
@@ -348,7 +351,8 @@ class NavState:
             def _runner():
                 try:
                     logger_uma.info(f"[AgentNav] Started (action={action}).")
-                    self.agent.run()
+                    if self.agent:
+                        self.agent.run()
                 except Exception as e:
                     logger_uma.exception("[AgentNav] Crash: %s", e)
                 finally:

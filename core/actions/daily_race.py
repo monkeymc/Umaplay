@@ -104,7 +104,12 @@ class DailyRaceFlow:
                     self.waiter, self.yolo_engine, tag="daily_race_cancel"
                 )
                 # Click ui_home  that may be inside dets
-                self.ctrl.click_xyxy_center(nav.find_object(dets, "ui_home")["xyxy"])
+                self.waiter.click_when(
+                    classes=("ui_home",),
+                    prefer_bottom=True,
+                    timeout_s=3.0,
+                    tag="daily_race_ui_home",
+                )
                 sleep(1.5)
                 logger_uma.debug("[DailyRace] Canceling races")
                 return False
@@ -133,11 +138,11 @@ class DailyRaceFlow:
                 BlueStacksController is not None
                 and isinstance(self.ctrl, BlueStacksController)
             ):
-                sleep(2.0)
+                sleep(1.5)
             if self.waiter.click_when(
                 classes=("button_green",),
                 prefer_bottom=True,
-                timeout_s=2.0,
+                timeout_s=6.0,
                 tag="daily_race_next_1",
             ):
                 logger_uma.info("[DailyRace] NEXT (1)")
@@ -227,12 +232,12 @@ class DailyRaceFlow:
                             timeout_s=2.0,
                             tag="daily_race_ok",
                         )
-                        sleep(1.5)
+                        sleep(2)
                         # Click in button_advance using the waiter
                         self.waiter.click_when(
                             classes=("button_advance",),
                             prefer_bottom=True,
-                            timeout_s=2.0,
+                            timeout_s=4,
                             tag="daily_race_advance",
                         )
                         sleep(2)

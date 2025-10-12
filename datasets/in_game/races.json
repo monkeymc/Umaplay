@@ -716,7 +716,6 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
       "rank": "PRE-OP",
-      "order": 1,
       "public_banner_path": "/race/PRE-OP/Akamatsu Sho-Y1-11-2.png"
     }
   ],
@@ -737,7 +736,6 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_06.png",
       "ribbon_code": "06",
       "rank": "PRE-OP",
-      "order": 2,
       "public_banner_path": "/race/PRE-OP/Begonia Sho-Y1-11-2.png"
     }
   ],
@@ -918,7 +916,6 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
       "rank": "G1",
-      "order": 2,
       "public_banner_path": "/race/G1/Asahi Hai Futurity Stakes-Y1-12-1.png"
     }
   ],
@@ -959,7 +956,6 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
       "rank": "G1",
-      "order": 1,
       "public_banner_path": "/race/G1/Hanshin Juvenile Fillies-Y1-12-1.png"
     }
   ],
@@ -1980,7 +1976,6 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
       "rank": "G1",
-      "order": 1,
       "public_banner_path": "/race/G1/Japanese Oaks-Y2-5-2.png"
     }
   ],
@@ -2021,7 +2016,6 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_05.png",
       "ribbon_code": "05",
       "rank": "G1",
-      "order": 2,
       "public_banner_path": "/race/G1/Tokyo Yushun (Japanese Derby)-Y2-5-2.png"
     }
   ],
@@ -2080,7 +2074,6 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
       "rank": "G3",
-      "order": 1,
       "public_banner_path": "/race/G3/Mermaid Stakes-Y2-6-1.png"
     },
     {
@@ -2099,7 +2092,6 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
       "rank": "G3",
-      "order": 1,
       "public_banner_path": "/race/G3/Mermaid Stakes-Y3-6-1.png"
     }
   ],
@@ -2120,7 +2112,6 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
       "rank": "G3",
-      "order": 2,
       "public_banner_path": "/race/G3/Naruo Kinen-Y2-6-1.png"
     },
     {
@@ -2139,7 +2130,6 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_03.png",
       "ribbon_code": "03",
       "rank": "G3",
-      "order": 2,
       "public_banner_path": "/race/G3/Naruo Kinen-Y3-6-1.png"
     }
   ],
@@ -3858,7 +3848,6 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
       "rank": "G2",
-      "order": 1,
       "public_banner_path": "/race/G2/All Comers-Y2-9-2.png"
     },
     {
@@ -3877,7 +3866,6 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
       "rank": "G2",
-      "order": 1,
       "public_banner_path": "/race/G2/All Comers-Y3-9-2.png"
     }
   ],
@@ -4070,7 +4058,6 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
       "rank": "G2",
-      "order": 2,
       "public_banner_path": "/race/G2/St. Lite Kinen-Y2-9-2.png"
     }
   ],
@@ -4091,7 +4078,6 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
       "rank": "G2",
-      "order": 2,
       "public_banner_path": "/race/G2/Fuchu Umamusume Stakes-Y2-10-1.png"
     },
     {
@@ -4110,7 +4096,6 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
       "rank": "G2",
-      "order": 2,
       "public_banner_path": "/race/G2/Fuchu Umamusume Stakes-Y3-10-1.png"
     }
   ],
@@ -4207,7 +4192,6 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
       "rank": "G2",
-      "order": 1,
       "public_banner_path": "/race/G2/Mainichi Okan-Y2-10-1.png"
     },
     {
@@ -4226,7 +4210,6 @@
       "ribbon_src": "/images/umamusume/race_ribbons/utx_txt_grade_ribbon_04.png",
       "ribbon_code": "04",
       "rank": "G2",
-      "order": 1,
       "public_banner_path": "/race/G2/Mainichi Okan-Y3-10-1.png"
     }
   ],

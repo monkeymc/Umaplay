@@ -84,3 +84,5 @@ status: research_complete
 ## Suggested Next Step
 - Draft `PLAN.md` with per-file change notes and test plan.
 
+---
+Important!: Generate 'docs/ai/feature/RESEARCH.md' file at the end

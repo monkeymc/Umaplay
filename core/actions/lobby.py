@@ -18,7 +18,9 @@ from core.perception.extractors.state import (
     extract_stats,
     extract_turns,
 )
+from core.perception.is_button_active import ActiveButtonClassifier
 from core.perception.yolo.interface import IDetector
+from core.settings import Settings
 from core.utils.logger import logger_uma
 from core.utils.race_index import RaceIndex, date_key_from_dateinfo
 from core.utils.text import fuzzy_contains
@@ -38,8 +40,6 @@ from core.utils.date_uma import (
     parse_career_date,
     date_is_confident,
 )
-
-
 @dataclass
 class LobbyState:
     goal: Optional[str] = None
@@ -48,12 +48,13 @@ class LobbyState:
     infirmary_on: Optional[bool] = None
     turn: int = -1
     career_date_raw: Optional[str] = None
-    date_info: Optional[object] = None
+    date_info: Optional[DateInfo] = None
     is_summer: Optional[bool] = None
     mood: Tuple[str, float] = ("UNKNOWN", -1.0)
     stats = {"SPD": -1, "STA": -1, "PWR": -1, "GUTS": -1, "WIT": -1}
     planned_race_name: Optional[str] = None
     planned_race_canonical: Optional[str] = None
+
 
 
 @dataclass
@@ -235,7 +236,7 @@ class LobbyFlow:
             self._process_turns_left(img, dets)
 
         if self.state.turn <= self.max_critical_turn:
-            if not self._skip_race_once and self.state.energy > 2:
+            if not self._skip_race_once and self.state.energy is not None and self.state.energy > 2:
                 # [Optimization] 10 steps for goal, or unknown turns or -1 turns, check goal
                 outcome_bool, reason = self._maybe_do_goal_race(img, dets)
                 if outcome_bool:
@@ -987,7 +988,7 @@ class LobbyFlow:
             self.state.turn -= 1
         self.last_turns_left_prediction = new_turn
 
-    def _maybe_do_goal_race(self, img, dets) -> bool:
+    def _maybe_do_goal_race(self, img, dets) -> Tuple[bool, str]:
         """Implements the critical-goal race logic from your old Lobby branch."""
 
         if self.process_on_demand:
@@ -1057,7 +1058,43 @@ class LobbyFlow:
             tag="lobby_recreate",
         )
         if click:
-            time.sleep(3)
+            time.sleep(2)
+            # Tazuna recreation screen possible elements: recreation_row, support_tazuna, button_white
+            # Check if there are 2 recreation_row if that is the case click in the top first
+
+            # Collect the current screen state
+            img, dets = collect(
+                self.yolo_engine,
+                imgsz=self.waiter.cfg.imgsz,
+                conf=self.waiter.cfg.conf,
+                iou=self.waiter.cfg.iou,
+                tag="recreation_screen"
+            )
+            
+            # Check for recreation rows in detections
+            recreation_rows = [d for d in dets if d.get('name') == 'recreation_row']
+            
+            if recreation_rows:
+                # Sort rows by y-coordinate (top to bottom)
+                recreation_rows.sort(key=lambda r: r['xyxy'][1])
+                
+                # Try each row until we find an active one or run out of rows
+                for row in recreation_rows:                    
+                    # Check if the row is active
+                    crop = img.crop(row['xyxy'])
+                    clf = ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH)
+                    is_active = clf.predict(crop)
+                    
+                    if is_active:
+                        # Click the active row
+                        self.ctrl.click_xyxy_center(row['xyxy'])
+                        logger_uma.info("[lobby] Selected active recreation row")
+                        time.sleep(0.5)  # Wait for any animation
+                        break
+                    else:
+                        logger_uma.info("[lobby] Skipping inactive recreation row")
+                
+            time.sleep(2)
         return click
 
     def _go_skills(self) -> bool:

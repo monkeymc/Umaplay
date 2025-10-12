@@ -7,6 +7,9 @@ import unicodedata
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+import imagehash
+from PIL import Image
+
 from core.settings import Settings
 from core.utils.logger import logger_uma
 
@@ -119,6 +122,8 @@ class RaceIndex:
     _date_to_entries: Dict[DateKey, List[Dict]] = {}
     _name_to_dates: Dict[str, List[DateKey]] = {}
     _name_to_entries: Dict[str, List[Dict]] = {}
+    _banner_templates: Dict[str, Dict[str, object]] = {}
+    _templates_loaded: bool = False
 
     @staticmethod
     def canonicalize(name: object) -> str:
@@ -165,6 +170,7 @@ class RaceIndex:
                 except Exception:
                     continue
 
+        cls._load_banner_templates()
         cls._loaded = True
         logger_uma.debug(
             "[RaceIndex] Loaded races: %d dates, %d names",
@@ -243,3 +249,72 @@ class RaceIndex:
                 uniq.append(t)
                 seen.add(t)
         return uniq
+
+    @classmethod
+    def _load_banner_templates(cls) -> None:
+        if cls._templates_loaded:
+            return
+
+        idx_path = Settings.ROOT_DIR / "assets" / "races" / "templates" / "index.json"
+        try:
+            with open(idx_path, "r", encoding="utf-8") as f:
+                mapping = json.load(f) or {}
+        except Exception as e:
+            logger_uma.warning("[RaceIndex] Could not load banner template index: %s", e)
+            mapping = {}
+
+        for race_name, rel_path in mapping.items():
+            canon = canonicalize_race_name(race_name)
+            if not canon:
+                continue
+            try:
+                rel = str(rel_path or "").lstrip("/\\")
+                template_path = Settings.ROOT_DIR / rel
+                if not template_path.exists():
+                    logger_uma.debug(
+                        "[RaceIndex] Banner template missing on disk for '%s': %s",
+                        race_name,
+                        template_path,
+                    )
+                    continue
+
+                with Image.open(template_path) as im:
+                    if im.mode in {"P", "PA"}:
+                        im = im.convert("RGBA")
+                    rgb = im.convert("RGB")
+                    ph = imagehash.phash(rgb)
+                    width, height = rgb.size
+
+                rel_norm = rel.replace("\\", "/")
+                if rel_norm.startswith("web/public/"):
+                    public_path = "/" + rel_norm[len("web/public/") :]
+                else:
+                    public_path = "/" + rel_norm
+
+                cls._banner_templates[canon] = {
+                    "name": race_name,
+                    "path": str(template_path),
+                    "public_path": public_path,
+                    "hash_hex": str(ph),
+                    "size": (width, height),
+                }
+            except Exception as e:
+                logger_uma.debug(
+                    "[RaceIndex] Failed to register banner template for '%s': %s",
+                    race_name,
+                    e,
+                )
+
+        cls._templates_loaded = True
+
+    @classmethod
+    def banner_template(cls, race_name: str) -> Optional[Dict[str, object]]:
+        """Return banner template metadata (path, hash) for the given race name if known."""
+        cls._ensure_loaded()
+        canon = canonicalize_race_name(race_name)
+        return cls._banner_templates.get(canon)
+
+    @classmethod
+    def all_banner_templates(cls) -> Dict[str, Dict[str, object]]:
+        cls._ensure_loaded()
+        return dict(cls._banner_templates)

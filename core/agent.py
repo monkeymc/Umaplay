@@ -102,7 +102,7 @@ class Player:
         self.skills_flow = SkillsFlow(
             self.ctrl, self.ocr, self.yolo_engine, self.waiter
         )
-
+        
         catalog = Catalog.load(CATALOG_JSON)
         # Prefer prefs coming from config.json (passed by main); fallback to legacy file.
         self.event_flow = EventFlow(
