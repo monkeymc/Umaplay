@@ -175,7 +175,7 @@ class TeamTrialsFlow:
             handled_any = True
 
             if state is TeamTrialsState.HOME:
-                self._handle_home_screen()
+                self.enter_from_menu()
             elif state is TeamTrialsState.GO:
                 self._handle_go_screen()
             elif state is TeamTrialsState.BANNERS:
@@ -229,23 +229,6 @@ class TeamTrialsFlow:
             timeout_s=2.0,
             tag="team_trials_stale_back",
         )
-    def _handle_home_screen(self) -> None:
-        logger_uma.info("[TeamTrials] Home screen detected; clicking 'Team Race'.")
-        clicked = self.waiter.click_when(
-            classes=("button_pink",),
-            texts=("TEAM RACE", "TEAM RACES", "VIEW RACE"),
-            prefer_bottom=True,
-            timeout_s=2.5,
-            tag="team_trials_home_team_race",
-        )
-        if not clicked:
-            self.waiter.click_when(
-                classes=("button_green",),
-                texts=("TEAM RACE",),
-                prefer_bottom=True,
-                timeout_s=2.5,
-                tag="team_trials_home_team_race_green",
-            )
 
     def _handle_go_screen(self) -> None:
         logger_uma.info("[TeamTrials] GO button detected; attempting to enter.")
@@ -286,10 +269,10 @@ class TeamTrialsFlow:
             advance_texts=None,
             taps_each_click=(3, 4),
             tap_dev_frac=0.12,
-            sleep_after_advance=0.30,
+            sleep_after_advance=0.5,
         )
         logger_uma.debug(f"[TeamTrials] advances performed: {adv}")
-        sleep(5)
+        sleep(7)
 
         img, dets = nav.collect_snapshot(
             self.waiter, self.yolo_engine, tag="team_trials_midtap"
