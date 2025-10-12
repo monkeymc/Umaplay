@@ -12,6 +12,7 @@ from core.types import XYXY, DetectionDict
 def collect(
     yolo_engine: IDetector, *, imgsz=832, conf=0.51, iou=0.45, tag="general"
 ) -> Tuple[Image.Image, List[DetectionDict]]:
+    conf = max(conf, 0.1)
     img, _, dets = yolo_engine.recognize(imgsz=imgsz, conf=conf, iou=iou, tag=tag)
     return img, dets
 
@@ -51,7 +52,7 @@ def inside(inner: XYXY, outer: XYXY, pad: int = 0) -> bool:
 
 
 def find(
-    dets: List[DetectionDict], name: str | Sequence[str], *, conf_min: float = 0.0
+    dets: List[DetectionDict], name: str | Sequence[str], *, conf_min: float = 0.1
 ) -> List[DetectionDict]:
     """
     Return detections whose `name` is in the provided name(s) and conf >= conf_min.

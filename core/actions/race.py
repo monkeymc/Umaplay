@@ -296,6 +296,8 @@ class RaceFlow:
         seen_title_counts: Dict[str, int] = {}
 
         for scroll_j in range(max_scrolls + 1):
+            # Wait screen to stabilize
+            time.sleep(1)
             game_img, dets = self._collect("race_pick")
             squares = find(dets, "race_square")
             if squares:
@@ -322,10 +324,10 @@ class RaceFlow:
                     page_best: Optional[Tuple[DetectionDict, float]] = None
                     for idx_on_page, sq in enumerate(squares):
                         s_cnt = sum(
-                            1 for st in stars if inside(st["xyxy"], sq["xyxy"], pad=3)
+                            1 for st in stars if inside(st["xyxy"], sq["xyxy"], pad=1)
                         )
                         badge_det = next(
-                            (b for b in badges if inside(b["xyxy"], sq["xyxy"], pad=3)),
+                            (b for b in badges if inside(b["xyxy"], sq["xyxy"], pad=1)),
                             None,
                         )
                         badge_label = "UNK"
@@ -472,12 +474,13 @@ class RaceFlow:
                 else:
                     for sq in squares:
                         s_cnt = sum(
-                            1 for st in stars if inside(st["xyxy"], sq["xyxy"], pad=3)
+                            1 for st in stars if inside(st["xyxy"], sq["xyxy"], pad=1)
                         )
                         if s_cnt < MIN_STARS:
                             logger_uma.debug(f"Not enough stars, found: {s_cnt}")
                             continue
-
+                        
+                        logger_uma.debug(f"Found valid {s_cnt} stars, {len(badges)} badges. dets: {dets}")
                         badge_det = next(
                             (b for b in badges if inside(b["xyxy"], sq["xyxy"], pad=3)),
                             None,
@@ -501,9 +504,12 @@ class RaceFlow:
                                 ):
                                     need_click = False
                                 return sq, need_click
-                            # if not is_g1_goal:
-                            #     if rank > best_rank or (rank == best_rank and ymid < best_y):
-                            #         best_non_g1, best_rank, best_y = sq, rank, ymid
+                            # For prioritize_g1 (but not is_g1_goal), accumulate non-G1 races as fallback
+                            if not is_g1_goal:
+                                if best_non_g1 is None:
+                                    best_non_g1, best_rank, best_y = sq, rank, ymid
+                                elif (rank > best_rank) or (rank == best_rank and ymid < best_y):
+                                    best_non_g1, best_rank, best_y = sq, rank, ymid
                         else:
                             if is_g1_goal:
                                 continue
