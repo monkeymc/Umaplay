@@ -89,7 +89,7 @@ class RaceFlow:
             )
             # Fast race: as soon as 'race_square' is seen, bail out; otherwise opportunistically click OK.
             t0 = time.time()
-            MAX_WAIT = 1.6  # upper bound; typical exit << 1.0s
+            MAX_WAIT = 2.2  # upper bound; typical exit << 1.0s
             while (time.time() - t0) < MAX_WAIT:
                 if abort_requested():
                     logger_uma.info("[race] Abort requested during nav to Raceday.")
@@ -181,12 +181,12 @@ class RaceFlow:
             if not found after scrolling up to max_scrolls, return (None, True) without fallback.
 
         """
-        MINIMUM_RACE_OCR_MATCH = 1
+        MINIMUM_RACE_OCR_MATCH = 0.91
         MIN_STARS = 2
         # OCR-based gating: minimum OCR score to accept a candidate during tie-breaks.
         OCR_DISCARD_MIN = 0.3
         # OCR signal weight to gently separate close candidates in the tie-breaker.
-        OCR_SCORE_WEIGHT = 0.3
+        OCR_SCORE_WEIGHT = 0.2
         moved_cursor = False
         did_scroll = False
         first_top_xyxy = None
@@ -432,11 +432,12 @@ class RaceFlow:
                                     if best_ocr < OCR_DISCARD_MIN and match_score < 0.5:
                                         adjusted_score = -1.0  # hard discard so it won't be picked
                                     else:
-                                        adjusted_score = (base_score * 0.5) + (best_ocr * 0.2) + (match_score * 0.5)  # extra 0.2
+                                        adjusted_score = (base_score * 0.5) + (best_ocr * OCR_SCORE_WEIGHT) + (match_score * 0.5)  # extra 0.2
                                         logger_uma.debug(
-                                            "[race] Candidate boosted by OCR: base=%.3f, ocr=%.3f (w=%.2f) → total=%.3f | text='%s'",
+                                            "[race] Candidate boosted by OCR: base=%.3f, ocr=%.3f, template_match=%.3f (w=%.2f) → total=%.3f | text='%s'",
                                             base_score,
                                             best_ocr,
+                                            match_score,
                                             OCR_SCORE_WEIGHT,
                                             adjusted_score,
                                             roi_txt,
@@ -880,23 +881,24 @@ class RaceFlow:
         if need_click:
             self.ctrl.click_xyxy_center(square["xyxy"], clicks=1)
             time.sleep(0.2)
+            logger_uma.info("[race] Clicked race square")
 
         # 3) Click green 'RACE' on the list (prefer bottom-most; OCR 'RACE' if needed)
         if not self.waiter.click_when(
             classes=("button_green",),
             texts=("RACE",),
             prefer_bottom=True,
-            timeout_s=1,
+            timeout_s=2,
             tag="race_list_race",
         ):
             logger_uma.warning("[race] couldn't find green 'Race' button (list).")
             return False
 
         # Time to popup to grow, so we don't missclassify a mini button in the animation
-        time.sleep(0.7)
+        time.sleep(1.2)
         # Reactive confirm of the popup (if/when it appears). Bail out if pre-race lobby is already visible.
         t0 = time.time()
-        while (time.time() - t0) < 4.0:
+        while (time.time() - t0) < 5.0:
             if abort_requested():
                 logger_uma.info("[race] Abort requested before popup confirm.")
                 return False
@@ -904,18 +906,23 @@ class RaceFlow:
                 classes=("button_change",), tag="race_pre_lobby_seen_early"
             ):
                 break
-            if self.waiter.try_click_once(
+            if self.waiter.click_when(
                 classes=("button_green",),
                 texts=("RACE",),
                 prefer_bottom=True,
+                timeout_s=1,
                 tag="race_popup_confirm_try",
             ):
+                logger_uma.info("[race] Clicked green 'Race' button (popup) confirmation")
                 # Give a short beat for the transition; continue probing.
                 time.sleep(0.2)
                 break
+            else:
+                logger_uma.warning("[race] couldn't find 'Race' button (popup) confirmation in this check.")
             time.sleep(0.1)
 
         # 4) Wait until the pre-race lobby is actually on screen (key: 'button_change')
+        logger_uma.info("Waiting for race lobby to appear")
         time.sleep(7)
         t0 = time.time()
         max_wait = 14.0
