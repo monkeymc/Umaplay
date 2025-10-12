@@ -145,6 +145,42 @@ class RaceFlow:
             tag=tag,
         )
 
+    def _deduplicate_stars(self, stars: List[DetectionDict]) -> List[DetectionDict]:
+        """
+        Remove duplicate star detections by filtering overlapping bboxes.
+        YOLO sometimes detects the same star twice with different confidences.
+        """
+        if len(stars) <= 1:
+            return stars
+        
+        # Sort by confidence (highest first) to keep better detections
+        sorted_stars = sorted(stars, key=lambda d: d.get("conf", 0.0), reverse=True)
+        keep = []
+        
+        for star in sorted_stars:
+            # Check if this star overlaps significantly with any already kept
+            sx1, sy1, sx2, sy2 = star["xyxy"]
+            s_area = (sx2 - sx1) * (sy2 - sy1)
+            
+            is_duplicate = False
+            for kept in keep:
+                kx1, ky1, kx2, ky2 = kept["xyxy"]
+                # Calculate intersection
+                ix1, iy1 = max(sx1, kx1), max(sy1, ky1)
+                ix2, iy2 = min(sx2, kx2), min(sy2, ky2)
+                
+                if ix2 > ix1 and iy2 > iy1:
+                    intersection = (ix2 - ix1) * (iy2 - iy1)
+                    # If intersection is > 50% of star area, consider it a duplicate
+                    if intersection / s_area > 0.5:
+                        is_duplicate = True
+                        break
+            
+            if not is_duplicate:
+                keep.append(star)
+        
+        return keep
+
     def _pick_view_results_button(self) -> Optional[DetectionDict]:
         """Among white buttons, choose the one that OCR-matches 'VIEW RESULTS' best."""
         img, dets = self._collect("race_view_btn")
@@ -306,6 +342,12 @@ class RaceFlow:
                     first_top_xyxy = tuple(squares[0]["xyxy"])
 
                 stars = find(dets, "race_star")
+                original_star_count = len(stars)
+                stars = self._deduplicate_stars(stars)  # Remove YOLO duplicate detections
+                if len(stars) < original_star_count:
+                    logger_uma.debug(
+                        f"[race] Removed {original_star_count - len(stars)} duplicate star detection(s)"
+                    )
                 badges = find(dets, "race_badge")
 
                 if len(squares) == 1 and scroll_j == 0:
