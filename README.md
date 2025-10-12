@@ -54,6 +54,8 @@ I take no responsibility for bans, issues, or account losses that may result fro
 * **Claw Machine** – Supports the claw mini-game.
 * **Hints** – Prioritize skill hints when enabled.
 * **Web UI** – Manage presets (stats, races, events), adjust advanced settings, switch modes, and update directly from GitHub.
+* **Auto Team Trials** – Automatically plays Team Trials (still experimental) with F7 hotkey, handles shop purchases and session resume. You need to be in the race screen where the team trials, room match, daily races are.
+* **Auto Daily Races** – Automates daily races (still experimental) with F8 hotkey, manages shop purchases and session resume. You need to be in the race screen where the team trials, room match, daily races are.
 
 ---
 
@@ -256,19 +258,57 @@ The bot uses multiple AI components to make decisions:
 
 ## 🆕 Changelog (latest)
 
+**:rocket: Umaplay v0.2.0 — Major Update!**
+
 **Highlights**
 
-* **Faster runs**: less scanning and a greedy path in Fast Mode when a great option is found.
-* **Fewer stalls**: fixed flows that could stop gameplay (final-turn rest, wrong race retries, more reactive race handler).
-* **Events overhaul**: The bot now makes smarter default event choices, and you can fully customize preferences through the new Event Chooser for even more control.
-* **Stats are steadier**: large OCR spikes are corrected; missing stats get a temporary average that’s overwritten by the next real read.
-* **UI & platform**: “Accept consecutive race” toggle is wired.
-* **BlueStacks**: Scrolling bug fixed.
+**[NEW] Auto Team Trials Bot (Alpha)**
+* Start with **F7**
+* Handles shop purchases
+* Supports session resume
 
-### Next up (top 3)
-1) **YOLO model**: label low-confidence frames and retrain; raise acceptance thresholds where safe.  
-2) **Hints**: stronger detection and a configurable “Hint importance” multiplier (per preset) to be more selective on hints.  
-3) **Safer racing**: add a toggle to skip racing when no good training option.
+**[NEW] :horse_racing: Auto Daily Races Bot (Alpha)**
+* Start with **F8**
+* Handles shop purchases
+* Supports session resume
+
+**AI YOLO Model Updates**
+* Retrained with **100+ new images**
+* Better detection of **rainbows** and **support cards**
+* Added detection for **support_tazuna** card
+* Created new AI model for Team Trials
+
+**:dart: Training Strategy / Policy**
+* *Undertrain stat % threshold* now configurable in **Web UI** (default: 6%)
+* Improved decision making for top 3 stats
+* Option to **disable races** if no good options
+* Smarter **summer training** (avoids energy overcap)
+* Improved Tazuna card recreation handling
+
+**:date: Race Scheduler Fixes**
+* Fixed detection for similar events (e.g., *Tokyo Yushun* vs *Japanese Oaks*)
+* Better handling of "varies" race conditions from Gametora DB
+* Fixed issue where ~75% of scheduled races were skipped
+
+**Skill Buying Improvements**
+* Optimized interval checks to reduce unnecessary checks
+
+**:globe_with_meridians: Web UI Enhancements**
+* Moved **hint configuration** to presets
+* Wired custom **failure % / minimal auto rest %** settings
+* Browser now auto-opens
+
+**General Bug Fixes**
+* Trainee event options now properly override global settings
+* Improved event text matching
+* Added **automatic cleanup** for debug folder if >250 MB at startup
+
+### Next up (v0.3.0 Roadmap)
+1. **New cards/trainings**: Automate integration with ChatGPT pipeline
+2. **Skill buying**: Improve title recognition and prevent double purchases
+3. **Team trials**: Better stale state handling
+4. **Bot Strategy**: Hint support priority, race skipping for rainbows, and more
+
 
 ---
 
@@ -280,6 +320,15 @@ The bot uses multiple AI components to make decisions:
 All contributions are welcome!
 
 ---
+
+## 💖 Support the Project
+
+If you find this project helpful and would like to support its development, consider making a donation. Your support motivates further improvements! Also let me know on discord if you have a very specific requirement.
+
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/magody)
+[![Donate with PayPal](https://img.shields.io/badge/Donate-PayPal-blue.svg)](https://paypal.me/MagodyBoy)
+
+Every contribution, no matter how small, is greatly appreciated! Thank you for your support! ❤️
 
 ## Tags
 
