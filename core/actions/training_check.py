@@ -60,6 +60,7 @@ SUPPORT_NAMES = {
     "support_card_rainbow",
     "support_etsuko",
     "support_director",
+    "support_tazuna",
 }
 
 
@@ -562,7 +563,7 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
     • Reporter (support_etsuko): +0.1
     • Director (support_director): color-based
         blue: +0.25, green: +0.15, orange: +0.10, yellow/max: +0
-
+    • Tazuna (support_tazuna): +0.15 (yellow, max). +1 (blue), +0.5 (green, orange)
     Failure rule
     ------------
     Let max_failure = BASE_MAX_FAILURE (20%) by default.
@@ -634,6 +635,27 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
                     notes.append(f"Director ({color}): +0.00")
                 continue
 
+            if sname == "support_tazuna":
+                # Tazuna score depends on color:
+                if color in ("blue", "green"):
+                    score = 1.0
+                elif color in ("orange", ):
+                    score = 0.5
+                elif color in ("yellow",) or is_max:
+                    score = 0.15
+                else:
+                    score = 0.0
+                
+                if score > 0:
+                    sv_total += score
+                    sv_by_type["special_tazuna"] = (
+                        sv_by_type.get("special_tazuna", 0.0) + score
+                    )
+                    notes.append(f"Tazuna ({color}): +{score:.2f}")
+                else:
+                    notes.append(f"Tazuna ({color}): +0.00")
+                continue
+
             # --- standard support cards (including rainbow variants) ---
             # Rainbow counts as +1 baseline
             if has_rainbow:
@@ -703,11 +725,17 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
         #   SV > 3.0 → x1.5
         #   SV ≥ 2.5 → x1.25
         #   else     → x1.0
-        if sv_total >= 4.0:
+
+        has_hint = any_bluegreen_hint or any_orange_max_hint
+        if sv_total >= 5:
             risk_mult = 2.0
-        elif sv_total > 3.0:
+        elif sv_total >= 3.5 and not (has_hint and Settings.HINT_IS_IMPORTANT):
+            # cap if hint is overcalculating
+            risk_mult = 2.0
+        elif sv_total >= 2.75 and not (has_hint and Settings.HINT_IS_IMPORTANT):
+            # cap if hint is overcalculating
             risk_mult = 1.5
-        elif sv_total >= 2.5:
+        elif sv_total >= 2.25:
             risk_mult = 1.25
         else:
             risk_mult = 1.0
