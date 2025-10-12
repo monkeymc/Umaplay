@@ -2,6 +2,7 @@
 from __future__ import annotations
 from typing import Any, Dict, List, Protocol, runtime_checkable
 
+
 @runtime_checkable
 class OCRInterface(Protocol):
     """
@@ -18,7 +19,9 @@ class OCRInterface(Protocol):
     def digits(self, img: Any) -> int:
         """Return only the digits as an int (or -1 if none/parse failure)."""
 
-    def batch_text(self, imgs: List[Any], *, joiner: str = " ", min_conf: float = 0.2) -> List[str]:
+    def batch_text(
+        self, imgs: List[Any], *, joiner: str = " ", min_conf: float = 0.2
+    ) -> List[str]:
         """Vectorized text() over a list of images."""
 
     def batch_digits(self, imgs: List[Any]) -> List[str]:

@@ -2,11 +2,42 @@
 from __future__ import annotations
 
 import json
+import re
+import unicodedata
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+import imagehash
+from PIL import Image
+
 from core.settings import Settings
 from core.utils.logger import logger_uma
+
+
+_CANON_TRANSLATION = str.maketrans(
+    {
+        "’": "'",
+        "‘": "'",
+        "“": '"',
+        "”": '"',
+        "–": "-",
+        "—": "-",
+    }
+)
+_CANON_NON_WORD = re.compile(r"[^a-z0-9]+")
+
+
+def canonicalize_race_name(name: object) -> str:
+    """Return a lowercase, punctuation-stripped key for race name matching."""
+
+    if not name:
+        return ""
+    text = unicodedata.normalize("NFKC", str(name)).translate(_CANON_TRANSLATION)
+    text = unicodedata.normalize("NFKD", text)
+    text = text.encode("ascii", "ignore").decode("ascii")
+    text = text.lower()
+    text = _CANON_NON_WORD.sub(" ", text)
+    return " ".join(text.split())
 
 DateKey = str  # "Y{year}-{MM}-{half}"
 
@@ -91,6 +122,12 @@ class RaceIndex:
     _date_to_entries: Dict[DateKey, List[Dict]] = {}
     _name_to_dates: Dict[str, List[DateKey]] = {}
     _name_to_entries: Dict[str, List[Dict]] = {}
+    _banner_templates: Dict[str, Dict[str, object]] = {}
+    _templates_loaded: bool = False
+
+    @staticmethod
+    def canonicalize(name: object) -> str:
+        return canonicalize_race_name(name)
 
     @classmethod
     def _ensure_loaded(cls) -> None:
@@ -107,7 +144,7 @@ class RaceIndex:
         # data is { race_name: [ {year_int, month, day, rank, order?, ...}, ... ], ... }
         for race_name, occs in (data or {}).items():
             name = str(race_name).strip()
-            low = name.lower()
+            canon_name = canonicalize_race_name(name)
             for oc in occs or []:
                 try:
                     y = int(oc.get("year_int"))
@@ -115,6 +152,7 @@ class RaceIndex:
                     d = int(oc.get("day"))  # "half" in our policy
                     key = f"Y{y}-{m:02d}-{d:d}"
                     entry = {"name": name, **oc}
+                    entry["canonical_name"] = canon_name
                     # pre-compute display title used on the card
                     entry["display_title"] = build_display_title(entry)
                     # normalize optional order (1-based)
@@ -125,11 +163,14 @@ class RaceIndex:
                     # pre-compute display title used on the card
                     entry["display_title"] = build_display_title(entry)
                     cls._date_to_entries.setdefault(key, []).append(entry)
-                    cls._name_to_dates.setdefault(low, []).append(key)
-                    cls._name_to_entries.setdefault(low, []).append(entry)
+                    map_key = canon_name or canonicalize_race_name(name)
+                    if map_key:
+                        cls._name_to_dates.setdefault(map_key, []).append(key)
+                        cls._name_to_entries.setdefault(map_key, []).append(entry)
                 except Exception:
                     continue
 
+        cls._load_banner_templates()
         cls._loaded = True
         logger_uma.debug(
             "[RaceIndex] Loaded races: %d dates, %d names",
@@ -162,9 +203,10 @@ class RaceIndex:
         Includes pre-computed 'display_title', 'rank', and optional 'order' (default 1).
         """
         cls._ensure_loaded()
-        low = (race_name or "").strip().lower()
+        canon = canonicalize_race_name(race_name)
         for e in cls._date_to_entries.get(key, []):
-            if (e.get("name") or "").strip().lower() == low:
+            stored = e.get("canonical_name") or canonicalize_race_name(e.get("name"))
+            if stored == canon:
                 return e
         return None
 
@@ -181,7 +223,8 @@ class RaceIndex:
     @classmethod
     def valid_date_for_race(cls, race_name: str, key: DateKey) -> bool:
         cls._ensure_loaded()
-        return key in cls._name_to_dates.get((race_name or "").lower(), [])
+        canon = canonicalize_race_name(race_name)
+        return key in cls._name_to_dates.get(canon, [])
 
     @classmethod
     def expected_titles_for_race(cls, race_name: str) -> List[Tuple[str, str]]:
@@ -190,9 +233,10 @@ class RaceIndex:
         Useful as a general fallback when date_key is unknown.
         """
         cls._ensure_loaded()
-        low = (race_name or "").lower()
+        canon = canonicalize_race_name(race_name)
         out: List[Tuple[str, str]] = []
-        for e in cls._name_to_entries.get(low, []) or []:
+        entries = cls._name_to_entries.get(canon, []) or []
+        for e in entries:
             title = str(e.get("display_title") or "").strip()
             rank = str(e.get("rank") or "").strip().upper() or "UNK"
             if title:
@@ -205,3 +249,72 @@ class RaceIndex:
                 uniq.append(t)
                 seen.add(t)
         return uniq
+
+    @classmethod
+    def _load_banner_templates(cls) -> None:
+        if cls._templates_loaded:
+            return
+
+        idx_path = Settings.ROOT_DIR / "assets" / "races" / "templates" / "index.json"
+        try:
+            with open(idx_path, "r", encoding="utf-8") as f:
+                mapping = json.load(f) or {}
+        except Exception as e:
+            logger_uma.warning("[RaceIndex] Could not load banner template index: %s", e)
+            mapping = {}
+
+        for race_name, rel_path in mapping.items():
+            canon = canonicalize_race_name(race_name)
+            if not canon:
+                continue
+            try:
+                rel = str(rel_path or "").lstrip("/\\")
+                template_path = Settings.ROOT_DIR / rel
+                if not template_path.exists():
+                    logger_uma.debug(
+                        "[RaceIndex] Banner template missing on disk for '%s': %s",
+                        race_name,
+                        template_path,
+                    )
+                    continue
+
+                with Image.open(template_path) as im:
+                    if im.mode in {"P", "PA"}:
+                        im = im.convert("RGBA")
+                    rgb = im.convert("RGB")
+                    ph = imagehash.phash(rgb)
+                    width, height = rgb.size
+
+                rel_norm = rel.replace("\\", "/")
+                if rel_norm.startswith("web/public/"):
+                    public_path = "/" + rel_norm[len("web/public/") :]
+                else:
+                    public_path = "/" + rel_norm
+
+                cls._banner_templates[canon] = {
+                    "name": race_name,
+                    "path": str(template_path),
+                    "public_path": public_path,
+                    "hash_hex": str(ph),
+                    "size": (width, height),
+                }
+            except Exception as e:
+                logger_uma.debug(
+                    "[RaceIndex] Failed to register banner template for '%s': %s",
+                    race_name,
+                    e,
+                )
+
+        cls._templates_loaded = True
+
+    @classmethod
+    def banner_template(cls, race_name: str) -> Optional[Dict[str, object]]:
+        """Return banner template metadata (path, hash) for the given race name if known."""
+        cls._ensure_loaded()
+        canon = canonicalize_race_name(race_name)
+        return cls._banner_templates.get(canon)
+
+    @classmethod
+    def all_banner_templates(cls) -> Dict[str, Dict[str, object]]:
+        cls._ensure_loaded()
+        return dict(cls._banner_templates)

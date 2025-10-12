@@ -20,6 +20,8 @@ from core.controllers.base import IController, RegionXYWH
 from core.types import XYXY
 
 user32 = ctypes.windll.user32
+
+
 class BlueStacksController(IController):
     """
     Controller tailored for the BlueStacks emulator window on Windows.
@@ -40,8 +42,8 @@ class BlueStacksController(IController):
 
     # Common substrings BlueStacks windows usually contain
     FALLBACK_TITLES = (
-        "bluestacks",          # "BlueStacks", "BlueStacks 5", "BlueStacks App Player", etc.
-        "app player",          # some versions
+        "bluestacks",  # "BlueStacks", "BlueStacks 5", "BlueStacks App Player", etc.
+        "app player",  # some versions
     )
 
     def __init__(
@@ -59,9 +61,13 @@ class BlueStacksController(IController):
                             from the client area (useful if BlueStacks shows
                             a top bar or side toolbar inside client).
         """
-        super().__init__(window_title=window_title, capture_client_only=capture_client_only)
+        super().__init__(
+            window_title=window_title, capture_client_only=capture_client_only
+        )
         self.content_insets = tuple(int(v) for v in content_insets)
-        self._client_bbox_cache: Optional[RegionXYWH] = None  # screen-space client bbox (x, y, w, h)
+        self._client_bbox_cache: Optional[RegionXYWH] = (
+            None  # screen-space client bbox (x, y, w, h)
+        )
 
     # -------------------------
     # Window discovery
@@ -86,7 +92,10 @@ class BlueStacksController(IController):
             subs = [w for w in wins if low in w.title.lower()]
             if subs:
                 # Prefer the most visible/normal window (not minimized)
-                subs.sort(key=lambda ww: (not ww.isMinimized, ww.isActive, len(ww.title)), reverse=True)
+                subs.sort(
+                    key=lambda ww: (not ww.isMinimized, ww.isActive, len(ww.title)),
+                    reverse=True,
+                )
                 return subs[0]
 
         # 3) Fallback to common BlueStacks patterns
@@ -96,7 +105,10 @@ class BlueStacksController(IController):
             if any(pat in t for pat in self.FALLBACK_TITLES):
                 candidates.append(w)
         if candidates:
-            candidates.sort(key=lambda ww: (not ww.isMinimized, ww.isActive, len(ww.title)), reverse=True)
+            candidates.sort(
+                key=lambda ww: (not ww.isMinimized, ww.isActive, len(ww.title)),
+                reverse=True,
+            )
             return candidates[0]
 
         return None
@@ -150,11 +162,25 @@ class BlueStacksController(IController):
                 attached = bool(user32.AttachThreadInput(fore_tid, target_tid, True))
 
             # Make it topmost momentarily, then normal top to bubble it
-            win32gui.SetWindowPos(hwnd, win32con.HWND_TOPMOST, 0, 0, 0, 0,
-                                win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW)
+            win32gui.SetWindowPos(
+                hwnd,
+                win32con.HWND_TOPMOST,
+                0,
+                0,
+                0,
+                0,
+                win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW,
+            )
             time.sleep(0.01)
-            win32gui.SetWindowPos(hwnd, win32con.HWND_NOTOPMOST, 0, 0, 0, 0,
-                                win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW)
+            win32gui.SetWindowPos(
+                hwnd,
+                win32con.HWND_NOTOPMOST,
+                0,
+                0,
+                0,
+                0,
+                win32con.SWP_NOMOVE | win32con.SWP_NOSIZE | win32con.SWP_SHOWWINDOW,
+            )
 
             # Activate/bring to top
             try:

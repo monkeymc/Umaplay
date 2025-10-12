@@ -25,6 +25,7 @@ class PollConfig:
     Base polling config for a Waiter. You construct this once and reuse.
     Public API only overrides timeout/interval/tag per call.
     """
+
     imgsz: int = 832
     conf: float = 0.51
     iou: float = 0.45
@@ -47,8 +48,13 @@ class Waiter:
       4) Else: keep polling until resolved or timeout.
     """
 
-    def __init__(self, ctrl: IController, ocr: Optional[OCRInterface], 
-    yolo_engine: IDetector, config: PollConfig):
+    def __init__(
+        self,
+        ctrl: IController,
+        ocr: Optional[OCRInterface],
+        yolo_engine: IDetector,
+        config: PollConfig,
+    ):
         self.ctrl = ctrl
         self.ocr = ocr
         self.yolo_engine = yolo_engine
@@ -88,7 +94,9 @@ class Waiter:
         Returns True if clicked; False if timed out.
         """
         if not classes:
-            raise ValueError("Waiter.click_when: 'classes' must be a non-empty sequence.")
+            raise ValueError(
+                "Waiter.click_when: 'classes' must be a non-empty sequence."
+            )
 
         timeout = self._pick(timeout_s, self.cfg.timeout_s)
         interval = self._pick(poll_interval_s, self.cfg.poll_interval_s)
@@ -109,17 +117,26 @@ class Waiter:
                     pick = cand[0]
                     if self._is_forbidden(img, pick, forbid_texts, forbid_threshold):
                         # Skip this candidate; keep polling for a better state.
-                        logger_uma.debug("[waiter] single candidate rejected by forbid_texts (tag=%s)", tag)
+                        logger_uma.debug(
+                            "[waiter] single candidate rejected by forbid_texts (tag=%s)",
+                            tag,
+                        )
                     else:
                         self.ctrl.click_xyxy_center(pick["xyxy"], clicks=clicks)
                         return True
 
                 # 2) Bottom-most preference (try from bottom to top; skip forbiddens)
                 if prefer_bottom and allow_greedy_click:
-                    ordered = sorted(cand, key=lambda d: (d["xyxy"][1] + d["xyxy"][3]) * 0.5, reverse=True)
+                    ordered = sorted(
+                        cand,
+                        key=lambda d: (d["xyxy"][1] + d["xyxy"][3]) * 0.5,
+                        reverse=True,
+                    )
                     chosen = None
                     for d in ordered:
-                        if not self._is_forbidden(img, d, forbid_texts, forbid_threshold):
+                        if not self._is_forbidden(
+                            img, d, forbid_texts, forbid_threshold
+                        ):
                             chosen = d
                             break
                     if chosen is not None:
@@ -129,15 +146,21 @@ class Waiter:
 
                 # 3) OCR disambiguation by positive `texts` (ignoring forbiddens)
                 if texts and self.ocr:
-                    pick = self._pick_by_text(img, cand, texts, threshold, forbid_texts, forbid_threshold)
+                    pick = self._pick_by_text(
+                        img, cand, texts, threshold, forbid_texts, forbid_threshold
+                    )
                     if pick is not None:
                         self.ctrl.click_xyxy_center(pick["xyxy"], clicks=clicks)
                         return True
                     # If OCR didn't reach threshold or all candidates were forbidden, continue polling.
 
             if (time.time() - t0) >= timeout:
-                if tag not in ["agent_unknown_advance",]:
-                    logger_uma.debug("[waiter] timeout after %.2fs (tag=%s)", timeout, tag)
+                if tag not in [
+                    "agent_unknown_advance",
+                ]:
+                    logger_uma.debug(
+                        "[waiter] timeout after %.2fs (tag=%s)", timeout, tag
+                    )
                 return False
 
             time.sleep(interval)
@@ -162,7 +185,9 @@ class Waiter:
         img, dets = self._snap(tag=tag or (self.cfg.tag + "_seen"))
 
         # Filter by classes when provided
-        candidates = det_filter(dets, classes, conf_min=conf_min) if classes else list(dets)
+        candidates = (
+            det_filter(dets, classes, conf_min=conf_min) if classes else list(dets)
+        )
 
         # Fast path: just checking for presence of classes
         if not texts:
@@ -226,7 +251,9 @@ class Waiter:
 
         # 2) Bottom-most preference
         if prefer_bottom and allow_greedy_click:
-            ordered = sorted(cand, key=lambda d: (d["xyxy"][1] + d["xyxy"][3]) * 0.5, reverse=True)
+            ordered = sorted(
+                cand, key=lambda d: (d["xyxy"][1] + d["xyxy"][3]) * 0.5, reverse=True
+            )
             for d in ordered:
                 if not self._is_forbidden(img, d, forbid_texts, forbid_threshold):
                     self.ctrl.click_xyxy_center(d["xyxy"], clicks=clicks)
@@ -234,7 +261,9 @@ class Waiter:
 
         # 3) OCR disambiguation
         if texts and self.ocr:
-            pick = self._pick_by_text(img, cand, texts, threshold, forbid_texts, forbid_threshold)
+            pick = self._pick_by_text(
+                img, cand, texts, threshold, forbid_texts, forbid_threshold
+            )
             if pick is not None:
                 self.ctrl.click_xyxy_center(pick["xyxy"], clicks=clicks)
                 return True
@@ -299,7 +328,9 @@ class Waiter:
             if not txt:
                 continue
             # Skip forbidden
-            if forbid_texts and any(fuzzy_ratio(txt.lower(), ft) >= forbid_threshold for ft in forbid_texts):
+            if forbid_texts and any(
+                fuzzy_ratio(txt.lower(), ft) >= forbid_threshold for ft in forbid_texts
+            ):
                 continue
             txt_split = txt.split(" ")
             for t in texts:

@@ -17,7 +17,6 @@ export const generalSchema = z.object({
   windowTitle: z.string().default('Umamusume'),
   fastMode: z.boolean().default(false),
   tryAgainOnFailedGoal: z.boolean().default(true),
-  prioritizeHint: z.boolean().default(false),
   maxFailure: z.number().int().min(0).max(99).default(20),
   skillPtsCheck: z.number().int().min(0).default(600),
   acceptConsecutiveRace: z.boolean().default(true),
@@ -27,12 +26,20 @@ export const generalSchema = z.object({
     useExternalProcessor: z.boolean().default(false),
     externalProcessorUrl: z.string().url().default('http://127.0.0.1:8001'),
     autoRestMinimum: z.number().int().min(0).max(100).default(26),
+    undertrainThreshold: z.number().min(0).max(100).default(6),
+    topStatsFocus: z.number().int().min(1).max(5).default(3),
+    skillCheckInterval: z.number().int().min(1).max(12).default(3),
+    skillPtsDelta: z.number().int().min(0).max(1000).default(60),
   }).default({
     hotkey: 'F2',
     debugMode: true,
     useExternalProcessor: false,
     externalProcessorUrl: 'http://127.0.0.1:8001',
     autoRestMinimum: 18,
+    undertrainThreshold: 6,
+    topStatsFocus: 3,
+    skillCheckInterval: 3,
+    skillPtsDelta: 60,
   }),
 })
 
@@ -46,6 +53,8 @@ export const presetSchema = z.object({
   juniorStyle: z.enum(['end', 'late', 'pace', 'front']).nullable(),
   skillsToBuy: z.array(z.string()),
   plannedRaces: z.record(z.string(), z.string()),
+  raceIfNoGoodValue: z.boolean().default(false),
+  prioritizeHint: z.boolean().default(false),
   // Make optional on input, but always present on output via default()
   event_setup: (() => {
     const rarity = z.enum(['SSR','SR','R'])
@@ -99,6 +108,8 @@ export const defaultPreset = (id: string, name: string): Preset => ({
   id,
   name,
   priorityStats: ['SPD', 'STA', 'WIT', 'PWR', 'GUTS'],
+  raceIfNoGoodValue: false,
+  prioritizeHint: false,
   targetStats: {
     SPD: 1150,
     STA: 900,

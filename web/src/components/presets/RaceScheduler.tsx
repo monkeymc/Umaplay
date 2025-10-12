@@ -190,7 +190,7 @@ export default function RaceScheduler({ presetId }: { presetId: string; compact?
                           {badge && <Box component="img" src={badge} alt={r.instance.rank} sx={{ height: 18 }} />}
                         </Box>
                       }
-                      secondary={prettyDate}
+                      secondary={`${prettyDate}${r.instance.location ? ` — ${r.instance.location}` : ''}${r.instance.distance_text ? ` — ${r.instance.distance_text}` : ''}`}
                     />
                     <IconButton edge="end" onClick={() => remove(r.dateKey)}>
                       <DeleteIcon />

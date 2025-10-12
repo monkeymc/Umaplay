@@ -21,3 +21,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+docs/ai/feature/*
+!docs/ai/feature/.gitkeep

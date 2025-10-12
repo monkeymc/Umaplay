@@ -25,7 +25,10 @@ from core.utils.event_processor import (
 # Helpers
 # -----------------------------
 
-def _clamp_box(box: Tuple[float, float, float, float], w: int, h: int) -> Tuple[int, int, int, int]:
+
+def _clamp_box(
+    box: Tuple[float, float, float, float], w: int, h: int
+) -> Tuple[int, int, int, int]:
     x1, y1, x2, y2 = box
     x1 = max(0, min(int(x1), w - 1))
     y1 = max(0, min(int(y1), h - 1))
@@ -64,10 +67,10 @@ def _pick_event_card(parsed: List[DetectionDict]) -> Optional[DetectionDict]:
 
 def _choices(parsed: List[DetectionDict], *, conf_min: float) -> List[DetectionDict]:
     return [
-        d for d in parsed
+        d
+        for d in parsed
         if d.get("name") == "event_choice" and float(d.get("conf", 0.0)) >= conf_min
     ]
-
 
 
 def _extract_title_description_from_banner(
@@ -102,7 +105,7 @@ def _extract_title_description_from_banner(
     bw, bh = banner.size
     # If the portrait is nearly square, the header ribbon is typically shorter,
     # so use 30% for the header; if it's a taller vertical rectangle, use 40%.
-    aspect = (card_h / max(card_w, 1e-6))  # h/w
+    aspect = card_h / max(card_w, 1e-6)  # h/w
     squareish = 0.85 <= aspect <= 1.15
 
     if squareish:
@@ -118,13 +121,16 @@ def _extract_title_description_from_banner(
 
     return title_text, description_text
 
+
 # -----------------------------
 # EventFlow
 # -----------------------------
 
+
 @dataclass
 class EventDecision:
     """What we matched and what we clicked."""
+
     matched_key: Optional[str]
     matched_key_step: Optional[str]
     pick_option: int
@@ -182,6 +188,8 @@ class EventFlow:
         # 1) Collect detections
         card = _pick_event_card(parsed_objects_screen)
         chain_step_hint = _count_chain_steps(parsed_objects_screen)
+        if chain_step_hint is None and card is not None:
+            chain_step_hint = 1
         choices = _choices(parsed_objects_screen, conf_min=self.conf_min_choice)
         choices_sorted = _sort_top_to_bottom(choices)
 
@@ -193,13 +201,19 @@ class EventFlow:
         ocr_title = ""
         ocr_description = ""
         if card is not None:
-            ocr_title, ocr_description = _extract_title_description_from_banner(self.ocr, frame, tuple(card["xyxy"]))
+            ocr_title, ocr_description = _extract_title_description_from_banner(
+                self.ocr, frame, tuple(card["xyxy"])
+            )
         else:
             # fallback heuristic: try to OCR a central horizontal band (less reliable)
             W, H = frame.size
-            band = _crop(frame, (int(0.10 * W), int(0.30 * H), int(0.90 * W), int(0.55 * H)))
+            band = _crop(
+                frame, (int(0.10 * W), int(0.30 * H), int(0.90 * W), int(0.55 * H))
+            )
             ocr_title = self.ocr.text(band)
-            ocr_title = ocr_title[0] if isinstance(ocr_title, list) and ocr_title else ""
+            ocr_title = (
+                ocr_title[0] if isinstance(ocr_title, list) and ocr_title else ""
+            )
 
         debug["ocr_title"] = ocr_title
         debug["ocr_description"] = ocr_description
@@ -219,8 +233,8 @@ class EventFlow:
         q = Query(
             ocr_title=ocr_query,
             type_hint=type_hint,
-            name_hint=None,             # not available at runtime (deck-agnostic)
-            rarity_hint=None,           # not available; portrait helps instead
+            name_hint=None,  # not available at runtime (deck-agnostic)
+            rarity_hint=None,  # not available; portrait helps instead
             chain_step_hint=chain_step_hint,
             portrait_image=portrait_img,  # <- PIL accepted by retriever (see diff)
         )
@@ -228,7 +242,9 @@ class EventFlow:
         # 4) Retrieve & rank
         cands = retrieve_best(self.catalog, q, top_k=3, min_score=0.8)
         if not cands:
-            logger_uma.warning("[event] No candidates from retriever; falling back to top option.")
+            logger_uma.warning(
+                "[event] No candidates from retriever; falling back to top option."
+            )
             return self._fallback_click_top(choices_sorted, debug)
 
         best = cands[0]
@@ -250,18 +266,25 @@ class EventFlow:
         debug["expected_n_options"] = expected_n
 
         if expected_n <= 0:
-            logger_uma.warning("[event] Matched event has no options in DB; fallback to top.")
+            logger_uma.warning(
+                "[event] Matched event has no options in DB; fallback to top."
+            )
             return self._fallback_click_top(choices_sorted, debug)
 
         if len(choices_sorted) != expected_n:
             logger_uma.warning(
                 "[event] YOLO found %d choices but DB expects %d; fallback to top.",
-                len(choices_sorted), expected_n
+                len(choices_sorted),
+                expected_n,
             )
             return self._fallback_click_top(choices_sorted, debug)
 
         if pick < 1 or pick > expected_n:
-            logger_uma.warning("[event] Preference pick=%d out of range 1..%d; fallback to top.", pick, expected_n)
+            logger_uma.warning(
+                "[event] Preference pick=%d out of range 1..%d; fallback to top.",
+                pick,
+                expected_n,
+            )
             return self._fallback_click_top(choices_sorted, debug)
 
         # (7) If we know current energy, attempt to avoid overfilling it.
@@ -269,7 +292,12 @@ class EventFlow:
         def _max_positive_energy_for(opt_num: int) -> int:
             try:
                 outcomes = best.rec.options.get(str(opt_num), []) or []
-                gains = [int(o.get("energy", 0)) for o in outcomes if isinstance(o, dict) and isinstance(o.get("energy", 0), (int, float))]
+                gains = [
+                    int(o.get("energy", 0))
+                    for o in outcomes
+                    if isinstance(o, dict)
+                    and isinstance(o.get("energy", 0), (int, float))
+                ]
                 return max([g for g in gains if g > 0], default=0)
             except Exception:
                 return 0
@@ -288,7 +316,10 @@ class EventFlow:
                     adjusted_pick = candidate
                     break
             if adjusted_pick != pick:
-                debug["pick_adjusted_due_to_energy"] = {"from": pick, "to": adjusted_pick}
+                debug["pick_adjusted_due_to_energy"] = {
+                    "from": pick,
+                    "to": adjusted_pick,
+                }
         pick = adjusted_pick
 
         # 8) Click selected option (top-to-bottom order)
@@ -296,7 +327,11 @@ class EventFlow:
         self.ctrl.click_xyxy_center(target["xyxy"], clicks=1)
         logger_uma.info(
             "[event] Clicked option #%d for %s (score=%.3f, energy=%s/%s).",
-            pick, best.rec.key_step, best.score, str(current_energy), str(max_energy_cap)
+            pick,
+            best.rec.key_step,
+            best.score,
+            str(current_energy),
+            str(max_energy_cap),
         )
 
         return EventDecision(
@@ -326,7 +361,10 @@ class EventFlow:
 
         top_choice = choices_sorted[0]
         self.ctrl.click_xyxy_center(top_choice["xyxy"], clicks=1)
-        logger_uma.info("[event] Fallback: clicked top event_choice (conf=%.3f).", float(top_choice.get("conf", 0.0)))
+        logger_uma.info(
+            "[event] Fallback: clicked top event_choice (conf=%.3f).",
+            float(top_choice.get("conf", 0.0)),
+        )
         return EventDecision(
             matched_key=None,
             matched_key_step=None,

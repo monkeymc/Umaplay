@@ -1,4 +1,3 @@
-
 from collections import Counter
 from typing import Dict, List, Optional, Tuple
 
@@ -29,13 +28,13 @@ def classify_screen(
       - else 'Unknown'
     """
     names_map = names_map or {
-        "tazuna":            "lobby_tazuna",
-        "infirmary":         "lobby_infirmary",
-        "training_button":   "training_button",
-        "event":             "event_choice",
-        "rest":              "lobby_rest",
-        "rest_summer":       "lobby_rest_summer",
-        "recreation":        "lobby_recreation",
+        "tazuna": "lobby_tazuna",
+        "infirmary": "lobby_infirmary",
+        "training_button": "training_button",
+        "event": "event_choice",
+        "rest": "lobby_rest",
+        "rest_summer": "lobby_rest_summer",
+        "recreation": "lobby_recreation",
         "race_day": "race_race_day",
         "event_inspiration": "event_inspiration",
         "race_after_next": "race_after_next",
@@ -50,21 +49,47 @@ def classify_screen(
         1 for d in dets if d["name"] == names_map["event"] and d["conf"] >= event_conf
     )
     n_train = sum(
-        1 for d in dets if d["name"] == names_map["training_button"] and d["conf"] >= training_conf
+        1
+        for d in dets
+        if d["name"] == names_map["training_button"] and d["conf"] >= training_conf
     )
 
-    has_tazuna      = any(d["name"] == names_map["tazuna"]      and d["conf"] >= lobby_conf for d in dets)
-    has_infirmary   = any(d["name"] == names_map["infirmary"]   and d["conf"] >= lobby_conf for d in dets)
-    has_rest        = any(d["name"] == names_map["rest"]        and d["conf"] >= lobby_conf for d in dets)
-    has_rest_summer = any(d["name"] == names_map["rest_summer"] and d["conf"] >= lobby_conf for d in dets)
-    has_recreation  = any(d["name"] == names_map["recreation"]  and d["conf"] >= lobby_conf for d in dets)
-    has_race_day  = any(d["name"] == names_map["race_day"]  and d["conf"] >= race_conf  for d in dets)
-    has_inspiration = any(d["name"] == names_map["event_inspiration"]  and d["conf"] >= race_conf  for d in dets)
-    has_lobby_skills = any(d["name"] == names_map["lobby_skills"]  and d["conf"] >= lobby_conf  for d in dets)
-    race_after_next = any(d["name"] == names_map["race_after_next"]  and d["conf"] >= 0.5  for d in dets)
-    has_button_claw_action = any(d["name"] == names_map["button_claw_action"]  and d["conf"] >= lobby_conf  for d in dets)
-    has_claw = any(d["name"] == names_map["claw"]  and d["conf"] >= lobby_conf  for d in dets)
-    
+    has_tazuna = any(
+        d["name"] == names_map["tazuna"] and d["conf"] >= lobby_conf for d in dets
+    )
+    has_infirmary = any(
+        d["name"] == names_map["infirmary"] and d["conf"] >= lobby_conf for d in dets
+    )
+    has_rest = any(
+        d["name"] == names_map["rest"] and d["conf"] >= lobby_conf for d in dets
+    )
+    has_rest_summer = any(
+        d["name"] == names_map["rest_summer"] and d["conf"] >= lobby_conf for d in dets
+    )
+    has_recreation = any(
+        d["name"] == names_map["recreation"] and d["conf"] >= lobby_conf for d in dets
+    )
+    has_race_day = any(
+        d["name"] == names_map["race_day"] and d["conf"] >= race_conf for d in dets
+    )
+    has_inspiration = any(
+        d["name"] == names_map["event_inspiration"] and d["conf"] >= race_conf
+        for d in dets
+    )
+    has_lobby_skills = any(
+        d["name"] == names_map["lobby_skills"] and d["conf"] >= lobby_conf for d in dets
+    )
+    race_after_next = any(
+        d["name"] == names_map["race_after_next"] and d["conf"] >= 0.5 for d in dets
+    )
+    has_button_claw_action = any(
+        d["name"] == names_map["button_claw_action"] and d["conf"] >= lobby_conf
+        for d in dets
+    )
+    has_claw = any(
+        d["name"] == names_map["claw"] and d["conf"] >= lobby_conf for d in dets
+    )
+
     # 1) Event
     if n_event_choices >= 2:
         return "Event", {"event_choices": n_event_choices}
@@ -89,17 +114,26 @@ def classify_screen(
 
     # 4) Regular Lobby
     if has_tazuna and (has_infirmary or not require_infirmary) and has_lobby_skills:
-        return "Lobby", {"tazuna": has_tazuna, "infirmary": has_infirmary, "has_lobby_skills": has_lobby_skills}
+        return "Lobby", {
+            "tazuna": has_tazuna,
+            "infirmary": has_infirmary,
+            "has_lobby_skills": has_lobby_skills,
+        }
 
-    if (
-        (len(dets) == 2 and has_lobby_skills and race_after_next)
-        or (len(dets) <= 2 and has_lobby_skills)
+    if (len(dets) == 2 and has_lobby_skills and race_after_next) or (
+        len(dets) <= 2 and has_lobby_skills
     ):
-        return "FinalScreen", {"has_lobby_skills": has_lobby_skills, "race_after_next": race_after_next}
+        return "FinalScreen", {
+            "has_lobby_skills": has_lobby_skills,
+            "race_after_next": race_after_next,
+        }
 
     if has_button_claw_action and has_claw:
-        return "ClawMachine", {"has_button_claw_action": has_button_claw_action, "has_claw": has_claw}
-    
+        return "ClawMachine", {
+            "has_button_claw_action": has_button_claw_action,
+            "has_claw": has_claw,
+        }
+
     # 5) Fallback
     return "Unknown", {
         "training_buttons": n_train,

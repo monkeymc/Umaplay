@@ -18,7 +18,6 @@ from typing import Any
 from dataclasses import dataclass, asdict
 
 # ---- knobs you may want to tweak later (kept here for clarity) ----
-BASE_MAX_FAILURE = 20  # default risk cap (%) if not provided elsewhere
 GREEDY_THRESHOLD = 2.5  # "pick immediately" threshold (if you use it)
 HIGH_SV_THRESHOLD = 3.5  # when SV >= this, allow risk up to ×RISK_RELAX_FACTOR
 RISK_RELAX_FACTOR = 1.5  # e.g., 20% -> 30% when SV is high
@@ -61,6 +60,7 @@ SUPPORT_NAMES = {
     "support_card_rainbow",
     "support_etsuko",
     "support_director",
+    "support_tazuna",
 }
 
 
@@ -100,6 +100,7 @@ def _raised_training_ltr_index(
 def _center_x(xyxy):
     x1, y1, x2, y2 = xyxy
     return 0.5 * (x1 + x2)
+
 
 def scan_training_screen(
     ctrl,
@@ -209,7 +210,9 @@ def scan_training_screen(
             if not dets:
                 return dets
             # sort by confidence DESC (missing conf -> 0.0)
-            ordered = sorted(dets, key=lambda d: float(d.get("conf", 0.0)), reverse=True)
+            ordered = sorted(
+                dets, key=lambda d: float(d.get("conf", 0.0)), reverse=True
+            )
             kept = []
             for d in ordered:
                 dx = d.get("xyxy")
@@ -288,7 +291,9 @@ def scan_training_screen(
                 piece_type_bgr=type_crop,
             )
 
-            has_rainbow = s["name"].endswith("_rainbow") or (s["name"] == "support_card_rainbow")
+            has_rainbow = s["name"].endswith("_rainbow") or (
+                s["name"] == "support_card_rainbow"
+            )
             any_rainbow |= has_rainbow
 
             enriched.append(
@@ -361,7 +366,11 @@ def scan_training_screen(
     results: List[Dict] = []
 
     # -------- 1.5) FAST_MODE: low-energy fast path (raised + WIT only) --------
-    if Settings.FAST_MODE and isinstance(energy, (int, float)) and 0 <= int(energy) <= 35:
+    if (
+        Settings.FAST_MODE
+        and isinstance(energy, (int, float))
+        and 0 <= int(energy) <= 35
+    ):
         # Identify raised and WIT (last) indices
         ridx_fast = _raised_training_ltr_index(cur_parsed)
         last_idx = len(scan) - 1 if len(scan) > 0 else None
@@ -380,7 +389,9 @@ def scan_training_screen(
                         **tile,
                         "supports": supps,
                         "has_any_rainbow": any_rainbow,
-                        "failure_pct": _failure_pct(cur_img, cur_parsed, tile["tile_xyxy"]),
+                        "failure_pct": _failure_pct(
+                            cur_img, cur_parsed, tile["tile_xyxy"]
+                        ),
                         "skipped_click": True,
                     }
                 )
@@ -404,7 +415,11 @@ def scan_training_screen(
                         scan[j]["tile_center_x"] = float(_center_x(b["xyxy"]))
                 # Determine effective raised after click
                 ridx_now = _raised_training_ltr_index(cur_parsed)
-                eff_idx = ridx_now if (ridx_now is not None and 0 <= ridx_now < len(scan)) else idx
+                eff_idx = (
+                    ridx_now
+                    if (ridx_now is not None and 0 <= ridx_now < len(scan))
+                    else idx
+                )
                 eff_tile = scan[eff_idx]
                 supps, any_rainbow = _collect_supports_enriched(cur_img, cur_parsed)
                 results.append(
@@ -412,14 +427,18 @@ def scan_training_screen(
                         **eff_tile,
                         "supports": supps,
                         "has_any_rainbow": any_rainbow,
-                        "failure_pct": _failure_pct(cur_img, cur_parsed, eff_tile["tile_xyxy"]),
+                        "failure_pct": _failure_pct(
+                            cur_img, cur_parsed, eff_tile["tile_xyxy"]
+                        ),
                         "skipped_click": False,
                     }
                 )
 
         # Normalize tile indices by current geometry to prevent duplicates
         results = _reindex_left_to_right(results)
-        logger_uma.info("FAST MODE: Only analyzing WIT; everything else may have high risk")
+        logger_uma.info(
+            "FAST MODE: Only analyzing WIT; everything else may have high risk"
+        )
         return results, cur_img, cur_parsed
 
     # -------- 2) Already-raised tile (no click) --------
@@ -443,9 +462,10 @@ def scan_training_screen(
                 # Compute SV for just this tile and check greedy
                 sv_rows_one = compute_support_values([tile_record])
                 if sv_rows_one and sv_rows_one[0].get("greedy_hit", False):
-                    
                     notes = sv_rows_one[-1].get("notes", "")
-                    logger_uma.info(f"FAST MODE: Found a greedy training option, not analizing nothing more. notes={notes}")
+                    logger_uma.info(
+                        f"FAST MODE: Found a greedy training option, not analizing nothing more. notes={notes}"
+                    )
                     # Return results so far, don't waste time checking other options; caller will act immediately
                     return results, cur_img, cur_parsed
             except Exception as e:
@@ -509,7 +529,9 @@ def scan_training_screen(
                 sv_rows_one = compute_support_values([tile_record])
                 if sv_rows_one and sv_rows_one[0].get("greedy_hit", False):
                     notes = sv_rows_one[-1].get("notes", "")
-                    logger_uma.info(f"FAST MODE: Found a greedy training option, not analizing nothing more. notes={notes}")
+                    logger_uma.info(
+                        f"FAST MODE: Found a greedy training option, not analizing nothing more. notes={notes}"
+                    )
                     # Return results so far, don't waste time checking other options; caller will act immediately
                     return results, cur_img, cur_parsed
             except Exception as e:
@@ -541,7 +563,7 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
     • Reporter (support_etsuko): +0.1
     • Director (support_director): color-based
         blue: +0.25, green: +0.15, orange: +0.10, yellow/max: +0
-
+    • Tazuna (support_tazuna): +0.15 (yellow, max). +1 (blue), +0.5 (green, orange)
     Failure rule
     ------------
     Let max_failure = BASE_MAX_FAILURE (20%) by default.
@@ -613,6 +635,27 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
                     notes.append(f"Director ({color}): +0.00")
                 continue
 
+            if sname == "support_tazuna":
+                # Tazuna score depends on color:
+                if color in ("blue", "green"):
+                    score = 1.0
+                elif color in ("orange", ):
+                    score = 0.5
+                elif color in ("yellow",) or is_max:
+                    score = 0.15
+                else:
+                    score = 0.0
+                
+                if score > 0:
+                    sv_total += score
+                    sv_by_type["special_tazuna"] = (
+                        sv_by_type.get("special_tazuna", 0.0) + score
+                    )
+                    notes.append(f"Tazuna ({color}): +{score:.2f}")
+                else:
+                    notes.append(f"Tazuna ({color}): +0.00")
+                continue
+
             # --- standard support cards (including rainbow variants) ---
             # Rainbow counts as +1 baseline
             if has_rainbow:
@@ -676,24 +719,32 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
             notes.append(f"Rainbow combo +{combo_bonus}")
 
         # ---- risk gating with dynamic relax based on SV ----
-        base_limit = BASE_MAX_FAILURE
+        base_limit = Settings.MAX_FAILURE
         # Piecewise multiplier:
         #   SV ≥ 4.0 → x2.0
         #   SV > 3.0 → x1.5
         #   SV ≥ 2.5 → x1.25
         #   else     → x1.0
-        if sv_total >= 4.0:
+
+        has_hint = any_bluegreen_hint or any_orange_max_hint
+        if sv_total >= 5:
             risk_mult = 2.0
-        elif sv_total > 3.0:
+        elif sv_total >= 3.5 and not (has_hint and Settings.HINT_IS_IMPORTANT):
+            # cap if hint is overcalculating
+            risk_mult = 2.0
+        elif sv_total >= 2.75 and not (has_hint and Settings.HINT_IS_IMPORTANT):
+            # cap if hint is overcalculating
             risk_mult = 1.5
-        elif sv_total >= 2.5:
+        elif sv_total >= 2.25:
             risk_mult = 1.25
         else:
             risk_mult = 1.0
 
         risk_limit = int(min(100, base_limit * risk_mult))
         allowed = failure_pct <= risk_limit
-        notes.append(f"Dynamic risk: SV={sv_total:.2f} → base {base_limit}% × {risk_mult:.2f} = {risk_limit}%")
+        notes.append(
+            f"Dynamic risk: SV={sv_total:.2f} → base {base_limit}% × {risk_mult:.2f} = {risk_limit}%"
+        )
 
         # ---- 5) greedy mark (optional early exit logic can use this) ----
         greedy_hit = (sv_total >= GREEDY_THRESHOLD) and allowed

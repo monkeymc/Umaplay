@@ -11,7 +11,6 @@ export interface GeneralConfig {
   windowTitle: string
   fastMode: boolean
   tryAgainOnFailedGoal: boolean
-  prioritizeHint: boolean
   maxFailure: number
   skillPtsCheck: number
   acceptConsecutiveRace: boolean
@@ -21,6 +20,11 @@ export interface GeneralConfig {
     useExternalProcessor: boolean
     externalProcessorUrl: string
     autoRestMinimum: number
+    undertrainThreshold: number // Percentage threshold for undertraining stats (0-100)
+    topStatsFocus: number // Number of top stats to focus on (1-5)
+    // Skills optimization (Raceday auto-buy gating)
+    skillCheckInterval: number // Check skills every N turns (1 = every turn)
+    skillPtsDelta: number // Only check if points increased by at least this amount
   }
 }
 
@@ -34,6 +38,8 @@ export interface Preset {
   skillsToBuy: string[]
   event_setup?: EventSetup
   plannedRaces: Record<string, string> // dateKey -> raceName (Y{year}-{MM}-{half})
+  raceIfNoGoodValue?: boolean // Whether to race even if no good training options are available
+  prioritizeHint?: boolean // Moved from general to per-preset
 }
 
 export interface AppConfig {

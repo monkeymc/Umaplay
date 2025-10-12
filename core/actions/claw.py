@@ -123,7 +123,12 @@ class ClawGame:
     Debug frames are saved to <Settings.DEBUG_DIR>/claw_test/ (or ./debug/claw_test).
     """
 
-    def __init__(self, ctrl: IController, yolo_engine: IDetector, cfg: Optional[ClawConfig] = None) -> None:
+    def __init__(
+        self,
+        ctrl: IController,
+        yolo_engine: IDetector,
+        cfg: Optional[ClawConfig] = None,
+    ) -> None:
         self.ctrl = ctrl
         self.yolo_engine = yolo_engine
         self.cfg = cfg or ClawConfig()
@@ -382,13 +387,6 @@ class ClawGame:
 
         # Rail safety (if controller exposes client bbox)
         rail_right_limit: Optional[float] = None
-        if hasattr(self.ctrl, "client_bbox"):
-            client = self.ctrl.client_bbox()
-            if client:
-                _, _, w, _ = client
-                rail_right_limit = (
-                    last_cx + self.cfg.rail_release_at_frac_of_width * float(w)
-                )
 
         # First debug frame
         self._save_debug(

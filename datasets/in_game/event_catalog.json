@@ -609,7 +609,7 @@
     "attribute": "None",
     "event_name": "Acupuncture (Just an Acupuncturist, No Worries! ☆)",
     "chain_step": 1,
-    "default_preference": 2,
+    "default_preference": 5,
     "options": {
       "1": [
         {

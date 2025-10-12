@@ -7,30 +7,35 @@ from core.perception.ocr.interface import OCRInterface
 from core.utils.date_uma import score_date_like
 from core.utils.geometry import xyxy_int
 
+
 def preprocess_digits(
     pil_img: Image.Image,
     *,
     scale: int = 3,
-    drop_top_frac: float = 0.35,   # hide turquoise header line (~top 35%)
-    trim_right_frac: float = 0.12, # hide right gutter/badge to avoid spurious digits (e.g., your PWR→2034)
+    drop_top_frac: float = 0.35,  # hide turquoise header line (~top 35%)
+    trim_right_frac: float = 0.12,  # hide right gutter/badge to avoid spurious digits (e.g., your PWR→2034)
     dilate_iters: int = 1,
     erode_iters: int = 0,
-    focus_largest_cc: bool = False # optional: crop to largest connected component in the binarized image
+    focus_largest_cc: bool = False,  # optional: crop to largest connected component in the binarized image
 ):
     """
     Returns (final_pil, steps_dict) where steps_dict has intermediate arrays for plotting.
     """
     steps = {}
-    bgr = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR); steps["orig"] = bgr
+    bgr = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+    steps["orig"] = bgr
 
     # 1) Nearest-neighbor upscale (pixel fonts like this prefer NN)
     h, w = bgr.shape[:2]
-    up = cv2.resize(bgr, (w*scale, h*scale), interpolation=cv2.INTER_NEAREST); steps["upscaled"] = up
+    up = cv2.resize(bgr, (w * scale, h * scale), interpolation=cv2.INTER_NEAREST)
+    steps["upscaled"] = up
 
     # 2) Gray + gentle sharpening
-    gray = cv2.cvtColor(up, cv2.COLOR_BGR2GRAY); steps["gray"] = gray
-    blur = cv2.GaussianBlur(gray, (0,0), 0.8)
-    sharp = cv2.addWeighted(gray, 1.6, blur, -0.6, 0); steps["sharp"] = sharp
+    gray = cv2.cvtColor(up, cv2.COLOR_BGR2GRAY)
+    steps["gray"] = gray
+    blur = cv2.GaussianBlur(gray, (0, 0), 0.8)
+    sharp = cv2.addWeighted(gray, 1.6, blur, -0.6, 0)
+    steps["sharp"] = sharp
 
     # 3) Otsu binarization
     thr, bin_im = cv2.threshold(sharp, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
@@ -40,16 +45,16 @@ def preprocess_digits(
     # 4) Remove top turquoise strip & right gutter (column trims)
     H, W = bin_im.shape[:2]
     if drop_top_frac > 0:
-        bin_im[: int(H*drop_top_frac), :] = 0
+        bin_im[: int(H * drop_top_frac), :] = 0
     if trim_right_frac > 0:
-        bin_im[:, int(W*(1.0-trim_right_frac)) :] = 0
+        bin_im[:, int(W * (1.0 - trim_right_frac)) :] = 0
     steps["bin_trimmed"] = bin_im.copy()
 
     # 5) Thicken strokes a bit for tiny glyphs
     if dilate_iters:
-        bin_im = cv2.dilate(bin_im, np.ones((2,2), np.uint8), iterations=dilate_iters)
+        bin_im = cv2.dilate(bin_im, np.ones((2, 2), np.uint8), iterations=dilate_iters)
     if erode_iters:
-        bin_im = cv2.erode(bin_im, np.ones((2,2), np.uint8), iterations=erode_iters)
+        bin_im = cv2.erode(bin_im, np.ones((2, 2), np.uint8), iterations=erode_iters)
     steps["bin_morph"] = bin_im.copy()
 
     # 6) Optional: crop to largest CC (keeps digits, drops leftover UI)
@@ -59,9 +64,11 @@ def preprocess_digits(
             idx = 1 + np.argmax(stats[1:, cv2.CC_STAT_AREA])
             x, y, ww, hh = stats[idx, :4]
             # small padding
-            pad = max(2, int(min(W,H)*0.02))
-            x1 = max(0, x-pad); y1 = max(0, y-pad)
-            x2 = min(W, x+ww+pad); y2 = min(H, y+hh+pad)
+            pad = max(2, int(min(W, H) * 0.02))
+            x1 = max(0, x - pad)
+            y1 = max(0, y - pad)
+            x2 = min(W, x + ww + pad)
+            y2 = min(H, y + hh + pad)
             cc_crop = bin_im[y1:y2, x1:x2]
             steps["cc_bbox"] = (x1, y1, x2, y2)
             steps["bin_cc"] = cc_crop
@@ -75,27 +82,35 @@ def preprocess_digits(
     steps["final"] = final_bin
     return final_pil, steps
 
+
 def show_steps_grid(steps, title=""):
     """Plot the important stages in one row."""
     figs = []
-    keys = [("orig","Original"),
-            ("upscaled","Upscaled (NN)"),
-            ("sharp","Sharpened"),
-            ("bin_raw",f"Binarized (Otsu={steps.get('otsu_thr','?')})"),
-            ("bin_trimmed","Trimmed"),
-            ("bin_morph","Morph"),
-            ("bin_cc" if "bin_cc" in steps else "final","Final used")]
-    plt.figure(figsize=(18,3))
-    for i,(k,lab) in enumerate(keys,1):
-        if k not in steps: continue
-        ax = plt.subplot(1,len(keys),i)
+    keys = [
+        ("orig", "Original"),
+        ("upscaled", "Upscaled (NN)"),
+        ("sharp", "Sharpened"),
+        ("bin_raw", f"Binarized (Otsu={steps.get('otsu_thr', '?')})"),
+        ("bin_trimmed", "Trimmed"),
+        ("bin_morph", "Morph"),
+        ("bin_cc" if "bin_cc" in steps else "final", "Final used"),
+    ]
+    plt.figure(figsize=(18, 3))
+    for i, (k, lab) in enumerate(keys, 1):
+        if k not in steps:
+            continue
+        ax = plt.subplot(1, len(keys), i)
         im = steps[k]
-        if im.ndim==2: ax.imshow(im, cmap="gray")
-        else: ax.imshow(cv2.cvtColor(im, cv2.COLOR_BGR2RGB))
+        if im.ndim == 2:
+            ax.imshow(im, cmap="gray")
+        else:
+            ax.imshow(cv2.cvtColor(im, cv2.COLOR_BGR2RGB))
         ax.set_title(lab, fontsize=10)
         ax.axis("off")
-    if title: plt.suptitle(title)
+    if title:
+        plt.suptitle(title)
     plt.show()
+
 
 def tighten_to_pill(banner_img: Image.Image) -> tuple[int, int, int, int]:
     """
@@ -113,8 +128,8 @@ def tighten_to_pill(banner_img: Image.Image) -> tuple[int, int, int, int]:
     Hc, Sc, Vc = cv.split(hsv)
 
     # Thresholds tuned to the UI palette (gray/white rounded chip)
-    mask_v = cv.inRange(Vc, 170, 255)   # bright
-    mask_s = cv.inRange(Sc, 0, 90)      # low saturation
+    mask_v = cv.inRange(Vc, 170, 255)  # bright
+    mask_s = cv.inRange(Sc, 0, 90)  # low saturation
     mask = cv.bitwise_and(mask_v, mask_s)
 
     # Ignore top third (title area)
@@ -122,7 +137,9 @@ def tighten_to_pill(banner_img: Image.Image) -> tuple[int, int, int, int]:
     mask[:bottom_clip, :] = 0
 
     # Clean noise
-    mask = cv.morphologyEx(mask, cv.MORPH_CLOSE, np.ones((5, 5), np.uint8), iterations=1)
+    mask = cv.morphologyEx(
+        mask, cv.MORPH_CLOSE, np.ones((5, 5), np.uint8), iterations=1
+    )
 
     n, labels, stats, _ = cv.connectedComponentsWithStats(mask, connectivity=4)
     best_idx, best_w = -1, -1
@@ -151,7 +168,10 @@ def tighten_to_pill(banner_img: Image.Image) -> tuple[int, int, int, int]:
     x2 = int(W * 0.98)
     return (x1, y1, x2, y2)
 
-def career_date_crop_box(game_img: Image.Image, turns_xyxy) -> tuple[int, int, int, int]:
+
+def career_date_crop_box(
+    game_img: Image.Image, turns_xyxy
+) -> tuple[int, int, int, int]:
     """
     Compute the OCR crop for the career-date pill **above** the Turns widget.
     Handles a variable-height top black band (often present on mobile).
@@ -181,7 +201,9 @@ def career_date_crop_box(game_img: Image.Image, turns_xyxy) -> tuple[int, int, i
     black_bottom = 0
     for i in range(1, n):
         if stats[i, cv.CC_STAT_TOP] == 0:  # touches top edge
-            black_bottom = max(black_bottom, stats[i, cv.CC_STAT_TOP] + stats[i, cv.CC_STAT_HEIGHT])
+            black_bottom = max(
+                black_bottom, stats[i, cv.CC_STAT_TOP] + stats[i, cv.CC_STAT_HEIGHT]
+            )
 
     # Nominal pill height ~ proportional to the Turns width
     band_h = max(20, int(0.55 * tw))
@@ -190,6 +212,7 @@ def career_date_crop_box(game_img: Image.Image, turns_xyxy) -> tuple[int, int, i
         ry1 = max(0, ry2 - 16)
 
     return (rx1, ry1, rx2, ry2)
+
 
 # ------------------------------
 # Low-res letter OCR helper
@@ -207,6 +230,7 @@ def read_date_pill_robust(ocr: OCRInterface, pill_img_pil: Image.Image) -> str:
 
     def _to_pil(img_cv):
         from PIL import Image as _Image
+
         return _Image.fromarray(_cv.cvtColor(img_cv, _cv.COLOR_BGR2RGB))
 
     src = _to_cv(pill_img_pil)
@@ -214,7 +238,9 @@ def read_date_pill_robust(ocr: OCRInterface, pill_img_pil: Image.Image) -> str:
     variants = []
     # x2 and x3 cubic upscales
     for scale in (2.0, 3.0):
-        up = _cv.resize(src, dsize=None, fx=scale, fy=scale, interpolation=_cv.INTER_CUBIC)
+        up = _cv.resize(
+            src, dsize=None, fx=scale, fy=scale, interpolation=_cv.INTER_CUBIC
+        )
         # Light denoise + unsharp
         den = _cv.bilateralFilter(up, d=5, sigmaColor=40, sigmaSpace=40)
         gauss = _cv.GaussianBlur(den, (0, 0), 1.2)

@@ -52,7 +52,7 @@ export default function AdvancedSettings() {
               label={a.debugMode ? 'Enabled' : 'Disabled'}
             />
           }
-          info="Verbose logging and extra overlays."
+          info="Enable debug mode for verbose logging and extra overlays."
         />
 
         <FieldRow
@@ -70,7 +70,7 @@ export default function AdvancedSettings() {
               label={a.useExternalProcessor ? 'Enabled' : 'Disabled'}
             />
           }
-          info="Send OCR/YOLO to a remote server (e.g., 127.0.0.1:8001)."
+          info="Send OCR/YOLO processing to a remote server."
         />
 
         <FieldRow
@@ -78,6 +78,7 @@ export default function AdvancedSettings() {
           control={
             <TextField
               size="small"
+              fullWidth
               value={a.externalProcessorUrl}
               onChange={(e) => setGeneral({ advanced: { ...a, externalProcessorUrl: e.target.value } })}
               disabled={!a.useExternalProcessor}
@@ -98,10 +99,156 @@ export default function AdvancedSettings() {
                 min={0}
                 max={100}
                 sx={{ flex: 1 }}
+                valueLabelDisplay="auto"
+                valueLabelFormat={(v) => `${v}%`}
               />
-              <Typography variant="body2" sx={{ width: 32, textAlign: 'right' }}>
-                {a.autoRestMinimum}
-              </Typography>
+              <TextField
+                size="small"
+                type="number"
+                value={a.autoRestMinimum}
+                onChange={(e) =>
+                  setGeneral({
+                    advanced: {
+                      ...a,
+                      autoRestMinimum: Math.min(100, Math.max(0, Number(e.target.value))),
+                    },
+                  })
+                }
+                inputProps={{ min: 0, max: 100, step: 1 }}
+                sx={{ width: 80 }}
+              />
+            </Box>
+          }
+        />
+
+        <FieldRow
+          label="Skills: check interval"
+          info="Only open Skills every N turns on Raceday (1 = every turn)."
+          control={
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Slider
+                value={a.skillCheckInterval}
+                onChange={(_, v) =>
+                  setGeneral({ advanced: { ...a, skillCheckInterval: Number(v) } })
+                }
+                min={1}
+                max={12}
+                sx={{ flex: 1 }}
+                valueLabelDisplay="auto"
+              />
+              <TextField
+                size="small"
+                type="number"
+                value={a.skillCheckInterval}
+                onChange={(e) =>
+                  setGeneral({
+                    advanced: {
+                      ...a,
+                      skillCheckInterval: Math.min(12, Math.max(1, Number(e.target.value))),
+                    },
+                  })
+                }
+                inputProps={{ min: 1, max: 12, step: 1 }}
+                sx={{ width: 80 }}
+              />
+            </Box>
+          }
+        />
+
+        <FieldRow
+          label="Skills: points delta"
+          info="Open Skills only if points increased by at least this amount since last check."
+          control={
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Slider
+                value={a.skillPtsDelta}
+                onChange={(_, v) => setGeneral({ advanced: { ...a, skillPtsDelta: Number(v) } })}
+                min={0}
+                max={1000}
+                sx={{ flex: 1 }}
+                valueLabelDisplay="auto"
+              />
+              <TextField
+                size="small"
+                type="number"
+                value={a.skillPtsDelta}
+                onChange={(e) =>
+                  setGeneral({
+                    advanced: {
+                      ...a,
+                      skillPtsDelta: Math.min(1000, Math.max(0, Number(e.target.value))),
+                    },
+                  })
+                }
+                inputProps={{ min: 0, max: 1000, step: 10 }}
+                sx={{ width: 100 }}
+              />
+            </Box>
+          }
+        />
+
+        <FieldRow
+          label="Undertrain threshold"
+          info="Stats below this percentage of their target will be prioritized during training."
+          control={
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Slider
+                value={a.undertrainThreshold}
+                onChange={(_, v) => setGeneral({ advanced: { ...a, undertrainThreshold: Number(v) } })}
+                min={0}
+                max={20}
+                sx={{ flex: 1 }}
+                valueLabelDisplay="auto"
+                valueLabelFormat={(v) => `${v}%`}
+              />
+              <TextField
+                size="small"
+                type="number"
+                value={a.undertrainThreshold}
+                onChange={(e) =>
+                  setGeneral({
+                    advanced: {
+                      ...a,
+                      undertrainThreshold: Math.min(20, Math.max(0, Number(e.target.value))),
+                    },
+                  })
+                }
+                inputProps={{ min: 0, max: 20, step: 1 }}
+                sx={{ width: 80 }}
+              />
+            </Box>
+          }
+        />
+
+        <FieldRow
+          label="Top stats focus"
+          info="Number of top stats to prioritize when considering undertraining."
+          control={
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Slider
+                value={a.topStatsFocus}
+                onChange={(_, v) => setGeneral({ advanced: { ...a, topStatsFocus: Number(v) } })}
+                min={1}
+                max={5}
+                sx={{ flex: 1 }}
+                valueLabelDisplay="auto"
+                marks
+              />
+              <TextField
+                size="small"
+                type="number"
+                value={a.topStatsFocus}
+                onChange={(e) =>
+                  setGeneral({
+                    advanced: {
+                      ...a,
+                      topStatsFocus: Math.min(5, Math.max(1, Number(e.target.value))),
+                    },
+                  })
+                }
+                inputProps={{ min: 1, max: 5, step: 1 }}
+                sx={{ width: 80 }}
+              />
             </Box>
           }
         />
