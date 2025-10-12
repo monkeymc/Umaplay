@@ -77,7 +77,7 @@ class Settings:
 
     # --------- Detection (YOLO) ---------
     YOLO_IMGSZ: int = _env_int("YOLO_IMGSZ", default=832)
-    YOLO_CONF: float = _env_float("YOLO_CONF", default=0.65)  # should be 0.7 in general
+    YOLO_CONF: float = _env_float("YOLO_CONF", default=0.61)  # should be 0.7 in general, but we are a little open...
     YOLO_IOU: float = _env_float("YOLO_IOU", default=0.45)
 
     # --------- Logging ---------
