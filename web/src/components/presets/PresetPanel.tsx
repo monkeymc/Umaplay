@@ -1,6 +1,7 @@
 import Section from '@/components/common/Section'
 import { useConfigStore } from '@/store/configStore'
-import { Stack, TextField, FormControlLabel, Switch } from '@mui/material'
+import { Stack, TextField, FormControlLabel, Switch, IconButton, Tooltip, Typography } from '@mui/material'
+import { Info as InfoIcon } from '@mui/icons-material'
 import PriorityStats from './PriorityStats'
 import TargetStats from './TargetStats'
 import MoodSelector from './MoodSelector'
@@ -52,8 +53,9 @@ export default function PresetPanel({ compact = false }: { compact?: boolean }) 
         <MoodSelector presetId={active.id} />
         <StyleSelector presetId={active.id} />
         <SkillsPicker presetId={active.id} />
-        <Section title="Strategy">
+        <Section title="Bot Strategy / Policy">
           <Stack spacing={1}>
+
             <FormControlLabel
               control={
                 <Switch
@@ -61,7 +63,16 @@ export default function PresetPanel({ compact = false }: { compact?: boolean }) 
                   onChange={(e) => patchPreset(active.id!, 'raceIfNoGoodValue', e.target.checked)}
                 />
               }
-              label="Allow Racing over low training"
+              label={
+                <Stack direction="row" alignItems="center" spacing={0.5}>
+                  <Typography variant="body1">Allow Racing over low training</Typography>
+                  <Tooltip title="If for example our best option is SV <= 1 (e.g. 1 rainbow, 1 friend training, etc). If this option is enabled, bot will prefer to look for race (hopefully G2 or G1) to farm skill pts and stats.">
+                    <IconButton size="small" color="info">
+                      <InfoIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+              }
             />
             <FormControlLabel
               control={
@@ -70,7 +81,16 @@ export default function PresetPanel({ compact = false }: { compact?: boolean }) 
                   onChange={(e) => patchPreset(active.id!, 'prioritizeHint', e.target.checked)}
                 />
               }
-              label="Prioritize hint tiles"
+              label={
+                <Stack direction="row" alignItems="center" spacing={0.5}>
+                  <Typography variant="body1">Prioritize hint tiles</Typography>
+                  <Tooltip title="Give priority to hint tiles during training, value of hint is increased from 0.75 to 2.25. Nevertheless, If for some reason you have hint in guts and the best SV is 3.5 (triple rainbow) in another tile -> Even if hint priority is enabled, bot will prefer that amazing SV.">
+                    <IconButton size="small" color="info">
+                      <InfoIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+              }
             />
           </Stack>
         </Section>
