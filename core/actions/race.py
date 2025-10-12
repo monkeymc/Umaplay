@@ -486,9 +486,11 @@ class RaceFlow:
                                         if sim > best_sim:
                                             best_sim, best_i = sim, i
                                     if best_i >= 0:
-                                        bumped = list(page_scores[best_i])
-                                        bumped[1] = bumped[1] + 0.10
-                                        page_scores[best_i] = tuple(bumped)  # type: ignore
+                                        # Get the current score and ensure it's a float before adding
+                                        current_score = float(page_scores[best_i][1])
+                                        # Create a new tuple with the updated score
+                                        updated_entry = (page_scores[best_i][0], current_score + 0.10)
+                                        page_scores[best_i] = updated_entry
                                         page_scores.sort(key=lambda t: t[1], reverse=True)
                                         logger_uma.info(
                                             "[race] template tie-breaker applied for '%s' (bonus +0.10, sim=%.3f)",

@@ -1,0 +1,38 @@
+{
+  // Python version used by your project
+  "pythonVersion": "3.10",
+
+  // Type checking level
+  "typeCheckingMode": "basic",
+
+  // Import diagnostics
+  "reportMissingImports": true,
+  "reportMissingModuleSource": true,
+  "reportMissingTypeStubs": false,
+  "reportArgumentType": "none",
+  "reportGeneralTypeIssues": "none",
+
+  // Tell Pyright where your code lives so imports resolve
+  "executionEnvironments": [
+    {
+      "root": "."
+    }
+  ],
+
+  // Optional: if your virtual env is inside the workspace, uncomment and set
+  // "venvPath": ".",
+  // "venv": "env_uma",
+
+  // Keep noise down
+  "exclude": [
+    "**/__pycache__",
+    ".git",
+    ".env",
+    "build",
+    "dist",
+    ".windsurfPyright"
+  ],
+  "ignore": [
+    "**/.ipynb_checkpoints/**"
+  ]
+}

@@ -501,7 +501,7 @@ def decide_action_training(
                     else:
                         because(
                             f"Undertrained {under_stat} by {gap:.1%} vs reference; "
-                            f"but the TOP option is better {top_allowed_sv:.2f}, gap={gap} ) or is not worth it to train under_stat"
+                            f"but the TOP option is better with SV {top_allowed_sv:.2f}, gap={gap} ) or is not worth it to train under_stat"
                         )
                 else:
                     logger_uma.debug(
