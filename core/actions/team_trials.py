@@ -140,7 +140,7 @@ class TeamTrialsFlow:
                 logger_uma.warning("[TeamTrials] Could not press Start button of race in second intent")
                 return
         logger_uma.debug(f"[TeamTrials] pre-start greens: {pre}")
-        sleep(1.3)
+        sleep(1.8)
         # Try to hit 'RACE!' (avoid CANCEL)
         started = self.waiter.click_when(
             classes=("button_green",),
@@ -154,6 +154,7 @@ class TeamTrialsFlow:
         )
         if not started:
             logger_uma.warning("[TeamTrials] Couldn't press 'RACE!'")
+        sleep(1)
         self._handle_post_race_sequence(ensure_enter_shop=True)
 
     def resume(self, *, max_steps: int = 8) -> bool:
@@ -257,8 +258,7 @@ class TeamTrialsFlow:
             logger_uma.warning("[TeamTrials] Unable to process shop exchange")
 
     def _handle_post_race_sequence(self, *, ensure_enter_shop: bool) -> None:
-        sleep(4.0)
-        sleep(4)
+        sleep(10)
         adv = nav.advance_sequence_with_mid_taps(
             self.waiter,
             self.yolo_engine,
@@ -268,8 +268,8 @@ class TeamTrialsFlow:
             advance_class="button_advance",
             advance_texts=None,
             taps_each_click=(3, 4),
-            tap_dev_frac=0.12,
-            sleep_after_advance=0.5,
+            tap_dev_frac=0.1,
+            sleep_after_advance=0.6,
         )
         logger_uma.debug(f"[TeamTrials] advances performed: {adv}")
         sleep(7)

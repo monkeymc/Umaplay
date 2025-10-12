@@ -49,12 +49,12 @@ class DailyRaceFlow:
         )
         if not ok:
             return False
-        sleep(1.2)
+        sleep(1.7)
         # Often need to click the 'monies' card
         self.waiter.click_when(
             classes=("race_daily_races_monies",),
             prefer_bottom=True,
-            timeout_s=2.0,
+            timeout_s=3.2,
             tag="daily_race_monies",
         )
         return True

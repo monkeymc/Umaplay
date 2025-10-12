@@ -220,22 +220,24 @@ def handle_shop_exchange_on_clock_row(
     ctrl.click_xyxy_center(target["xyxy"], clicks=1)
     logger_uma.info("[nav] shop: clicked 'Exchange' aligned with clock row")
 
+    sleep(0.5)
     # confirm EXCHANGE
     waiter.click_when(
         classes=("button_green",),
         texts=("EXCHANGE",),
         prefer_bottom=False,
-        timeout_s=2.0,
+        timeout_s=3.0,
         allow_greedy_click=False,
         tag=f"{tag_prefix}_confirm_exchange",
     )
 
+    sleep(0.5)
     # click button_white button with 'Close'
     if waiter.click_when(
         classes=("button_white",),
         texts=("CLOSE",),
         prefer_bottom=False,
-        timeout_s=2.0,
+        timeout_s=3.0,
         allow_greedy_click=False,
         tag=f"{tag_prefix}_close",
     ):

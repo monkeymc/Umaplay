@@ -89,7 +89,7 @@ class RaceFlow:
             )
             # Fast race: as soon as 'race_square' is seen, bail out; otherwise opportunistically click OK.
             t0 = time.time()
-            MAX_WAIT = 1.6  # upper bound; typical exit << 1.0s
+            MAX_WAIT = 2.2  # upper bound; typical exit << 1.0s
             while (time.time() - t0) < MAX_WAIT:
                 if abort_requested():
                     logger_uma.info("[race] Abort requested during nav to Raceday.")
@@ -880,23 +880,24 @@ class RaceFlow:
         if need_click:
             self.ctrl.click_xyxy_center(square["xyxy"], clicks=1)
             time.sleep(0.2)
+            logger_uma.info("[race] Clicked race square")
 
         # 3) Click green 'RACE' on the list (prefer bottom-most; OCR 'RACE' if needed)
         if not self.waiter.click_when(
             classes=("button_green",),
             texts=("RACE",),
             prefer_bottom=True,
-            timeout_s=1,
+            timeout_s=2,
             tag="race_list_race",
         ):
             logger_uma.warning("[race] couldn't find green 'Race' button (list).")
             return False
 
         # Time to popup to grow, so we don't missclassify a mini button in the animation
-        time.sleep(0.7)
+        time.sleep(1.2)
         # Reactive confirm of the popup (if/when it appears). Bail out if pre-race lobby is already visible.
         t0 = time.time()
-        while (time.time() - t0) < 4.0:
+        while (time.time() - t0) < 5.0:
             if abort_requested():
                 logger_uma.info("[race] Abort requested before popup confirm.")
                 return False
@@ -904,18 +905,23 @@ class RaceFlow:
                 classes=("button_change",), tag="race_pre_lobby_seen_early"
             ):
                 break
-            if self.waiter.try_click_once(
+            if self.waiter.click_when(
                 classes=("button_green",),
                 texts=("RACE",),
                 prefer_bottom=True,
+                timeout_s=1,
                 tag="race_popup_confirm_try",
             ):
+                logger_uma.info("[race] Clicked green 'Race' button (popup) confirmation")
                 # Give a short beat for the transition; continue probing.
                 time.sleep(0.2)
                 break
+            else:
+                logger_uma.warning("[race] couldn't find 'Race' button (popup) confirmation in this check.")
             time.sleep(0.1)
 
         # 4) Wait until the pre-race lobby is actually on screen (key: 'button_change')
+        logger_uma.info("Waiting for race lobby to appear")
         time.sleep(7)
         t0 = time.time()
         max_wait = 14.0
