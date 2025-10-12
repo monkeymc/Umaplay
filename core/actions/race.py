@@ -480,7 +480,7 @@ class RaceFlow:
                             logger_uma.debug(f"Not enough stars, found: {s_cnt}")
                             continue
                         
-                        logger_uma.debug("Found valid %d stars, %d badges", s_cnt, len(badges))
+                        logger_uma.debug(f"Found valid {s_cnt} stars, {len(badges)} badges. dets: {dets}")
                         badge_det = next(
                             (b for b in badges if inside(b["xyxy"], sq["xyxy"], pad=3)),
                             None,
