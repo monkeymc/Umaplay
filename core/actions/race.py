@@ -181,12 +181,12 @@ class RaceFlow:
             if not found after scrolling up to max_scrolls, return (None, True) without fallback.
 
         """
-        MINIMUM_RACE_OCR_MATCH = 1
+        MINIMUM_RACE_OCR_MATCH = 0.91
         MIN_STARS = 2
         # OCR-based gating: minimum OCR score to accept a candidate during tie-breaks.
         OCR_DISCARD_MIN = 0.3
         # OCR signal weight to gently separate close candidates in the tie-breaker.
-        OCR_SCORE_WEIGHT = 0.3
+        OCR_SCORE_WEIGHT = 0.2
         moved_cursor = False
         did_scroll = False
         first_top_xyxy = None
@@ -432,11 +432,12 @@ class RaceFlow:
                                     if best_ocr < OCR_DISCARD_MIN and match_score < 0.5:
                                         adjusted_score = -1.0  # hard discard so it won't be picked
                                     else:
-                                        adjusted_score = (base_score * 0.5) + (best_ocr * 0.2) + (match_score * 0.5)  # extra 0.2
+                                        adjusted_score = (base_score * 0.5) + (best_ocr * OCR_SCORE_WEIGHT) + (match_score * 0.5)  # extra 0.2
                                         logger_uma.debug(
-                                            "[race] Candidate boosted by OCR: base=%.3f, ocr=%.3f (w=%.2f) → total=%.3f | text='%s'",
+                                            "[race] Candidate boosted by OCR: base=%.3f, ocr=%.3f, template_match=%.3f (w=%.2f) → total=%.3f | text='%s'",
                                             base_score,
                                             best_ocr,
+                                            match_score,
                                             OCR_SCORE_WEIGHT,
                                             adjusted_score,
                                             roi_txt,
