@@ -4,6 +4,7 @@ from __future__ import annotations
 import random
 import time
 from core.controllers.android import ScrcpyController
+from core.perception.analyzers.race_banner import RaceBannerMatcher
 from core.perception.yolo.interface import IDetector
 from core.utils.waiter import Waiter
 from typing import Dict, List, Optional, Tuple
@@ -55,6 +56,7 @@ class RaceFlow:
         self.ocr = ocr
         self.yolo_engine = yolo_engine
         self.waiter = waiter
+        self._banner_matcher = RaceBannerMatcher()
 
     def _ensure_in_raceday(
         self, *, reason: str | None = None, from_raceday=False
@@ -179,12 +181,35 @@ class RaceFlow:
             if not found after scrolling up to max_scrolls, return (None, True) without fallback.
 
         """
-        MINIMUM_RACE_OCR_MATCH = 0.91
+        MINIMUM_RACE_OCR_MATCH = 1
         MIN_STARS = 2
+        # OCR-based gating: minimum OCR score to accept a candidate during tie-breaks.
+        OCR_DISCARD_MIN = 0.3
+        # OCR signal weight to gently separate close candidates in the tie-breaker.
+        OCR_SCORE_WEIGHT = 0.3
         moved_cursor = False
         did_scroll = False
         first_top_xyxy = None
 
+        def clean_race_name(st: str) -> str:
+            n_txt = (
+                st.upper()
+                .replace("RIGHT", "")
+                .replace("TURT", "TURF")
+                .replace("DIRF", "DIRT")
+                .replace("LEFT", "")
+                .replace("INNER", "")
+                .replace("1NNER", "")
+                .replace("OUTER", "")
+                .replace("/", "")
+                .strip()
+            )
+            n_txt = _normalize_ocr(n_txt)
+            # remove isolated characters for example 'turf f 1b00' -> 'turf 1b00' we removed the isolated 'f'
+            words = n_txt.split()
+            cleaned_words = [word.strip() for word in words if len(word) > 1]
+            n_txt = ' '.join(cleaned_words).strip()
+            return n_txt
         best_non_g1: Optional[DetectionDict] = None
         best_rank: int = -1
         best_y: float = 1e9
@@ -268,42 +293,6 @@ class RaceFlow:
                 pass
             return None
 
-        def _tm_score(canvas: Image.Image, template_path: Path) -> float:
-            try:
-                can_bgr = to_bgr(canvas)
-                can_gray = cv2.cvtColor(can_bgr, cv2.COLOR_BGR2GRAY)
-                tmpl_bgr = cv2.imread(str(template_path), cv2.IMREAD_COLOR)
-                if tmpl_bgr is None:
-                    return 0.0
-                tmpl_gray = cv2.cvtColor(tmpl_bgr, cv2.COLOR_BGR2GRAY)
-                th, tw = tmpl_gray.shape[:2]
-                H, W = can_gray.shape[:2]
-                if H < th or W < tw:
-                    scale = min(H / max(th, 1), W / max(tw, 1)) * 0.95
-                    if scale <= 0:
-                        return 0.0
-                    tmpl_gray = cv2.resize(
-                        tmpl_gray,
-                        (max(1, int(tw * scale)), max(1, int(th * scale))),
-                        interpolation=cv2.INTER_AREA,
-                    )
-                    th, tw = tmpl_gray.shape[:2]
-                    if H < th or W < tw:
-                        return 0.0
-                res = cv2.matchTemplate(can_gray, tmpl_gray, cv2.TM_CCOEFF_NORMED)
-                return float(res.max()) if res.size > 0 else 0.0
-            except Exception:
-                return 0.0
-
-        def _phash_sim(a: Image.Image, b: Image.Image) -> float:
-            try:
-                ha = imagehash.phash(a)
-                hb = imagehash.phash(b)
-                dist = ha - hb
-                return max(0.0, 1.0 - (float(dist) / 64.0))
-            except Exception:
-                return 0.0
-
         seen_title_counts: Dict[str, int] = {}
 
         for scroll_j in range(max_scrolls + 1):
@@ -371,65 +360,33 @@ class RaceFlow:
                         except Exception:
                             txt = ""
 
-                        best_score_here = 0.0
-                        txt_split = txt.split(" ")
-                        if len(expected_cards) == 1 and len(txt_split) >= 4:
-                            expected_title, expected_rank = expected_cards[0]
-                            txt_like_built = (
-                                f"{txt_split[0]} {txt_split[1]} {txt_split[2]} {txt_split[3].strip()}"
-                                .upper()
-                            )
-                            if (
-                                badge_label.upper() == expected_rank.upper()
-                                and txt_like_built == expected_title.upper()
-                            ):
-                                best_score_here = 2.0
+                        best_score_here = 0
+                        varies_token = clean_race_name("varies")
+                        txt = clean_race_name(txt)
+                        for expected_title, expected_rank in expected_cards:
+                            expected_title_n = clean_race_name(expected_title)
+                            s = fuzzy_ratio(txt, expected_title_n.upper())
 
-                        if best_score_here == 0:
-
-                            def clean_race_name(st: str) -> str:
-                                n_txt = (
-                                    st.upper()
-                                    .replace("RIGHT", "")
-                                    .replace("TURT", "TURF")
-                                    .replace("DIRF", "DIRT")
-                                    .replace("LEFT", "")
-                                    .replace("INNER", "")
-                                    .replace("1NNER", "")
-                                    .replace("OUTER", "")
-                                    .replace("/", "")
-                                    .strip()
-                                )
-                                n_txt = _normalize_ocr(n_txt)
-                                return n_txt
-
-                            txt = clean_race_name(txt)
-                            for expected_title, expected_rank in expected_cards:
-                                expected_title_n = clean_race_name(expected_title)
-                                s = fuzzy_ratio(txt, expected_title_n.upper())
-
-                                if "varies" in expected_title_n:
-                                    tokens_actual = txt.split()
-                                    tokens_expected = [
-                                        token
-                                        for token in expected_title_n.split()
-                                        if token and token != "varies"
-                                    ]
-                                    if tokens_expected and tokens_actual:
-                                        matched = sum(
-                                            1 for token in tokens_expected if token in tokens_actual
-                                        )
-                                        if matched:
-                                            token_ratio = matched / len(tokens_expected)
-                                            if matched == len(tokens_expected):
-                                                token_ratio += 0.15
-                                            s = max(s, token_ratio)
-                                if expected_rank in ("G1", "G2", "G3", "OP", "EX"):
-                                    if badge_label.upper() == expected_rank.upper():
-                                        s += 0.10
-                                    elif badge_label != "UNK":
-                                        s -= 0.20
-                                best_score_here = max(best_score_here, s)
+                            if varies_token in expected_title_n:
+                                tokens_actual = txt.split()
+                                tokens_expected = [
+                                    token
+                                    for token in expected_title_n.split()
+                                    if token and token != varies_token
+                                ]
+                                if tokens_expected and tokens_actual:
+                                    matched = sum(
+                                        1 for token in tokens_expected if token in tokens_actual
+                                    )
+                                    if matched:
+                                        token_ratio = matched / len(tokens_expected)
+                                        if matched == len(tokens_expected):
+                                            token_ratio += 0.15
+                                        s = max(s, token_ratio)
+                            if expected_rank in ("G1", "G2", "G3", "OP", "EX"):
+                                if badge_label.upper() != expected_rank.upper() and badge_label != "UNK":
+                                    s -= 0.20
+                            best_score_here = max(best_score_here, s)
 
                         if best_named is None or best_score_here > best_named[1]:
                             best_named = (sq, best_score_here)
@@ -437,68 +394,61 @@ class RaceFlow:
                             page_best = (sq, best_score_here)
                         page_scores.append((sq, best_score_here))
 
-                        if seek_title and best_score_here >= MINIMUM_RACE_OCR_MATCH:
-                            cnt = seen_title_counts.get(seek_title, 0) + 1
-                            seen_title_counts[seek_title] = cnt
-                            logger_uma.info(
-                                "[race] '%s' candidate #%d on page (idx=%d, score=%.2f, badge=%s, desired_order=%d)",
-                                seek_title,
-                                cnt,
-                                idx_on_page,
-                                best_score_here,
-                                badge_label,
-                                desired_order,
-                            )
-                            if cnt == desired_order:
-                                pick = sq
-                                ymid = (pick["xyxy"][1] + pick["xyxy"][3]) / 2.0
-                                need_click = True
-                                if (
-                                    (not did_scroll)
-                                    and first_top_xyxy is not None
-                                    and tuple(pick["xyxy"]) == first_top_xyxy
-                                ):
-                                    need_click = False
-                                logger_uma.info(
-                                    "[race] picked desired '%s' at required order=%d (y=%.1f)",
-                                    desired_race_name,
-                                    desired_order,
-                                    ymid,
-                                )
-                                return pick, need_click
-
                     if page_scores:
                         page_scores.sort(key=lambda t: t[1], reverse=True)
-                        if (
-                            len(page_scores) >= 2
-                            and (page_scores[0][1] - page_scores[1][1]) <= 0.03
-                        ):
-                            tpath = _resolve_template_path(desired_race_name, date_key)
-                            if tpath and tpath.exists():
-                                try:
-                                    tpl_img = Image.open(tpath).convert("RGB")
-                                    best_i, best_sim = -1, -1.0
-                                    for i, (cand_sq, base_s) in enumerate(page_scores[:4]):
-                                        roi_pil = crop_pil(game_img, cand_sq["xyxy"], pad=0)
-                                        tm = _tm_score(roi_pil, tpath)
-                                        ph = _phash_sim(roi_pil, tpl_img)
-                                        sim = 0.7 * tm + 0.3 * ph
-                                        if sim > best_sim:
-                                            best_sim, best_i = sim, i
-                                    if best_i >= 0:
-                                        # Get the current score and ensure it's a float before adding
-                                        current_score = float(page_scores[best_i][1])
-                                        # Create a new tuple with the updated score
-                                        updated_entry = (page_scores[best_i][0], current_score + 0.10)
-                                        page_scores[best_i] = updated_entry
-                                        page_scores.sort(key=lambda t: t[1], reverse=True)
-                                        logger_uma.info(
-                                            "[race] template tie-breaker applied for '%s' (bonus +0.10, sim=%.3f)",
-                                            desired_race_name,
-                                            best_sim,
+
+                        try:
+                            card_candidates = [RaceIndex.banner_template(desired_race_name)]
+                            card_candidates = [c for c in card_candidates if c]
+                            
+
+                            if card_candidates:
+                                for idx, (cand_sq, base_score) in enumerate(page_scores[:4]):
+                                    sx1, sy1, sx2, sy2 = cand_sq["xyxy"]
+                                    badge = next((b for b in badges if inside(b["xyxy"], cand_sq["xyxy"], pad=3)), None)
+
+                                    if badge:
+                                        bx1, _, _, _ = badge["xyxy"]
+                                        roi_xyxy = (sx1, sy1, max(sx1 + 4, bx1 - 2), sy2)
+                                    else:
+                                        roi_xyxy = (sx1, sy1, sx1 + int((sx2 - sx1) * 0.55), sy2)
+
+                                    roi_img = crop_pil(game_img, roi_xyxy, pad=0)
+                                    # OCR over the ROI to decide keep/discard and to add a small boost
+
+                                    try:
+                                        roi_txt_raw = (self.ocr.text(roi_img) or "").strip()
+                                    except Exception:
+                                        roi_txt_raw = ""
+                                    roi_txt = clean_race_name(roi_txt_raw)
+                                    # Compare ROI OCR against our expected titles
+                                    best_ocr = 0.0
+                                    varies_token = clean_race_name("varies")
+                                    expected_title_desired = clean_race_name(desired_race_name)
+                                    best_ocr = fuzzy_ratio(roi_txt, expected_title_desired.upper())
+                                    match = self._banner_matcher.best_match(roi_img, candidates=[c["name"] for c in card_candidates], )
+                                    match_score = match.score if match else 0.0
+                                    # Keep/discard using OCR only
+                                    if best_ocr < OCR_DISCARD_MIN and match_score < 0.5:
+                                        adjusted_score = -1.0  # hard discard so it won't be picked
+                                    else:
+                                        adjusted_score = (base_score * 0.5) + (best_ocr * 0.2) + (match_score * 0.5)  # extra 0.2
+                                        logger_uma.debug(
+                                            "[race] Candidate boosted by OCR: base=%.3f, ocr=%.3f (w=%.2f) → total=%.3f | text='%s'",
+                                            base_score,
+                                            best_ocr,
+                                            OCR_SCORE_WEIGHT,
+                                            adjusted_score,
+                                            roi_txt,
                                         )
-                                except Exception as e:
-                                    logger_uma.debug("[race] template tie-breaker failed: %s", e)
+                                    page_scores[idx] = (cand_sq, adjusted_score)
+
+                                page_scores.sort(key=lambda t: t[1], reverse=True)
+                            else:
+                                # Not a special case, ignoring OCR and template matching for optimization, remove optimization in future if we will have much more of these cases
+                                pass
+                        except Exception as e:
+                            logger_uma.debug("[race] banner tie-breaker failed: %s", e)
 
                         top_sq, top_score = page_scores[0]
                         if top_score >= MINIMUM_RACE_OCR_MATCH:
