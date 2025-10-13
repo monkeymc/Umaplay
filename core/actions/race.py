@@ -648,16 +648,20 @@ class RaceFlow:
                     prefer_bottom=False,
                     tag="race_lobby_race_confirm_try",
                 ):
-                    time.sleep(0.12)
+                    logger_uma.debug("[race] Clicked RACE confirmation")
+                    time.sleep(0.5)
                 # If we already transitioned into race (skip buttons), stop waiting.
                 if self.waiter.seen(
                     classes=("button_skip",), tag="race_lobby_seen_skip"
                 ):
+                    logger_uma.debug("[race] Seen skip buttons, breaking to click them")
                     break
                 time.sleep(0.5)
-
+            time.sleep(1)
+            logger_uma.debug("[race] Starting skip loop")
             # Greedy skip: keep pressing while present; stop as soon as 'CLOSE' or 'NEXT' shows.
             closed_early = False
+            skip_clicks = 0
             t0 = time.time()
             while (time.time() - t0) < 12.0:
                 # Early-exit conditions:
@@ -670,11 +674,14 @@ class RaceFlow:
                     tag="race_trophy_try_close",
                 ):
                     closed_early = True
+                    logger_uma.debug("[race] Clicked close Trophy button")
                     break
                 #  - next visible → stop skipping; later logic will handle NEXT
                 if self.waiter.seen(
-                    classes=("button_green",), tag="race_skip_probe_next"
-                ):
+                    classes=("button_green",), tag="race_skip_probe_next",
+                    conf_min=0.65,
+                ) and skip_clicks > 2:
+                    logger_uma.debug("[race] Seen next button while looking for skip, breaking to click it")
                     break
 
                 # Otherwise try to click a skip on this frame.
@@ -684,9 +691,11 @@ class RaceFlow:
                     img, dets = self._collect("race_skip_followup")
                     sk = bottom_most(find(dets, "button_skip"))
                     if sk:
+                        skip_clicks += 1
                         self.ctrl.click_xyxy_center(
                             sk["xyxy"], clicks=random.randint(3, 5)
                         )
+                        logger_uma.debug("[race] Clicked skip button")
                     continue
                 time.sleep(0.12)
 
