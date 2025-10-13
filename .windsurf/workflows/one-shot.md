@@ -84,5 +84,5 @@ When a diff or partial snippet is provided:
 ---
 
 **Goal:**  
-Complete the edit *now*, accurately and with minimal footprint — **no planning, no delay, no unnecessary reasoning.**
+Complete the edit *now*, accurately and with minimal footprint — **no planning, no delay, no unnecessary reasoning. Just Do It**
 ```
