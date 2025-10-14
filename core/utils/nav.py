@@ -126,7 +126,7 @@ def advance_sequence_with_mid_taps(
         sleep(sleep_after_advance)
         img, _ = collect_snapshot(waiter, yolo_engine, tag=f"{tag_prefix}_tap")
         random_center_tap(
-            ctrl, img, clicks=random.randint(*taps_each_click), dev_frac=tap_dev_frac
+            ctrl, img, clicks=random.randint(2, 3), dev_frac=tap_dev_frac
         )
         advances += 1
         sleep(sleep_after_advance / 2)
