@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple, Union, overload
 
 from PIL import Image
 
@@ -64,6 +64,42 @@ class Waiter:
     # Public API
     # ---------------------------
 
+    @overload
+    def click_when(
+        self,
+        *,
+        classes: Sequence[str],
+        texts: Optional[Sequence[str]] = None,
+        threshold: float = 0.68,
+        prefer_bottom: bool = False,
+        timeout_s: Optional[float] = None,
+        poll_interval_s: Optional[float] = None,
+        tag: Optional[str] = None,
+        clicks: int = 1,
+        allow_greedy_click: bool = True,
+        forbid_texts: Optional[Sequence[str]] = None,
+        forbid_threshold: float = 0.65,
+        return_object: bool = False,
+    ) -> bool: ...
+
+    @overload
+    def click_when(
+        self,
+        *,
+        classes: Sequence[str],
+        texts: Optional[Sequence[str]] = None,
+        threshold: float = 0.68,
+        prefer_bottom: bool = False,
+        timeout_s: Optional[float] = None,
+        poll_interval_s: Optional[float] = None,
+        tag: Optional[str] = None,
+        clicks: int = 1,
+        allow_greedy_click: bool = True,
+        forbid_texts: Optional[Sequence[str]] = None,
+        forbid_threshold: float = 0.65,
+        return_object: bool = True,
+    ) -> Tuple[bool, Optional[DetectionDict]]: ...
+
     def click_when(
         self,
         *,
@@ -79,19 +115,24 @@ class Waiter:
         # NEW: text exceptions
         forbid_texts: Optional[Sequence[str]] = None,
         forbid_threshold: float = 0.65,
-    ) -> bool:
+        return_object: bool = False,
+    ) -> Union[bool, Tuple[bool, Optional[DetectionDict]]]:
         """
         Wait until an object of `classes` appears and click it using the cascade.
 
         Parameters (new)
         ----------------
         forbid_texts:
-            A list of phrases that, if matched (fuzzy) by the candidate’s OCR text,
+            A list of phrases that, if matched (fuzzy) by the candidate's OCR text,
             will prevent clicking that candidate.
         forbid_threshold:
             Fuzzy ratio threshold for a phrase to be considered a match in `forbid_texts`.
+        return_object:
+            If True, returns (did_click, clicked_object) tuple instead of just bool.
+            The clicked_object is the DetectionDict that was clicked, or None if no click.
 
         Returns True if clicked; False if timed out.
+        If return_object=True, returns (bool, Optional[DetectionDict]) tuple.
         """
         if not classes:
             raise ValueError(
@@ -123,7 +164,7 @@ class Waiter:
                         )
                     else:
                         self.ctrl.click_xyxy_center(pick["xyxy"], clicks=clicks)
-                        return True
+                        return (True, pick) if return_object else True
 
                 # 2) Bottom-most preference (try from bottom to top; skip forbiddens)
                 if prefer_bottom and allow_greedy_click:
@@ -141,7 +182,7 @@ class Waiter:
                             break
                     if chosen is not None:
                         self.ctrl.click_xyxy_center(chosen["xyxy"], clicks=clicks)
-                        return True
+                        return (True, chosen) if return_object else True
                     # All bottom candidates forbidden → continue polling.
 
                 # 3) OCR disambiguation by positive `texts` (ignoring forbiddens)
@@ -151,7 +192,7 @@ class Waiter:
                     )
                     if pick is not None:
                         self.ctrl.click_xyxy_center(pick["xyxy"], clicks=clicks)
-                        return True
+                        return (True, pick) if return_object else True
                     # If OCR didn't reach threshold or all candidates were forbidden, continue polling.
 
             if (time.time() - t0) >= timeout:
@@ -161,7 +202,7 @@ class Waiter:
                     logger_uma.debug(
                         "[waiter] timeout after %.2fs (tag=%s)", timeout, tag
                     )
-                return False
+                return (False, None) if return_object else False
 
             time.sleep(interval)
 

@@ -112,7 +112,7 @@ def advance_sequence_with_mid_taps(
     """
     advances = 0
     for i in range(iterations_max):
-        did = waiter.click_when(
+        did, clicked_obj = waiter.click_when(
             classes=(advance_class,),
             texts=advance_texts,
             prefer_bottom=True,
@@ -120,16 +120,28 @@ def advance_sequence_with_mid_taps(
             timeout_s=3.0,
             clicks=random.randint(*taps_each_click),
             tag=f"{tag_prefix}_advance",
+            return_object=True,
         )
         if not did and i > 5:
             break
         sleep(sleep_after_advance)
-        img, _ = collect_snapshot(waiter, yolo_engine, tag=f"{tag_prefix}_tap")
-        random_center_tap(
-            ctrl, img, clicks=random.randint(2, 3), dev_frac=tap_dev_frac
-        )
+        # Click on the same position as the button we just clicked
+        if clicked_obj:
+            # Adjust xyxy coordinates with offset_y
+            x1, y1, x2, y2 = clicked_obj["xyxy"]
+            adjusted_xyxy = (x1, y1 + 10, x2, y2 + 10)
+            ctrl.click_xyxy_center(
+                adjusted_xyxy,
+                clicks=random.randint(2, 3),
+            )
+        else:
+            # Fallback to center tap if no object was clicked
+            img, _ = collect_snapshot(waiter, yolo_engine, tag=f"{tag_prefix}_tap")
+            random_center_tap(
+                ctrl, img, clicks=random.randint(2, 3), dev_frac=tap_dev_frac
+            )
         advances += 1
-        sleep(sleep_after_advance / 2)
+        sleep(sleep_after_advance / 1.2)
     return advances
 
 
