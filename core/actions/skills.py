@@ -390,7 +390,7 @@ class SkillsFlow:
         s = s.translate(TABLE)
         return s
 
-    def _confirm_learn_close_back_flow(self, waiting_popup: float = 1.0) -> None:
+    def _confirm_learn_close_back_flow(self, waiting_popup: float = 1.0) -> bool:
         """
         Confirm → Learn → Close → Back using Waiter (OCR disambiguation under the hood).
         """

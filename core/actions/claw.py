@@ -693,20 +693,21 @@ class ClawGame:
 
                 # Periodic debug frame
                 if (poll_idx % max(1, self.cfg.debug_every_n_polls)) == 0:
-                    cx_target_dbg = (
-                        _center(chosen["xyxy"])[0] if chosen is not None else None
-                    )
-                    align_tol_dbg = (
-                        (self.cfg.align_tol_frac_of_claw * tol_scale) * cw
-                        if chosen
-                        else None
-                    )
-                    right_bias_dbg = (
-                        (self.cfg.right_bias_frac_of_claw * bias_scale) * cw
-                        if chosen
-                        else None
-                    )
-                    target_x_dbg = (cx_target_dbg + right_bias_dbg) if chosen else None
+                    cx_target_dbg = None
+                    align_tol_dbg = None
+                    right_bias_dbg = None
+                    target_x_dbg = None
+                    release_x_dbg = None
+                    if chosen is not None:
+                        cx_target_dbg = _center(chosen["xyxy"])[0]
+                        align_tol_dbg = (
+                            self.cfg.align_tol_frac_of_claw * tol_scale
+                        ) * cw
+                        right_bias_dbg = (
+                            self.cfg.right_bias_frac_of_claw * bias_scale
+                        ) * cw
+                        target_x_dbg = cx_target_dbg + right_bias_dbg
+                        release_x_dbg = target_x_dbg - align_tol_dbg
                     cx_pred_dbg = cx_claw + max(
                         -self.cfg.max_pred_px,
                         min(
@@ -732,7 +733,7 @@ class ClawGame:
                         cx_claw=cx_claw,
                         cx_pred=cx_pred_dbg,
                         target_x=target_x_dbg,
-                        release_x=(target_x_dbg - align_tol_dbg) if chosen else None,
+                        release_x=release_x_dbg,
                     )
 
                 if released:

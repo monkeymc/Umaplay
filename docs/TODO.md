@@ -6,21 +6,22 @@ This organizes the mixed notes into a clear, actionable backlog. Items are group
 NEXT WORK (towards 0.3.0)
 
 0.2.1
-New cards / New trainings:
-- Automate with Chatgpt pipeline the new cards integration. With python pipeline too.
+New cards / New trainees:
+- Fuji Kiseki, Gold City, Special Week (Summer), Maruzensky (Summer)
 
 0.2.2
 Skill buying
-- Bug recognizing titles (75% of accuracy)
-- Improve Control for double buying of single circle skills
-
-0.2.3
-Team trials:
-- Stale state handling storing counting to not make more count click than expected
+- Improve Control for double buying of single circle skills:
+"""
+So, in our screen where we are buying skills, we have a pseudo-control to control how much time we need to buy, and that is working. The problem is that the next time that we visit the skills, that is reset, so we are buying again the same skills. So maybe we need to persist in a higher level, maybe at player level, what skills have we bought, and so the next time... So we have this memory of the skills that we bought, that were enabled, and given this, we can control to not buy more, especially the skills that has one single circle. So we only buy one, and the next time we match with the OCR we just can ignore, so we need this kind of memory to understand which skills we bought.
+"""
 
 0.3.0
 Bot Strategy / Policy:
-- Hint support card priority checker
+- Hint support card priority checker:
+"""
+So now we are detecting if we have a tile but we will like to and also we are detecting events for certain super cards and we have all the super cards cards in in the web public and here's the thing not all the hints are available sometimes we have a deck of six cards and we have three cards that are very important to get all the hints and the other ones well we we should ignore them because they will not provide a good skill for for the Yuma so we need to figure out a way that we can not even not only know that is a hint card but also if this hint card looks like looks like a particular super card so we can have a priority of support cards and also a blacklist for which cards ignore the hint I was thinking in training a classifier we will have a lot of we will have a lot of cards in the future we only we only have one image per card so maybe we can do a kind of data augmentation and then we can pseudo create the circle around the face and we can start creating this classifier so each time we we notice we have a hint we can run the classifier and check if that is in the priority list that will be also connected in the web UI and if that's the case we can add the extra value to the hint otherwise we can use the the default value for hint even if hint is important is enabled
+"""
 - Lookup toggle: allow skipping **scheduled race** if training has **2+ rainbows**
 - “Check first” at lobby: pre-turn heuristics before going to infirmaty, rest, etc. Pre lookup
 - “Hint” robustness: reduce misses (tune ROI, add ensemble check, raise min conf with a small hysteresis).
@@ -54,6 +55,7 @@ Team trials:
 
 Skills:
   - Add auto buy best option based on running style (with a premade priority list)
+  - Bug recognizing titles (75% of accuracy)
 
 ================================================================================
 LATER (nice-to-have / backlog)
@@ -88,43 +90,9 @@ row** and racing at **0 energy**.
 IMPLEMENTED — PENDING VALIDATION
 --------------------------------
 
-Bot for Auto Team Trials (Experimental)
-- Auto-play with F7
-- Shop purchase handling
-- Session resume support
+Events
+- Added SSR: Mejiro Ryan (GUTS), Narita Brian (SPD), Daiwa Scarlet (PWR), Winning Ticket (STA), Sweep Tosho (SPD), Mejiro Ardan (WIT)
 
-Bot for Auto Daily Races (Experimental)
-- Auto-play with F8
-- Shop purchase handling
-- Session resume support
+Team Trials
+- Bug fix: instead of clicking races, now clicks around same button, solves Stale state
 
-AI Model
-- Retrained with 100+ additional images
-- Improved detection of rainbows and support cards in general
-- Added support_tazuna card detection
-
-Bot for Training -> Strategy / Policy:
-- Undertrain stat % now configurable in web UI
-- Improved undertrain distribution (focuses on top 3 stats)
-- Option to disable racing if no good options available
-- Improved summer training logic (prevents energy overcap)
-
-Race Scheduler Fixes
-- Fixed race detection for events with similar conditions (e.g., Tokyo Yushun vs Japanese Oaks)
-- Better handling of races with 'varies' in conditions gametora DB (e.g., JBC Ladies' Classic)
-- Fixed 75% scheduled race skip rate issue
-
-Skill buying
-- Optimized skill buy check, using intervals to avoid checking too often.
-
-Web UI
-- Moved hint configuration to presets
-- Fixed/Wired custom failure/rest % settings
-- Preset importer now backward compatible
-- Automatic browser opening on start at 127.0.0.1 (not the same as localhost, they hold different configs)
-
-General Bug Fixes
-- Fixed trainee options not overriding general settings
-- Faster skill buying with early stop didn't worked, solved with 'patiente' strategy.
-- Better ambiguous text matching for events (e.g. How should I respond of oguri cap, I am enough / am I enough? of Rice shower)
-- Debug folder was growing in GB, added automatic cleanup at start. So it auto cleans that folder if it has more than 250 MB.

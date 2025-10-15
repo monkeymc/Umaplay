@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple, Union
 
 import random
 import time
@@ -55,7 +55,15 @@ class IController(ABC):
         ...
 
     @abstractmethod
-    def scroll(self, amount: int) -> bool:
+    def scroll(
+        self,
+        delta_or_xyxy: Union[int, XYXY],
+        *,
+        steps: int = 1,
+        duration_range: Optional[Tuple[float, float]] = None,
+        end_hold_range: Optional[Tuple[float, float]] = None,
+        **kwargs: Any,
+    ) -> bool:
         """Scrolling function"""
         ...
 

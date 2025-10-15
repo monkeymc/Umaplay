@@ -29,7 +29,15 @@ class DetectionDict(TypedDict):
 
 
 ScreenName = Literal[
-    "Raceday", "Inspiration", "Lobby", "LobbySummer", "Event", "Training", "Unknown"
+    "Raceday",
+    "Inspiration",
+    "Lobby",
+    "LobbySummer",
+    "Event",
+    "Training",
+    "FinalScreen",
+    "ClawMachine",
+    "Unknown",
 ]
 
 
@@ -46,6 +54,17 @@ class ScreenInfo(TypedDict, total=False):
     training_buttons: int
     tazuna: bool
     infirmary: bool
+    event_choices: int
+    has_inspiration: bool
+    rest: bool
+    rest_summer: bool
+    recreation: bool
+    recreation_present: bool
+    race_day: bool
+    has_lobby_skills: bool
+    race_after_next: bool
+    has_button_claw_action: bool
+    has_claw: bool
     counts: Dict[str, int]
 
 

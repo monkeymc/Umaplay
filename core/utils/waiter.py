@@ -14,9 +14,9 @@ from core.utils.geometry import crop_pil
 from core.utils.logger import logger_uma
 from core.utils.text import fuzzy_contains, fuzzy_ratio
 from core.utils.yolo_objects import filter_by_classes as det_filter
+from core.types import DetectionDict
 
-DetectionDict = dict
-XYXY = Tuple[float, float, float, float]
+
 
 
 @dataclass(frozen=True)
@@ -239,6 +239,9 @@ class Waiter:
         if not texts:
             return bool(candidates)
 
+        if not self.ocr:
+            return False
+
         for d in candidates:
             try:
                 roi = d.get("xyxy")
@@ -358,8 +361,8 @@ class Waiter:
         ignoring any candidate that matches `forbid_texts`.
         Returns None if no candidate reaches `threshold`.
         """
-        texts = self._norm_seq(texts)
-        if not texts or not self.ocr:
+        norm_texts = self._norm_seq(texts)
+        if not norm_texts or not self.ocr:
             return None
 
         best_d, best_s = None, 0.0
@@ -374,7 +377,7 @@ class Waiter:
             ):
                 continue
             txt_split = txt.split(" ")
-            for t in texts:
+            for t in norm_texts:
                 for t_split in txt_split:
                     if t.upper() == t_split.upper():
                         # Direct match
@@ -382,7 +385,7 @@ class Waiter:
                         if s > best_s:
                             best_d, best_s = d, s
 
-            s = max(fuzzy_ratio(txt, t) for t in texts)
+            s = max(fuzzy_ratio(txt, t) for t in norm_texts)
             if s > best_s:
                 best_d, best_s = d, s
 

@@ -128,8 +128,12 @@ def tighten_to_pill(banner_img: Image.Image) -> tuple[int, int, int, int]:
     Hc, Sc, Vc = cv.split(hsv)
 
     # Thresholds tuned to the UI palette (gray/white rounded chip)
-    mask_v = cv.inRange(Vc, 170, 255)  # bright
-    mask_s = cv.inRange(Sc, 0, 90)  # low saturation
+    lower_v = np.array([170], dtype=Vc.dtype)
+    upper_v = np.array([255], dtype=Vc.dtype)
+    mask_v = cv.inRange(Vc, lower_v, upper_v)  # bright
+    lower_s = np.array([0], dtype=Sc.dtype)
+    upper_s = np.array([90], dtype=Sc.dtype)
+    mask_s = cv.inRange(Sc, lower_s, upper_s)  # low saturation
     mask = cv.bitwise_and(mask_v, mask_s)
 
     # Ignore top third (title area)
