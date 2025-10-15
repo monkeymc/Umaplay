@@ -19489,5 +19489,478 @@
 				"default_preference": 2
 			}
 		]
+	},
+	{
+		"type": "support",
+		"name": "Mejiro Ryan",
+		"rarity": "SSR",
+		"attribute": "GUTS",
+		"id": "Mejiro Ryan_GUTS_SSR",
+		"choice_events": [
+			{
+				"type": "chain",
+				"chain_step": 1,
+				"name": "Flustered Afternoon Tea!",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"mood": 1
+						}
+					],
+					"2": [
+						{
+							"wit": 10,
+							"skill_pts": 15,
+							"hints": [
+								"Pace Chaser Savvy ○"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "My Muscles and Me, Onward to Tomorrow!",
+				"options": {
+					"1": [
+						{
+							"energy": -10,
+							"power": 15,
+							"bond": 5
+						}
+					],
+					"2": [
+						{
+							"energy_max": 4,
+							"power": 5,
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "It's Not Like I Like Romance!",
+				"options": {
+					"1": [
+						{
+							"hints": [
+								"Pace Strategy"
+							],
+							"bond": 5
+						}
+					],
+					"2": [
+						{
+							"energy": 30,
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "support",
+		"name": "Narita Brian",
+		"rarity": "SSR",
+		"attribute": "SPD",
+		"id": "Narita Brian_SPD_SSR",
+		"choice_events": [
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Student Council Member!",
+				"options": {
+					"1": [
+						{
+							"mood": 1,
+							"speed": 5,
+							"bond": 5
+						}
+					],
+					"2": [
+						{
+							"energy_max": 4,
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Lone Wolf",
+				"options": {
+					"1": [
+						{
+							"speed": 3,
+							"stamina": 3,
+							"power": 3,
+							"bond": 5
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Lone Wolf"
+							],
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 1
+			}
+		]
+	},
+	{
+		"type": "support",
+		"name": "Daiwa Scarlet",
+		"rarity": "SSR",
+		"attribute": "PWR",
+		"id": "Daiwa Scarlet_PWR_SSR",
+		"choice_events": [
+			{
+				"type": "chain",
+				"chain_step": 1,
+				"name": "Number One Reactions?",
+				"options": {
+					"1": [
+						{
+							"speed": 3,
+							"power": 3,
+							"wit": 3,
+							"bond": 5
+						}
+					],
+					"2": [
+						{
+							"energy": 15
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "I'm Going to Win Tomorrow!",
+				"options": {
+					"1": [
+						{
+							"wit": 10,
+							"bond": 5
+						}
+					],
+					"2": [
+						{
+							"mood": 1,
+							"skill_pts": 15,
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "This Is Nothing!",
+				"options": {
+					"1": [
+						{
+							"hints": [
+								"Stamina to Spare"
+							],
+							"bond": 5
+						}
+					],
+					"2": [
+						{
+							"energy": 20,
+							"mood": 1,
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "support",
+		"name": "Sweep Tosho",
+		"rarity": "SSR",
+		"attribute": "SPD",
+		"id": "Sweep Tosho_SPD_SSR",
+		"choice_events": [
+			{
+				"type": "chain",
+				"chain_step": 1,
+				"name": "Fickle Genius Magical Girl Sweepy ☆",
+				"options": {
+					"1": [
+						{
+							"mood": 1,
+							"hints": [
+								"Straightaway Spurt"
+							],
+							"bond": 5
+						},
+						{
+							"mood": -1,
+							"wit": 5,
+							"bond": 5
+						}
+					],
+					"2": [
+						{
+							"skill_pts": 15,
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "chain",
+				"chain_step": 2,
+				"name": "A Drop of Black Magic ☆",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"skill_pts": 20,
+							"bond": 5
+						},
+						{
+							"energy": -10,
+							"skill_pts": 15,
+							"bond": 5
+						}
+					],
+					"2": [
+						{
+							"wit": 10,
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Miracle ☆ Escape!",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"speed": 5,
+							"bond": 5
+						}
+					],
+					"2": [
+						{
+							"energy": -10,
+							"speed": 20,
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Wonderful ☆ Mistake!",
+				"options": {
+					"1": [
+						{
+							"energy": -15,
+							"skill_pts": 40,
+							"bond": 5
+						},
+						{
+							"energy": -20,
+							"skill_pts": 40,
+							"bond": 5
+						}
+					],
+					"2": [
+						{
+							"status": "Charming ○",
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "support",
+		"name": "Winning Ticket",
+		"rarity": "SSR",
+		"attribute": "STA",
+		"id": "Winning Ticket_STA_SSR",
+		"choice_events": [
+			{
+				"type": "chain",
+				"chain_step": 2,
+				"name": "Tickezo★Friendship!",
+				"options": {
+					"1": [
+						{
+							"stamina": 3,
+							"guts": 3,
+							"hints": [
+								"1,500,000 CC"
+							],
+							"bond": 10
+						}
+					],
+					"2": [
+						{
+							"energy": 10,
+							"hints": [
+								"Maverick ○"
+							],
+							"bond": -5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Full-Power Muscles!",
+				"options": {
+					"1": [
+						{
+							"stamina": 5,
+							"skill_pts": 15,
+							"bond": 5
+						}
+					],
+					"2": [
+						{
+							"mood": 1,
+							"skill_pts": 15,
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Full-Power Racing!",
+				"options": {
+					"1": [
+						{
+							"hints": [
+								"Late Surger Corners ○"
+							],
+							"bond": 5
+						}
+					],
+					"2": [
+						{
+							"skill_pts": 30,
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 2
+			}
+		]
+	},
+	{
+		"type": "support",
+		"name": "Mejiro Ardan",
+		"rarity": "SR",
+		"attribute": "WIT",
+		"id": "Mejiro Ardan_WIT_SR",
+		"choice_events": [
+			{
+				"type": "chain",
+				"chain_step": 1,
+				"name": "Special Drinks Made with Friends ♬",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"speed": 5,
+							"wit": 5,
+							"skill_pts": 10
+						},
+						{
+							"wit": 10
+						}
+					],
+					"2": [
+						{
+							"mood": 1,
+							"speed": 10
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Glass Girl Wants to Study",
+				"options": {
+					"1": [
+						{
+							"speed": 10,
+							"bond": 5
+						}
+					],
+					"2": [
+						{
+							"energy": 10,
+							"wit": 5,
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Glass Girl Wants to Play",
+				"options": {
+					"1": [
+						{
+							"speed": 10,
+							"wit": 10,
+							"bond": 5
+						}
+					],
+					"2": [
+						{
+							"hints": [
+								"Hesitant Pace Chasers"
+							],
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 1
+			}
+		]
 	}
 ]
