@@ -417,7 +417,11 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
     logger_uma.info(f"[HOTKEY] Player: press {', '.join(keys_bot)} to start/stop.")
     logger_uma.info("[HOTKEY] AgentNav: press F7=TeamTrials, F8=DailyRaces.")
 
-    # Debounce across both hook & poll paths (separate for clarity)
+    # Track which keys successfully registered hooks (to skip in polling)
+    hooked_keys = set()
+    
+    # Debounce across both hook & poll paths - INCREASED to prevent race condition
+    # between hook (trigger_on_release) and polling (while key pressed)
     last_ts_toggle = 0.0
     last_ts_team = 0.0
     last_ts_daily = 0.0
@@ -425,7 +429,8 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
     def _debounced_toggle(source: str):
         nonlocal last_ts_toggle
         now = time.time()
-        if now - last_ts_toggle < 0.35:
+        # Increased debounce from 0.35s to 0.8s to handle hook+poll race condition
+        if now - last_ts_toggle < 0.8:
             logger_uma.debug(f"[HOTKEY] Debounced toggle from {source}.")
             return
         last_ts_toggle = now
@@ -434,7 +439,7 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
     def _debounced_team(source: str):
         nonlocal last_ts_team
         now = time.time()
-        if now - last_ts_team < 0.35:
+        if now - last_ts_team < 0.8:
             logger_uma.debug(f"[HOTKEY] Debounced team-trials from {source}.")
             return
         last_ts_team = now
@@ -456,7 +461,7 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
     def _debounced_daily(source: str):
         nonlocal last_ts_daily
         now = time.time()
-        if now - last_ts_daily < 0.35:
+        if now - last_ts_daily < 0.8:
             logger_uma.debug(f"[HOTKEY] Debounced daily-races from {source}.")
             return
         last_ts_daily = now
@@ -485,6 +490,7 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
                 suppress=False,
                 trigger_on_release=True,
             )
+            hooked_keys.add(k)
             logger_uma.info(f"[HOTKEY] Hook active for '{k}'.")
         except PermissionError as e:
             logger_uma.warning(
@@ -502,6 +508,7 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
                 suppress=False,
                 trigger_on_release=True,
             )
+            hooked_keys.add(k)
             logger_uma.info(f"[HOTKEY] Hook active for '{k}'.")
         except PermissionError as e:
             logger_uma.warning(
@@ -511,6 +518,9 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
             logger_uma.warning(f"[HOTKEY] Could not register '{k}': {e}")
 
     # Polling fallback (works even when hooks fail)
+    # With increased debounce (0.8s), both hook and poll can coexist safely
+    if hooked_keys:
+        logger_uma.debug(f"[HOTKEY] Hooks registered for: {hooked_keys}. Polling also active with 0.8s debounce to prevent race condition.")
     logger_uma.debug("[HOTKEY] Polling fallback thread running…")
     try:
         while True:
