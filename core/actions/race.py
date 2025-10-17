@@ -598,14 +598,31 @@ class RaceFlow:
         """
         Handles the lobby where 'View Results' (white) and 'Race' (green) appear.
         Uses the unified Waiter API; no external polling loops.
+        Returns False if the view button cannot be found after retries.
         """
-        # Try resolving 'View Results' and whether it is active
+        # Try resolving 'View Results' with progressive retries (up to 15s total)
         view_btn = self._pick_view_results_button()
         if view_btn is None:
-            # try again just in case
-            logger_uma.warning("No view result button found, waiting for 5 s more...")
-            time.sleep(5)
-            view_btn = self._pick_view_results_button()
+            # Retry with progressive delays: 2s, 3s, 5s, 5s (total ~15s)
+            retry_delays = [2, 3, 5, 5]
+            for i, delay in enumerate(retry_delays, 1):
+                logger_uma.warning(
+                    "No view result button found, waiting %ds more (attempt %d/%d)...",
+                    delay, i, len(retry_delays)
+                )
+                time.sleep(delay)
+                view_btn = self._pick_view_results_button()
+                if view_btn is not None:
+                    logger_uma.info("View button found after %d retry attempt(s)", i)
+                    break
+        
+        # If still not found after all retries, abort the operation
+        if view_btn is None:
+            logger_uma.error(
+                "View Results button not found after ~15s of retries. "
+                "Cannot determine lobby state. Aborting race operation."
+            )
+            return False
 
         is_view_active = False
         if view_btn is not None:
@@ -628,13 +645,16 @@ class RaceFlow:
             time.sleep(random.uniform(0.3, 0.5))
         else:
             # Click green 'RACE' (prefer bottom-most; OCR disambiguation if needed)
-            self.waiter.click_when(
+            if not self.waiter.click_when(
                 classes=("button_green",),
                 texts=("RACE",),
                 prefer_bottom=True,
-                timeout_s=4,
+                timeout_s=6,
                 tag="race_lobby_race_click",
-            )
+            ):
+                logger_uma.error("[race] Race button not found after ~6s of retries. "
+                "Cannot determine lobby state. Aborting race operation.")
+                return False
             time.sleep(3)
             # Reactive second confirmation. Click as soon as popup appears,
             # or bail early if the pre-race lobby appears or skip buttons show up.

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Literal, overload
 from PIL import Image
 
 from core.perception.analyzers.mood import mood_label
@@ -319,6 +319,42 @@ def _parse_stat_segment(ocr: OCRInterface, seg_img: Image.Image) -> int:
         val = -1
 
     return val
+
+
+@overload
+def extract_stats(
+    ocr: OCRInterface,
+    game_img: Image.Image,
+    parsed_objects_screen: List[DetectionDict],
+    *,
+    conf_min: float = 0.20,
+    with_segments: Literal[False] = False,
+) -> Dict[str, int]:
+    ...
+
+
+@overload
+def extract_stats(
+    ocr: OCRInterface,
+    game_img: Image.Image,
+    parsed_objects_screen: List[DetectionDict],
+    *,
+    conf_min: float = 0.20,
+    with_segments: Literal[True],
+) -> Dict[str, Dict[str, object]]:
+    ...
+
+
+@overload
+def extract_stats(
+    ocr: OCRInterface,
+    game_img: Image.Image,
+    parsed_objects_screen: List[DetectionDict],
+    *,
+    conf_min: float = 0.20,
+    with_segments: bool,
+) -> Dict[str, int] | Dict[str, Dict[str, object]]:
+    ...
 
 
 def extract_stats(

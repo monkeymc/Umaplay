@@ -269,7 +269,7 @@ class TeamTrialsFlow:
             advance_texts=None,
             taps_each_click=(3, 4),
             tap_dev_frac=0.1,
-            sleep_after_advance=0.6,
+            sleep_after_advance=0.9,
         )
         logger_uma.debug(f"[TeamTrials] advances performed: {adv}")
         sleep(7)

@@ -1,6 +1,6 @@
 # core/controllers/steam.py
 import time
-from typing import Optional
+from typing import Any, Optional, Tuple, Union
 
 import pyautogui
 import pygetwindow as gw
@@ -10,6 +10,7 @@ import win32con
 import win32gui
 
 from core.controllers.base import IController, RegionXYWH
+from core.types import XYXY
 
 
 class SteamController(IController):
@@ -101,8 +102,34 @@ class SteamController(IController):
         except Exception:
             return None
 
-    def scroll(self, amount: int) -> None:
-        pyautogui.scroll(amount)
+    def scroll(
+        self,
+        delta_or_xyxy: Union[int, XYXY],
+        *,
+        steps: int = 1,
+        duration_range: Optional[Tuple[float, float]] = None,
+        end_hold_range: Optional[Tuple[float, float]] = None,
+        **kwargs: Any,
+    ) -> bool:
+        if isinstance(delta_or_xyxy, (tuple, list)) and len(delta_or_xyxy) == 4:
+            _, y1, _, y2 = delta_or_xyxy
+            delta = int(y2 - y1)
+        else:
+            delta = int(delta_or_xyxy)
+
+        remaining = delta
+        total_steps = max(1, int(steps))
+        for i in range(total_steps):
+            divisor = total_steps - i
+            chunk = remaining // divisor if divisor else remaining
+            if chunk == 0 and remaining != 0:
+                chunk = 1 if remaining > 0 else -1
+            pyautogui.scroll(chunk)
+            remaining -= chunk
+            if duration_range:
+                time.sleep(max(0.0, float(duration_range[0])))
+
+        return True
 
     # convenience: left half bbox in screen coords
     def left_half_bbox(self) -> Optional[RegionXYWH]:

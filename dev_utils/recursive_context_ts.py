@@ -562,20 +562,6 @@ def render_file_block(
     out.append("```")
     out.append("")
     return out
-
-
-def third_party_for_file(ts_path: Path) -> List[str]:
-    _, third_specs = parse_ts_imports(ts_path)
-    pkgs: List[str] = []
-    for spec in third_specs:
-        if spec.startswith("@"):
-            parts = spec.split("/")
-            pkgs.append("/".join(parts[:2]) if len(parts) >= 2 else spec)
-        else:
-            pkgs.append(spec.split("/", 1)[0])
-    return pkgs
-
-
 def render_markdown_full(
     target: Path,
     code_root: Path,

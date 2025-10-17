@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple, Union, overload
 
 from PIL import Image
 
@@ -14,9 +14,9 @@ from core.utils.geometry import crop_pil
 from core.utils.logger import logger_uma
 from core.utils.text import fuzzy_contains, fuzzy_ratio
 from core.utils.yolo_objects import filter_by_classes as det_filter
+from core.types import DetectionDict
 
-DetectionDict = dict
-XYXY = Tuple[float, float, float, float]
+
 
 
 @dataclass(frozen=True)
@@ -64,6 +64,42 @@ class Waiter:
     # Public API
     # ---------------------------
 
+    @overload
+    def click_when(
+        self,
+        *,
+        classes: Sequence[str],
+        texts: Optional[Sequence[str]] = None,
+        threshold: float = 0.68,
+        prefer_bottom: bool = False,
+        timeout_s: Optional[float] = None,
+        poll_interval_s: Optional[float] = None,
+        tag: Optional[str] = None,
+        clicks: int = 1,
+        allow_greedy_click: bool = True,
+        forbid_texts: Optional[Sequence[str]] = None,
+        forbid_threshold: float = 0.65,
+        return_object: bool = False,
+    ) -> bool: ...
+
+    @overload
+    def click_when(
+        self,
+        *,
+        classes: Sequence[str],
+        texts: Optional[Sequence[str]] = None,
+        threshold: float = 0.68,
+        prefer_bottom: bool = False,
+        timeout_s: Optional[float] = None,
+        poll_interval_s: Optional[float] = None,
+        tag: Optional[str] = None,
+        clicks: int = 1,
+        allow_greedy_click: bool = True,
+        forbid_texts: Optional[Sequence[str]] = None,
+        forbid_threshold: float = 0.65,
+        return_object: bool = True,
+    ) -> Tuple[bool, Optional[DetectionDict]]: ...
+
     def click_when(
         self,
         *,
@@ -79,19 +115,24 @@ class Waiter:
         # NEW: text exceptions
         forbid_texts: Optional[Sequence[str]] = None,
         forbid_threshold: float = 0.65,
-    ) -> bool:
+        return_object: bool = False,
+    ) -> Union[bool, Tuple[bool, Optional[DetectionDict]]]:
         """
         Wait until an object of `classes` appears and click it using the cascade.
 
         Parameters (new)
         ----------------
         forbid_texts:
-            A list of phrases that, if matched (fuzzy) by the candidate’s OCR text,
+            A list of phrases that, if matched (fuzzy) by the candidate's OCR text,
             will prevent clicking that candidate.
         forbid_threshold:
             Fuzzy ratio threshold for a phrase to be considered a match in `forbid_texts`.
+        return_object:
+            If True, returns (did_click, clicked_object) tuple instead of just bool.
+            The clicked_object is the DetectionDict that was clicked, or None if no click.
 
         Returns True if clicked; False if timed out.
+        If return_object=True, returns (bool, Optional[DetectionDict]) tuple.
         """
         if not classes:
             raise ValueError(
@@ -123,7 +164,7 @@ class Waiter:
                         )
                     else:
                         self.ctrl.click_xyxy_center(pick["xyxy"], clicks=clicks)
-                        return True
+                        return (True, pick) if return_object else True
 
                 # 2) Bottom-most preference (try from bottom to top; skip forbiddens)
                 if prefer_bottom and allow_greedy_click:
@@ -141,7 +182,7 @@ class Waiter:
                             break
                     if chosen is not None:
                         self.ctrl.click_xyxy_center(chosen["xyxy"], clicks=clicks)
-                        return True
+                        return (True, chosen) if return_object else True
                     # All bottom candidates forbidden → continue polling.
 
                 # 3) OCR disambiguation by positive `texts` (ignoring forbiddens)
@@ -151,7 +192,7 @@ class Waiter:
                     )
                     if pick is not None:
                         self.ctrl.click_xyxy_center(pick["xyxy"], clicks=clicks)
-                        return True
+                        return (True, pick) if return_object else True
                     # If OCR didn't reach threshold or all candidates were forbidden, continue polling.
 
             if (time.time() - t0) >= timeout:
@@ -161,7 +202,7 @@ class Waiter:
                     logger_uma.debug(
                         "[waiter] timeout after %.2fs (tag=%s)", timeout, tag
                     )
-                return False
+                return (False, None) if return_object else False
 
             time.sleep(interval)
 
@@ -197,6 +238,9 @@ class Waiter:
         texts = [t for t in (texts or []) if (t or "").strip()]
         if not texts:
             return bool(candidates)
+
+        if not self.ocr:
+            return False
 
         for d in candidates:
             try:
@@ -317,8 +361,8 @@ class Waiter:
         ignoring any candidate that matches `forbid_texts`.
         Returns None if no candidate reaches `threshold`.
         """
-        texts = self._norm_seq(texts)
-        if not texts or not self.ocr:
+        norm_texts = self._norm_seq(texts)
+        if not norm_texts or not self.ocr:
             return None
 
         best_d, best_s = None, 0.0
@@ -333,7 +377,7 @@ class Waiter:
             ):
                 continue
             txt_split = txt.split(" ")
-            for t in texts:
+            for t in norm_texts:
                 for t_split in txt_split:
                     if t.upper() == t_split.upper():
                         # Direct match
@@ -341,7 +385,7 @@ class Waiter:
                         if s > best_s:
                             best_d, best_s = d, s
 
-            s = max(fuzzy_ratio(txt, t) for t in texts)
+            s = max(fuzzy_ratio(txt, t) for t in norm_texts)
             if s > best_s:
                 best_d, best_s = d, s
 

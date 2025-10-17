@@ -11,6 +11,7 @@ from PIL import Image
 from core.perception.extractors.training_metrics import extract_failure_pct_for_tile
 from core.perception.yolo.interface import IDetector
 from core.settings import Settings
+from core.types import DetectionDict
 from core.utils.analyzers import analyze_support_crop
 from core.utils.geometry import calculate_jitter
 from core.utils.logger import logger_uma
@@ -110,7 +111,7 @@ def scan_training_screen(
     *,
     pause_after_click_range: list = [0.3, 0.4],
     conf_support: float = 0.60,
-) -> Tuple[List[Dict], Image.Image, List[Dict]]:
+) -> Tuple[List[Dict], Image.Image, List[DetectionDict]]:
     """
     Efficient scan:
       • One initial capture.

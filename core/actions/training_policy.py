@@ -6,11 +6,12 @@ import random
 import re
 from dataclasses import dataclass
 from time import sleep
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
 
 from PIL import Image
 from core.actions.training_check import compute_support_values, scan_training_screen
 from core.constants import DEFAULT_TILE_TO_TYPE, MOOD_MAP
+from core.types import MoodName
 from core.utils.date_uma import (
     DateInfo,
     is_final_season,
@@ -55,9 +56,14 @@ def normalize_mood(mood: object) -> Tuple[str, int]:
     """
     if isinstance(mood, (tuple, list)) and len(mood) >= 1:
         mtxt = str(mood[0]).upper()
-        return (mtxt, MOOD_MAP.get(mtxt, -1))
-    mtxt = str(mood).upper()
-    return (mtxt, MOOD_MAP.get(mtxt, -1))
+    else:
+        mtxt = str(mood).upper()
+
+    if mtxt in MOOD_MAP:
+        mood_key: MoodName = cast(MoodName, mtxt)
+    else:
+        mood_key = "UNKNOWN"
+    return (mtxt, MOOD_MAP[mood_key])
 
 
 # ---------- Tile selection utilities ----------
@@ -586,7 +592,13 @@ def decide_action_training(
         "Not a IMPRESIVE option to train (>= 2.5 in SV)"
     )
     # 2) Mood check → recreation
-    min_mood_score = MOOD_MAP.get(str(minimal_mood).upper(), 3)
+    minimal_mood_key = str(minimal_mood).upper()
+    mood_lookup_key: MoodName = (
+        cast(MoodName, minimal_mood_key)
+        if minimal_mood_key in MOOD_MAP
+        else "UNKNOWN"
+    )
+    min_mood_score = MOOD_MAP.get(mood_lookup_key, 3)
     if (
         mood_score != -1
         and mood_score < min_mood_score

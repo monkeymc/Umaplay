@@ -5,6 +5,8 @@ import cv2
 import numpy as np
 from PIL import Image
 
+RESAMPLE_BILINEAR = getattr(getattr(Image, "Resampling", Image), "BILINEAR")
+
 import torch
 import torch.nn.functional as F
 from pytorchcv.model_provider import get_model as ptcv_get_model
@@ -50,7 +52,7 @@ def preprocess_32x32_rgb(pil_img: Image.Image) -> torch.Tensor:
     """
     Resize to 32x32, float32 [0,1], normalize like SVHN-ish (mean=0.5, std=0.5).
     """
-    x = pil_img.resize((32, 32), Image.BILINEAR)
+    x = pil_img.resize((32, 32), RESAMPLE_BILINEAR)
     x = np.asarray(x).astype(np.float32) / 255.0
     x = (x - 0.5) / 0.5
     x = torch.from_numpy(x).permute(2, 0, 1).unsqueeze(0)  # 1x3x32x32
@@ -167,9 +169,9 @@ class TorchClassifier:
         if val > ALLOW_RANGE[1]:
             val_str = str(val)
             if len(val_str) == 2:
-                return val_str[-1], conf
+                return int(val_str[-1]), conf
             elif len(val_str) == 3 and set(val_str) == 1:
-                return val_str[-1], conf
+                return int(val_str[-1]), conf
             else:
                 return -1, conf
         return val, conf

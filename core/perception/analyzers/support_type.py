@@ -39,7 +39,7 @@ def _circ_med(h: np.ndarray) -> Optional[float]:
     a = np.angle(mu)
     if a < 0:
         a += 2 * np.pi
-    return a * 90.0 / np.pi  # back to [0..179]
+    return float(a * 90.0 / np.pi)  # back to [0..179]
 
 
 def _circ_dist(h1: float, h2: float) -> float:
