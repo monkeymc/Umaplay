@@ -4,10 +4,12 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, cast
 
 import pytest
 from PIL import Image, ImageDraw
+
+_RESAMPLING_NEAREST = getattr(getattr(Image, "Resampling", Image), "NEAREST")
 
 from core.perception.ocr.ocr_local import LocalOCREngine
 from core.perception.extractors.state import extract_stats
@@ -15,6 +17,7 @@ from core.constants import CLASS_UI_STATS
 from core.perception.yolo.yolo_local import LocalYOLOEngine
 from core.controllers.static_image import StaticImageController
 from core.settings import Settings
+from core.types import DetectionDict
 
 
 # ----------------------------
@@ -44,7 +47,7 @@ def _ensure_dir(p: Path) -> Path:
     return p
 
 
-def _draw_detections(pil_img: Image.Image, parsed: List[dict]) -> Image.Image:
+def _draw_detections(pil_img: Image.Image, parsed: List[DetectionDict]) -> Image.Image:
     """Overlay YOLO detections; CLASS_UI_STATS in red, others in lime."""
     out = pil_img.copy()
     draw = ImageDraw.Draw(out)
@@ -61,7 +64,7 @@ def _save_segments_strip(
 ) -> None:
     """Save the 5 cropped segments as a single horizontal strip."""
     keys = ["SPD", "STA", "PWR", "GUTS", "WIT"]
-    segs = [seg_info[k]["seg"] for k in keys]
+    segs = [cast(Image.Image, seg_info[k]["seg"]) for k in keys]
     # normalize height to max, pad between
     h = max(s.height for s in segs)
     pad = 6
@@ -69,7 +72,7 @@ def _save_segments_strip(
     strip = Image.new("RGB", (sum(widths) + pad * (len(segs) - 1), h), (20, 20, 20))
     x = 0
     for s, w in zip(segs, widths):
-        resized = s.resize((w, h), Image.NEAREST)
+        resized = s.resize((w, h), _RESAMPLING_NEAREST)
         strip.paste(resized, (x, 0))
         x += w + pad
     strip.save(out_path)
@@ -77,7 +80,12 @@ def _save_segments_strip(
 
 def _run_pipeline(
     img_path: Path,
-) -> Tuple[Image.Image, List[dict], Dict[str, int], Dict[str, Dict[str, object]]]:
+) -> Tuple[
+    Image.Image,
+    List[DetectionDict],
+    Dict[str, int],
+    Dict[str, Dict[str, object]],
+]:
     """YOLO detect + extract stats (with & without segments)."""
     img = Image.open(img_path).convert("RGB")
     ctrl = StaticImageController(img)

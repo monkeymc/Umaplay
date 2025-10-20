@@ -41,7 +41,10 @@ def _ensure_dir(p: Path) -> Path:
     return p
 
 
-def _draw_detections(pil_img: Image.Image, parsed: List[dict]) -> Image.Image:
+from core.types import DetectionDict
+
+
+def _draw_detections(pil_img: Image.Image, parsed: List[DetectionDict]) -> Image.Image:
     """Overlay YOLO detections; CLASS_UI_SKILLS_PTS in red, others in lime."""
     out = pil_img.copy()
     draw = ImageDraw.Draw(out)
@@ -53,7 +56,9 @@ def _draw_detections(pil_img: Image.Image, parsed: List[dict]) -> Image.Image:
     return out
 
 
-def _run_pipeline(img_path: Path) -> Tuple[Image.Image, List[dict], int]:
+def _run_pipeline(
+    img_path: Path,
+) -> Tuple[Image.Image, List[DetectionDict], int]:
     """YOLO detect + extract skill points."""
     img = Image.open(img_path).convert("RGB")
     ctrl = StaticImageController(img)

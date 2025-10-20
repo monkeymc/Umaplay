@@ -24,6 +24,7 @@ class IDetector(Protocol):
         iou: Optional[float] = None,
     ) -> Tuple[Dict[str, Any], List[DetectionDict]]:
         """Run detection on a BGR image and return (meta, dets)."""
+        raise NotImplementedError
 
     def detect_pil(
         self,
@@ -34,6 +35,7 @@ class IDetector(Protocol):
         iou: Optional[float] = None,
     ) -> Tuple[Dict[str, Any], List[DetectionDict]]:
         """Run detection on a PIL image and return (meta, dets)."""
+        raise NotImplementedError
 
     def recognize(
         self,
@@ -48,3 +50,4 @@ class IDetector(Protocol):
         Capture via controller and run detection.
         Returns (captured_image, meta, dets).
         """
+        raise NotImplementedError

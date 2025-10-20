@@ -73,7 +73,7 @@ class Settings:
         _env("IS_BUTTON_ACTIVE_CLF_PATH") or (MODELS_DIR / "active_button_clf.joblib")
     )
 
-    MODE: str = _env("MODE", "steam")
+    MODE: str = _env("MODE", "steam") or "steam"
 
     # --------- Detection (YOLO) ---------
     YOLO_IMGSZ: int = _env_int("YOLO_IMGSZ", default=832)
@@ -81,7 +81,9 @@ class Settings:
     YOLO_IOU: float = _env_float("YOLO_IOU", default=0.45)
 
     # --------- Logging ---------
-    LOG_LEVEL: str = _env("LOG_LEVEL", "DEBUG" if DEBUG else "INFO")
+    LOG_LEVEL: str = _env("LOG_LEVEL", "DEBUG" if DEBUG else "INFO") or (
+        "DEBUG" if DEBUG else "INFO"
+    )
     FAST_MODE = True
     USE_FAST_OCR = True
     USE_GPU = True
@@ -169,13 +171,15 @@ class Settings:
             presets[0] if presets else None
         )
 
-        cls.MINIMAL_MOOD = str(preset.get("minimalMood", cls.MINIMAL_MOOD))
-        cls.REFERENCE_STATS = preset.get("targetStats", cls.REFERENCE_STATS)
-        cls.PRIORITY_STATS = preset.get("priorityStats", cls.PRIORITY_STATS)
+        preset_data = preset or {}
+
+        cls.MINIMAL_MOOD = str(preset_data.get("minimalMood", cls.MINIMAL_MOOD))
+        cls.REFERENCE_STATS = preset_data.get("targetStats", cls.REFERENCE_STATS)
+        cls.PRIORITY_STATS = preset_data.get("priorityStats", cls.PRIORITY_STATS)
         # Prefer per-preset hint toggle; fallback to general for backward compatibility
         try:
             cls.HINT_IS_IMPORTANT = bool(
-                preset.get(
+                preset_data.get(
                     "prioritizeHint", g.get("prioritizeHint", cls.HINT_IS_IMPORTANT)
                 )
             )

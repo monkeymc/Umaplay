@@ -152,6 +152,11 @@ class RemoteYOLOEngine(IDetector):
         iou: Optional[float] = None,
         tag: str = "general",
     ):
+        if self.ctrl is None:
+            raise RuntimeError(
+                "RemoteYOLOEngine.recognize() requires a controller injected in the constructor."
+            )
+
         if isinstance(self.ctrl, SteamController):
             img = self.ctrl.screenshot_left_half()
         else:

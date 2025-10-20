@@ -5,7 +5,7 @@ import numpy as np
 import importlib
 import os
 import re
-from typing import Any, List
+from typing import Any, Dict, List, cast
 from core.perception.ocr.interface import OCRInterface
 from core.types import OCRItem
 
@@ -68,7 +68,7 @@ class LocalOCREngine(OCRInterface):
 
         # Instantiate PaddleOCR, turning off unneeded subpipelines and using the mobile detector.
         # Also shrink det input and bump rec batch for small crops.
-        self.reader = None
+        self.reader: PaddleOCR | None = None
         init_kwargs = dict(
             # speed: disable extras you don't need for tiny stat crops
             # use_doc_orientation_classify: Disables the document-level orientation classifier (the thing that decides if a whole page/photo is rotated 90°/180°/270°). You saw it as PP-LCNet_x1_0_doc_ori in the logs. Useful for scanned pages; unnecessary for small screen snippets that are already upright.
@@ -163,10 +163,20 @@ class LocalOCREngine(OCRInterface):
     # ---- Core inference ----
     def raw(self, img: Any) -> dict:
         """Return normalized Paddle JSON: {'res': {...}}"""
+        if self.reader is None:
+            raise RuntimeError("PaddleOCR reader is not initialized.")
         bgr = self._ensure_bgr3(img)
         out = self.reader.predict(bgr)
-        raw_items = out[0] if isinstance(out, list) and out else []
-        return raw_items._to_json()
+        raw_items = out[0] if isinstance(out, list) and out else out
+        if isinstance(raw_items, list) and raw_items:
+            raw_items = raw_items[0]
+        raw_any: Any = raw_items
+        to_json = getattr(raw_any, "_to_json", None)
+        if callable(to_json):
+            return cast(Dict[str, Any], to_json())
+        if isinstance(raw_any, dict):
+            return cast(Dict[str, Any], raw_any)
+        return {}
 
     def text(self, img: Any, joiner: str = " ", min_conf: float = 0.2) -> str:
         j = self.raw(img)
@@ -200,16 +210,21 @@ class LocalOCREngine(OCRInterface):
         if not imgs:
             return []
         bgr_list = [self._ensure_bgr3(im) for im in imgs]
+        if self.reader is None:
+            raise RuntimeError("PaddleOCR reader is not initialized.")
         outs = list(self.reader.predict(bgr_list))
         texts: List[str] = []
         for o in outs:
             if isinstance(o, list) and o:
                 o = o[0]
-            j = (
-                o._to_json()
-                if hasattr(o, "_to_json")
-                else (o if isinstance(o, dict) else {})
-            )
+            raw_any: Any = o
+            to_json = getattr(raw_any, "_to_json", None)
+            if callable(to_json):
+                j: Dict[str, Any] = cast(Dict[str, Any], to_json())
+            elif isinstance(raw_any, dict):
+                j = cast(Dict[str, Any], raw_any)
+            else:
+                j = {}
             res = j.get("res", {})
             rec_texts = res.get("rec_texts", []) or []
             rec_scores = res.get("rec_scores", []) or []

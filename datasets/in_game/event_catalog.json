@@ -25304,5 +25304,60 @@
     "title_norm": "recruiting advisors",
     "image_path": null,
     "phash64": null
+  },
+  {
+    "key": "support/Symboli Rudolf/WIT/R/The Emperor's Encouragement",
+    "key_step": "support/Symboli Rudolf/WIT/R/The Emperor's Encouragement#s1",
+    "type": "support",
+    "name": "Symboli Rudolf",
+    "rarity": "R",
+    "attribute": "WIT",
+    "event_name": "The Emperor's Encouragement",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "speed": 10
+        }
+      ],
+      "2": [
+        {
+          "energy": -10,
+          "skill_pts": 30
+        }
+      ]
+    },
+    "title_norm": "the emperor's encouragement",
+    "image_path": null,
+    "phash64": null
+  },
+  {
+    "key": "support/Symboli Rudolf/WIT/R/The Student Council President's Thoughtfulness",
+    "key_step": "support/Symboli Rudolf/WIT/R/The Student Council President's Thoughtfulness#s1",
+    "type": "support",
+    "name": "Symboli Rudolf",
+    "rarity": "R",
+    "attribute": "WIT",
+    "event_name": "The Student Council President's Thoughtfulness",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "hints": [
+            "Rainy Days ○"
+          ]
+        }
+      ],
+      "2": [
+        {
+          "stamina": 15
+        }
+      ]
+    },
+    "title_norm": "the student council president's thoughtfulness",
+    "image_path": null,
+    "phash64": null
   }
 ]

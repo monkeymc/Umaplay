@@ -598,14 +598,31 @@ class RaceFlow:
         """
         Handles the lobby where 'View Results' (white) and 'Race' (green) appear.
         Uses the unified Waiter API; no external polling loops.
+        Returns False if the view button cannot be found after retries.
         """
-        # Try resolving 'View Results' and whether it is active
+        # Try resolving 'View Results' with progressive retries (up to 15s total)
         view_btn = self._pick_view_results_button()
         if view_btn is None:
-            # try again just in case
-            logger_uma.warning("No view result button found, waiting for 5 s more...")
-            time.sleep(5)
-            view_btn = self._pick_view_results_button()
+            # Retry with progressive delays: 2s, 3s, 5s, 5s (total ~15s)
+            retry_delays = [2, 3, 5, 5]
+            for i, delay in enumerate(retry_delays, 1):
+                logger_uma.warning(
+                    "No view result button found, waiting %ds more (attempt %d/%d)...",
+                    delay, i, len(retry_delays)
+                )
+                time.sleep(delay)
+                view_btn = self._pick_view_results_button()
+                if view_btn is not None:
+                    logger_uma.info("View button found after %d retry attempt(s)", i)
+                    break
+        
+        # If still not found after all retries, abort the operation
+        if view_btn is None:
+            logger_uma.error(
+                "View Results button not found after ~15s of retries. "
+                "Cannot determine lobby state. Aborting race operation."
+            )
+            return False
 
         is_view_active = False
         if view_btn is not None:
@@ -628,13 +645,16 @@ class RaceFlow:
             time.sleep(random.uniform(0.3, 0.5))
         else:
             # Click green 'RACE' (prefer bottom-most; OCR disambiguation if needed)
-            self.waiter.click_when(
+            if not self.waiter.click_when(
                 classes=("button_green",),
                 texts=("RACE",),
                 prefer_bottom=True,
-                timeout_s=4,
+                timeout_s=6,
                 tag="race_lobby_race_click",
-            )
+            ):
+                logger_uma.error("[race] Race button not found after ~6s of retries. "
+                "Cannot determine lobby state. Aborting race operation.")
+                return False
             time.sleep(3)
             # Reactive second confirmation. Click as soon as popup appears,
             # or bail early if the pre-race lobby appears or skip buttons show up.
@@ -648,16 +668,20 @@ class RaceFlow:
                     prefer_bottom=False,
                     tag="race_lobby_race_confirm_try",
                 ):
-                    time.sleep(0.12)
+                    logger_uma.debug("[race] Clicked RACE confirmation")
+                    time.sleep(0.5)
                 # If we already transitioned into race (skip buttons), stop waiting.
                 if self.waiter.seen(
                     classes=("button_skip",), tag="race_lobby_seen_skip"
                 ):
+                    logger_uma.debug("[race] Seen skip buttons, breaking to click them")
                     break
                 time.sleep(0.5)
-
+            time.sleep(1)
+            logger_uma.debug("[race] Starting skip loop")
             # Greedy skip: keep pressing while present; stop as soon as 'CLOSE' or 'NEXT' shows.
             closed_early = False
+            skip_clicks = 0
             t0 = time.time()
             while (time.time() - t0) < 12.0:
                 # Early-exit conditions:
@@ -670,11 +694,14 @@ class RaceFlow:
                     tag="race_trophy_try_close",
                 ):
                     closed_early = True
+                    logger_uma.debug("[race] Clicked close Trophy button")
                     break
                 #  - next visible → stop skipping; later logic will handle NEXT
                 if self.waiter.seen(
-                    classes=("button_green",), tag="race_skip_probe_next"
-                ):
+                    classes=("button_green",), tag="race_skip_probe_next",
+                    conf_min=0.65,
+                ) and skip_clicks > 2:
+                    logger_uma.debug("[race] Seen next button while looking for skip, breaking to click it")
                     break
 
                 # Otherwise try to click a skip on this frame.
@@ -684,9 +711,11 @@ class RaceFlow:
                     img, dets = self._collect("race_skip_followup")
                     sk = bottom_most(find(dets, "button_skip"))
                     if sk:
+                        skip_clicks += 1
                         self.ctrl.click_xyxy_center(
                             sk["xyxy"], clicks=random.randint(3, 5)
                         )
+                        logger_uma.debug("[race] Clicked skip button")
                     continue
                 time.sleep(0.12)
 
