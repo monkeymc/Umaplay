@@ -208,10 +208,10 @@ class DailyRaceFlow:
                 if not self.waiter.click_when(
                     classes=("button_pink",),
                     texts=("RACE AGAIN",),
-                    prefer_bottom=False,
+                    prefer_bottom=True,
                     timeout_s=4.2,
                     clicks=1,
-                    allow_greedy_click=False,
+                    allow_greedy_click=True,
                     tag="daily_race_again",
                 ):
                     logger_uma.info("[TeamTrials] RACE AGAIN NOT FOUND")
