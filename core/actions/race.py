@@ -657,7 +657,7 @@ class RaceFlow:
                 logger_uma.error("[race] Race button not found after ~6s of retries. "
                 "Cannot determine lobby state. Aborting race operation.")
                 return False
-            time.sleep(3)
+            time.sleep(5)
             self.waiter.click_when(
                 classes=("button_green",),
                 texts=("RACE",),
@@ -671,11 +671,11 @@ class RaceFlow:
             seen_skip = False
             while (time.time() - t0) < 12.0:
                 # If the confirmation 'RACE' appears, click it immediately.
-                if self.waiter.try_click_once(
+                if self.waiter.click_when(
                     classes=("button_green",),
-                    texts=("RACE",),
-                    allow_greedy_click=False,
-                    prefer_bottom=False,
+                    texts=("RACE", "NEXT"),
+                    prefer_bottom=True,
+                    timeout_s=0.3,
                     tag="race_lobby_race_confirm_try",
                 ):
                     logger_uma.debug("[race] Clicked RACE confirmation")
@@ -689,6 +689,18 @@ class RaceFlow:
                     break
                 time.sleep(0.5)
             logger_uma.debug(f"[race] Seen skip buttons: {seen_skip}")
+            if not seen_skip:
+                # search again for green 'Next' or 'RACE' button
+                if not self.waiter.click_when(
+                    classes=("button_green",),
+                    texts=("RACE", "NEXT"),
+                    prefer_bottom=True,
+                    timeout_s=6,
+                    tag="race_lobby_race_click_retry",
+                ):
+                    logger_uma.error("[race] Race button not found after ~6s of retries. "
+                    "Cannot determine lobby state. Aborting race operation.")
+                    return False
             time.sleep(4)
             logger_uma.debug("[race] Starting skip loop")
             # Greedy skip: keep pressing while present; stop as soon as 'CLOSE' or 'NEXT' shows.
@@ -699,11 +711,11 @@ class RaceFlow:
             while (time.time() - t0) < total_time:
                 # Early-exit conditions:
                 #  - close available → click once and stop
-                if self.waiter.try_click_once(
+                if self.waiter.click_when(
                     classes=("button_white",),
                     texts=("CLOSE",),
                     prefer_bottom=False,
-                    allow_greedy_click=False,
+                    timeout_s=0.3,
                     tag="race_trophy_try_close",
                 ):
                     closed_early = True
@@ -749,11 +761,12 @@ class RaceFlow:
             # Reactive micro-window: try to click 'TRY AGAIN' quickly; otherwise don't pay a 2s timeout.
             t0 = time.time()
             while (time.time() - t0) < 2.0:
-                if self.waiter.try_click_once(
+                if self.waiter.click_when(
                     classes=("button_green",),
                     texts=("TRY AGAIN",),
                     prefer_bottom=False,
                     allow_greedy_click=False,
+                    timeout_s=0.3,
                     forbid_texts=("RACE", "NEXT"),
                     tag="race_try_again_try",
                 ):
