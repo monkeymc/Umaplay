@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Dict, List, Optional, Tuple, Union
 
 
 def _env(name: str, default: Optional[str] = None) -> Optional[str]:
@@ -31,6 +31,13 @@ def _env_float(name: str, default: float) -> float:
         return float(v) if v is not None else default
     except Exception:
         return default
+
+
+DEFAULT_SUPPORT_PRIORITY: Dict[str, Union[float, bool]] = {
+    "enabled": True,
+    "scoreBlueGreen": 0.75,
+    "scoreOrangeMax": 0.5,
+}
 
 
 class Settings:
@@ -173,6 +180,10 @@ class Settings:
 
         preset_data = preset or {}
 
+        deck, priorities = cls._extract_support_priorities_from_preset(preset_data)
+        cls.SUPPORT_DECK = deck
+        cls.SUPPORT_CARD_PRIORITIES = priorities
+
         cls.MINIMAL_MOOD = str(preset_data.get("minimalMood", cls.MINIMAL_MOOD))
         cls.REFERENCE_STATS = preset_data.get("targetStats", cls.REFERENCE_STATS)
         cls.PRIORITY_STATS = preset_data.get("priorityStats", cls.PRIORITY_STATS)
@@ -255,13 +266,111 @@ class Settings:
             "raceIfNoGoodValue", cls.RACE_IF_NO_GOOD_VALUE
         )
 
+        deck, priorities = cls._extract_support_priorities_from_preset(preset)
+
         return {
             "plan_races": plan_races,
             "skill_list": skill_list,
             "select_style": select_style,
             "raceIfNoGoodValue": race_if_no_good_value,
+            "support_deck": deck,
+            "support_card_priorities": [
+                {
+                    "name": name,
+                    "rarity": rarity,
+                    "attribute": attribute,
+                    "enabled": data["enabled"],
+                    "scoreBlueGreen": data["scoreBlueGreen"],
+                    "scoreOrangeMax": data["scoreOrangeMax"],
+                }
+                for (name, rarity, attribute), data in priorities.items()
+            ],
         }
 
 
+    @staticmethod
+    def _clamp(value: float, min_value: float, max_value: float) -> float:
+        try:
+            val = float(value)
+        except (TypeError, ValueError):
+            return min_value
+        return max(min_value, min(max_value, val))
+
+    @classmethod
+    def default_support_priority(cls) -> Dict[str, Union[float, bool]]:
+        base = DEFAULT_SUPPORT_PRIORITY
+        return {
+            "enabled": bool(base.get("enabled", True)),
+            "scoreBlueGreen": float(base.get("scoreBlueGreen", 0.75)),
+            "scoreOrangeMax": float(base.get("scoreOrangeMax", 0.5)),
+        }
+
+    @classmethod
+    def _normalize_priority(cls, raw: Optional[dict]) -> Dict[str, Union[float, bool]]:
+        if not raw or not isinstance(raw, dict):
+            return cls.default_support_priority()
+        enabled = bool(raw.get("enabled", True))
+        score_bg = cls._clamp(raw.get("scoreBlueGreen", 0.75), 0.0, 10.0)
+        score_om = cls._clamp(raw.get("scoreOrangeMax", 0.5), 0.0, 10.0)
+        return {
+            "enabled": enabled,
+            "scoreBlueGreen": score_bg,
+            "scoreOrangeMax": score_om,
+        }
+
+    @classmethod
+    def _extract_support_priorities_from_preset(
+        cls, preset: Optional[dict]
+    ) -> Tuple[List[dict], Dict[Tuple[str, str, str], Dict[str, Union[float, bool]]]]:
+        event_setup = (preset or {}).get("event_setup", {}) or {}
+        supports = event_setup.get("supports", []) or []
+
+        deck: List[dict] = []
+        priorities: Dict[Tuple[str, str, str], Dict[str, Union[float, bool]]] = {}
+
+        for entry in supports:
+            if not entry:
+                continue
+            name = entry.get("name")
+            rarity = entry.get("rarity")
+            attribute = entry.get("attribute")
+            slot = entry.get("slot")
+            if not (name and rarity and attribute):
+                continue
+
+            try:
+                slot_idx = int(slot) if slot is not None else len(deck)
+            except (TypeError, ValueError):
+                slot_idx = len(deck)
+
+            card_info = {
+                "slot": slot_idx,
+                "name": str(name),
+                "rarity": str(rarity),
+                "attribute": str(attribute),
+            }
+            deck.append(card_info)
+
+            key = (card_info["name"], card_info["rarity"], card_info["attribute"])
+            priorities[key] = cls._normalize_priority(entry.get("priority"))
+
+        deck.sort(key=lambda c: c["slot"])
+        return deck, priorities
+
 class Constants:
     map_tile_idx_to_type = {0: "SPD", 1: "STA", 2: "PWR", 3: "GUTS", 4: "WIT"}
+
+
+    @classmethod
+    def get_support_priority(
+        cls, name: str, rarity: str, attribute: str
+    ) -> Dict[str, Union[float, bool]]:
+        key = (name, rarity, attribute)
+        if key in Settings.SUPPORT_CARD_PRIORITIES:
+            data = Settings.SUPPORT_CARD_PRIORITIES[key]
+            return {
+                "enabled": bool(data.get("enabled", True)),
+                "scoreBlueGreen": float(data.get("scoreBlueGreen", 0.75)),
+                "scoreOrangeMax": float(data.get("scoreOrangeMax", 0.5)),
+            }
+        return Settings.default_support_priority()

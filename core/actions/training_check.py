@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from typing import List, Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 import random
 
 import cv2
@@ -15,6 +15,11 @@ from core.types import DetectionDict
 from core.utils.analyzers import analyze_support_crop
 from core.utils.geometry import calculate_jitter
 from core.utils.logger import logger_uma
+from core.utils.support_matching import (
+    get_card_priority,
+    get_runtime_support_matcher,
+    match_support_crop,
+)
 from typing import Any
 from dataclasses import dataclass, asdict
 
@@ -63,7 +68,6 @@ SUPPORT_NAMES = {
     "support_director",
     "support_tazuna",
 }
-
 
 def _center(xyxy: Tuple[float, float, float, float]) -> Tuple[float, float]:
     x1, y1, x2, y2 = xyxy
@@ -249,6 +253,9 @@ def scan_training_screen(
                 and iy2 <= oy2 + pad
             )
 
+        min_confidence = 0.25
+        matcher = get_runtime_support_matcher(min_confidence=min_confidence)  # TODO: performance issue if no custom hint in any, and if so we are recalculating?
+
         enriched: List[Dict] = []
         any_rainbow = False
 
@@ -297,17 +304,42 @@ def scan_training_screen(
             )
             any_rainbow |= has_rainbow
 
-            enriched.append(
-                {
-                    **s,
-                    "name": s["name"].replace("_rainbow", ""),  # normalize
-                    "support_type": attrs["support_type"],
-                    "support_type_score": attrs["support_type_score"],
-                    "friendship_bar": attrs["friendship_bar"],
-                    "has_hint": attrs["has_hint"],
-                    "has_rainbow": bool(has_rainbow),
-                }
-            )
+            normalized_name = s["name"].replace("_rainbow", "")
+            support_record: Dict[str, Any] = {
+                **s,
+                "name": normalized_name,
+                "support_type": attrs["support_type"],
+                "support_type_score": attrs["support_type_score"],
+                "friendship_bar": attrs["friendship_bar"],
+                "has_hint": attrs["has_hint"],
+                "has_rainbow": bool(has_rainbow),
+            }
+
+            if matcher and attrs.get("has_hint"):
+                match = match_support_crop(crop, matcher=matcher, min_confidence=min_confidence)
+                if match:
+                    name = match.get("name", "")
+                    rarity = match.get("rarity", "")
+                    attribute = match.get("attribute", "")
+
+                    support_record["matched_card"] = match
+                    support_record["priority_config"] = get_card_priority(
+                        name,
+                        rarity,
+                        attribute,
+                    )       
+
+                    logger_uma.debug(
+                        "[support_match] Hint support matched %s (%s/%s) score=%.3f",
+                        name,
+                        rarity,
+                        attribute,
+                        match.get("score", 0.0),
+                    )
+                else:
+                    logger_uma.debug("[support_match] No confident match for hint support")
+
+            enriched.append(support_record)
 
         return enriched, any_rainbow
 
@@ -582,6 +614,64 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
     """
     out: List[TileSV] = []
 
+    default_priority_cfg = Settings.default_support_priority()
+    default_bluegreen_value = float(default_priority_cfg.get("scoreBlueGreen", 0.75))
+    default_orange_value = float(default_priority_cfg.get("scoreOrangeMax", 0.5))
+
+    def _support_label(support: Dict[str, Any]) -> str:
+        matched = support.get("matched_card") or {}
+        if isinstance(matched, dict) and matched.get("name"):
+            name = str(matched.get("name", "")).strip()
+            attr = str(matched.get("attribute", "")).strip()
+            rarity = str(matched.get("rarity", "")).strip()
+            suffix = " / ".join([p for p in (attr, rarity) if p])
+            if suffix:
+                return f"{name} ({suffix})"
+            return name or "support"
+        base = str(support.get("name", "support")).strip()
+        return base or "support"
+
+    def _hint_candidate_for_support(
+        support: Dict[str, Any],
+        *,
+        color_key: str,
+        default_value: float,
+        color_desc: str,
+    ) -> Tuple[float, Dict[str, Any]]:
+        priority_cfg = support.get("priority_config")
+        matched_card = support.get("matched_card")
+        matched = isinstance(matched_card, dict) and bool(matched_card)
+        if not isinstance(priority_cfg, dict):
+            priority_cfg = default_priority_cfg
+            matched = False
+        enabled = bool(priority_cfg.get("enabled", True))
+        label = _support_label(support)
+        config_value = float(priority_cfg.get(color_key, default_value))
+        base_value = config_value if matched else default_value
+        important_mult = 3.0 if Settings.HINT_IS_IMPORTANT else 1.0
+        effective_value = base_value * important_mult if enabled else 0.0
+        meta = {
+            "label": label,
+            "color_desc": color_desc,
+            "enabled": enabled,
+            "matched": matched,
+            "base_value": base_value,
+            "important_mult": important_mult,
+        }
+        return effective_value, meta
+
+    def _format_hint_note(meta: Dict[str, Any], bonus: float) -> str:
+        label = meta["label"]
+        color_desc = meta["color_desc"]
+        base_value = meta["base_value"]
+        source = "priority" if meta["matched"] else "default"
+        important_mult = meta.get("important_mult", 1.0)
+        note = f"Hint on {label} ({color_desc}): +{bonus:.2f} (base={base_value:.2f} {source}"
+        if important_mult != 1.0:
+            note += f", important×{important_mult:.1f}"
+        note += ")"
+        return note
+
     for tile in training_state:
         idx = int(tile.get("tile_idx", -1))
         failure_pct = int(tile.get("failure_pct", 0) or 0)
@@ -592,8 +682,9 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
         notes: List[str] = []
 
         # Tile-level caps/flags
-        any_bluegreen_hint = False
-        any_orange_max_hint = False
+        blue_hint_candidates: List[Tuple[float, Dict[str, Any]]] = []
+        orange_hint_candidates: List[Tuple[float, Dict[str, Any]]] = []
+        hint_disabled_notes: List[str] = []
 
         # For rainbow combo computation (per type)
         rainbow_count = 0
@@ -607,6 +698,7 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
             is_max = bool(bar.get("is_max", False))
             has_hint = bool(s.get("has_hint", False))
             has_rainbow = bool(s.get("has_rainbow", False))
+            label = _support_label(s)
 
             # Normalize 'max' color if flagged
             if is_max and color not in ("yellow", "max"):
@@ -618,7 +710,7 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
                 sv_by_type["special_reporter"] = (
                     sv_by_type.get("special_reporter", 0.0) + 0.1
                 )
-                notes.append("Reporter: +0.1")
+                notes.append(f"Reporter ({label}): +0.10")
                 continue
 
             if sname == "support_director":
@@ -631,9 +723,9 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
                     sv_by_type["special_director"] = (
                         sv_by_type.get("special_director", 0.0) + score
                     )
-                    notes.append(f"Director ({color}): +{score:.2f}")
+                    notes.append(f"Director ({label}, {color}): +{score:.2f}")
                 else:
-                    notes.append(f"Director ({color}): +0.00")
+                    notes.append(f"Director ({label}, {color}): +0.00")
                 continue
 
             if sname == "support_tazuna":
@@ -652,16 +744,16 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
                     sv_by_type["special_tazuna"] = (
                         sv_by_type.get("special_tazuna", 0.0) + score
                     )
-                    notes.append(f"Tazuna ({color}): +{score:.2f}")
+                    notes.append(f"Tazuna ({label}, {color}): +{score:.2f}")
                 else:
-                    notes.append(f"Tazuna ({color}): +0.00")
+                    notes.append(f"Tazuna ({label}, {color}): +0.00")
                 continue
 
             # --- standard support cards (including rainbow variants) ---
             # Rainbow counts as +1 baseline
             if has_rainbow:
                 sv_total += 1.0
-                notes.append("rainbow: +1.00")
+                notes.append(f"rainbow ({label}): +1.00")
                 rainbow_count = rainbow_count + 1
                 # Rainbow hint does not add extra beyond standard tile-capped hint rules;
                 # we still let hint rules below consider color buckets if needed.
@@ -671,42 +763,69 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
             if color in BLUE_GREEN:
                 sv_total += 1.0
                 sv_by_type["cards"] = sv_by_type.get("cards", 0.0) + 1.0
-                notes.append(f"{color}: +1.00")
+                notes.append(f"{label} {color}: +1.00")
                 if has_hint:
-                    any_bluegreen_hint = True
+                    bonus, meta = _hint_candidate_for_support(
+                        s,
+                        color_key="scoreBlueGreen",
+                        default_value=default_bluegreen_value,
+                        color_desc="blue/green",
+                    )
+                    if not meta["enabled"]:
+                        hint_disabled_notes.append(
+                            f"Hint on {meta['label']} ({meta['color_desc']}): skipped (priority disabled)"
+                        )
+                    else:
+                        blue_hint_candidates.append((bonus, meta))
             # Orange/Max baseline is 0; only hint may help (tile-capped)
             elif color in ORANGE_MAX or is_max:
                 if has_hint:
-                    any_orange_max_hint = True
-                notes.append(f"{color}: +0.00")
+                    bonus, meta = _hint_candidate_for_support(
+                        s,
+                        color_key="scoreOrangeMax",
+                        default_value=default_orange_value,
+                        color_desc="orange/max",
+                    )
+                    if not meta["enabled"]:
+                        hint_disabled_notes.append(
+                            f"Hint on {meta['label']} ({meta['color_desc']}): skipped (priority disabled)"
+                        )
+                    else:
+                        orange_hint_candidates.append((bonus, meta))
+                notes.append(f"{label} {color}: +0.00")
             else:
-                notes.append(f"{color}: +0.00 (unknown color category)")
+                notes.append(f"{label} {color}: +0.00 (unknown color category)")
 
         # ---- 2) tile-capped hint bonuses ----
-        if any_bluegreen_hint:
-            hint_value = 0.75
-            if Settings.HINT_IS_IMPORTANT:
-                hint_value *= 3
-            sv_total += hint_value
-            sv_by_type["hint_bluegreen"] = (
-                sv_by_type.get("hint_bluegreen", 0.0) + hint_value
-            )
-            notes.append(
-                f"Hint on blue/green (tile-capped): +{hint_value}. Settings.HINT_IS_IMPORTANT={Settings.HINT_IS_IMPORTANT}"
-            )
+        for disabled_note in hint_disabled_notes:
+            notes.append(disabled_note)
 
-        if any_orange_max_hint:
-            hint_value = 0.5  # Not as valuable as blue green hints, unless hint is set as important
-            if Settings.HINT_IS_IMPORTANT:
-                hint_value = 0.75
-                hint_value *= 3
-            sv_total += hint_value
-            sv_by_type["hint_orange_max"] = (
-                sv_by_type.get("hint_orange_max", 0.0) + hint_value
+        best_hint_value = 0.0
+        best_hint_meta: Optional[Dict[str, Any]] = None
+
+        if blue_hint_candidates:
+            candidate_value, candidate_meta = max(
+                blue_hint_candidates, key=lambda item: item[0]
             )
-            notes.append(
-                f"Hint on orange/max (tile-capped): +{hint_value}. Settings.HINT_IS_IMPORTANT={Settings.HINT_IS_IMPORTANT}"
+            if candidate_value > best_hint_value:
+                best_hint_value = candidate_value
+                best_hint_meta = {**candidate_meta, "bucket": "hint_bluegreen"}
+
+        if orange_hint_candidates:
+            candidate_value, candidate_meta = max(
+                orange_hint_candidates, key=lambda item: item[0]
             )
+            if candidate_value > best_hint_value:
+                best_hint_value = candidate_value
+                best_hint_meta = {**candidate_meta, "bucket": "hint_orange_max"}
+
+        if best_hint_meta and best_hint_value > 0:
+            bucket = str(best_hint_meta.get("bucket", "hint_bluegreen"))
+            sv_total += best_hint_value
+            sv_by_type[bucket] = sv_by_type.get(bucket, 0.0) + best_hint_value
+            notes.append(_format_hint_note(best_hint_meta, best_hint_value))
+        elif best_hint_meta:
+            notes.append(_format_hint_note(best_hint_meta, best_hint_value))
 
         # ---- 3) rainbow combo bonus (per type) ----
 
@@ -727,7 +846,7 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
         #   SV ≥ 2.5 → x1.25
         #   else     → x1.0
 
-        has_hint = any_bluegreen_hint or any_orange_max_hint
+        has_hint = bool(blue_hint_candidates or orange_hint_candidates)
         if sv_total >= 5:
             risk_mult = 2.0
         elif sv_total >= 3.5 and not (has_hint and Settings.HINT_IS_IMPORTANT):

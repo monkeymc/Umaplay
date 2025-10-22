@@ -4,7 +4,7 @@ from __future__ import annotations
 import random
 import time
 from core.controllers.android import ScrcpyController
-from core.perception.analyzers.race_banner import RaceBannerMatcher
+from core.perception.analyzers.matching.race_banner import RaceBannerMatcher
 from core.perception.yolo.interface import IDetector
 from core.utils.waiter import Waiter
 from typing import Dict, List, Optional, Tuple
@@ -809,7 +809,7 @@ class RaceFlow:
         if elements and len(elements) == 1:
             button_change = elements[0]
             self.ctrl.click_xyxy_center(button_change["xyxy"], clicks=1)
-            time.sleep(0.5)
+            time.sleep(1.2)
         else:
             return False
         select_style = (select_style or "").strip().lower()
