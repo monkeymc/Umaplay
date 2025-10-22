@@ -477,6 +477,8 @@ class RaceFlow:
                                         adjusted_score = -1.0  # hard discard so it won't be picked
                                     else:
                                         adjusted_score = (base_score * 0.5) + (best_ocr * OCR_SCORE_WEIGHT) + (match_score * 0.5)  # extra 0.2
+                                        if best_ocr > 0.99:
+                                            pass
                                         logger_uma.debug(
                                             "[race] Candidate boosted by OCR: base=%.3f, ocr=%.3f, template_match=%.3f (w=%.2f) → total=%.3f | text='%s'",
                                             base_score,

@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+import math
+from typing import Dict, List, Optional, Set, Tuple, Union
 
 
 def _env(name: str, default: Optional[str] = None) -> Optional[str]:
@@ -127,6 +128,9 @@ class Settings:
 
     MINIMAL_MOOD = "normal"
 
+    SUPPORT_PRIORITIES_HAVE_CUSTOMIZATION: bool = False
+    SUPPORT_CUSTOM_PRIORITY_KEYS: Set[Tuple[str, str, str]] = set()
+
     # Keep the last applied config so other modules can extract runtime preset safely
     _last_config: dict | None = None
 
@@ -183,6 +187,11 @@ class Settings:
         deck, priorities = cls._extract_support_priorities_from_preset(preset_data)
         cls.SUPPORT_DECK = deck
         cls.SUPPORT_CARD_PRIORITIES = priorities
+        custom_keys = {
+            key for key, p in priorities.items() if cls._priority_is_custom(p)
+        }
+        cls.SUPPORT_CUSTOM_PRIORITY_KEYS = custom_keys
+        cls.SUPPORT_PRIORITIES_HAVE_CUSTOMIZATION = bool(custom_keys)
 
         cls.MINIMAL_MOOD = str(preset_data.get("minimalMood", cls.MINIMAL_MOOD))
         cls.REFERENCE_STATS = preset_data.get("targetStats", cls.REFERENCE_STATS)
@@ -317,6 +326,26 @@ class Settings:
             "scoreBlueGreen": score_bg,
             "scoreOrangeMax": score_om,
         }
+
+    @classmethod
+    def _priority_is_custom(cls, priority: Dict[str, Union[float, bool]]) -> bool:
+        if not isinstance(priority, dict):
+            return False
+        default = cls.default_support_priority()
+
+        if bool(priority.get("enabled", True)) != bool(default.get("enabled", True)):
+            return True
+
+        default_bg = float(default.get("scoreBlueGreen", 0.75))
+        default_om = float(default.get("scoreOrangeMax", 0.5))
+        score_bg = float(priority.get("scoreBlueGreen", default_bg))
+        score_om = float(priority.get("scoreOrangeMax", default_om))
+
+        if not math.isclose(score_bg, default_bg, rel_tol=1e-6, abs_tol=1e-6):
+            return True
+        if not math.isclose(score_om, default_om, rel_tol=1e-6, abs_tol=1e-6):
+            return True
+        return False
 
     @classmethod
     def _extract_support_priorities_from_preset(

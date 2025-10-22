@@ -181,6 +181,40 @@ def scan_training_screen(
             r["tile_idx"] = j
         return rows_sorted
 
+    matched_priority_assignments: Dict[
+        Tuple[str, str, str], Tuple[float, Dict[str, Any]]
+    ] = {}
+
+    def _register_priority_match(
+        card_key: Tuple[str, str, str],
+        *,
+        score: float,
+        record: Dict[str, Any],
+    ) -> bool:
+        existing = matched_priority_assignments.get(card_key)
+        if existing and existing[0] >= score:
+            logger_uma.debug(
+                "[support_match] Duplicate match %s score=%.3f skipped (existing=%.3f)",
+                card_key,
+                score,
+                existing[0],
+            )
+            return False
+
+        if existing:
+            prev_record = existing[1]
+            prev_record.pop("matched_card", None)
+            prev_record.pop("priority_config", None)
+            logger_uma.debug(
+                "[support_match] Reassigning priority match %s old_score=%.3f → new_score=%.3f",
+                card_key,
+                existing[0],
+                score,
+            )
+
+        matched_priority_assignments[card_key] = (score, record)
+        return True
+
     def _collect_supports_enriched(
         cur_img: Image.Image, cur_parsed: List[Dict]
     ) -> Tuple[List[Dict], bool]:
@@ -254,7 +288,9 @@ def scan_training_screen(
             )
 
         min_confidence = 0.25
-        matcher = get_runtime_support_matcher(min_confidence=min_confidence)  # TODO: performance issue if no custom hint in any, and if so we are recalculating?
+        matcher: Optional[Any] = None
+        has_priority_customization = bool(Settings.SUPPORT_PRIORITIES_HAVE_CUSTOMIZATION)
+        custom_priority_keys = Settings.SUPPORT_CUSTOM_PRIORITY_KEYS
 
         enriched: List[Dict] = []
         any_rainbow = False
@@ -315,27 +351,41 @@ def scan_training_screen(
                 "has_rainbow": bool(has_rainbow),
             }
 
-            if matcher and attrs.get("has_hint"):
-                match = match_support_crop(crop, matcher=matcher, min_confidence=min_confidence)
+            if attrs.get("has_hint") and has_priority_customization:
+                if matcher is None:
+                    matcher = get_runtime_support_matcher(min_confidence=min_confidence)
+                match = match_support_crop(crop, matcher=matcher)
                 if match:
                     name = match.get("name", "")
                     rarity = match.get("rarity", "")
                     attribute = match.get("attribute", "")
 
-                    support_record["matched_card"] = match
-                    support_record["priority_config"] = get_card_priority(
-                        name,
-                        rarity,
-                        attribute,
-                    )       
+                    key = (name, rarity, attribute)
+                    if key not in custom_priority_keys:
+                        logger_uma.debug(
+                            "[support_match] Match %s has no custom priority; skipping",
+                            key,
+                        )
+                    elif _register_priority_match(key, score=float(match.get("score", 0.0)), record=support_record):
+                        support_record["matched_card"] = match
+                        support_record["priority_config"] = get_card_priority(
+                            name,
+                            rarity,
+                            attribute,
+                        )
 
-                    logger_uma.debug(
-                        "[support_match] Hint support matched %s (%s/%s) score=%.3f",
-                        name,
-                        rarity,
-                        attribute,
-                        match.get("score", 0.0),
-                    )
+                        logger_uma.debug(
+                            "[support_match] Hint support matched %s (%s/%s) score=%.3f",
+                            name,
+                            rarity,
+                            attribute,
+                            match.get("score", 0.0),
+                        )
+                    else:
+                        logger_uma.debug(
+                            "[support_match] Match %s rejected due to superior assignment",
+                            key,
+                        )
                 else:
                     logger_uma.debug("[support_match] No confident match for hint support")
 
