@@ -59,7 +59,7 @@ The runtime supports Steam on Windows and Android mirrored via scrcpy, with expe
 ---
 
 ## SOPs
-- `docs/ai/SOPs/sop-config-back-front.md`
+- `docs/ai/SOPs/sop-config-back-front.md` (Reference of web folder and web UI)
 - `docs/ai/SOPs/waiter-usage-and-integration.md` (Important)
 
 ## Runtime Topology (diagram as text)
@@ -106,6 +106,13 @@ This design allows the core loop to evolve independently of perception implement
 - **Button activation**: `core/perception/is_button_active.py` provides classifier logic for interactable buttons.
 - **Waiter synchronization**: `core/utils/waiter.py` coordinates detection loops and click retries across flows.
 - **Automation flows**: `core/actions/` modules cover training (`training_policy.py`, `training_check.py`), lobby orchestration (`lobby.py`), race execution (`race.py`, `daily_race.py`), Team Trials automation (`team_trials.py`), claw game (`claw.py`), event handling (`events.py`), and skill purchasing (`skills.py`).
+
+### Hint Priority System (2025 Q4)
+- **Purpose**: Let presets define per-card hint multipliers or blacklist hints, reducing noise from low-value cards.
+- **UI**: `web/src/components/events/EventSetupSection.tsx` surfaces a `Custom hint` badge and opens `SupportPriorityDialog.tsx` where users toggle *Hint enabled/disabled*, adjust blue/green vs. orange/max multipliers, or ignore hints entirely.
+- **Config plumbing**: The preset schema extends `SelectedSupport.priority`; `Settings.apply_config()` stores `SUPPORT_CARD_PRIORITIES` plus derived flags (`SUPPORT_PRIORITIES_HAVE_CUSTOMIZATION`, `SUPPORT_CUSTOM_PRIORITY_KEYS`).
+- **Classification**: `core/actions/training_check.py` initializes a cached `SupportCardMatcher` (`core/utils/support_matching.py`, `core/perception/analyzers/matching/support_card_matcher.py`) only when customized hints exist, then assigns deck templates per tile via a single-pass matcher to avoid duplicate matches.
+- **Scoring**: `compute_support_values()` applies the highest hint bonus per tile, honoring card-specific multipliers, blacklist, and the global `HINT_IS_IMPORTANT` toggle; `training_policy.py` consumes `sv_by_type` to decide whether hint tiles beat risk caps.
 
 ## Services / Apps
 ### Python Runtime
