@@ -600,7 +600,7 @@ export default function EventSetupSection({ index }: Props) {
                             return (
                               <Stack spacing={0.5} alignItems="center" sx={{ textAlign: 'center', width: '100%' }}>
                                 <Typography variant="caption" color="text.secondary">
-                                  {pr.enabled ? 'Priority enabled' : 'Priority disabled'}
+                                  {pr.enabled ? 'Hint enabled' : 'Hint disabled'}
                                 </Typography>
                                 {hasCustom && (
                                   <Chip size="small" color="info" label="Custom hint" />

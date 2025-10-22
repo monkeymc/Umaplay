@@ -114,6 +114,11 @@ export default function SupportPriorityDialog({ open, support, onClose }: Props)
                 />
               }
               label="Ignore hint"
+              sx={{
+                '& .MuiFormControlLabel-label': {
+                  color: !enabled ? '#d32f2f' : 'text.primary',
+                },
+              }}
             />
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
               <Box sx={{ flex: 1 }}>
