@@ -71,8 +71,8 @@ class RaceBannerMatcher(TemplateMatcherBase):
         candidates: Optional[Sequence[str]] = None,
     ) -> List[BannerMatch]:
         banner_region = to_bgr(card_img)
-        cropped = self._extract_roi(banner_region, self.default_roi)
-        region = self._prepare_region(cropped)
+        # DON'T CROP IT, for race banners already have the most similar section
+        region = self._prepare_region(banner_region)
 
         names = list(candidates) if candidates else [meta["name"] for meta in RaceIndex.all_banner_templates().values()]
 
