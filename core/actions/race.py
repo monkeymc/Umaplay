@@ -658,6 +658,13 @@ class RaceFlow:
                 "Cannot determine lobby state. Aborting race operation.")
                 return False
             time.sleep(3)
+            self.waiter.click_when(
+                classes=("button_green",),
+                texts=("RACE",),
+                prefer_bottom=True,
+                timeout_s=2,
+                tag="race_lobby_race_click_just_in_case",
+            )
             # Reactive second confirmation. Click as soon as popup appears,
             # or bail early if the pre-race lobby appears or skip buttons show up.
             t0 = time.time()
@@ -679,13 +686,14 @@ class RaceFlow:
                     logger_uma.debug("[race] Seen skip buttons, breaking to click them")
                     break
                 time.sleep(0.5)
-            time.sleep(1)
+            time.sleep(3)
             logger_uma.debug("[race] Starting skip loop")
             # Greedy skip: keep pressing while present; stop as soon as 'CLOSE' or 'NEXT' shows.
             closed_early = False
             skip_clicks = 0
             t0 = time.time()
-            while (time.time() - t0) < 12.0:
+            total_time = 12.0
+            while (time.time() - t0) < total_time:
                 # Early-exit conditions:
                 #  - close available → click once and stop
                 if self.waiter.try_click_once(
@@ -710,10 +718,12 @@ class RaceFlow:
                 if self.waiter.try_click_once(
                     classes=("button_skip",), prefer_bottom=True, tag="race_skip_try"
                 ):
+                    logger_uma.debug("[race] Clicked skip button")
                     img, dets = self._collect("race_skip_followup")
                     sk = bottom_most(find(dets, "button_skip"))
                     if sk:
                         skip_clicks += 1
+                        total_time += 2
                         self.ctrl.click_xyxy_center(
                             sk["xyxy"], clicks=random.randint(3, 5)
                         )
