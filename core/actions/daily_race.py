@@ -209,10 +209,10 @@ class DailyRaceFlow:
                     classes=("button_pink",),
                     texts=("RACE AGAIN",),
                     prefer_bottom=False,
-                    timeout_s=2.2,
+                    timeout_s=4.2,
                     clicks=1,
                     allow_greedy_click=False,
-                    tag="team_trials_race_again",
+                    tag="daily_race_again",
                 ):
                     logger_uma.info("[TeamTrials] RACE AGAIN NOT FOUND")
                     finalized = True

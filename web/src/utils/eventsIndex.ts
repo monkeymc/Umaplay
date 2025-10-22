@@ -56,14 +56,19 @@ function normalizeTraineeSet(raw: RawEventSet): TraineeSet {
 function buildSupportsIndex(supports: SupportSet[]): SupportsIndex {
   const byAttr: SupportsIndex = new Map<AttrKey, Map<Rarity, SupportSet[]>>();
   for (const s of supports) {
-    if (!byAttr.has(s.attribute)) byAttr.set(s.attribute, new Map());
+    if (!byAttr.has(s.attribute)) byAttr.set(s.attribute, new Map<Rarity, SupportSet[]>());
     const byRarity = byAttr.get(s.attribute)!;
-    if (!byRarity.has(s.rarity)) byRarity.set(s.rarity, []);
-    byRarity.get(s.rarity)!.push(s);
+    if (!byRarity.has(s.rarity)) {
+      byRarity.set(s.rarity, []);
+    }
+    const list = byRarity.get(s.rarity)!;
+    list.push(s);
   }
   // sort each list by name for stable UI
   for (const [, byRarity] of byAttr) {
-    for (const [, list] of byRarity) list.sort((a, b) => a.name.localeCompare(b.name));
+    for (const [, list] of byRarity) {
+      list.sort((a, b) => a.name.localeCompare(b.name));
+    }
   }
   return byAttr;
 }

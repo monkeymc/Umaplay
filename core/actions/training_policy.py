@@ -149,7 +149,21 @@ def _any_wit_rainbow(
 def _tiles_with_hint(sv_rows: List[Dict]) -> List[int]:
     out = []
     for r in sv_rows:
-        if any("hint" in (note.lower()) for note in (r.get("notes") or [])):
+        sv_by_type = r.get("sv_by_type") or {}
+        hint_value = float(sv_by_type.get("hint_bluegreen", 0.0)) + float(
+            sv_by_type.get("hint_orange_max", 0.0)
+        )
+        if hint_value > 1e-6:
+            out.append(int(r["tile_idx"]))
+            continue
+
+        notes = r.get("notes") or []
+        if any(
+            ("hint" in note.lower())
+            and ("+0.00" not in note)
+            and ("skipped" not in note.lower())
+            for note in notes
+        ):
             out.append(int(r["tile_idx"]))
     return out
 

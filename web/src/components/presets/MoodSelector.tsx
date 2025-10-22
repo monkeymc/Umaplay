@@ -33,7 +33,7 @@ export default function MoodSelector({ presetId }: { presetId: string }) {
               key={m}
               value={m}
               sx={{
-                px: 1.5,
+                px: 0.5,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -42,7 +42,7 @@ export default function MoodSelector({ presetId }: { presetId: string }) {
               }}
             >
               {moodImgs[m] ? (
-                <Box component="img" src={moodImgs[m]} alt={m} sx={{ height: 28, display: 'block' }} />
+                <Box component="img" src={moodImgs[m]} alt={m} sx={{ width: "100%", maxWidth: 80, display: 'block' }} />
               ) : (
                 m
               )}

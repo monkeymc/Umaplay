@@ -1,6 +1,7 @@
 # core/actions/events.py
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Dict, Any
 
@@ -273,11 +274,51 @@ class EventFlow:
 
         if len(choices_sorted) != expected_n:
             logger_uma.warning(
-                "[event] YOLO found %d choices but DB expects %d; fallback to top.",
+                "[event] YOLO found %d choices but DB expects %d; retrying after delay.",
                 len(choices_sorted),
                 expected_n,
             )
-            return self._fallback_click_top(choices_sorted, debug)
+            # Retry: wait and recapture to see if buttons render properly
+            time.sleep(0.5)
+            retry_frame, _, retry_parsed = self.yolo_engine.recognize(
+                imgsz=832, conf=0.60, iou=0.45, tag="event_retry"
+            )
+            retry_choices = _choices(retry_parsed, conf_min=self.conf_min_choice)
+            retry_choices_sorted = _sort_top_to_bottom(retry_choices)
+            debug["retry_num_choices"] = len(retry_choices_sorted)
+
+            if len(retry_choices_sorted) == expected_n:
+                logger_uma.info(
+                    "[event] Retry successful: now found %d choices as expected.",
+                    expected_n,
+                )
+                choices_sorted = retry_choices_sorted
+            else:
+                logger_uma.warning(
+                    "[event] Retry still found %d choices (expected %d).",
+                    len(retry_choices_sorted),
+                    expected_n,
+                )
+                # Use retry result if it has more detections
+                if len(retry_choices_sorted) > len(choices_sorted):
+                    choices_sorted = retry_choices_sorted
+                    debug["used_retry_choices"] = True
+
+                # Check if preferred option is within detected range
+                if pick <= len(choices_sorted):
+                    logger_uma.info(
+                        "[event] Preferred option %d is within detected %d choices; proceeding.",
+                        pick,
+                        len(choices_sorted),
+                    )
+                    debug["partial_match_fallback"] = True
+                else:
+                    logger_uma.warning(
+                        "[event] Preferred option %d exceeds detected %d choices; fallback to top.",
+                        pick,
+                        len(choices_sorted),
+                    )
+                    return self._fallback_click_top(choices_sorted, debug)
 
         if pick < 1 or pick > expected_n:
             logger_uma.warning(

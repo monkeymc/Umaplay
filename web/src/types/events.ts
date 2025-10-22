@@ -76,12 +76,19 @@ export type EventsIndex = {
 
 // --- UI state ---
 
+export type SupportPriority = {
+  enabled: boolean;
+  scoreBlueGreen: number;
+  scoreOrangeMax: number;
+};
+
 export type SelectedSupport = {
   slot: number // 0..5
   name: string
   rarity: Rarity
   attribute: AttrKey
-}
+  priority?: SupportPriority
+};
 
 export type SelectedScenario = { name: string } | null
 export type SelectedTrainee  = { name: string } | null

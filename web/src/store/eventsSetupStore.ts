@@ -6,6 +6,7 @@ import type {
   SelectedScenario,
   SelectedTrainee,
   EventPrefs,
+  SupportPriority,
   AttrKey,
   Rarity,
 } from '@/types/events'
@@ -23,6 +24,7 @@ type State = {
   setTrainee(ref: SelectedTrainee | null): void
   setPrefs(p: Partial<EventPrefs>): void
   setOverride(keyStep: string, pick: number): void
+  setSupportPriority(slot: number, priority: SupportPriority): void
 }
 
 const EMPTY: EventSetup = {
@@ -35,6 +37,7 @@ const EMPTY: EventSetup = {
     defaults: { support: 1, trainee: 1, scenario: 1 },
   },
 }
+
 // --- Narrowing helpers ---
 const VALID_RARITIES = ['SSR', 'SR', 'R'] as const
 type ValidRarity = typeof VALID_RARITIES[number]
@@ -51,6 +54,30 @@ const pickName = (x: unknown): { name: string } | null => {
     return { name: (x as any).name }
   }
   return null
+}
+
+const DEFAULT_PRIORITY: SupportPriority = {
+  enabled: true,
+  scoreBlueGreen: 0.75,
+  scoreOrangeMax: 0.5,
+}
+
+const normalizePriority = (raw: unknown): SupportPriority => {
+  if (!raw || typeof raw !== 'object') return { ...DEFAULT_PRIORITY }
+  const enabled = typeof (raw as any).enabled === 'boolean' ? (raw as any).enabled : true
+  const scoreBlueGreen = Number.isFinite((raw as any).scoreBlueGreen)
+    ? clampNumber((raw as any).scoreBlueGreen, 0, 10)
+    : DEFAULT_PRIORITY.scoreBlueGreen
+  const scoreOrangeMax = Number.isFinite((raw as any).scoreOrangeMax)
+    ? clampNumber((raw as any).scoreOrangeMax, 0, 10)
+    : DEFAULT_PRIORITY.scoreOrangeMax
+  return { enabled, scoreBlueGreen, scoreOrangeMax }
+}
+
+const clampNumber = (val: number, min: number, max: number): number => {
+  const n = Number(val)
+  if (!Number.isFinite(n)) return min
+  return Math.min(max, Math.max(min, n))
 }
 
 export const useEventsSetupStore = create<State>()(
@@ -80,7 +107,13 @@ export const useEventsSetupStore = create<State>()(
                 if (!raw || !raw.name || !raw.rarity || !raw.attribute) return null
                 const rarity: Rarity   = isValidRarity(raw.rarity)   ? raw.rarity   : 'SR'
                 const attribute: AttrKey = isValidAttr(raw.attribute) ? raw.attribute : 'SPD'
-                return { slot: i, name: raw.name, rarity, attribute }
+                return {
+                  slot: i,
+                  name: raw.name,
+                  rarity,
+                  attribute,
+                  priority: normalizePriority((raw as any).priority),
+                }
               })
             : cur.supports
 
@@ -116,7 +149,20 @@ export const useEventsSetupStore = create<State>()(
         const s = get().setup
         const idx = Math.max(0, Math.min(5, slot))
         const supports = s.supports.slice()
-        supports[idx] = ref ? ({ slot: idx, ...ref } as SelectedSupport) : null
+        if (ref) {
+          const nextPriority = ref.priority
+            ? normalizePriority(ref.priority)
+            : supports[idx]?.priority || { ...DEFAULT_PRIORITY }
+          supports[idx] = {
+            slot: idx,
+            name: ref.name,
+            rarity: ref.rarity,
+            attribute: ref.attribute,
+            priority: nextPriority,
+          }
+        } else {
+          supports[idx] = null
+        }
         set({ setup: { ...s, supports }, revision: get().revision + 1 })
       },
 
@@ -151,6 +197,18 @@ export const useEventsSetupStore = create<State>()(
           overrides: { ...(s.prefs?.overrides ?? {}), [keyStep]: Number(pick) },
         }
         set({ setup: { ...s, prefs: next }, revision: get().revision + 1 })
+      },
+      setSupportPriority(slot, priority) {
+        const s = get().setup
+        const idx = Math.max(0, Math.min(5, slot))
+        const supports = s.supports.slice()
+        const target = supports[idx]
+        if (!target) return
+        supports[idx] = {
+          ...target,
+          priority: normalizePriority(priority),
+        }
+        set({ setup: { ...s, supports }, revision: get().revision + 1 })
       },
     })),
     {

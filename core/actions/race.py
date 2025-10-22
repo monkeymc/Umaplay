@@ -4,7 +4,7 @@ from __future__ import annotations
 import random
 import time
 from core.controllers.android import ScrcpyController
-from core.perception.analyzers.race_banner import RaceBannerMatcher
+from core.perception.analyzers.matching.race_banner import RaceBannerMatcher
 from core.perception.yolo.interface import IDetector
 from core.utils.waiter import Waiter
 from typing import Dict, List, Optional, Tuple
@@ -477,6 +477,8 @@ class RaceFlow:
                                         adjusted_score = -1.0  # hard discard so it won't be picked
                                     else:
                                         adjusted_score = (base_score * 0.5) + (best_ocr * OCR_SCORE_WEIGHT) + (match_score * 0.5)  # extra 0.2
+                                        if best_ocr > 0.99:
+                                            pass
                                         logger_uma.debug(
                                             "[race] Candidate boosted by OCR: base=%.3f, ocr=%.3f, template_match=%.3f (w=%.2f) → total=%.3f | text='%s'",
                                             base_score,
@@ -809,7 +811,7 @@ class RaceFlow:
         if elements and len(elements) == 1:
             button_change = elements[0]
             self.ctrl.click_xyxy_center(button_change["xyxy"], clicks=1)
-            time.sleep(0.5)
+            time.sleep(1.2)
         else:
             return False
         select_style = (select_style or "").strip().lower()

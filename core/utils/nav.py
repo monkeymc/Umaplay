@@ -232,7 +232,7 @@ def handle_shop_exchange_on_clock_row(
     ctrl.click_xyxy_center(target["xyxy"], clicks=1)
     logger_uma.info("[nav] shop: clicked 'Exchange' aligned with clock row")
 
-    sleep(0.5)
+    sleep(1)
     # confirm EXCHANGE
     waiter.click_when(
         classes=("button_green",),
@@ -243,7 +243,7 @@ def handle_shop_exchange_on_clock_row(
         tag=f"{tag_prefix}_confirm_exchange",
     )
 
-    sleep(0.5)
+    sleep(2)  # wait for rendering
     # click button_white button with 'Close'
     if waiter.click_when(
         classes=("button_white",),
@@ -253,7 +253,7 @@ def handle_shop_exchange_on_clock_row(
         allow_greedy_click=False,
         tag=f"{tag_prefix}_close",
     ):
-        sleep(0.4)
+        sleep(1)
         logger_uma.info("[nav] shop: clicked 'Close'")
         # click button_white with 'END SALE' text
         if waiter.click_when(
@@ -265,7 +265,7 @@ def handle_shop_exchange_on_clock_row(
             tag=f"{tag_prefix}_end_sale",
         ):
             logger_uma.info("[nav] shop: clicked 'End Sale'")
-            sleep(0.4)
+            sleep(1)
             # Click button_green with 'OK' text
             if waiter.click_when(
                 classes=("button_green",),
