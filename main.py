@@ -123,54 +123,71 @@ def boot_server():
 # Cleanup helpers
 # ---------------------------
 def cleanup_debug_training_if_needed():
-    debug_dir = Path("debug/training")
-    if not debug_dir.exists():
+    debug_root = Settings.DEBUG_DIR
+    if not debug_root.exists():
         return
-    total_bytes = 0
-    for path in debug_dir.rglob("*"):
-        if path.is_file():
-            try:
-                total_bytes += path.stat().st_size
-            except OSError:
-                continue
-    if total_bytes <= 250 * 1024 * 1024:
-        return
-    timestamp = time.strftime("%y%m%d_%H%M%S")
-    set_name = f"set_low_{timestamp}"
-    cmd = [
-        sys.executable,
-        "collect_data_training.py",
-        "--set-name",
-        set_name,
-        "--percentile",
-        "5",
-        "--min-per-folder",
-        "3",
-        "--max-per-folder",
-        "10",
-        "--action",
-        "move",
-        "--exclude",
-        "general",
-        "agent_unknown_advance",
-        "screen",
-    ]
-    logger_uma.info(
-        f"[CLEANUP] debug/training size={total_bytes / (1024 * 1024):.1f} MB exceeds threshold. Running cleanup to {set_name}."
-    )
-    try:
-        subprocess.run(cmd, check=True)
-        for child in debug_dir.iterdir():
-            if child.is_dir():
+
+    threshold_bytes = 250 * 1024 * 1024
+    agent_dirs = [p for p in debug_root.iterdir() if p.is_dir()]
+
+    for agent_dir in sorted(agent_dirs, key=lambda p: p.name.lower()):
+        total_bytes = 0
+        for path in agent_dir.rglob("*"):
+            if path.is_file():
                 try:
-                    shutil.rmtree(child)
-                    logger_uma.info(f"[CLEANUP] Removed folder {child}")
-                except Exception as exc:
-                    logger_uma.warning(f"[CLEANUP] Failed to remove folder {child}: {exc}")
-    except subprocess.CalledProcessError as exc:
-        logger_uma.warning(f"[CLEANUP] Cleanup command exited with status {exc.returncode}: {exc}")
-    except Exception as exc:
-        logger_uma.warning(f"[CLEANUP] Cleanup command failed: {exc}")
+                    total_bytes += path.stat().st_size
+                except OSError:
+                    continue
+
+        if total_bytes <= threshold_bytes:
+            continue
+
+        timestamp = time.strftime("%y%m%d_%H%M%S")
+        set_name = f"{agent_dir.name}_low_{timestamp}"
+        cmd = [
+            sys.executable,
+            "collect_data_training.py",
+            "--src",
+            str(debug_root),
+            "--agent",
+            agent_dir.name,
+            "--set-name",
+            set_name,
+            "--percentile",
+            "5",
+            "--min-per-folder",
+            "3",
+            "--max-per-folder",
+            "10",
+            "--action",
+            "move",
+            "--exclude",
+            "general",
+            "agent_unknown_advance",
+            "screen",
+        ]
+
+        size_mb = total_bytes / (1024 * 1024)
+        logger_uma.info(
+            f"[CLEANUP] debug/{agent_dir.name} size={size_mb:.1f} MB exceeds threshold. Running cleanup to {set_name}."
+        )
+        try:
+            subprocess.run(cmd, check=True)
+            for child in agent_dir.iterdir():
+                if child.is_dir():
+                    try:
+                        shutil.rmtree(child)
+                        logger_uma.info(f"[CLEANUP] Removed folder {child}")
+                    except Exception as exc:
+                        logger_uma.warning(
+                            f"[CLEANUP] Failed to remove folder {child}: {exc}"
+                        )
+        except subprocess.CalledProcessError as exc:
+            logger_uma.warning(
+                f"[CLEANUP] Cleanup command exited with status {exc.returncode}: {exc}"
+            )
+        except Exception as exc:
+            logger_uma.warning(f"[CLEANUP] Cleanup command failed: {exc}")
 
 
 # ---------------------------

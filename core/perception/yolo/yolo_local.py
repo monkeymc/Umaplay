@@ -78,6 +78,7 @@ class LocalYOLOEngine(IDetector):
         *,
         tag: str,
         thr: float,
+        agent: Optional[str] = None,
     ) -> None:
         import os, time
 
@@ -87,8 +88,9 @@ class LocalYOLOEngine(IDetector):
         if not lows:
             return
         try:
-            out_dir = Settings.DEBUG_DIR / "training"
-            out_dir_raw = out_dir / tag / "raw"
+            agent_segment = (agent or "").strip()
+            base_dir = Settings.DEBUG_DIR / agent_segment if agent_segment else Settings.DEBUG_DIR
+            out_dir_raw = base_dir / tag / "raw"
             os.makedirs(out_dir_raw, exist_ok=True)
 
             ts = (
@@ -112,6 +114,7 @@ class LocalYOLOEngine(IDetector):
         iou: Optional[float] = None,
         original_pil_img=None,
         tag="general",
+        agent: Optional[str] = None,
     ) -> Tuple[Dict[str, Any], List[DetectionDict]]:
         imgsz = imgsz if imgsz is not None else Settings.YOLO_IMGSZ
         conf = conf if conf is not None else Settings.YOLO_CONF
@@ -129,6 +132,7 @@ class LocalYOLOEngine(IDetector):
                 dets,
                 tag=tag,
                 thr=Settings.STORE_FOR_TRAINING_THRESHOLD,
+                agent=agent,
             )
 
         meta = {"names": result.names, "imgsz": imgsz, "conf": conf, "iou": iou}
@@ -142,12 +146,18 @@ class LocalYOLOEngine(IDetector):
         conf: Optional[float] = None,
         iou: Optional[float] = None,
         tag="general",
+        agent: Optional[str] = None,
     ) -> Tuple[Dict[str, Any], List[DetectionDict]]:
         bgr = pil_to_bgr(pil_img)
 
-        meta, dets = self.detect_bgr(bgr, imgsz=imgsz, conf=conf, iou=iou)
-        self._maybe_store_debug(
-            pil_img, dets, tag=tag, thr=Settings.STORE_FOR_TRAINING_THRESHOLD
+        meta, dets = self.detect_bgr(
+            bgr,
+            imgsz=imgsz,
+            conf=conf,
+            iou=iou,
+            original_pil_img=pil_img,
+            tag=tag,
+            agent=agent,
         )
         return meta, dets
 
@@ -159,6 +169,7 @@ class LocalYOLOEngine(IDetector):
         conf: Optional[float] = None,
         iou: Optional[float] = None,
         tag: str = "general",
+        agent: Optional[str] = None,
     ) -> Tuple[Image.Image, Dict[str, Any], List[DetectionDict]]:
         if self.ctrl is None:
             raise RuntimeError(

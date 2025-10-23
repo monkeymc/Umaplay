@@ -45,6 +45,7 @@ class IDetector(Protocol):
         conf: Optional[float] = None,
         iou: Optional[float] = None,
         tag: str = "general",
+        agent: Optional[str] = None,
     ) -> Tuple[Image.Image, Dict[str, Any], List[DetectionDict]]:
         """
         Capture via controller and run detection.

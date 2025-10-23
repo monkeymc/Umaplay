@@ -131,6 +131,7 @@ class YoloRequest(BaseModel):
     conf: float = Field(0.66, ge=0.0, le=1.0)
     iou: float = Field(0.45, ge=0.0, le=1.0)
     weights_path: Optional[str] = None
+    agent: Optional[str] = Field(None, description="Caller agent identifier for debug storage")
 
 
 @app.post("/yolo")
@@ -157,6 +158,7 @@ def yolo_detect(req: YoloRequest):
             iou=req.iou,
             original_pil_img=pil_img,
             tag="yolo_endpoint",
+            agent=req.agent,
         )
         # tiny debug: checksum of raw BGR bytes
         sha = hashlib.sha256(bgr.tobytes()).hexdigest()[:12]

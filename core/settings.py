@@ -103,6 +103,9 @@ class Settings:
 
     ANDROID_WINDOW_TITLE = "23117RA68G"
     WINDOW_TITLE = "Umamusume"
+
+    AGENT_NAME_URA: str = "ura"
+    AGENT_NAME_NAV: str = "agent_nav"
     USE_EXTERNAL_PROCESSOR = False
     EXTERNAL_PROCESSOR_URL = "http://127.0.0.1:8001"
 

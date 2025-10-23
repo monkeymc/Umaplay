@@ -80,6 +80,7 @@ class RemoteYOLOEngine(IDetector):
         imgsz: Optional[int] = None,
         conf: Optional[float] = None,
         iou: Optional[float] = None,
+        agent: Optional[str] = None,
     ) -> Tuple[Dict[str, Any], List[DetectionDict]]:
         imgsz = imgsz if imgsz is not None else Settings.YOLO_IMGSZ
         conf = conf if conf is not None else Settings.YOLO_CONF
@@ -93,12 +94,15 @@ class RemoteYOLOEngine(IDetector):
                 "conf": conf,
                 "iou": iou,
                 "weights_path": self.weights,
+                "agent": agent,
             }
         )
         meta = data.get(
             "meta", {"backend": "remote", "imgsz": imgsz, "conf": conf, "iou": iou}
         )
         dets: List[DetectionDict] = data.get("dets", [])
+        if agent:
+            meta.setdefault("agent", agent)
         return meta, dets
 
     def detect_pil(
@@ -108,9 +112,10 @@ class RemoteYOLOEngine(IDetector):
         imgsz: Optional[int] = None,
         conf: Optional[float] = None,
         iou: Optional[float] = None,
+        agent: Optional[str] = None,
     ) -> Tuple[Dict[str, Any], List[DetectionDict]]:
         bgr = pil_to_bgr(pil_img)
-        return self.detect_bgr(bgr, imgsz=imgsz, conf=conf, iou=iou)
+        return self.detect_bgr(bgr, imgsz=imgsz, conf=conf, iou=iou, agent=agent)
 
     @staticmethod
     def _maybe_store_debug(
@@ -119,6 +124,7 @@ class RemoteYOLOEngine(IDetector):
         *,
         tag: str,
         thr: float,
+        agent: Optional[str] = None,
     ) -> None:
         import os, time
 
@@ -128,8 +134,9 @@ class RemoteYOLOEngine(IDetector):
         if not lows:
             return
         try:
-            out_dir = Settings.DEBUG_DIR / "training"
-            out_dir_raw = out_dir / tag / "raw"
+            agent_segment = (agent or "").strip()
+            base_dir = Settings.DEBUG_DIR / agent_segment if agent_segment else Settings.DEBUG_DIR
+            out_dir_raw = base_dir / tag / "raw"
             os.makedirs(out_dir_raw, exist_ok=True)
 
             ts = (
@@ -151,6 +158,7 @@ class RemoteYOLOEngine(IDetector):
         conf: Optional[float] = None,
         iou: Optional[float] = None,
         tag: str = "general",
+        agent: Optional[str] = None,
     ):
         if self.ctrl is None:
             raise RuntimeError(
@@ -167,6 +175,11 @@ class RemoteYOLOEngine(IDetector):
         if not Settings.USE_EXTERNAL_PROCESSOR:
             # otherwise it is already saved in external processor
             self._maybe_store_debug(
-                img, dets, tag=tag, thr=Settings.STORE_FOR_TRAINING_THRESHOLD
+                img,
+                dets,
+                tag=tag,
+                thr=Settings.STORE_FOR_TRAINING_THRESHOLD,
+                agent=agent,
             )
+
         return img, meta, dets

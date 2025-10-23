@@ -32,6 +32,7 @@ class PollConfig:
     poll_interval_s: float = 0.25
     timeout_s: float = 4.0
     tag: str = "waiter"
+    agent: str = "player"
 
 
 class Waiter:
@@ -59,6 +60,8 @@ class Waiter:
         self.ocr = ocr
         self.yolo_engine = yolo_engine
         self.cfg = config
+        self.agent = config.agent
+        logger_uma.debug("[waiter] init agent=%s tag=%s", config.agent, config.tag)
 
     # ---------------------------
     # Public API
@@ -320,7 +323,11 @@ class Waiter:
 
     def _snap(self, *, tag: str) -> Tuple[Image.Image, List[DetectionDict]]:
         img, _, dets = self.yolo_engine.recognize(
-            imgsz=self.cfg.imgsz, conf=self.cfg.conf, iou=self.cfg.iou, tag=tag
+            imgsz=self.cfg.imgsz,
+            conf=self.cfg.conf,
+            iou=self.cfg.iou,
+            tag=tag,
+            agent=self.agent,
         )
         return img, dets
 

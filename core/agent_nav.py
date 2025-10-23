@@ -42,7 +42,8 @@ class AgentNav:
             iou=Settings.YOLO_IOU,
             poll_interval_s=0.5,
             timeout_s=4.0,
-            tag="player",
+            tag=Settings.AGENT_NAME_NAV,
+            agent=Settings.AGENT_NAME_NAV,
         ),
     ) -> None:
         self.ctrl = ctrl
@@ -50,6 +51,7 @@ class AgentNav:
         self.yolo_engine = yolo_engine
         self.waiter = Waiter(ctrl, ocr, yolo_engine, waiter_config)
         self.action = action
+        self.agent_name = waiter_config.agent
         self._stop_event = threading.Event()
         self._thr = {
             "race_team_trials": 0.50,
