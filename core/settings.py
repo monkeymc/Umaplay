@@ -41,6 +41,15 @@ DEFAULT_SUPPORT_PRIORITY: Dict[str, Union[float, bool]] = {
 }
 
 
+_DEFAULT_NAV_PREFS: Dict[str, Dict[str, bool]] = {
+    "daily_races": {
+        "alarm_clock": True,
+        "star_pieces": False,
+        "parfait": False,
+    }
+}
+
+
 class Settings:
     """
     Class-style config holder (easy to import as `Settings.*` without instantiation).
@@ -108,6 +117,7 @@ class Settings:
     AGENT_NAME_NAV: str = "agent_nav"
     USE_EXTERNAL_PROCESSOR = False
     EXTERNAL_PROCESSOR_URL = "http://127.0.0.1:8001"
+    TEMPLATE_MATCH_TIMEOUT: float = _env_float("TEMPLATE_MATCH_TIMEOUT", default=8.0)
 
     REFERENCE_STATS = {
         "SPD": 1150,
@@ -133,6 +143,9 @@ class Settings:
 
     SUPPORT_PRIORITIES_HAVE_CUSTOMIZATION: bool = False
     SUPPORT_CUSTOM_PRIORITY_KEYS: Set[Tuple[str, str, str]] = set()
+    NAV_PREFS: Dict[str, Dict[str, bool]] = {
+        "daily_races": dict(_DEFAULT_NAV_PREFS["daily_races"])
+    }
 
     # Keep the last applied config so other modules can extract runtime preset safely
     _last_config: dict | None = None
@@ -245,6 +258,28 @@ class Settings:
         except Exception:
             delta = cls.SKILL_PTS_DELTA
         cls.SKILL_PTS_DELTA = max(0, min(2000, delta))
+
+    @classmethod
+    def apply_nav_preferences(cls, nav: Optional[dict]) -> None:
+        nav = nav if isinstance(nav, dict) else {}
+        daily = nav.get("daily_races") if isinstance(nav, dict) else None
+        if not isinstance(daily, dict):
+            daily = dict(_DEFAULT_NAV_PREFS["daily_races"])
+        normalized = {
+            "alarm_clock": bool(daily.get("alarm_clock", True)),
+            "star_pieces": bool(daily.get("star_pieces", False)),
+            "parfait": bool(daily.get("parfait", False)),
+        }
+        cls.NAV_PREFS = {"daily_races": normalized}
+
+    @classmethod
+    def get_daily_race_nav_prefs(cls) -> Dict[str, bool]:
+        prefs = cls.NAV_PREFS.get("daily_races") or {}
+        return {
+            "alarm_clock": bool(prefs.get("alarm_clock", True)),
+            "star_pieces": bool(prefs.get("star_pieces", False)),
+            "parfait": bool(prefs.get("parfait", False)),
+        }
 
     @classmethod
     def extract_runtime_preset(cls, cfg: dict) -> dict:
