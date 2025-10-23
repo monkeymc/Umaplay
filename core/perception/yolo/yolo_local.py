@@ -181,5 +181,5 @@ class LocalYOLOEngine(IDetector):
         else:
             img = self.ctrl.screenshot(region=region)
 
-        meta, dets = self.detect_pil(img, imgsz=imgsz, conf=conf, iou=iou)
+        meta, dets = self.detect_pil(img, imgsz=imgsz, conf=conf, iou=iou, agent=agent)
         return img, meta, dets
