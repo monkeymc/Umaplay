@@ -80,6 +80,7 @@ class RemoteYOLOEngine(IDetector):
         imgsz: Optional[int] = None,
         conf: Optional[float] = None,
         iou: Optional[float] = None,
+        tag: str = "general",
         agent: Optional[str] = None,
     ) -> Tuple[Dict[str, Any], List[DetectionDict]]:
         imgsz = imgsz if imgsz is not None else Settings.YOLO_IMGSZ
@@ -94,6 +95,7 @@ class RemoteYOLOEngine(IDetector):
                 "conf": conf,
                 "iou": iou,
                 "weights_path": self.weights,
+                "tag": tag,
                 "agent": agent,
             }
         )
@@ -101,6 +103,8 @@ class RemoteYOLOEngine(IDetector):
             "meta", {"backend": "remote", "imgsz": imgsz, "conf": conf, "iou": iou}
         )
         dets: List[DetectionDict] = data.get("dets", [])
+        if tag:
+            meta.setdefault("tag", tag)
         if agent:
             meta.setdefault("agent", agent)
         return meta, dets
@@ -112,10 +116,18 @@ class RemoteYOLOEngine(IDetector):
         imgsz: Optional[int] = None,
         conf: Optional[float] = None,
         iou: Optional[float] = None,
+        tag: str = "general",
         agent: Optional[str] = None,
     ) -> Tuple[Dict[str, Any], List[DetectionDict]]:
         bgr = pil_to_bgr(pil_img)
-        return self.detect_bgr(bgr, imgsz=imgsz, conf=conf, iou=iou, agent=agent)
+        return self.detect_bgr(
+            bgr,
+            imgsz=imgsz,
+            conf=conf,
+            iou=iou,
+            tag=tag,
+            agent=agent,
+        )
 
     @staticmethod
     def _maybe_store_debug(
@@ -175,6 +187,7 @@ class RemoteYOLOEngine(IDetector):
             imgsz=imgsz,
             conf=conf,
             iou=iou,
+            tag=tag,
             agent=agent,
         )
 

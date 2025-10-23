@@ -106,6 +106,8 @@ This design allows the core loop to evolve independently of perception implement
 - **Button activation**: `core/perception/is_button_active.py` provides classifier logic for interactable buttons.
 - **Waiter synchronization**: `core/utils/waiter.py` coordinates detection loops and click retries across flows.
 - **Automation flows**: `core/actions/` modules cover training (`training_policy.py`, `training_check.py`), lobby orchestration (`lobby.py`), race execution (`race.py`, `daily_race.py`), Team Trials automation (`team_trials.py`), claw game (`claw.py`), event handling (`events.py`), and skill purchasing (`skills.py`).
+- **Agent-scoped debug captures**: Low-confidence YOLO/OCR snapshots are saved under `debug/<agent>/<tag>/raw`. When introducing a new agent, supply its identifier through `PollConfig.agent`/`Waiter` and ensure remote YOLO requests include the same `agent` so ` LocalYOLOEngine`/`RemoteYOLOEngine` place samples in the correct folder.
+- When classifier active/inactive button checks are required use `ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH)`. Check if button is active or not, in the project we are using this classifier a lot
 
 ### Hint Priority System (2025 Q4)
 - **Purpose**: Let presets define per-card hint multipliers or blacklist hints, reducing noise from low-value cards.

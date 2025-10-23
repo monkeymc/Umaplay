@@ -132,6 +132,7 @@ class YoloRequest(BaseModel):
     iou: float = Field(0.45, ge=0.0, le=1.0)
     weights_path: Optional[str] = None
     agent: Optional[str] = Field(None, description="Caller agent identifier for debug storage")
+    tag: Optional[str] = Field(None, description="Detection tag used for debug capture folders")
 
 
 @app.post("/yolo")
@@ -154,6 +155,8 @@ def yolo_detect(req: YoloRequest):
             Settings.AGENT_NAME_NAV if nav_match else Settings.AGENT_NAME_URA
         )
         agent_name = (req.agent or default_agent or "").strip()
+        default_tag = "yolo_endpoint"
+        tag_name = (req.tag or default_tag or "").strip() or default_tag
 
         bgr, pil_img = _decode_b64_to_bgr(req.img)
         meta, dets = yolo_engine_req.detect_bgr(
@@ -162,7 +165,7 @@ def yolo_detect(req: YoloRequest):
             conf=req.conf,
             iou=req.iou,
             original_pil_img=pil_img,
-            tag="yolo_endpoint",
+            tag=tag_name,
             agent=agent_name,
         )
         # tiny debug: checksum of raw BGR bytes
@@ -173,6 +176,7 @@ def yolo_detect(req: YoloRequest):
                 "checksum": sha,
                 "weights": w_str,
                 "agent": agent_name,
+                "tag": tag_name,
                 "ultralytics": getattr(
                     type(yolo_engine_req.model), "__module__", "ultralytics"
                 ),
