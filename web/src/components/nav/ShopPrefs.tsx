@@ -15,23 +15,25 @@ import {
 import Section from '@/components/common/Section'
 import { useNavPrefsStore } from '@/store/navPrefsStore'
 
-export default function DailyRacePrefs() {
+export default function ShopPrefs() {
   const prefs = useNavPrefsStore((state) => state.prefs)
-  const toggleDaily = useNavPrefsStore((state) => state.toggleDaily)
+  const toggleShop = useNavPrefsStore((state) => state.toggleShop)
   const save = useNavPrefsStore((state) => state.save)
   const loading = useNavPrefsStore((state) => state.loading)
   const saving = useNavPrefsStore((state) => state.saving)
   const error = useNavPrefsStore((state) => state.error)
   const resetError = useNavPrefsStore((state) => state.resetError)
   const loaded = useNavPrefsStore((state) => state.loaded)
-  const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
-    open: false,
-    message: '',
-    severity: 'success',
-  })
+  const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>(
+    {
+      open: false,
+      message: '',
+      severity: 'success',
+    },
+  )
 
   const handleToggle = (key: 'alarm_clock' | 'star_pieces' | 'parfait') => (event: React.ChangeEvent<HTMLInputElement>) => {
-    toggleDaily(key, event.target.checked)
+    toggleShop(key, event.target.checked)
     setToast((prev) => ({ ...prev, open: false }))
   }
 
@@ -42,9 +44,9 @@ export default function DailyRacePrefs() {
       setToast({ open: true, message: 'Preferences saved', severity: 'success' })
     } catch {
       setToast({ open: true, message: 'Failed to save preferences', severity: 'error' })
-      /* error state handled by store */
     }
   }
+
   const options = useMemo(
     () => [
       {
@@ -67,7 +69,7 @@ export default function DailyRacePrefs() {
   )
 
   return (
-    <Section title="Daily Races & Shop Preferences">
+    <Section title="Shop Preferences">
       <Stack spacing={2.5} alignItems="stretch">
         {(loading || saving) && <LinearProgress sx={{ borderRadius: 1 }} />}
         {!loaded && !loading ? (
@@ -99,7 +101,7 @@ export default function DailyRacePrefs() {
                     </Stack>
                     <Switch
                       edge="end"
-                      checked={prefs.daily_races[item.key]}
+                      checked={prefs.shop[item.key]}
                       onChange={handleToggle(item.key)}
                       inputProps={{ 'aria-label': item.label }}
                     />

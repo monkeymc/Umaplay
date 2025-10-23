@@ -17,7 +17,7 @@ from core.agent import Player
 from core.agent_nav import AgentNav
 
 from server.main import app
-from server.utils import load_config, ensure_config_exists, ensure_nav_exists
+from server.utils import load_config, ensure_config_exists, ensure_nav_exists, load_nav_prefs
 
 # Controllers & perception interfaces
 from core.controllers.base import IController
@@ -216,6 +216,13 @@ class BotState:
             except Exception:
                 cfg = {}
             Settings.apply_config(cfg or {})
+            
+            # Load nav preferences
+            try:
+                nav_prefs = load_nav_prefs()
+                Settings.apply_nav_preferences(nav_prefs)
+            except Exception:
+                pass
 
             # 2) Configure logging using (possibly updated) Settings.DEBUG
             setup_uma_logging(debug=Settings.DEBUG)
@@ -343,6 +350,14 @@ class NavState:
             except Exception:
                 cfg = {}
             Settings.apply_config(cfg or {})
+            
+            # Load nav preferences
+            try:
+                nav_prefs = load_nav_prefs()
+                Settings.apply_nav_preferences(nav_prefs)
+            except Exception:
+                pass
+            
             setup_uma_logging(debug=Settings.DEBUG)
 
             ctrl = make_controller_from_settings()
@@ -615,6 +630,14 @@ if __name__ == "__main__":
     except Exception:
         cfg0 = {}
     Settings.apply_config(cfg0 or {})
+    
+    # Load nav preferences
+    try:
+        nav_prefs = load_nav_prefs()
+        Settings.apply_nav_preferences(nav_prefs)
+    except Exception:
+        pass
+    
     setup_uma_logging(debug=Settings.DEBUG)
 
     try:

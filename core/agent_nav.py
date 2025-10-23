@@ -58,7 +58,7 @@ class AgentNav:
             "race_team_trials": 0.50,
             "race_daily_races": 0.50,
             "banner_opponent": 0.50,
-            "race_daily_races_monies_row": 0.80,
+            "race_daily_races_monies_row": 0.70,
             "race_team_trials_go": 0.45,
             "button_pink": 0.35,
             "button_advance": 0.35,
@@ -118,7 +118,7 @@ class AgentNav:
             ):
                 return "TeamTrialsShop", {"counts": dict(counts)}
 
-            if nav.has(dets, "button_pink", conf_min=self._thr["button_pink"]) and nav.has(
+            if nav.has(
                 dets, "button_advance", conf_min=self._thr["button_advance"]
             ) and nav.has(
                 dets, "button_white", conf_min=self._thr["button_back"]

@@ -5,13 +5,14 @@ import { useEffect, useRef, useState } from 'react'
 import { useConfigStore } from '@/store/configStore'
 import { useNavPrefsStore } from '@/store/navPrefsStore'
 import PresetsShell from '@/components/presets/PresetsShell'
-import DailyRacePrefs from '@/components/nav/DailyRacePrefs'
+import ShopPrefs from '@/components/nav/ShopPrefs'
+import TeamTrialsPrefs from '@/components/nav/TeamTrialsPrefs'
 
 export default function Home() {
   const saveLocal = useConfigStore((s) => s.saveLocal)
   const config = useConfigStore((s) => s.config)
   const collapsed = useConfigStore((s) => s.uiGeneralCollapsed)
-  const [tab, setTab] = useState<'scenario' | 'daily'>('scenario')
+  const [tab, setTab] = useState<'scenario' | 'shop' | 'team_trials'>('scenario')
   const configLoadedRef = useRef(false)
 
   useEffect(() => {
@@ -37,13 +38,16 @@ export default function Home() {
     <Container maxWidth="xl" sx={{ py: 4, px: { xs: 2, sm: 3 } }}>
       <Stack spacing={3}>
         <Paper
-          elevation={6}
+          elevation={1}
           sx={{
-            borderRadius: 4,
-            px: { xs: 1.5, sm: 3 },
-            py: { xs: 1.5, sm: 2 },
+            borderRadius: 3,
+            overflow: 'hidden',
             bgcolor: (theme) => theme.palette.mode === 'dark' ? theme.palette.background.paper : '#ffffff',
             border: (theme) => `1px solid ${theme.palette.divider}`,
+            background: (theme) =>
+              theme.palette.mode === 'dark'
+                ? theme.palette.background.paper
+                : 'linear-gradient(to bottom, #ffffff 0%, #fafafa 100%)',
           }}
         >
           <Tabs
@@ -52,27 +56,39 @@ export default function Home() {
             variant="scrollable"
             scrollButtons="auto"
             sx={{
+              px: { xs: 1, sm: 2 },
               '& .MuiTab-root': {
-                minHeight: 60,
+                minHeight: 56,
                 textTransform: 'uppercase',
-                fontWeight: 800,
-                letterSpacing: 0.75,
-                fontSize: { xs: 15, sm: 16 },
-                px: { xs: 2, sm: 3 },
+                fontWeight: 700,
+                letterSpacing: 1,
+                fontSize: { xs: 13, sm: 14 },
+                px: { xs: 2.5, sm: 3.5 },
+                py: 1.5,
+                transition: 'all 0.2s ease-in-out',
+                borderRadius: 2,
+                mx: 0.5,
+                '&:hover': {
+                  bgcolor: (theme) =>
+                    theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                },
               },
               '& .MuiTabs-indicator': {
                 display: 'flex',
                 justifyContent: 'center',
-                height: 0,
+                height: 3,
+                bottom: 8,
               },
               '& .MuiTabs-indicatorSpan': {
-                maxWidth: 60,
+                maxWidth: 40,
                 width: '100%',
                 borderRadius: 999,
-                borderBottom: (theme) => `4px solid ${theme.palette.primary.main}`,
+                backgroundColor: (theme) => theme.palette.primary.main,
+                boxShadow: (theme) => `0 0 8px ${theme.palette.primary.main}40`,
               },
               '& .MuiTab-root.Mui-selected': {
                 color: (theme) => theme.palette.primary.main,
+                fontWeight: 800,
               },
               '& .MuiTab-root:not(.Mui-selected)': {
                 color: (theme) => theme.palette.text.secondary,
@@ -83,7 +99,8 @@ export default function Home() {
             indicatorColor="primary"
           >
             <Tab value="scenario" label="Scenario setup" />
-            <Tab value="daily" label="Daily races" />
+            <Tab value="shop" label="Shop preferences" />
+            <Tab value="team_trials" label="Team Trials" />
           </Tabs>
         </Paper>
 
@@ -118,9 +135,14 @@ export default function Home() {
             <SaveLoadBar />
           </Stack>
         </Box>
-        <Box sx={{ display: tab === 'daily' ? 'flex' : 'none', justifyContent: 'center' }}>
+        <Box sx={{ display: tab === 'shop' ? 'flex' : 'none', justifyContent: 'center' }}>
           <Box sx={{ width: '100%', maxWidth: 540 }}>
-            <DailyRacePrefs />
+            <ShopPrefs />
+          </Box>
+        </Box>
+        <Box sx={{ display: tab === 'team_trials' ? 'flex' : 'none', justifyContent: 'center' }}>
+          <Box sx={{ width: '100%', maxWidth: 540 }}>
+            <TeamTrialsPrefs />
           </Box>
         </Box>
       </Stack>

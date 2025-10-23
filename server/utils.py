@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 import subprocess
-from typing import Dict, Tuple
+from typing import Any, Dict, Tuple
 
 PREFS_DIR = Path(__file__).resolve().parent.parent / "prefs"
 CONFIG_PATH = PREFS_DIR / "config.json"
@@ -9,12 +9,15 @@ SAMPLE_CONFIG_PATH = PREFS_DIR / "config.sample.json"
 NAV_PATH = PREFS_DIR / "nav.json"
 SAMPLE_NAV_PATH = PREFS_DIR / "nav.sample.json"
 
-_DEFAULT_NAV_PREFS: Dict[str, Dict[str, bool]] = {
-    "daily_races": {
+_DEFAULT_NAV_PREFS: Dict[str, Dict[str, Any]] = {
+    "shop": {
         "alarm_clock": True,
         "star_pieces": False,
         "parfait": False,
-    }
+    },
+    "team_trials": {
+        "preferred_banner": 3,
+    },
 }
 
 
@@ -30,7 +33,7 @@ def save_config(data: dict):
         json.dump(data, f, indent=2)
 
 
-def load_nav_prefs() -> Dict[str, Dict[str, bool]]:
+def load_nav_prefs() -> Dict[str, Dict[str, Any]]:
     ensure_nav_exists()
     try:
         with open(NAV_PATH, "r", encoding="utf-8") as f:
@@ -42,7 +45,7 @@ def load_nav_prefs() -> Dict[str, Dict[str, bool]]:
     return json.loads(json.dumps(_DEFAULT_NAV_PREFS))
 
 
-def save_nav_prefs(data: Dict[str, Dict[str, bool]]):
+def save_nav_prefs(data: Dict[str, Dict[str, Any]]):
     with open(NAV_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 

@@ -2,14 +2,17 @@ import { create } from 'zustand'
 import { fetchNavPrefs, saveNavPrefs, type NavPrefs } from '@/services/api'
 
 const DEFAULT_PREFS: NavPrefs = {
-  daily_races: {
+  shop: {
     alarm_clock: true,
     star_pieces: false,
     parfait: false,
   },
+  team_trials: {
+    preferred_banner: 3,
+  },
 }
 
-type DailyKey = keyof NavPrefs['daily_races']
+type ShopKey = keyof NavPrefs['shop']
 
 type NavPrefsState = {
   prefs: NavPrefs
@@ -18,20 +21,25 @@ type NavPrefsState = {
   saving: boolean
   error?: string
   load: () => Promise<void>
-  toggleDaily: (key: DailyKey, value: boolean) => void
+  toggleShop: (key: ShopKey, value: boolean) => void
+  setTeamTrialsBanner: (slot: 1 | 2 | 3) => void
   save: () => Promise<NavPrefs>
   resetError: () => void
 }
 
 const defaultPrefs = (): NavPrefs => ({
-  daily_races: { ...DEFAULT_PREFS.daily_races },
+  shop: { ...DEFAULT_PREFS.shop },
+  team_trials: { ...DEFAULT_PREFS.team_trials },
 })
 
 const mergeWithDefaults = (prefs: NavPrefs | undefined): NavPrefs => ({
-  daily_races: {
-    alarm_clock: prefs?.daily_races?.alarm_clock ?? DEFAULT_PREFS.daily_races.alarm_clock,
-    star_pieces: prefs?.daily_races?.star_pieces ?? DEFAULT_PREFS.daily_races.star_pieces,
-    parfait: prefs?.daily_races?.parfait ?? DEFAULT_PREFS.daily_races.parfait,
+  shop: {
+    alarm_clock: prefs?.shop?.alarm_clock ?? DEFAULT_PREFS.shop.alarm_clock,
+    star_pieces: prefs?.shop?.star_pieces ?? DEFAULT_PREFS.shop.star_pieces,
+    parfait: prefs?.shop?.parfait ?? DEFAULT_PREFS.shop.parfait,
+  },
+  team_trials: {
+    preferred_banner: prefs?.team_trials?.preferred_banner ?? DEFAULT_PREFS.team_trials.preferred_banner,
   },
 })
 
@@ -53,13 +61,23 @@ export const useNavPrefsStore = create<NavPrefsState>((set, get) => ({
       throw err
     }
   },
-  toggleDaily: (key, value) =>
+  toggleShop: (key, value) =>
     set((state) => ({
       prefs: {
         ...state.prefs,
-        daily_races: {
-          ...state.prefs.daily_races,
+        shop: {
+          ...state.prefs.shop,
           [key]: value,
+        },
+      },
+      error: undefined,
+    })),
+  setTeamTrialsBanner: (slot) =>
+    set((state) => ({
+      prefs: {
+        ...state.prefs,
+        team_trials: {
+          preferred_banner: slot,
         },
       },
       error: undefined,

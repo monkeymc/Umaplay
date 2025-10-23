@@ -58,6 +58,21 @@ def rows_top_to_bottom(
     return rows
 
 
+def _detections_in_row(
+    dets: List[DetectionDict], row: DetectionDict, name: str, *, conf_min: float = 0.0
+) -> List[DetectionDict]:
+    """Return detections with given name whose center lies inside the row bounds."""
+    rx1, ry1, rx2, ry2 = row["xyxy"]
+    matches: List[DetectionDict] = []
+    for d in by_name(dets, name, conf_min=conf_min):
+        x1, y1, x2, y2 = d["xyxy"]
+        cx = 0.5 * (x1 + x2)
+        cy = 0.5 * (y1 + y2)
+        if rx1 <= cx <= rx2 and ry1 <= cy <= ry2:
+            matches.append(d)
+    return matches
+
+
 def random_center_tap(
     ctrl: IController, img: Image.Image, *, clicks: int, dev_frac: float = 0.20
 ) -> None:
@@ -129,7 +144,7 @@ def advance_sequence_with_mid_taps(
             texts=advance_texts,
             prefer_bottom=True,
             allow_greedy_click=True,
-            timeout_s=4.0,
+            timeout_s=2.3,
             clicks=random.randint(*taps_each_click),
             tag=f"{tag_prefix}_advance",
             return_object=True,
@@ -147,7 +162,7 @@ def advance_sequence_with_mid_taps(
                 last_clicked_pos,
                 clicks=random.randint(2, 3),
             )
-        elif last_clicked_pos:
+        elif last_clicked_pos and i < 5:
             # Click the last known position if available
             ctrl.click_xyxy_center(
                 last_clicked_pos,
@@ -158,7 +173,7 @@ def advance_sequence_with_mid_taps(
             img, _ = collect_snapshot(waiter, yolo_engine, tag=f"{tag_prefix}_tap")
             width, height = img.size
             # Click bottom right quarter of the screen
-            bottom_right = (width * 0.85, height * 0.85, width * 0.95, height * 0.95)
+            bottom_right = (width * 0.9, height * 0.9, width * 0.98, height * 0.98)
             ctrl.click_xyxy_center(
                 bottom_right,
                 clicks=random.randint(2, 3),
@@ -170,7 +185,7 @@ def advance_sequence_with_mid_taps(
 
 
 def _shop_item_order() -> Iterable[Tuple[str, str]]:
-    prefs = Settings.get_daily_race_nav_prefs()
+    prefs = Settings.get_shop_nav_prefs()
     order = [
         ("shop_clock", "alarm_clock"),
         ("shop_star_piece", "star_pieces"),
@@ -205,6 +220,9 @@ def _confirm_exchange_dialog(waiter: Waiter, tag_prefix: str) -> bool:
         return False
 
     sleep(0.8)
+    return True
+
+def end_sale_dialog(waiter: Waiter, tag_prefix: str) -> bool:
     if not waiter.click_when(
         classes=("button_white",),
         texts=("END SALE",),
@@ -233,7 +251,6 @@ def _confirm_exchange_dialog(waiter: Waiter, tag_prefix: str) -> bool:
         tag=f"{tag_prefix}_race",
     )
     return True
-
 
 def handle_shop_exchange(
     waiter: Waiter,
@@ -266,76 +283,68 @@ def handle_shop_exchange(
     else:
         sleep(1.0)
 
-    scroll_dir = -1
     attempts = 0
 
+    all_purchased = True
     while attempts < max_cycles:
         attempts += 1
         img, dets = collect_snapshot(waiter, yolo_engine, tag=f"{tag_prefix}_scan")
 
-        clocks = by_name(dets, "shop_clock")
-        if not clocks:
-            logger_uma.debug("[nav] shop: clock not detected, retry scrolling")
+        rows = rows_top_to_bottom(dets, "shop_row")
+        if not rows:
+            logger_uma.debug("[nav] shop: no shop_row detected, retry scrolling")
             smart_scroll_small(ctrl, steps_android=1, steps_pc=1)
             sleep(1.0)
             continue
 
-        clock = max(clocks, key=lambda d: float(d.get("conf", 0.0)))
-        cy_clock = 0.5 * (clock["xyxy"][1] + clock["xyxy"][3])
-
-        rows = [
-            d for d in by_name(dets, "shop_row") if d["xyxy"][1] <= cy_clock <= d["xyxy"][3]
-        ]
-        row = max(rows, key=lambda d: float(d.get("conf", 0.0))) if rows else None
-        if row is None:
-            logger_uma.debug("[nav] shop: row with clock not found, retry")
-            smart_scroll_small(ctrl, steps_android=1, steps_pc=1)
-            sleep(0.8)
-            continue
-
-        ry1, ry2 = row["xyxy"][1], row["xyxy"][3]
+        any_purchased = False
+        expected_purchases = len(prefs_enabled)
         for det_name, pref_key in prefs_enabled:
-            items = [
-                d
-                for d in by_name(dets, det_name)
-                if ry1 <= (0.5 * (d["xyxy"][1] + d["xyxy"][3])) <= ry2
-            ]
-            if not items:
-                continue
+            for row in rows:
+                items = _detections_in_row(dets, row, det_name)
+                if not items:
+                    continue
 
-            target = max(items, key=lambda d: float(d.get("conf", 0.0)))
-            ctrl.click_xyxy_center(target["xyxy"], clicks=1)
-            logger_uma.info(
-                f"[nav] shop: clicked '{det_name}' (pref={pref_key})"
-            )
-            sleep(0.6)
+                exchanges = _detections_in_row(dets, row, "shop_exchange")
+                if not exchanges:
+                    logger_uma.debug(
+                        f"[nav] shop: exchange button missing in row for {pref_key}"
+                    )
+                    continue
 
-            exchange = waiter.click_when(
-                classes=("shop_exchange",),
-                prefer_bottom=False,
-                timeout_s=2.5,
-                allow_greedy_click=False,
-                tag=f"{tag_prefix}_{pref_key}_exchange",
-            )
-            if not exchange:
-                logger_uma.debug(
-                    f"[nav] shop: exchange button missing for {det_name}, trying next"
-                )
-                continue
-
-            confirmed = _confirm_exchange_dialog(waiter, tag_prefix)
-            if confirmed:
+                target_exchange = max(exchanges, key=lambda d: float(d.get("conf", 0.0)))
+                ctrl.click_xyxy_center(target_exchange["xyxy"], clicks=1)
                 logger_uma.info(
-                    f"[nav] shop: completed exchange for {pref_key}"
+                    f"[nav] shop: clicked exchange for '{det_name}' (pref={pref_key})"
                 )
-                return True
+                sleep(0.5)
 
-            logger_uma.debug(
-                f"[nav] shop: confirmation failed for {pref_key}, continuing"
-            )
+                confirmed = _confirm_exchange_dialog(waiter, tag_prefix)
+                if confirmed:
+                    logger_uma.info(
+                        f"[nav] shop: completed exchange for {pref_key}"
+                    )
+                    any_purchased = True
+                    expected_purchases -= 1
+                else:
+                    logger_uma.debug(
+                        f"[nav] shop: confirmation failed for {pref_key}, continuing"
+                    )
+                if pref_key != "star_pieces":
+                    # if star pieces we may need to look in other rows
+                    break
 
-        smart_scroll_small(ctrl, steps_android=1, steps_pc=1)
-        sleep(1.0)
+        if expected_purchases > 0:
+            smart_scroll_small(ctrl, steps_android=1, steps_pc=1)
+            sleep(1.0)
+        elif any_purchased:
+            # everything purchased at first glance
+            end_sale_dialog(waiter, tag_prefix)
+            return True
+
+    if any_purchased:
+        end_sale_dialog(waiter, tag_prefix)
+        return True
 
     logger_uma.info("[nav] shop: preferences not satisfied after scroll attempts")
     return False

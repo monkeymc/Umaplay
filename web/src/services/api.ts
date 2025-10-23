@@ -31,10 +31,13 @@ export const fetchRaces = async (): Promise<RacesMap> => {
 }
 
 export type NavPrefs = {
-  daily_races: {
+  shop: {
     alarm_clock: boolean
     star_pieces: boolean
     parfait: boolean
+  }
+  team_trials: {
+    preferred_banner: 1 | 2 | 3
   }
 }
 
