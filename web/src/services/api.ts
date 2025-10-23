@@ -30,6 +30,34 @@ export const fetchRaces = async (): Promise<RacesMap> => {
   }
 }
 
+export type NavPrefs = {
+  shop: {
+    alarm_clock: boolean
+    star_pieces: boolean
+    parfait: boolean
+  }
+  team_trials: {
+    preferred_banner: 1 | 2 | 3
+  }
+}
+
+export async function fetchNavPrefs(): Promise<NavPrefs> {
+  const res = await fetch('/nav', { cache: 'no-store' })
+  if (!res.ok) throw new Error('Failed to load nav prefs')
+  return res.json()
+}
+
+export async function saveNavPrefs(prefs: NavPrefs): Promise<NavPrefs> {
+  const res = await fetch('/nav', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(prefs),
+  })
+  if (!res.ok) throw new Error('Failed to save nav prefs')
+  const payload = await res.json()
+  return (payload?.data as NavPrefs) ?? payload ?? prefs
+}
+
 // Save whole app config to backend (server writes root config.json)
 export async function saveServerConfig(payload: unknown): Promise<void> {
   const r = await fetch('/config', {

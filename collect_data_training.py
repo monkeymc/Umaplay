@@ -169,8 +169,19 @@ def percentile_count(n: int, pct: float, *, min_count: int = 0, max_count: Optio
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Collect lowest-confidence images PER FOLDER from 'debug/training/*/raw'.")
-    ap.add_argument("--src", default="debug/training", help="Root folder to scan (default: debug/training).")
+    ap = argparse.ArgumentParser(
+        description="Collect lowest-confidence images per folder from agent-scoped debug captures."
+    )
+    ap.add_argument(
+        "--src",
+        default=str(Path("debug")),
+        help="Root folder to scan (default: repository debug directory).",
+    )
+    ap.add_argument(
+        "--agent",
+        default=None,
+        help="Optional agent subdirectory to target (e.g., ura, agent_nav).",
+    )
     ap.add_argument("--dest-base", default="datasets/uma/raw", help="Destination base (default: datasets/uma/raw).")
     ap.add_argument("--set-name", required=True, help="Set name to create under dest-base (e.g., set_2025-10-11).")
 
@@ -199,7 +210,17 @@ def main() -> None:
     include_pats = args.include or None
     exclude_pats = args.exclude or None
 
-    folders = list_top_level_folders(src_root)
+    if args.agent:
+        agent_root = src_root / args.agent
+        if not agent_root.exists():
+            ap.error(f"Agent folder not found: {agent_root}")
+        scan_roots = [agent_root]
+    else:
+        scan_roots = [p for p in src_root.iterdir() if p.is_dir()]
+
+    folders: List[Path] = []
+    for root in scan_roots:
+        folders.extend(list_top_level_folders(root))
     folders = [f for f in folders if folder_is_included(f.name, include_patterns=include_pats, exclude_patterns=exclude_pats)]
 
     if not folders:
@@ -247,10 +268,17 @@ def main() -> None:
         per_folder_counts.append((folder.name, len(picks), len(chosen)))
 
         # Show a concise preview
-        print(f"[{folder.name}] scored={len(picks)} unscored_skipped={len(unscored)} → pick {len(chosen)} ({args.percentile}% bottom)")
+        agent_label = folder.parent.name
+        print(
+            f"[{agent_label}/{folder.name}] scored={len(picks)} unscored_skipped={len(unscored)} → pick {len(chosen)} ({args.percentile}% bottom)"
+        )
 
         if args.dry_run:
-            dry_dest = dest_root if args.action == "move" else dest_root / folder.name
+            dry_dest = (
+                dest_root
+                if args.action == "move"
+                else dest_root / agent_label / folder.name
+            )
             for sample in chosen[:10]:
                 print(f"  [DRY] {sample.path}  conf={sample.conf:.3f}  →  {dry_dest}")
             if len(chosen) > 10:
@@ -258,7 +286,11 @@ def main() -> None:
             continue
 
         # Transfer to <dest>/<set-name>/<folder>/
-        out_dir = dest_root if args.action == "move" else dest_root / folder.name
+        out_dir = (
+            dest_root
+            if args.action == "move"
+            else dest_root / agent_label / folder.name
+        )
         for sample in chosen:
             safe_transfer(sample.path, out_dir, action=args.action)
 

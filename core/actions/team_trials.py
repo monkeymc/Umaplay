@@ -19,6 +19,7 @@ from core.types import DetectionDict
 from core.utils.logger import logger_uma
 from core.utils.waiter import Waiter
 from core.utils import nav
+from core.settings import Settings
 
 class TeamTrialsState(Enum):
     UNKNOWN = "unknown"
@@ -100,19 +101,19 @@ class TeamTrialsFlow:
             logger_uma.warning("[TeamTrials] No opponent banners detected")
             return
 
-        # Click bottom-most banner (prefer_bottom semantics)
-        clicked = self.waiter.click_when(
-            classes=("banner_opponent",),
-            prefer_bottom=True,
-            timeout_s=2.0,
-            clicks=random.randint(3, 4),
-            tag="team_trials_banner_click",
-        )
-        if not clicked:
-            logger_uma.warning("[TeamTrials] Could not click any opponent banner")
+        banners.sort(key=lambda d: d["xyxy"][1])
+        preferred_index = Settings.get_team_trials_banner_pref() - 1
+        preferred_index = max(0, min(len(banners) - 1, preferred_index))
+        target_banner = banners[preferred_index]
+
+        if target_banner is None:
+            logger_uma.warning("[TeamTrials] Preferred banner index out of range")
             return
 
-        logger_uma.info("[TeamTrials] Clicked opponent banner")
+        self.ctrl.click_xyxy_center(target_banner["xyxy"], clicks=random.randint(3, 4))
+        logger_uma.info(
+            f"[TeamTrials] Clicked opponent banner (slot={preferred_index + 1})"
+        )
         sleep(5)
         sleep(4)
 
@@ -246,7 +247,7 @@ class TeamTrialsFlow:
 
     def _handle_shop_in_place(self) -> None:
         logger_uma.info("[TeamTrials] Shop screen detected; processing exchange.")
-        if nav.handle_shop_exchange_on_clock_row(
+        if nav.handle_shop_exchange(
             self.waiter,
             self.yolo_engine,
             self.ctrl,
@@ -269,7 +270,7 @@ class TeamTrialsFlow:
             advance_texts=None,
             taps_each_click=(3, 4),
             tap_dev_frac=0.1,
-            sleep_after_advance=0.9,
+            sleep_after_advance=1,
         )
         logger_uma.debug(f"[TeamTrials] advances performed: {adv}")
         sleep(7)
@@ -307,7 +308,7 @@ class TeamTrialsFlow:
                 )
                 sleep(0.5)
 
-        did_shop = nav.handle_shop_exchange_on_clock_row(
+        did_shop = nav.handle_shop_exchange(
             self.waiter,
             self.yolo_engine,
             self.ctrl,

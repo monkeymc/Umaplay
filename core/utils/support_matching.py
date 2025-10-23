@@ -1,15 +1,12 @@
 from __future__ import annotations
 
-from functools import lru_cache
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 
-import cv2
 import numpy as np
 
-from core.perception.analyzers.matching.support_card_matcher import (
-    SupportCardMatcher,
-    TemplateEntry,
-)
+from core.perception.analyzers.matching.support_card_matcher import TemplateEntry
+from core.perception.analyzers.matching.support_card_matcher import SupportCardMatcher
+from core.perception.analyzers.matching.remote import RemoteSupportCardMatcher
 from core.settings import DEFAULT_SUPPORT_PRIORITY, Settings
 from core.utils.event_processor import find_event_image_path
 from core.utils.img import to_bgr
@@ -18,7 +15,10 @@ from core.utils.logger import logger_uma
 SupportDeckEntry = Dict[str, Union[str, int]]
 SupportPriority = Dict[str, Union[float, bool]]
 
-_MATCHER_CACHE: Dict[Tuple[Tuple[str, str, str], ...], SupportCardMatcher] = {}
+DeckKey = Tuple[Tuple[str, str, str], ...]
+MatcherCacheValue = Union[SupportCardMatcher, RemoteSupportCardMatcher]
+_MATCHER_CACHE_LOCAL: Dict[DeckKey, SupportCardMatcher] = {}
+_MATCHER_CACHE_REMOTE: Dict[DeckKey, RemoteSupportCardMatcher] = {}
 
 
 def _deck_key(deck: Iterable[SupportDeckEntry]) -> Tuple[Tuple[str, str, str], ...]:
@@ -62,28 +62,52 @@ def get_support_matcher(
     deck: Iterable[SupportDeckEntry],
     *,
     min_confidence: float = 0.70,
-) -> Optional[SupportCardMatcher]:
+) -> Optional[MatcherCacheValue]:
     deck_key = _deck_key(deck)
     if not deck_key:
         return None
 
-    cached = _MATCHER_CACHE.get(deck_key)
-    if cached is not None:
-        return cached
+    use_remote = bool(Settings.USE_EXTERNAL_PROCESSOR)
+    if use_remote:
+        cached_remote = _MATCHER_CACHE_REMOTE.get(deck_key)
+        if cached_remote is not None:
+            return cached_remote
+    else:
+        cached_local = _MATCHER_CACHE_LOCAL.get(deck_key)
+        if cached_local is not None:
+            return cached_local
 
     templates = _build_templates(deck_key)
     if not templates:
         return None
 
-    matcher = SupportCardMatcher(templates, min_confidence=min_confidence)
-    _MATCHER_CACHE[deck_key] = matcher
+    if use_remote:
+        specs: List[Dict[str, Any]] = [
+            {
+                "id": entry.metadata.get("name") or entry.name,
+                "path": entry.path,
+                "metadata": dict(entry.metadata),
+            }
+            for entry in templates
+        ]
+        matcher: MatcherCacheValue = RemoteSupportCardMatcher(
+            specs,
+            min_confidence=min_confidence,
+        )
+    else:
+        matcher = SupportCardMatcher(templates, min_confidence=min_confidence)
+
+    if use_remote:
+        _MATCHER_CACHE_REMOTE[deck_key] = matcher  # type: ignore[assignment]
+    else:
+        _MATCHER_CACHE_LOCAL[deck_key] = matcher  # type: ignore[assignment]
     logger_uma.info(
         "[support_match] Prepared matcher with %d templates", len(templates)
     )
     return matcher
 
 
-def get_runtime_support_matcher(*, min_confidence: float = 0.70) -> Optional[SupportCardMatcher]:
+def get_runtime_support_matcher(*, min_confidence: float = 0.70) -> Optional[MatcherCacheValue]:
     return get_support_matcher(Settings.SUPPORT_DECK, min_confidence=min_confidence)
 
 
@@ -97,7 +121,7 @@ def get_card_priority(name: str, rarity: str, attribute: str) -> SupportPriority
 def match_support_crop(
     crop_bgr: np.ndarray,
     *,
-    matcher: Optional[SupportCardMatcher] = None,
+    matcher: Optional[MatcherCacheValue] = None,
     min_confidence: float = 0.70,
 ) -> Optional[Dict[str, Any]]:
     if crop_bgr is None or crop_bgr.size == 0:

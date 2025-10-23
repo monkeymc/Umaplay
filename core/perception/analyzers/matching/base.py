@@ -3,13 +3,25 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
-import cv2
+# OpenCV is optional for remote-only clients. Guard runtime access so module import works without it.
+try:  # pragma: no cover - exercised indirectly
+    import cv2 as _cv2
+except ImportError:  # pragma: no cover - fallback path for remote clients without OpenCV
+    _cv2 = None  # type: ignore[assignment]
 import numpy as np
 from PIL import Image
 from imagehash import hex_to_hash, phash
 
 from core.utils.img import to_bgr
 from core.utils.logger import logger_uma
+
+
+def _require_cv2() -> Any:
+    if _cv2 is None:
+        raise RuntimeError(
+            "OpenCV is required for local template matching. Install 'opencv-python' or enable remote processing."
+        )
+    return _cv2
 
 
 @dataclass(frozen=True)
@@ -83,6 +95,7 @@ class TemplateMatcherBase:
         self.ms_steps = int(max(1, ms_steps))
 
     def _prepare_entry(self, entry: TemplateEntry) -> Optional[PreparedTemplate]:
+        cv2 = _require_cv2()
         try:
             if entry.image is not None:
                 tmpl_bgr = to_bgr(entry.image)
@@ -122,6 +135,7 @@ class TemplateMatcherBase:
             return None
 
     def _prepare_region(self, region_bgr: np.ndarray) -> RegionFeatures:
+        cv2 = _require_cv2()
         region_bgr = np.ascontiguousarray(region_bgr)
         reg_gray, reg_edges = self.prepare_gray_edges(region_bgr)
         reg_hist = self._histogram(region_bgr)
@@ -190,6 +204,7 @@ class TemplateMatcherBase:
         template_edges: np.ndarray,
         region_shape: Tuple[int, int],
     ) -> float:
+        cv2 = _require_cv2()
         try:
             reg_h, reg_w = region_shape
             if reg_h < 4 or reg_w < 4:
@@ -236,6 +251,7 @@ class TemplateMatcherBase:
 
     @staticmethod
     def prepare_gray_edges(img_bgr: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        cv2 = _require_cv2()
         if img_bgr is None or img_bgr.size == 0:
             return np.zeros((1, 1), dtype=np.uint8), np.zeros((1, 1), dtype=np.uint8)
         gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
@@ -249,12 +265,14 @@ class TemplateMatcherBase:
 
     @staticmethod
     def _histogram(bgr: np.ndarray) -> np.ndarray:
+        cv2 = _require_cv2()
         hist = cv2.calcHist([bgr], [0, 1, 2], None, [8, 8, 8], [0, 256, 0, 256, 0, 256])
         cv2.normalize(hist, hist)
         return hist
 
     @staticmethod
     def _hist_compare(h1: np.ndarray, h2: np.ndarray) -> float:
+        cv2 = _require_cv2()
         if h1 is None or h2 is None:
             return 0.0
         sim = cv2.compareHist(h1, h2, cv2.HISTCMP_CORREL)

@@ -1,9 +1,7 @@
 ---
 date: 2025-10-12T21:17:00-05:00
-status: complete
 repository: Umaplay
 default_branch: main
-current_branch: feature/0.2.0
 git_commit: 2ffbf59
 tags: [architecture, overview]
 context_budget_pct_target: 40
@@ -102,10 +100,13 @@ This design allows the core loop to evolve independently of perception implement
 ## Perception & Automation Stack
 - **Vision**: `core/perception/yolo/` wraps local (`yolo_local.py`) and remote (`yolo_remote.py`) detectors; `core/perception/ocr/` exposes PaddleOCR engines (`ocr_local.py`, `ocr_remote.py`).
 - **Analyzers**: `core/perception/analyzers/` classifies screens, detects UI states, and supports navigation heuristics.
+- **Template matching**: `core/perception/analyzers/matching/` prepares histogram/hash caches and now guards OpenCV usage at runtime; when `cv2` is missing, remote template matching endpoints (`server/main_inference.py`) handle the workload so client-only builds stay lightweight.
 - **Extractors**: `core/perception/extractors/` pulls structured stats, goals, and energy values used by flows.
 - **Button activation**: `core/perception/is_button_active.py` provides classifier logic for interactable buttons.
 - **Waiter synchronization**: `core/utils/waiter.py` coordinates detection loops and click retries across flows.
 - **Automation flows**: `core/actions/` modules cover training (`training_policy.py`, `training_check.py`), lobby orchestration (`lobby.py`), race execution (`race.py`, `daily_race.py`), Team Trials automation (`team_trials.py`), claw game (`claw.py`), event handling (`events.py`), and skill purchasing (`skills.py`).
+- **Agent-scoped debug captures**: Low-confidence YOLO/OCR snapshots are saved under `debug/<agent>/<tag>/raw`. When introducing a new agent, supply its identifier through `PollConfig.agent`/`Waiter` and ensure remote YOLO requests include the same `agent` so ` LocalYOLOEngine`/`RemoteYOLOEngine` place samples in the correct folder.
+- When classifier active/inactive button checks are required use `ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH)`. Check if button is active or not, in the project we are using this classifier a lot
 
 ### Hint Priority System (2025 Q4)
 - **Purpose**: Let presets define per-card hint multipliers or blacklist hints, reducing noise from low-value cards.
@@ -160,7 +161,7 @@ This design allows the core loop to evolve independently of perception implement
 
 ## Operational Notes
 - **Execution modes**: `python main.py` starts the bot and the config server; `run_inference_server.bat` launches remote perception; `uvicorn server.main_inference:app --host 0.0.0.0 --port 8001` runs standalone inference.
-- **Hotkeys & toggles**: `BotState` binds F2 for start/stop; `AgentNav` exposes one-shot flows for Team Trials (F7) and Daily Races (F8) with recovery handling in `core/actions/team_trials.py` and `core/actions/daily_race.py`.
+- **Hotkeys & toggles**: `BotState` binds F2 for start/stop; `AgentNav` exposes one-shot flows for Team Trials (F7), Daily Races (F8), and Roulette (F9). Roulette relies on `core/actions/roulette.py` to spin Prize Derby wheels, respects `NavState.stop()` for early exit, and reuses nav YOLO weights in `core/agent_nav.py`.
 - **Logging & observability**: `core/utils/logger.py` sets structured logs; `debug/` collects screenshots and overlays; cleanup logic in `main.py.cleanup_debug_training_if_needed()` prunes large training captures.
 - **Performance levers**: `core/settings.py` exposes YOLO image size, confidence, OCR mode (fast/server), and remote processor URLs. Nav-specific weights configured via `Settings.YOLO_WEIGHTS_NAV`.
 - **Reliability guards**: `core/utils/abort.py` enforces safe shutdown; `core/utils/waiter.py` throttles retries; `core/actions/race.ConsecutiveRaceRefused` handles stale states.
@@ -192,6 +193,7 @@ This design allows the core loop to evolve independently of perception implement
 - **State management**: Zustand store in `web/src/store/configStore.ts` manages config, exposes actions (`setGeneral`, `patchPreset`, `importJson`).
 - **Schema validation**: `web/src/models/config.schema.ts` ensures inbound configs are normalized and defaulted; migrations keep legacy fields compatible.
 - **Components**: Modular folders (`web/src/components/general/`, `web/src/components/presets/`, `web/src/components/events/`) encapsulate forms, race planners, and event editors.
+- **Daily Races tab**: `web/src/pages/Home.tsx` keeps both tabs mounted for instant switching; `web/src/components/nav/DailyRacePrefs.tsx` writes to `useNavPrefsStore`, which persists `/nav` preferences (alarm clock, star pieces, parfait) via FastAPI without re-fetching when users toggle between tabs.
 - **Styling**: MUI theme toggles via `uiTheme` state; `web/src/App.tsx` consumes design tokens.
 - **Build**: Vite config in `web/vite.config.ts`; production output in `web/dist/` served by FastAPI.
 

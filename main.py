@@ -17,7 +17,7 @@ from core.agent import Player
 from core.agent_nav import AgentNav
 
 from server.main import app
-from server.utils import load_config, ensure_config_exists
+from server.utils import load_config, ensure_config_exists, ensure_nav_exists, load_nav_prefs
 
 # Controllers & perception interfaces
 from core.controllers.base import IController
@@ -123,54 +123,71 @@ def boot_server():
 # Cleanup helpers
 # ---------------------------
 def cleanup_debug_training_if_needed():
-    debug_dir = Path("debug/training")
-    if not debug_dir.exists():
+    debug_root = Settings.DEBUG_DIR
+    if not debug_root.exists():
         return
-    total_bytes = 0
-    for path in debug_dir.rglob("*"):
-        if path.is_file():
-            try:
-                total_bytes += path.stat().st_size
-            except OSError:
-                continue
-    if total_bytes <= 250 * 1024 * 1024:
-        return
-    timestamp = time.strftime("%y%m%d_%H%M%S")
-    set_name = f"set_low_{timestamp}"
-    cmd = [
-        sys.executable,
-        "collect_data_training.py",
-        "--set-name",
-        set_name,
-        "--percentile",
-        "5",
-        "--min-per-folder",
-        "3",
-        "--max-per-folder",
-        "10",
-        "--action",
-        "move",
-        "--exclude",
-        "general",
-        "agent_unknown_advance",
-        "screen",
-    ]
-    logger_uma.info(
-        f"[CLEANUP] debug/training size={total_bytes / (1024 * 1024):.1f} MB exceeds threshold. Running cleanup to {set_name}."
-    )
-    try:
-        subprocess.run(cmd, check=True)
-        for child in debug_dir.iterdir():
-            if child.is_dir():
+
+    threshold_bytes = 250 * 1024 * 1024
+    agent_dirs = [p for p in debug_root.iterdir() if p.is_dir()]
+
+    for agent_dir in sorted(agent_dirs, key=lambda p: p.name.lower()):
+        total_bytes = 0
+        for path in agent_dir.rglob("*"):
+            if path.is_file():
                 try:
-                    shutil.rmtree(child)
-                    logger_uma.info(f"[CLEANUP] Removed folder {child}")
-                except Exception as exc:
-                    logger_uma.warning(f"[CLEANUP] Failed to remove folder {child}: {exc}")
-    except subprocess.CalledProcessError as exc:
-        logger_uma.warning(f"[CLEANUP] Cleanup command exited with status {exc.returncode}: {exc}")
-    except Exception as exc:
-        logger_uma.warning(f"[CLEANUP] Cleanup command failed: {exc}")
+                    total_bytes += path.stat().st_size
+                except OSError:
+                    continue
+
+        if total_bytes <= threshold_bytes:
+            continue
+
+        timestamp = time.strftime("%y%m%d_%H%M%S")
+        set_name = f"{agent_dir.name}_low_{timestamp}"
+        cmd = [
+            sys.executable,
+            "collect_data_training.py",
+            "--src",
+            str(debug_root),
+            "--agent",
+            agent_dir.name,
+            "--set-name",
+            set_name,
+            "--percentile",
+            "5",
+            "--min-per-folder",
+            "3",
+            "--max-per-folder",
+            "10",
+            "--action",
+            "move",
+            "--exclude",
+            "general",
+            "agent_unknown_advance",
+            "screen",
+        ]
+
+        size_mb = total_bytes / (1024 * 1024)
+        logger_uma.info(
+            f"[CLEANUP] debug/{agent_dir.name} size={size_mb:.1f} MB exceeds threshold. Running cleanup to {set_name}."
+        )
+        try:
+            subprocess.run(cmd, check=True)
+            for child in agent_dir.iterdir():
+                if child.is_dir():
+                    try:
+                        shutil.rmtree(child)
+                        logger_uma.info(f"[CLEANUP] Removed folder {child}")
+                    except Exception as exc:
+                        logger_uma.warning(
+                            f"[CLEANUP] Failed to remove folder {child}: {exc}"
+                        )
+        except subprocess.CalledProcessError as exc:
+            logger_uma.warning(
+                f"[CLEANUP] Cleanup command exited with status {exc.returncode}: {exc}"
+            )
+        except Exception as exc:
+            logger_uma.warning(f"[CLEANUP] Cleanup command failed: {exc}")
 
 
 # ---------------------------
@@ -199,6 +216,13 @@ class BotState:
             except Exception:
                 cfg = {}
             Settings.apply_config(cfg or {})
+            
+            # Load nav preferences
+            try:
+                nav_prefs = load_nav_prefs()
+                Settings.apply_nav_preferences(nav_prefs)
+            except Exception:
+                pass
 
             # 2) Configure logging using (possibly updated) Settings.DEBUG
             setup_uma_logging(debug=Settings.DEBUG)
@@ -326,6 +350,14 @@ class NavState:
             except Exception:
                 cfg = {}
             Settings.apply_config(cfg or {})
+            
+            # Load nav preferences
+            try:
+                nav_prefs = load_nav_prefs()
+                Settings.apply_nav_preferences(nav_prefs)
+            except Exception:
+                pass
+            
             setup_uma_logging(debug=Settings.DEBUG)
 
             ctrl = make_controller_from_settings()
@@ -413,9 +445,10 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
     # Support configured hotkey and F2 as backup for Player; F7/F8 for AgentNav
     configured = str(getattr(Settings, "HOTKEY", "F2")).upper()
     keys_bot = sorted(set([configured, "F2"]))
-    keys_nav = ["F7", "F8"]
-    logger_uma.info(f"[HOTKEY] Player: press {', '.join(keys_bot)} to start/stop.")
-    logger_uma.info("[HOTKEY] AgentNav: press F7=TeamTrials, F8=DailyRaces.")
+    keys_nav = ["F7", "F8", "F9"]
+    logger_uma.info(f"[HOTKEY] Run bot in Scenario (e.g. URA, Unity Cup): press {', '.join(keys_bot)} to start/stop.")
+    logger_uma.info("[HOTKEY] AgentNav: press F7=TeamTrials, F8=DailyRaces")
+    logger_uma.info("[HOTKEY] AgentNav: press F9=Roulette/PrizeDerby.")
 
     # Track which keys successfully registered hooks (to skip in polling)
     hooked_keys = set()
@@ -425,6 +458,7 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
     last_ts_toggle = 0.0
     last_ts_team = 0.0
     last_ts_daily = 0.0
+    last_ts_roulette = 0.0
 
     def _debounced_toggle(source: str):
         nonlocal last_ts_toggle
@@ -480,6 +514,27 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
         else:
             nav_state.start(action="daily_races")
 
+    def _debounced_roulette(source: str):
+        nonlocal last_ts_roulette
+        now = time.time()
+        if now - last_ts_roulette < 0.8:
+            logger_uma.debug(f"[HOTKEY] Debounced roulette from {source}.")
+            return
+        last_ts_roulette = now
+        if bot_state.running:
+            logger_uma.warning(
+                "[AgentNav] Cannot start while Player is running. Stop the Player first (F2)."
+            )
+            return
+        if nav_state.running:
+            if nav_state.current_action == "roulette":
+                nav_state.stop()
+            else:
+                nav_state.stop()
+                nav_state.start(action="roulette")
+        else:
+            nav_state.start(action="roulette")
+
     # Try to register hooks
     for k in keys_bot:
         try:
@@ -499,7 +554,7 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
         except Exception as e:
             logger_uma.warning(f"[HOTKEY] Could not register '{k}': {e}")
 
-    for k, fn in [("F7", _debounced_team), ("F8", _debounced_daily)]:
+    for k, fn in [("F7", _debounced_team), ("F8", _debounced_daily), ("F9", _debounced_roulette)]:
         try:
             logger_uma.debug(f"[HOTKEY] Registering hook for {k}…")
             keyboard.add_hotkey(
@@ -535,7 +590,7 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
                 except Exception as e:
                     logger_uma.debug(f"[HOTKEY] Poll error on '{k}': {e}")
             # Nav keys
-            for k, fn in [("F7", _debounced_team), ("F8", _debounced_daily)]:
+            for k, fn in [("F7", _debounced_team), ("F8", _debounced_daily), ("F9", _debounced_roulette)]:
                 try:
                     if keyboard.is_pressed(k):
                         logger_uma.debug(f"[HOTKEY] Poll detected '{k}'.")
@@ -560,6 +615,7 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
 # Main
 # ---------------------------
 if __name__ == "__main__":
+    ensure_nav_exists()
     # Ensure config.json exists (seed from config.sample.json if needed)
     try:
         created = ensure_config_exists()
@@ -574,6 +630,14 @@ if __name__ == "__main__":
     except Exception:
         cfg0 = {}
     Settings.apply_config(cfg0 or {})
+    
+    # Load nav preferences
+    try:
+        nav_prefs = load_nav_prefs()
+        Settings.apply_nav_preferences(nav_prefs)
+    except Exception:
+        pass
+    
     setup_uma_logging(debug=Settings.DEBUG)
 
     try:

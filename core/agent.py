@@ -50,7 +50,8 @@ class Player:
             iou=Settings.YOLO_IOU,
             poll_interval_s=0.5,
             timeout_s=4.0,
-            tag="player",
+            tag=Settings.AGENT_NAME_URA,
+            agent=Settings.AGENT_NAME_URA,
         ),
         skill_list=[
             "Concentration",
@@ -85,6 +86,7 @@ class Player:
 
         # Shared Waiter for the whole agent
         self.waiter = Waiter(self.ctrl, self.ocr, self.yolo_engine, waiter_config)
+        self.agent_name = waiter_config.agent
 
         # Flows
         self.race = RaceFlow(self.ctrl, self.ocr, self.yolo_engine, self.waiter)
@@ -220,7 +222,11 @@ class Player:
                 break
             sleep(delay)
             img, _, dets = self.yolo_engine.recognize(
-                imgsz=self.imgsz, conf=self.conf, iou=self.iou, tag="screen"
+                imgsz=self.imgsz,
+                conf=self.conf,
+                iou=self.iou,
+                tag="screen",
+                agent=self.agent_name,
             )
 
             screen, _ = classify_screen(

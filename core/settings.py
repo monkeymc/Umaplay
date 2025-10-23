@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 import math
-from typing import Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 
 def _env(name: str, default: Optional[str] = None) -> Optional[str]:
@@ -38,6 +38,18 @@ DEFAULT_SUPPORT_PRIORITY: Dict[str, Union[float, bool]] = {
     "enabled": True,
     "scoreBlueGreen": 0.75,
     "scoreOrangeMax": 0.5,
+}
+
+
+_DEFAULT_NAV_PREFS: Dict[str, Dict[str, Any]] = {
+    "shop": {
+        "alarm_clock": True,
+        "star_pieces": False,
+        "parfait": False,
+    },
+    "team_trials": {
+        "preferred_banner": 3,
+    },
 }
 
 
@@ -103,8 +115,12 @@ class Settings:
 
     ANDROID_WINDOW_TITLE = "23117RA68G"
     WINDOW_TITLE = "Umamusume"
+
+    AGENT_NAME_URA: str = "ura"
+    AGENT_NAME_NAV: str = "agent_nav"
     USE_EXTERNAL_PROCESSOR = False
     EXTERNAL_PROCESSOR_URL = "http://127.0.0.1:8001"
+    TEMPLATE_MATCH_TIMEOUT: float = _env_float("TEMPLATE_MATCH_TIMEOUT", default=8.0)
 
     REFERENCE_STATS = {
         "SPD": 1150,
@@ -130,6 +146,10 @@ class Settings:
 
     SUPPORT_PRIORITIES_HAVE_CUSTOMIZATION: bool = False
     SUPPORT_CUSTOM_PRIORITY_KEYS: Set[Tuple[str, str, str]] = set()
+    NAV_PREFS: Dict[str, Dict[str, Any]] = {
+        "shop": dict(_DEFAULT_NAV_PREFS["shop"]),
+        "team_trials": dict(_DEFAULT_NAV_PREFS["team_trials"]),
+    }
 
     # Keep the last applied config so other modules can extract runtime preset safely
     _last_config: dict | None = None
@@ -242,6 +262,52 @@ class Settings:
         except Exception:
             delta = cls.SKILL_PTS_DELTA
         cls.SKILL_PTS_DELTA = max(0, min(2000, delta))
+
+    @classmethod
+    def apply_nav_preferences(cls, nav: Optional[dict]) -> None:
+        nav = nav if isinstance(nav, dict) else {}
+        shop = nav.get("shop") if isinstance(nav, dict) else None
+        team = nav.get("team_trials") if isinstance(nav, dict) else None
+
+        if not isinstance(shop, dict):
+            shop = dict(_DEFAULT_NAV_PREFS["shop"])
+        if not isinstance(team, dict):
+            team = dict(_DEFAULT_NAV_PREFS["team_trials"])
+
+        normalized_shop = {
+            "alarm_clock": bool(shop.get("alarm_clock", True)),
+            "star_pieces": bool(shop.get("star_pieces", False)),
+            "parfait": bool(shop.get("parfait", False)),
+        }
+
+        try:
+            preferred_banner = int(team.get("preferred_banner", 3))
+        except Exception:
+            preferred_banner = 3
+        preferred_banner = max(1, min(3, preferred_banner))
+
+        cls.NAV_PREFS = {
+            "shop": normalized_shop,
+            "team_trials": {"preferred_banner": preferred_banner},
+        }
+
+    @classmethod
+    def get_shop_nav_prefs(cls) -> Dict[str, bool]:
+        prefs = cls.NAV_PREFS.get("shop") or {}
+        return {
+            "alarm_clock": bool(prefs.get("alarm_clock", True)),
+            "star_pieces": bool(prefs.get("star_pieces", False)),
+            "parfait": bool(prefs.get("parfait", False)),
+        }
+
+    @classmethod
+    def get_team_trials_banner_pref(cls) -> int:
+        team = cls.NAV_PREFS.get("team_trials") or {}
+        try:
+            preferred = int(team.get("preferred_banner", _DEFAULT_NAV_PREFS["team_trials"]["preferred_banner"]))
+        except Exception:
+            preferred = _DEFAULT_NAV_PREFS["team_trials"]["preferred_banner"]
+        return max(1, min(3, preferred))
 
     @classmethod
     def extract_runtime_preset(cls, cfg: dict) -> dict:
