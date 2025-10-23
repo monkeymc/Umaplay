@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import base64
-import hashlib
 import io
 from typing import Any, Dict, List, Literal, Optional, Tuple
 from pathlib import Path
@@ -12,12 +11,21 @@ import numpy as np
 import torch
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, validator
+import time
+from collections import OrderedDict
+import hashlib
 
 # Local OCR implementation (host has Paddle installed)
 from core.perception.ocr.ocr_local import LocalOCREngine
 from core.perception.yolo.yolo_local import LocalYOLOEngine
 from PIL import Image, ImageOps
 from core.settings import Settings
+from core.perception.analyzers.matching.base import (
+    PreparedTemplate,
+    TemplateEntry,
+    TemplateMatch,
+    TemplateMatcherBase,
+)
 
 app = FastAPI()
 engine = LocalOCREngine()  # load once; keeps models on CPU/GPU as configured
@@ -27,7 +35,15 @@ engine = LocalOCREngine()  # load once; keeps models on CPU/GPU as configured
 
 @app.get("/health")
 def health():
-    return {"ok": True, "cuda": torch.cuda.is_available()}
+    return {
+        "ok": True,
+        "cuda": torch.cuda.is_available(),
+        "template_cache": {
+            "size": len(_TEMPLATE_CACHE),
+            "hits": _TEMPLATE_CACHE_STATS["hits"],
+            "misses": _TEMPLATE_CACHE_STATS["misses"],
+        },
+    }
 
 
 # -------- OCR endpoint --------
@@ -187,3 +203,187 @@ def yolo_detect(req: YoloRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"YOLO failure: {e}")
+
+
+class RegionPayload(BaseModel):
+    img: str = Field(..., description="Base64-encoded region image (PNG/JPEG)")
+    meta: Dict[str, Any] = Field(default_factory=dict)
+
+
+class TemplateMatchOptions(BaseModel):
+    tm_weight: float = 0.7
+    hash_weight: float = 0.2
+    hist_weight: float = 0.1
+    tm_edge_weight: float = 0.30
+    ms_min_scale: float = 0.60
+    ms_max_scale: float = 1.40
+    ms_steps: int = Field(9, ge=1, le=25)
+
+    @validator("tm_weight", "hash_weight", "hist_weight", pre=True)
+    def _ensure_float(cls, v: Any) -> float:
+        return float(v)
+
+    @validator("tm_edge_weight", "ms_min_scale", "ms_max_scale", pre=True)
+    def _ensure_ratio(cls, v: Any) -> float:
+        return float(v)
+
+
+class TemplateDescriptor(BaseModel):
+    id: str = Field(..., description="Logical identifier for the template")
+    path: Optional[str] = Field(
+        None, description="Filesystem path to template image available on server"
+    )
+    img: Optional[str] = Field(
+        None, description="Inline base64 template override if path not provided"
+    )
+    hash_hex: Optional[str] = Field(None, description="Optional precomputed perceptual hash")
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    @validator("img")
+    def _validate_img(cls, v: Optional[str], values: Dict[str, Any]) -> Optional[str]:
+        if not v and not values.get("path"):
+            raise ValueError("Either 'path' or 'img' must be provided for template")
+        return v
+
+
+class TemplateMatchRequest(BaseModel):
+    mode: Literal["support_cards", "race_banners", "generic"] = "generic"
+    region: RegionPayload
+    templates: List[TemplateDescriptor]
+    options: Optional[TemplateMatchOptions] = None
+    agent: Optional[str] = Field(
+        None, description="Optional agent identifier for logging/debug captures"
+    )
+
+    @validator("templates")
+    def _non_empty_templates(cls, v: List[TemplateDescriptor]) -> List[TemplateDescriptor]:
+        if not v:
+            raise ValueError("At least one template descriptor is required")
+        return v
+
+
+_TEMPLATE_CACHE: "OrderedDict[str, PreparedTemplate]" = OrderedDict()
+_TEMPLATE_CACHE_STATS: Dict[str, int] = {"hits": 0, "misses": 0}
+_TEMPLATE_CACHE_MAX = 256
+
+
+def _template_cache_key(mode: str, descriptor: TemplateDescriptor) -> str:
+    parts = [mode or "", descriptor.id]
+    if descriptor.path:
+        parts.append(f"path:{descriptor.path}")
+    if descriptor.hash_hex:
+        parts.append(f"hash:{descriptor.hash_hex}")
+    if descriptor.img:
+        digest = hashlib.sha256(descriptor.img.encode("utf-8")).hexdigest()[:16]
+        parts.append(f"img:{digest}")
+    return "|".join(parts)
+
+
+def _pop_cache_if_needed() -> None:
+    while len(_TEMPLATE_CACHE) > _TEMPLATE_CACHE_MAX:
+        _TEMPLATE_CACHE.popitem(last=False)
+
+
+def _decode_template_image(b64_img: Optional[str]) -> Optional[np.ndarray]:
+    if not b64_img:
+        return None
+    bgr, _ = _decode_b64_to_bgr(b64_img)
+    return bgr
+
+
+def _prepare_template(
+    matcher: TemplateMatcherBase,
+    mode: str,
+    descriptor: TemplateDescriptor,
+) -> PreparedTemplate:
+    key = _template_cache_key(mode, descriptor)
+    cached = _TEMPLATE_CACHE.get(key)
+    if cached is not None:
+        _TEMPLATE_CACHE_STATS["hits"] += 1
+        _TEMPLATE_CACHE.move_to_end(key)
+        return cached
+
+    image = _decode_template_image(descriptor.img)
+    metadata = dict(descriptor.metadata or {})
+    if descriptor.hash_hex and "hash_hex" not in metadata:
+        metadata["hash_hex"] = descriptor.hash_hex
+
+    entry = TemplateEntry(
+        name=descriptor.id,
+        path=descriptor.path,
+        image=image,
+        metadata=metadata,
+    )
+
+    prepared = matcher._prepare_entry(entry)
+    if prepared is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Template '{descriptor.id}' could not be loaded",
+        )
+
+    _TEMPLATE_CACHE_STATS["misses"] += 1
+    _TEMPLATE_CACHE[key] = prepared
+    _pop_cache_if_needed()
+    return prepared
+
+
+@app.post("/template-match")
+def template_match(req: TemplateMatchRequest) -> Dict[str, Any]:
+    start = time.perf_counter()
+    try:
+        region_bgr, _ = _decode_b64_to_bgr(req.region.img)
+        options = req.options or TemplateMatchOptions(ms_steps=9)
+        matcher = TemplateMatcherBase(
+            tm_weight=options.tm_weight,
+            hash_weight=options.hash_weight,
+            hist_weight=options.hist_weight,
+            tm_edge_weight=options.tm_edge_weight,
+            ms_min_scale=options.ms_min_scale,
+            ms_max_scale=options.ms_max_scale,
+            ms_steps=options.ms_steps,
+        )
+
+        region_features = matcher._prepare_region(region_bgr)
+
+        prepared_templates: List[PreparedTemplate] = []
+        for descriptor in req.templates:
+            prepared = _prepare_template(matcher, req.mode, descriptor)
+            prepared_templates.append(prepared)
+
+        if not prepared_templates:
+            raise HTTPException(status_code=404, detail="No templates available for matching")
+
+        matches: List[TemplateMatch] = matcher._match_region(region_features, prepared_templates)
+
+        elapsed_ms = (time.perf_counter() - start) * 1000.0
+        cache_snapshot = {
+            "size": len(_TEMPLATE_CACHE),
+            "hits": _TEMPLATE_CACHE_STATS["hits"],
+            "misses": _TEMPLATE_CACHE_STATS["misses"],
+        }
+
+        return {
+            "meta": {
+                "mode": req.mode,
+                "agent": req.agent,
+                "elapsed_ms": elapsed_ms,
+                "templates_considered": len(prepared_templates),
+                "cache": cache_snapshot,
+            },
+            "matches": [
+                {
+                    "id": m.name,
+                    "score": m.score,
+                    "tm_score": m.tm_score,
+                    "hash_score": m.hash_score,
+                    "hist_score": m.hist_score,
+                    "metadata": m.metadata,
+                }
+                for m in matches
+            ],
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Template matching failure: {e}")
