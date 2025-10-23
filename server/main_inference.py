@@ -150,6 +150,11 @@ def yolo_detect(req: YoloRequest):
             nav_match = False
 
         yolo_engine_req = yolo_engine_nav if nav_match else yolo_engine
+        default_agent = (
+            Settings.AGENT_NAME_NAV if nav_match else Settings.AGENT_NAME_URA
+        )
+        agent_name = (req.agent or default_agent or "").strip()
+
         bgr, pil_img = _decode_b64_to_bgr(req.img)
         meta, dets = yolo_engine_req.detect_bgr(
             bgr,
@@ -158,7 +163,7 @@ def yolo_detect(req: YoloRequest):
             iou=req.iou,
             original_pil_img=pil_img,
             tag="yolo_endpoint",
-            agent=req.agent,
+            agent=agent_name,
         )
         # tiny debug: checksum of raw BGR bytes
         sha = hashlib.sha256(bgr.tobytes()).hexdigest()[:12]
@@ -167,6 +172,7 @@ def yolo_detect(req: YoloRequest):
                 "shape": tuple(int(x) for x in bgr.shape),
                 "checksum": sha,
                 "weights": w_str,
+                "agent": agent_name,
                 "ultralytics": getattr(
                     type(yolo_engine_req.model), "__module__", "ultralytics"
                 ),

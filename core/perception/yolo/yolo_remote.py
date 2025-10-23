@@ -170,7 +170,13 @@ class RemoteYOLOEngine(IDetector):
         else:
             img = self.ctrl.screenshot(region=region)
 
-        meta, dets = self.detect_pil(img, imgsz=imgsz, conf=conf, iou=iou)
+        meta, dets = self.detect_pil(
+            img,
+            imgsz=imgsz,
+            conf=conf,
+            iou=iou,
+            agent=agent,
+        )
 
         if not Settings.USE_EXTERNAL_PROCESSOR:
             # otherwise it is already saved in external processor
