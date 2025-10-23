@@ -116,19 +116,20 @@ def advance_sequence_with_mid_taps(
     taps_each_click: Tuple[int, int] = (3, 4),
     tap_dev_frac: float = 0.20,
     sleep_after_advance: float = 0.40,
-) -> int:
+):
     """
     Click NEXT/advance a few times; after each advance, tap around center to nudge UI.
     Returns number of advances performed.
     """
     advances = 0
+    last_clicked_pos = None  # Store the last clicked position
     for i in range(iterations_max):
         did, clicked_obj = waiter.click_when(
             classes=(advance_class,),
             texts=advance_texts,
             prefer_bottom=True,
             allow_greedy_click=True,
-            timeout_s=3.0,
+            timeout_s=4.0,
             clicks=random.randint(*taps_each_click),
             tag=f"{tag_prefix}_advance",
             return_object=True,
@@ -136,21 +137,33 @@ def advance_sequence_with_mid_taps(
         if not did and i > 5:
             break
         sleep(sleep_after_advance)
+        
         # Click on the same position as the button we just clicked
         if clicked_obj:
-            # Adjust xyxy coordinates with offset_y
+            # Update last clicked position
             x1, y1, x2, y2 = clicked_obj["xyxy"]
-            adjusted_xyxy = (x1, y1 + 10, x2, y2 + 10)
+            last_clicked_pos = (x1, y1 + 10, x2, y2 + 10)  # Store with offset
             ctrl.click_xyxy_center(
-                adjusted_xyxy,
+                last_clicked_pos,
+                clicks=random.randint(2, 3),
+            )
+        elif last_clicked_pos:
+            # Click the last known position if available
+            ctrl.click_xyxy_center(
+                last_clicked_pos,
                 clicks=random.randint(2, 3),
             )
         else:
-            # Fallback to center tap if no object was clicked
+            # Fallback to bottom right corner if no previous position
             img, _ = collect_snapshot(waiter, yolo_engine, tag=f"{tag_prefix}_tap")
-            random_center_tap(
-                ctrl, img, clicks=random.randint(2, 3), dev_frac=tap_dev_frac
+            width, height = img.size
+            # Click bottom right quarter of the screen
+            bottom_right = (width * 0.85, height * 0.85, width * 0.95, height * 0.95)
+            ctrl.click_xyxy_center(
+                bottom_right,
+                clicks=random.randint(2, 3),
             )
+        
         advances += 1
         sleep(sleep_after_advance)
     return advances
@@ -222,7 +235,7 @@ def _confirm_exchange_dialog(waiter: Waiter, tag_prefix: str) -> bool:
     return True
 
 
-def handle_shop_exchange_on_clock_row(
+def handle_shop_exchange(
     waiter: Waiter,
     yolo_engine: IDetector,
     ctrl: IController,

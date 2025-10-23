@@ -193,7 +193,7 @@ class DailyRaceFlow:
                 logger_uma.info("[DailyRace] Results: continued")
 
             # check for shop, reuse the nav method
-            did_shop = nav.handle_shop_exchange_on_clock_row(
+            did_shop = nav.handle_shop_exchange(
                 self.waiter,
                 self.yolo_engine,
                 self.ctrl,

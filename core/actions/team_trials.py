@@ -246,7 +246,7 @@ class TeamTrialsFlow:
 
     def _handle_shop_in_place(self) -> None:
         logger_uma.info("[TeamTrials] Shop screen detected; processing exchange.")
-        if nav.handle_shop_exchange_on_clock_row(
+        if nav.handle_shop_exchange(
             self.waiter,
             self.yolo_engine,
             self.ctrl,
@@ -269,7 +269,7 @@ class TeamTrialsFlow:
             advance_texts=None,
             taps_each_click=(3, 4),
             tap_dev_frac=0.1,
-            sleep_after_advance=0.9,
+            sleep_after_advance=1,
         )
         logger_uma.debug(f"[TeamTrials] advances performed: {adv}")
         sleep(7)
@@ -307,7 +307,7 @@ class TeamTrialsFlow:
                 )
                 sleep(0.5)
 
-        did_shop = nav.handle_shop_exchange_on_clock_row(
+        did_shop = nav.handle_shop_exchange(
             self.waiter,
             self.yolo_engine,
             self.ctrl,
