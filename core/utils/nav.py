@@ -15,10 +15,19 @@ from core.utils.waiter import Waiter
 
 
 def collect_snapshot(
-    waiter: Waiter, yolo_engine: IDetector, *, agent: str, tag: str
+    waiter: Waiter,
+    yolo_engine: IDetector,
+    *,
+    agent: Optional[str] = None,
+    tag: str,
 ) -> Tuple[Image.Image, List[DetectionDict]]:
+    active_agent = agent if agent is not None else getattr(waiter, "agent", None)
     img, _, dets = yolo_engine.recognize(
-        imgsz=waiter.cfg.imgsz, conf=waiter.cfg.conf, iou=waiter.cfg.iou, agent=agent, tag=tag
+        imgsz=waiter.cfg.imgsz,
+        conf=waiter.cfg.conf,
+        iou=waiter.cfg.iou,
+        agent=active_agent,
+        tag=tag,
     )
     return img, dets
 

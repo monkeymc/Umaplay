@@ -162,7 +162,7 @@ This design allows the core loop to evolve independently of perception implement
 
 ## Operational Notes
 - **Execution modes**: `python main.py` starts the bot and the config server; `run_inference_server.bat` launches remote perception; `uvicorn server.main_inference:app --host 0.0.0.0 --port 8001` runs standalone inference.
-- **Hotkeys & toggles**: `BotState` binds F2 for start/stop; `AgentNav` exposes one-shot flows for Team Trials (F7) and Daily Races (F8) with recovery handling in `core/actions/team_trials.py` and `core/actions/daily_race.py`.
+- **Hotkeys & toggles**: `BotState` binds F2 for start/stop; `AgentNav` exposes one-shot flows for Team Trials (F7), Daily Races (F8), and Roulette (F9). Roulette relies on `core/actions/roulette.py` to spin Prize Derby wheels, respects `NavState.stop()` for early exit, and reuses nav YOLO weights in `core/agent_nav.py`.
 - **Logging & observability**: `core/utils/logger.py` sets structured logs; `debug/` collects screenshots and overlays; cleanup logic in `main.py.cleanup_debug_training_if_needed()` prunes large training captures.
 - **Performance levers**: `core/settings.py` exposes YOLO image size, confidence, OCR mode (fast/server), and remote processor URLs. Nav-specific weights configured via `Settings.YOLO_WEIGHTS_NAV`.
 - **Reliability guards**: `core/utils/abort.py` enforces safe shutdown; `core/utils/waiter.py` throttles retries; `core/actions/race.ConsecutiveRaceRefused` handles stale states.
