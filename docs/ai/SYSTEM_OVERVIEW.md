@@ -1,9 +1,7 @@
 ---
 date: 2025-10-12T21:17:00-05:00
-status: complete
 repository: Umaplay
 default_branch: main
-current_branch: feature/0.2.0
 git_commit: 2ffbf59
 tags: [architecture, overview]
 context_budget_pct_target: 40

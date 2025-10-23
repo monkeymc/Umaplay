@@ -46,7 +46,8 @@ models/base/*
 README.ai.md
 README.train.md
 
-config.json
+prefs/config.json
+prefs/nav.json
 build
 /dist/
 tests/outputs/*

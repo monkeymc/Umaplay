@@ -4,7 +4,7 @@ from __future__ import annotations
 import random
 import time
 from core.controllers.android import ScrcpyController
-from core.perception.analyzers.matching.race_banner import RaceBannerMatcher
+from core.perception.analyzers.matching.race_banner import get_race_banner_matcher
 from core.perception.yolo.interface import IDetector
 from core.utils.waiter import Waiter
 from typing import Dict, List, Optional, Tuple
@@ -56,7 +56,7 @@ class RaceFlow:
         self.ocr = ocr
         self.yolo_engine = yolo_engine
         self.waiter = waiter
-        self._banner_matcher = RaceBannerMatcher()
+        self._banner_matcher = get_race_banner_matcher()
 
     def _ensure_in_raceday(
         self, *, reason: str | None = None, from_raceday=False

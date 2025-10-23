@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
-import cv2
+try:  # pragma: no cover - allows remote clients without OpenCV
+    import cv2 as _cv2
+except ImportError:  # pragma: no cover
+    _cv2 = None  # type: ignore[assignment]
 import numpy as np
 from PIL import Image
 from imagehash import hex_to_hash, phash
@@ -13,10 +16,20 @@ from core.perception.analyzers.matching.base import (
     PreparedTemplate,
 )
 from core.perception.analyzers.matching.base import TemplateMatch, TemplateMatcherBase
+from core.perception.analyzers.matching.remote import RemoteRaceBannerMatcher
 from core.perception.analyzers.matching.support_card_matcher import TemplateEntry
 from core.utils.img import to_bgr
 from core.utils.logger import logger_uma
 from core.utils.race_index import RaceIndex, canonicalize_race_name
+from core.settings import Settings
+
+
+def _require_cv2() -> any:
+    if _cv2 is None:
+        raise RuntimeError(
+            "OpenCV is required for local race banner matching. Install 'opencv-python' or enable remote processing."
+        )
+    return _cv2
 
 
 @dataclass
@@ -156,3 +169,24 @@ class RaceBannerMatcher(TemplateMatcherBase):
     def prepare_gray_edges(img_bgr: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """Backward compatibility shim for legacy call sites."""
         return TemplateMatcherBase.prepare_gray_edges(img_bgr)
+
+
+_REMOTE_MATCHER: Optional[RemoteRaceBannerMatcher] = None
+_LOCAL_MATCHER: Optional[RaceBannerMatcher] = None
+
+
+def get_race_banner_matcher(
+    *, remote: bool | None = None
+) -> Union[RaceBannerMatcher, RemoteRaceBannerMatcher]:
+    use_remote = Settings.USE_EXTERNAL_PROCESSOR if remote is None else remote
+    if use_remote:
+        global _REMOTE_MATCHER
+        if _REMOTE_MATCHER is None:
+            templates = RaceIndex.all_banner_templates().values()
+            _REMOTE_MATCHER = RemoteRaceBannerMatcher(templates)
+        return _REMOTE_MATCHER
+
+    global _LOCAL_MATCHER
+    if _LOCAL_MATCHER is None:
+        _LOCAL_MATCHER = RaceBannerMatcher()
+    return _LOCAL_MATCHER

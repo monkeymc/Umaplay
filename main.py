@@ -17,7 +17,7 @@ from core.agent import Player
 from core.agent_nav import AgentNav
 
 from server.main import app
-from server.utils import load_config, ensure_config_exists
+from server.utils import load_config, ensure_config_exists, ensure_nav_exists
 
 # Controllers & perception interfaces
 from core.controllers.base import IController
@@ -431,7 +431,7 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
     configured = str(getattr(Settings, "HOTKEY", "F2")).upper()
     keys_bot = sorted(set([configured, "F2"]))
     keys_nav = ["F7", "F8", "F9"]
-    logger_uma.info(f"[HOTKEY] Player: press {', '.join(keys_bot)} to start/stop.")
+    logger_uma.info(f"[HOTKEY] Run but in Scenario (e.g. URA, Unity Cup): press {', '.join(keys_bot)} to start/stop.")
     logger_uma.info("[HOTKEY] AgentNav: press F7=TeamTrials, F8=DailyRaces")
     logger_uma.info("[HOTKEY] AgentNav: press F9=Roulette/PrizeDerby.")
 
@@ -600,6 +600,7 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
 # Main
 # ---------------------------
 if __name__ == "__main__":
+    ensure_nav_exists()
     # Ensure config.json exists (seed from config.sample.json if needed)
     try:
         created = ensure_config_exists()
