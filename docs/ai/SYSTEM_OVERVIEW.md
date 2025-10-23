@@ -100,6 +100,7 @@ This design allows the core loop to evolve independently of perception implement
 ## Perception & Automation Stack
 - **Vision**: `core/perception/yolo/` wraps local (`yolo_local.py`) and remote (`yolo_remote.py`) detectors; `core/perception/ocr/` exposes PaddleOCR engines (`ocr_local.py`, `ocr_remote.py`).
 - **Analyzers**: `core/perception/analyzers/` classifies screens, detects UI states, and supports navigation heuristics.
+- **Template matching**: `core/perception/analyzers/matching/` prepares histogram/hash caches and now guards OpenCV usage at runtime; when `cv2` is missing, remote template matching endpoints (`server/main_inference.py`) handle the workload so client-only builds stay lightweight.
 - **Extractors**: `core/perception/extractors/` pulls structured stats, goals, and energy values used by flows.
 - **Button activation**: `core/perception/is_button_active.py` provides classifier logic for interactable buttons.
 - **Waiter synchronization**: `core/utils/waiter.py` coordinates detection loops and click retries across flows.
@@ -192,6 +193,7 @@ This design allows the core loop to evolve independently of perception implement
 - **State management**: Zustand store in `web/src/store/configStore.ts` manages config, exposes actions (`setGeneral`, `patchPreset`, `importJson`).
 - **Schema validation**: `web/src/models/config.schema.ts` ensures inbound configs are normalized and defaulted; migrations keep legacy fields compatible.
 - **Components**: Modular folders (`web/src/components/general/`, `web/src/components/presets/`, `web/src/components/events/`) encapsulate forms, race planners, and event editors.
+- **Daily Races tab**: `web/src/pages/Home.tsx` keeps both tabs mounted for instant switching; `web/src/components/nav/DailyRacePrefs.tsx` writes to `useNavPrefsStore`, which persists `/nav` preferences (alarm clock, star pieces, parfait) via FastAPI without re-fetching when users toggle between tabs.
 - **Styling**: MUI theme toggles via `uiTheme` state; `web/src/App.tsx` consumes design tokens.
 - **Build**: Vite config in `web/vite.config.ts`; production output in `web/dist/` served by FastAPI.
 

@@ -11,7 +11,7 @@ risk_level: medium
 ---
 
 # Purpose
-This SOP provides a template for making configuration changes that span frontend and backend, including schema updates, data migration, and backward compatibility. Use this when adding, removing, or modifying configuration options that need to be synchronized between UI and backend services.
+This SOP provides a template for making configuration changes that span frontend and backend, including schema updates, data migration, and backward compatibility. Use this when adding, removing, or modifying configuration options that need to be synchronized between UI and backend services. The Daily Races preferences tab (`web/src/components/nav/DailyRacePrefs.tsx`) is the reference implementation: Zustand writes to `/nav` via FastAPI, while the scenario tab stays mounted to avoid reloading datasets when switching.
 
 > **Example**: This was used to move `prioritizeHint` from General to Preset config while maintaining backward compatibility.
 
@@ -21,9 +21,10 @@ This SOP provides a template for making configuration changes that span frontend
   - Local repo with latest changes.
   - Understanding of the config structure (General vs. Preset).
 - **Systems/components affected**
-  - Web UI: types, schema, store, and relevant UI components.
+  - Web UI: types, schema, store, and relevant UI components (including nav preference stores when Daily Races toggles change).
   - Backend: settings mapping and any consumers of those settings.
   - Configuration import/export functionality.
+  - Optional remote services that consume the same settings (e.g., template matching when OpenCV is unavailable locally).
 - **Estimated time**
   - 15–30 minutes per config change, depending on complexity.
 
