@@ -31,7 +31,7 @@ Document how the unified `Waiter` in `core/utils/waiter.py` orchestrates detecti
   - Single snapshot probe with optional `texts` OCR.
 - **Waiter.try_click_once()`** (`core/utils/waiter.py:218`)
   - Non-polling variant for opportunistic clicks.
-- **Utility wrappers** in `core/utils/nav.py`: `click_button_loop()`, `advance_sequence_with_mid_taps()`, `handle_shop_exchange_on_clock_row()` use shared waiter semantics.
+- **Utility wrappers** in `core/utils/nav.py`: `click_button_loop()`, `advance_sequence_with_mid_taps()`, `handle_shop_exchange()` use shared waiter semantics.
 
 # Step-by-Step Procedure
 1. Instantiate shared waiter for a flow or agent.
