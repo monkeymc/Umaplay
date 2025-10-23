@@ -9,6 +9,7 @@ from typing import Dict, List, Tuple
 from PIL import Image
 
 from core.actions.daily_race import DailyRaceFlow
+from core.actions.roulette import RouletteFlow
 from core.actions.team_trials import TeamTrialsFlow
 from core.controllers.base import IController
 from core.perception.ocr.interface import OCRInterface
@@ -66,11 +67,19 @@ class AgentNav:
             "button_back": 0.35,
             "button_green": 0.35,
             "button_white": 0.35,
+            "roulette_button": 0.60,
         }
 
         # flows
         self.team_trials = TeamTrialsFlow(ctrl, ocr, yolo_engine, self.waiter)
         self.daily_race = DailyRaceFlow(ctrl, ocr, yolo_engine, self.waiter)
+        self.roulette = RouletteFlow(
+            ctrl,
+            ocr,
+            yolo_engine,
+            self.waiter,
+            stop_event=self._stop_event,
+        )
 
     # --------------------------
     # Screen classification
@@ -109,7 +118,6 @@ class AgentNav:
             ):
                 return "TeamTrialsShop", {"counts": dict(counts)}
 
-            # pink + advance + back (button white but I call it back to not confuse with other button white)
             if nav.has(dets, "button_pink", conf_min=self._thr["button_pink"]) and nav.has(
                 dets, "button_advance", conf_min=self._thr["button_advance"]
             ) and nav.has(
@@ -117,8 +125,6 @@ class AgentNav:
             ):
                 return "TeamTrialsResults", {"counts": dict(counts)}
 
-            # If it only has a 'Back' button_white button in screen, is TeamTrialsStale
-            # and No pink, no advance and not button_green
             if nav.has(dets, "button_white", conf_min=self._thr["button_back"]) and not nav.has(dets, "button_pink", conf_min=self._thr["button_pink"]) and not nav.has(dets, "button_advance", conf_min=self._thr["button_advance"]) and not nav.has(dets, "button_green", conf_min=self._thr["button_green"]):
                 return "TeamTrialsStale", {"counts": dict(counts)}
 
@@ -135,14 +141,17 @@ class AgentNav:
             ):
                 return "RaceDailyRows", {"counts": dict(counts)}
 
-            # For Daily race, if daily race mode is enabled and has 2 elements: 1 button_white (back) and 1 button_green (next) then the classification is DailyRaceResume
             if nav.has(dets, "button_white", conf_min=self._thr["button_back"]) and nav.has(
                 dets, "button_green", conf_min=self._thr["button_green"]
             ):
                 return "DailyRaceResume", {"counts": dict(counts)}
 
+        elif action == "roulette":
+            if nav.has(dets, "roulette_button", conf_min=self._thr["roulette_button"]):
+                return "Roulette", {"counts": dict(counts)}
+
+            return "RouletteUnknown", {"counts": dict(counts)}
         else:
-            # Fallback for other actions retains the broader detection for compatibility.
             if nav.has(
                 dets, "race_team_trials", conf_min=self._thr["race_team_trials"]
             ) or nav.has(
@@ -192,6 +201,9 @@ class AgentNav:
             ):
                 return "DailyRaceResume", {"counts": dict(counts)}
 
+        if nav.has(dets, "roulette_button", conf_min=self._thr["roulette_button"]):
+            return "Roulette", {"counts": dict(counts)}
+
         return "UnknownNav", {"counts": dict(counts)}
 
     # --------------------------
@@ -200,7 +212,6 @@ class AgentNav:
 
     def run(self) -> Tuple[ScreenName, ScreenInfo]:
         self.ctrl.focus()
-        # fresh start: ensure previous stop is cleared
         try:
             self._stop_event.clear()
         except Exception:
@@ -210,9 +221,10 @@ class AgentNav:
         last_info: ScreenInfo = {}
 
         counter = 60
-        while not self._stop_event.is_set() and counter > 0:
+        patience = 3  # for any use case
+        while not self._stop_event.is_set() and counter > 0 and patience > 0:
             img, dets = nav.collect_snapshot(
-                self.waiter, self.yolo_engine, tag="agent_nav"
+                self.waiter, self.yolo_engine, agent=self.agent_name, tag="screen_detector"
             )
             screen, info = self.classify_nav_screen(dets)
             logger_uma.debug(f"[AgentNav] screen={screen} | info={info}")
@@ -268,13 +280,43 @@ class AgentNav:
                 if finalized:
                     self.is_running = False
                     counter = 0
+
+            elif self.action == "roulette":
+                if self._stop_event.is_set():
+                    break
+
+                if screen == "Roulette":
+                    result = self.roulette.run_cycle(tag_prefix="agent_nav_roulette")
+                    if self._stop_event.is_set():
+                        break
+                    if result.get("spun"):
+                        counter = min(counter + 3, 90)
+                        patience = 3
+                    else:
+                        patience -= 1  # safe stop
+                        sleep(0.5)
+                elif screen == "RouletteUnknown":
+                    clicked = self.waiter.click_when(
+                        classes=("button_white",),
+                        texts=("CLOSE",),
+                        allow_greedy_click=False,
+                        prefer_bottom=False,
+                        forbid_texts=("BACK",),
+                        tag="agent_nav_roulette_close_seen",
+                    )
+                    if self._stop_event.is_set():
+                        break
+                    if clicked:
+                        logger_uma.info("[AgentNav] Roulette close detected")
+                        sleep(0.6)
+                    else:
+                        patience -= 1
+
             else:
-                # Stop if we don't know what we're seeing; extend rules as needed
                 counter -= 1
 
             last_screen, last_info = screen, info
-            # Responsive sleep: wake early if stop requested
-            for _ in range(20):  # up to ~2.0s total
+            for _ in range(20):
                 if self._stop_event.is_set():
                     break
                 sleep(0.1)

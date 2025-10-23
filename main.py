@@ -430,9 +430,10 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
     # Support configured hotkey and F2 as backup for Player; F7/F8 for AgentNav
     configured = str(getattr(Settings, "HOTKEY", "F2")).upper()
     keys_bot = sorted(set([configured, "F2"]))
-    keys_nav = ["F7", "F8"]
+    keys_nav = ["F7", "F8", "F9"]
     logger_uma.info(f"[HOTKEY] Player: press {', '.join(keys_bot)} to start/stop.")
-    logger_uma.info("[HOTKEY] AgentNav: press F7=TeamTrials, F8=DailyRaces.")
+    logger_uma.info("[HOTKEY] AgentNav: press F7=TeamTrials, F8=DailyRaces")
+    logger_uma.info("[HOTKEY] AgentNav: press F9=Roulette/PrizeDerby.")
 
     # Track which keys successfully registered hooks (to skip in polling)
     hooked_keys = set()
@@ -442,6 +443,7 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
     last_ts_toggle = 0.0
     last_ts_team = 0.0
     last_ts_daily = 0.0
+    last_ts_roulette = 0.0
 
     def _debounced_toggle(source: str):
         nonlocal last_ts_toggle
@@ -497,6 +499,27 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
         else:
             nav_state.start(action="daily_races")
 
+    def _debounced_roulette(source: str):
+        nonlocal last_ts_roulette
+        now = time.time()
+        if now - last_ts_roulette < 0.8:
+            logger_uma.debug(f"[HOTKEY] Debounced roulette from {source}.")
+            return
+        last_ts_roulette = now
+        if bot_state.running:
+            logger_uma.warning(
+                "[AgentNav] Cannot start while Player is running. Stop the Player first (F2)."
+            )
+            return
+        if nav_state.running:
+            if nav_state.current_action == "roulette":
+                nav_state.stop()
+            else:
+                nav_state.stop()
+                nav_state.start(action="roulette")
+        else:
+            nav_state.start(action="roulette")
+
     # Try to register hooks
     for k in keys_bot:
         try:
@@ -516,7 +539,7 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
         except Exception as e:
             logger_uma.warning(f"[HOTKEY] Could not register '{k}': {e}")
 
-    for k, fn in [("F7", _debounced_team), ("F8", _debounced_daily)]:
+    for k, fn in [("F7", _debounced_team), ("F8", _debounced_daily), ("F9", _debounced_roulette)]:
         try:
             logger_uma.debug(f"[HOTKEY] Registering hook for {k}…")
             keyboard.add_hotkey(
@@ -552,7 +575,7 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
                 except Exception as e:
                     logger_uma.debug(f"[HOTKEY] Poll error on '{k}': {e}")
             # Nav keys
-            for k, fn in [("F7", _debounced_team), ("F8", _debounced_daily)]:
+            for k, fn in [("F7", _debounced_team), ("F8", _debounced_daily), ("F9", _debounced_roulette)]:
                 try:
                     if keyboard.is_pressed(k):
                         logger_uma.debug(f"[HOTKEY] Poll detected '{k}'.")

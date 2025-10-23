@@ -15,10 +15,10 @@ from core.utils.waiter import Waiter
 
 
 def collect_snapshot(
-    waiter: Waiter, yolo_engine: IDetector, *, tag: str
+    waiter: Waiter, yolo_engine: IDetector, *, agent: str, tag: str
 ) -> Tuple[Image.Image, List[DetectionDict]]:
     img, _, dets = yolo_engine.recognize(
-        imgsz=waiter.cfg.imgsz, conf=waiter.cfg.conf, iou=waiter.cfg.iou, tag=tag
+        imgsz=waiter.cfg.imgsz, conf=waiter.cfg.conf, iou=waiter.cfg.iou, agent=agent, tag=tag
     )
     return img, dets
 
