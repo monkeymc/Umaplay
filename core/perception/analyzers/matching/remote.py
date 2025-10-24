@@ -101,17 +101,29 @@ class RemoteTemplateMatcherBase:
         self.set_templates(templates)
 
     def set_templates(self, templates: Iterable[Dict[str, Any]]) -> None:
-        self._templates = [
-            RemoteTemplateDescriptor(
-                id=str(spec.get("id") or spec.get("name")),
-                path=spec.get("path"),
-                metadata=dict(spec.get("metadata") or {}),
-                hash_hex=spec.get("hash_hex"),
-                img=spec.get("img"),
+        entries: List[RemoteTemplateDescriptor] = []
+        for spec in templates:
+            ident = spec.get("id") or spec.get("name")
+            if not ident:
+                continue
+
+            metadata = dict(spec.get("metadata") or {})
+            for key in ("name", "public_path", "size"):
+                value = spec.get(key)
+                if value is not None and key not in metadata:
+                    metadata[key] = value
+
+            entries.append(
+                RemoteTemplateDescriptor(
+                    id=str(ident),
+                    path=spec.get("path"),
+                    metadata=metadata,
+                    hash_hex=spec.get("hash_hex"),
+                    img=spec.get("img"),
+                )
             )
-            for spec in templates
-            if spec.get("id") or spec.get("name")
-        ]
+
+        self._templates = entries
 
     @property
     def templates(self) -> List[RemoteTemplateDescriptor]:
@@ -146,10 +158,13 @@ class RemoteTemplateMatcherBase:
             "templates": [
                 {
                     "id": tmpl.id,
-                    "path": tmpl.path,
+                    "path": None,  # Don't send client paths to remote
                     "metadata": tmpl.metadata,
                     "hash_hex": tmpl.hash_hex,
                     "img": tmpl.img,
+                    "name": tmpl.metadata.get("name"),
+                    "public_path": tmpl.metadata.get("public_path"),
+                    "size": tmpl.metadata.get("size"),
                 }
                 for tmpl in selected
             ],
@@ -165,7 +180,7 @@ class RemoteTemplateMatcherBase:
             response.raise_for_status()
             data = response.json()
         except Exception as exc:
-            logger_uma.debug("[remote_template] Request failed: %s", exc)
+            logger_uma.debug(f"[remote_template] Request failed: {exc}. payload templates={payload.get('templates', [])}")
             return []
 
         matches = data.get("matches", []) or []
