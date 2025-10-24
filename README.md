@@ -148,7 +148,7 @@ I regularly push new updates and bug fixes. To update:
 **Option 1: Using Web UI (Easiest)**
 - Use the **Pull from GitHub** button in the Web UI
 - There's also a **Force Update** button if needed
-- Restart the bot after updating
+- **Restart the bot after updating. Close all terminals / IDEs and do a fresh start**
 
 ![Pull button](assets/doc/git_pull.png)
 
@@ -160,6 +160,8 @@ git reset --hard
 git pull
 pip install -r requirements.txt
 ```
+
+Then **Restart the bot after updating. Close all terminals / IDEs and do a fresh start**
 
 > ⚠️ **Note**: `git reset --hard` will discard any local changes you made to files.
 
