@@ -51,10 +51,10 @@ You will be able to have the best of both worlds: a separated mini computer runn
 
 ## 5. My Virtual Box configurations
 
-![VM Virtual Box](assets/doc/VM-Virtual-Box.png)
-![VM Networking](assets/doc/VM-Bridge-Network.png)
-![VM USB Config](assets/doc/VM-USB-Scrcpy.png)
-![VM in action](assets/doc/VM.png)
+![VM Virtual Box](../assets/doc/VM-Virtual-Box.png)
+![VM Networking](../assets/doc/VM-Bridge-Network.png)
+![VM USB Config](../assets/doc/VM-USB-Scrcpy.png)
+![VM in action](../assets/doc/VM.png)
 
 
 ## 6. Usage Tips
