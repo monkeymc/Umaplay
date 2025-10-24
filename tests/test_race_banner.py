@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-from core.perception.analyzers.race_banner import RaceBannerMatcher
+from core.perception.analyzers.matching.race_banner import RaceBannerMatcher
 from core.utils.race_index import RaceIndex
 
 

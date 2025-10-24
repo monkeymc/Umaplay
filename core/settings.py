@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Optional
+import math
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 
 def _env(name: str, default: Optional[str] = None) -> Optional[str]:
@@ -31,6 +32,25 @@ def _env_float(name: str, default: float) -> float:
         return float(v) if v is not None else default
     except Exception:
         return default
+
+
+DEFAULT_SUPPORT_PRIORITY: Dict[str, Union[float, bool]] = {
+    "enabled": True,
+    "scoreBlueGreen": 0.75,
+    "scoreOrangeMax": 0.5,
+}
+
+
+_DEFAULT_NAV_PREFS: Dict[str, Dict[str, Any]] = {
+    "shop": {
+        "alarm_clock": True,
+        "star_pieces": False,
+        "parfait": False,
+    },
+    "team_trials": {
+        "preferred_banner": 3,
+    },
+}
 
 
 class Settings:
@@ -95,8 +115,12 @@ class Settings:
 
     ANDROID_WINDOW_TITLE = "23117RA68G"
     WINDOW_TITLE = "Umamusume"
+
+    AGENT_NAME_URA: str = "ura"
+    AGENT_NAME_NAV: str = "agent_nav"
     USE_EXTERNAL_PROCESSOR = False
     EXTERNAL_PROCESSOR_URL = "http://127.0.0.1:8001"
+    TEMPLATE_MATCH_TIMEOUT: float = _env_float("TEMPLATE_MATCH_TIMEOUT", default=8.0)
 
     REFERENCE_STATS = {
         "SPD": 1150,
@@ -119,6 +143,13 @@ class Settings:
     PRIORITY_STATS = ["SPD", "STA", "WIT", "PWR", "GUTS"]
 
     MINIMAL_MOOD = "normal"
+
+    SUPPORT_PRIORITIES_HAVE_CUSTOMIZATION: bool = False
+    SUPPORT_CUSTOM_PRIORITY_KEYS: Set[Tuple[str, str, str]] = set()
+    NAV_PREFS: Dict[str, Dict[str, Any]] = {
+        "shop": dict(_DEFAULT_NAV_PREFS["shop"]),
+        "team_trials": dict(_DEFAULT_NAV_PREFS["team_trials"]),
+    }
 
     # Keep the last applied config so other modules can extract runtime preset safely
     _last_config: dict | None = None
@@ -173,6 +204,15 @@ class Settings:
 
         preset_data = preset or {}
 
+        deck, priorities = cls._extract_support_priorities_from_preset(preset_data)
+        cls.SUPPORT_DECK = deck
+        cls.SUPPORT_CARD_PRIORITIES = priorities
+        custom_keys = {
+            key for key, p in priorities.items() if cls._priority_is_custom(p)
+        }
+        cls.SUPPORT_CUSTOM_PRIORITY_KEYS = custom_keys
+        cls.SUPPORT_PRIORITIES_HAVE_CUSTOMIZATION = bool(custom_keys)
+
         cls.MINIMAL_MOOD = str(preset_data.get("minimalMood", cls.MINIMAL_MOOD))
         cls.REFERENCE_STATS = preset_data.get("targetStats", cls.REFERENCE_STATS)
         cls.PRIORITY_STATS = preset_data.get("priorityStats", cls.PRIORITY_STATS)
@@ -224,6 +264,52 @@ class Settings:
         cls.SKILL_PTS_DELTA = max(0, min(2000, delta))
 
     @classmethod
+    def apply_nav_preferences(cls, nav: Optional[dict]) -> None:
+        nav = nav if isinstance(nav, dict) else {}
+        shop = nav.get("shop") if isinstance(nav, dict) else None
+        team = nav.get("team_trials") if isinstance(nav, dict) else None
+
+        if not isinstance(shop, dict):
+            shop = dict(_DEFAULT_NAV_PREFS["shop"])
+        if not isinstance(team, dict):
+            team = dict(_DEFAULT_NAV_PREFS["team_trials"])
+
+        normalized_shop = {
+            "alarm_clock": bool(shop.get("alarm_clock", True)),
+            "star_pieces": bool(shop.get("star_pieces", False)),
+            "parfait": bool(shop.get("parfait", False)),
+        }
+
+        try:
+            preferred_banner = int(team.get("preferred_banner", 3))
+        except Exception:
+            preferred_banner = 3
+        preferred_banner = max(1, min(3, preferred_banner))
+
+        cls.NAV_PREFS = {
+            "shop": normalized_shop,
+            "team_trials": {"preferred_banner": preferred_banner},
+        }
+
+    @classmethod
+    def get_shop_nav_prefs(cls) -> Dict[str, bool]:
+        prefs = cls.NAV_PREFS.get("shop") or {}
+        return {
+            "alarm_clock": bool(prefs.get("alarm_clock", True)),
+            "star_pieces": bool(prefs.get("star_pieces", False)),
+            "parfait": bool(prefs.get("parfait", False)),
+        }
+
+    @classmethod
+    def get_team_trials_banner_pref(cls) -> int:
+        team = cls.NAV_PREFS.get("team_trials") or {}
+        try:
+            preferred = int(team.get("preferred_banner", _DEFAULT_NAV_PREFS["team_trials"]["preferred_banner"]))
+        except Exception:
+            preferred = _DEFAULT_NAV_PREFS["team_trials"]["preferred_banner"]
+        return max(1, min(3, preferred))
+
+    @classmethod
     def extract_runtime_preset(cls, cfg: dict) -> dict:
         """
         Pick the active preset (or first), and return a slim dict with things
@@ -255,13 +341,131 @@ class Settings:
             "raceIfNoGoodValue", cls.RACE_IF_NO_GOOD_VALUE
         )
 
+        deck, priorities = cls._extract_support_priorities_from_preset(preset)
+
         return {
             "plan_races": plan_races,
             "skill_list": skill_list,
             "select_style": select_style,
             "raceIfNoGoodValue": race_if_no_good_value,
+            "support_deck": deck,
+            "support_card_priorities": [
+                {
+                    "name": name,
+                    "rarity": rarity,
+                    "attribute": attribute,
+                    "enabled": data["enabled"],
+                    "scoreBlueGreen": data["scoreBlueGreen"],
+                    "scoreOrangeMax": data["scoreOrangeMax"],
+                }
+                for (name, rarity, attribute), data in priorities.items()
+            ],
         }
 
 
+    @staticmethod
+    def _clamp(value: float, min_value: float, max_value: float) -> float:
+        try:
+            val = float(value)
+        except (TypeError, ValueError):
+            return min_value
+        return max(min_value, min(max_value, val))
+
+    @classmethod
+    def default_support_priority(cls) -> Dict[str, Union[float, bool]]:
+        base = DEFAULT_SUPPORT_PRIORITY
+        return {
+            "enabled": bool(base.get("enabled", True)),
+            "scoreBlueGreen": float(base.get("scoreBlueGreen", 0.75)),
+            "scoreOrangeMax": float(base.get("scoreOrangeMax", 0.5)),
+        }
+
+    @classmethod
+    def _normalize_priority(cls, raw: Optional[dict]) -> Dict[str, Union[float, bool]]:
+        if not raw or not isinstance(raw, dict):
+            return cls.default_support_priority()
+        enabled = bool(raw.get("enabled", True))
+        score_bg = cls._clamp(raw.get("scoreBlueGreen", 0.75), 0.0, 10.0)
+        score_om = cls._clamp(raw.get("scoreOrangeMax", 0.5), 0.0, 10.0)
+        return {
+            "enabled": enabled,
+            "scoreBlueGreen": score_bg,
+            "scoreOrangeMax": score_om,
+        }
+
+    @classmethod
+    def _priority_is_custom(cls, priority: Dict[str, Union[float, bool]]) -> bool:
+        if not isinstance(priority, dict):
+            return False
+        default = cls.default_support_priority()
+
+        if bool(priority.get("enabled", True)) != bool(default.get("enabled", True)):
+            return True
+
+        default_bg = float(default.get("scoreBlueGreen", 0.75))
+        default_om = float(default.get("scoreOrangeMax", 0.5))
+        score_bg = float(priority.get("scoreBlueGreen", default_bg))
+        score_om = float(priority.get("scoreOrangeMax", default_om))
+
+        if not math.isclose(score_bg, default_bg, rel_tol=1e-6, abs_tol=1e-6):
+            return True
+        if not math.isclose(score_om, default_om, rel_tol=1e-6, abs_tol=1e-6):
+            return True
+        return False
+
+    @classmethod
+    def _extract_support_priorities_from_preset(
+        cls, preset: Optional[dict]
+    ) -> Tuple[List[dict], Dict[Tuple[str, str, str], Dict[str, Union[float, bool]]]]:
+        event_setup = (preset or {}).get("event_setup", {}) or {}
+        supports = event_setup.get("supports", []) or []
+
+        deck: List[dict] = []
+        priorities: Dict[Tuple[str, str, str], Dict[str, Union[float, bool]]] = {}
+
+        for entry in supports:
+            if not entry:
+                continue
+            name = entry.get("name")
+            rarity = entry.get("rarity")
+            attribute = entry.get("attribute")
+            slot = entry.get("slot")
+            if not (name and rarity and attribute):
+                continue
+
+            try:
+                slot_idx = int(slot) if slot is not None else len(deck)
+            except (TypeError, ValueError):
+                slot_idx = len(deck)
+
+            card_info = {
+                "slot": slot_idx,
+                "name": str(name),
+                "rarity": str(rarity),
+                "attribute": str(attribute),
+            }
+            deck.append(card_info)
+
+            key = (card_info["name"], card_info["rarity"], card_info["attribute"])
+            priorities[key] = cls._normalize_priority(entry.get("priority"))
+
+        deck.sort(key=lambda c: c["slot"])
+        return deck, priorities
+
 class Constants:
     map_tile_idx_to_type = {0: "SPD", 1: "STA", 2: "PWR", 3: "GUTS", 4: "WIT"}
+
+
+    @classmethod
+    def get_support_priority(
+        cls, name: str, rarity: str, attribute: str
+    ) -> Dict[str, Union[float, bool]]:
+        key = (name, rarity, attribute)
+        if key in Settings.SUPPORT_CARD_PRIORITIES:
+            data = Settings.SUPPORT_CARD_PRIORITIES[key]
+            return {
+                "enabled": bool(data.get("enabled", True)),
+                "scoreBlueGreen": float(data.get("scoreBlueGreen", 0.75)),
+                "scoreOrangeMax": float(data.get("scoreOrangeMax", 0.5)),
+            }
+        return Settings.default_support_priority()

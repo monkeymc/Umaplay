@@ -1,13 +1,16 @@
 import { Button, Stack, Snackbar, Alert } from '@mui/material'
 import { useConfigStore } from '@/store/configStore'
 import { useEventsSetupStore } from '@/store/eventsSetupStore'
-import { saveServerConfig } from '@/services/api'
+import { saveServerConfig, saveNavPrefs } from '@/services/api'
+import { useNavPrefsStore } from '@/store/navPrefsStore'
 import { useState } from 'react'
 
 export default function SaveLoadBar() {
    const config = useConfigStore((s) => s.config)
   // optional selectors if you keep an active preset id in configStore:
   const activePresetId = useConfigStore((s) => s.config.activePresetId)
+  const navPrefs = useNavPrefsStore((s) => s.prefs)
+  const refreshNavPrefs = useNavPrefsStore((s) => s.load)
   // const exportJson = useConfigStore((s) => s.exportJson)
   const [saving, setSaving] = useState(false)
   const [snack, setSnack] = useState<{ open: boolean; msg: string; severity: 'success'|'error'}>({
@@ -45,11 +48,15 @@ export default function SaveLoadBar() {
 
               // 4) POST full config (your existing endpoint)
               await saveServerConfig(merged)
+              await saveNavPrefs(navPrefs)
 
               // 5) Also update the local config store so
               //    export/import and LocalStorage see this immediately.
               useConfigStore.setState((s) => ({ ...s, config: merged }))
-              setSnack({ open: true, msg: 'Config saved to server (config.json)', severity: 'success' })
+              refreshNavPrefs().catch(() => {
+                /* ignore */
+              })
+              setSnack({ open: true, msg: 'Server preferences saved', severity: 'success' })
             } catch (e: any) {
               setSnack({ open: true, msg: e?.message ?? 'Failed to save config', severity: 'error' })
             } finally {

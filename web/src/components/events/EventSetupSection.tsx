@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
 import {
-  Box, Card, CardActionArea, CardContent, Dialog, DialogContent, DialogTitle,
+  Box, Card, CardActionArea, CardContent, Chip, Dialog, DialogContent, DialogTitle,
   Divider, IconButton, InputAdornment, Stack, TextField, Tooltip, Typography
 } from '@mui/material'
 import EditIcon from '@mui/icons-material/Tune'
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
+import PriorityHighIcon from '@mui/icons-material/PriorityHigh'
 import type {
   EventsIndex,
   SupportSet,
@@ -19,6 +20,7 @@ import SmartImage from '@/components/common/SmartImage'
 import { supportImageCandidates, scenarioImageCandidates, traineeImageCandidates, supportTypeIcons } from '@/utils/imagePaths'
 import { useEventsSetupStore } from '@/store/eventsSetupStore'
 import { pickFor } from '@/utils/eventPick'
+import SupportPriorityDialog from './SupportPriorityDialog'
 
 type Props = { index: EventsIndex }
 
@@ -443,6 +445,7 @@ export default function EventSetupSection({ index }: Props) {
   const [scenarioOpen, setScenarioOpen] = useState(false)
   const [traineeOpen, setTraineeOpen] = useState(false)
   const [optionsFor, setOptionsFor] = useState<{ type:'support'|'scenario'|'trainee'; title: string; items: any[] } | null>(null)
+  const [prioritySlot, setPrioritySlot] = useState<number | null>(null)
 
   const openOptionsForSupport = (slot: number) => {
     const sel = supports[slot]
@@ -588,6 +591,23 @@ export default function EventSetupSection({ index }: Props) {
                             </Box>
                           </Box>
                           <Typography variant="body2" noWrap>{sel.name}</Typography>
+                          {(() => {
+                            const pr = sel.priority
+                            const hasCustom = pr
+                              ? (!pr.enabled || pr.scoreBlueGreen !== 0.75 || pr.scoreOrangeMax !== 0.5)
+                              : false
+                            if (!pr) return null
+                            return (
+                              <Stack spacing={0.5} alignItems="center" sx={{ textAlign: 'center', width: '100%' }}>
+                                <Typography variant="caption" color="text.secondary">
+                                  {pr.enabled ? 'Hint enabled' : 'Hint disabled'}
+                                </Typography>
+                                {hasCustom && (
+                                  <Chip size="small" color="info" label="Custom hint" />
+                                )}
+                              </Stack>
+                            )
+                          })()}
                         </>
                       ) : (
                         <>
@@ -612,6 +632,21 @@ export default function EventSetupSection({ index }: Props) {
                         }}
                       >
                         <EditIcon fontSize="small" />
+                      </Box>
+                    </Tooltip>
+                  )}
+                  {sel && (
+                    <Tooltip title="Hint priority settings">
+                      <Box
+                        role="button"
+                        onClick={(e) => { e.stopPropagation(); setPrioritySlot(idx) }}
+                        sx={{
+                          position:'absolute', top:6, left:6, width:28, height:28, display:'grid',
+                          placeItems:'center', borderRadius:2, bgcolor:'background.paper',
+                          border:'2px solid', borderColor:'black', cursor:'pointer'
+                        }}
+                      >
+                        <PriorityHighIcon fontSize="small" />
                       </Box>
                     </Tooltip>
                   )}
@@ -738,6 +773,12 @@ export default function EventSetupSection({ index }: Props) {
           onPick={(keyStep, pick) => { setOverride(keyStep, pick) }}
         />
       )}
+
+      <SupportPriorityDialog
+        open={prioritySlot !== null}
+        support={prioritySlot != null ? supports[prioritySlot] : null}
+        onClose={() => setPrioritySlot(null)}
+      />
     </Stack>
   )
 }

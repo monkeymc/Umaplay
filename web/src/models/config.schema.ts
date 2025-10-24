@@ -59,11 +59,18 @@ export const presetSchema = z.object({
   event_setup: (() => {
     const rarity = z.enum(['SSR','SR','R'])
     const attr   = z.enum(['SPD','STA','PWR','GUTS','WIT','PAL'])
+    const supportPriority = z.object({
+      enabled: z.boolean().default(true),
+      scoreBlueGreen: z.number().min(0).max(10).default(0.75),
+      scoreOrangeMax: z.number().min(0).max(10).default(0.5),
+    }).default({ enabled: true, scoreBlueGreen: 0.75, scoreOrangeMax: 0.5 })
+
     const selectedSupport = z.object({
       slot: z.number(),
       name: z.string(),
       rarity,
       attribute: attr,
+      priority: supportPriority.optional(),
     })
     const selectedScenario = z.object({ name: z.string() }).nullable()
     const selectedTrainee  = z.object({ name: z.string() }).nullable()

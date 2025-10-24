@@ -17,7 +17,7 @@ from core.utils.logger import logger_uma
 # -----------------------------
 DATASETS_EVENTS = Path("datasets/in_game/events.json")
 ASSETS_EVENTS_DIR = Path(
-    "assets/events"
+    "web/public/events"
 )  # /{support|trainee|scenario}/<name>_<rarity>.png
 BUILD_DIR = Path("build")  # will hold event_catalog.json
 CATALOG_JSON = Path("datasets/in_game/event_catalog.json")

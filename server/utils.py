@@ -1,11 +1,24 @@
 import json
 from pathlib import Path
 import subprocess
-from typing import Tuple
+from typing import Any, Dict, Tuple
 
 PREFS_DIR = Path(__file__).resolve().parent.parent / "prefs"
 CONFIG_PATH = PREFS_DIR / "config.json"
 SAMPLE_CONFIG_PATH = PREFS_DIR / "config.sample.json"
+NAV_PATH = PREFS_DIR / "nav.json"
+SAMPLE_NAV_PATH = PREFS_DIR / "nav.sample.json"
+
+_DEFAULT_NAV_PREFS: Dict[str, Dict[str, Any]] = {
+    "shop": {
+        "alarm_clock": True,
+        "star_pieces": False,
+        "parfait": False,
+    },
+    "team_trials": {
+        "preferred_banner": 3,
+    },
+}
 
 
 def load_config() -> dict:
@@ -17,6 +30,23 @@ def load_config() -> dict:
 
 def save_config(data: dict):
     with open(CONFIG_PATH, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+def load_nav_prefs() -> Dict[str, Dict[str, Any]]:
+    ensure_nav_exists()
+    try:
+        with open(NAV_PATH, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+            if isinstance(raw, dict):
+                return raw
+    except Exception:
+        pass
+    return json.loads(json.dumps(_DEFAULT_NAV_PREFS))
+
+
+def save_nav_prefs(data: Dict[str, Dict[str, Any]]):
+    with open(NAV_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
 
@@ -78,6 +108,26 @@ def ensure_config_exists() -> bool:
         # As a last resort, write {}
         try:
             save_config({})
+            return True
+        except Exception:
+            return False
+
+
+def ensure_nav_exists() -> bool:
+    """Ensure nav.json exists; seed from sample or defaults when missing."""
+    if NAV_PATH.exists():
+        return False
+    try:
+        if SAMPLE_NAV_PATH.exists():
+            with open(SAMPLE_NAV_PATH, "r", encoding="utf-8") as sf:
+                sample = json.load(sf)
+            save_nav_prefs(sample)
+        else:
+            save_nav_prefs(_DEFAULT_NAV_PREFS)
+        return True
+    except Exception:
+        try:
+            save_nav_prefs(_DEFAULT_NAV_PREFS)
             return True
         except Exception:
             return False

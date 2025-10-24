@@ -6,10 +6,20 @@ from fastapi import HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 import os
 from typing import Any, Dict
-from server.utils import load_dataset_json
-from server.utils import load_config, save_config, run_cmd, repo_root
+from server.utils import (
+    load_dataset_json,
+    load_config,
+    save_config,
+    run_cmd,
+    repo_root,
+    load_nav_prefs,
+    save_nav_prefs,
+    ensure_nav_exists,
+)
 from server.updater import latest_info
 from core.version import __version__
+
+ensure_nav_exists()
 
 app = FastAPI()
 
@@ -31,6 +41,18 @@ def get_config():
 def update_config(new_config: dict):
     save_config(new_config)
     return {"status": "success", "data": new_config}
+
+
+@app.get("/nav")
+def get_nav():
+    return load_nav_prefs()
+
+
+@app.post("/nav")
+def update_nav(new_nav: Dict[str, Any]):
+    data = new_nav or {}
+    save_nav_prefs(data)
+    return {"status": "success", "data": load_nav_prefs()}
 
 
 PATH = "web/dist"
