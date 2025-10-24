@@ -1,5 +1,7 @@
 # Umamusume Auto Train
 
+> **Latest Update (v0.3.0)**: Added Team Trials banner preference, Shop automation, Roulette auto-spin, and improved Support Card hints handling. [See what's new!](#-whats-new-in-030)
+
 This project is an **AI bot for Umamusume: Pretty Derby** that automates training, races, and skill management. It helps you **farm fans, clear goals, and optimize stats** without grinding manually.
 
 It works on:
@@ -54,8 +56,9 @@ I take no responsibility for bans, issues, or account losses that may result fro
 * **Claw Machine** – Supports the claw mini-game.
 * **Hints** – Prioritize skill hints when enabled.
 * **Web UI** – Manage presets (stats, races, events), adjust advanced settings, switch modes, and update directly from GitHub.
-* **Auto Team Trials** – Automatically plays Team Trials (still experimental) with F7 hotkey, handles shop purchases and session resume. You need to be in the race screen where the team trials, room match, daily races are.
-* **Auto Daily Races** – Automates daily races (still experimental) with F8 hotkey, manages shop purchases and session resume. You need to be in the race screen where the team trials, room match, daily races are.
+* **Auto Team Trials** – Automatically plays Team Trials with F7 hotkey, handles shop purchases, session resume, and respects your banner preference (1-3). You need to be in the race screen where the team trials, room match, daily races are.
+* **Auto Daily Races** – Automates daily races with F8 hotkey, manages shop purchases and session resume. You need to be in the race screen where the team trials, room match, daily races are.
+* **Auto Roulette / Prize Derby** – Automatically spins the Roulette/Prize Derby (F9 hotkey) with smart button state detection.
 
 ---
 
@@ -74,62 +77,91 @@ Make sure you meet these conditions:
 
 ### Installation
 
-#### Installation with Python and Conda
+### 🛠️ Required Software Installation
 
-Requirements:
-* [Git](https://git-scm.com/downloads)
-* [Python 3.10+](https://www.python.org/downloads/)
-* (Optional but recommended) [Anaconda](https://www.anaconda.com/download/success)
+#### Step 1: Install Required Programs
 
-```bash
-git clone https://github.com/Magody/Umaplay.git
-cd Umaplay
+1. **Install Git** (for downloading and updating the bot)
+   - Download from: [git-scm.com](https://git-scm.com/downloads)
+   - Run the installer with all default settings
 
-# Create and activate environment
-conda create -n env_uma python==3.10
-conda activate env_uma
+2. **Install Anaconda** (required for Python environment)
+   - Download Anaconda: [anaconda.com/download](https://www.anaconda.com/download)
+   - Choose the **64-bit Windows Installer**
+   - During installation:
+     - Check "Add Anaconda to my PATH environment variable"
+     - Select "Register Anaconda as my default Python"
+   - Complete the installation
 
-# Install dependencies
-pip install -r requirements.txt
-```
+#### Step 2: Download and Set Up the Bot
+
+1. **Open Command Prompt**
+   - Press `Windows + X` and select "Windows Terminal" or "Command Prompt"
+
+2. **Clone the Repository**
+   Copy and paste these commands one by one, pressing Enter after each:
+   ```bash
+   git clone https://github.com/Magody/Umaplay.git
+   cd Umaplay
+   ```
+
+3. **Set Up Python Environment**
+   ```bash
+   conda create -n env_uma python==3.10
+   conda activate env_uma
+   pip install -r requirements.txt
+   ```
+   - Type `y` and press Enter if prompted to proceed
+   - This may take several minutes to complete
+
+#### Step 3: Verify Installation
+After everything is installed, you should see `(env_uma)` at the beginning of your command prompt line, indicating the environment is active.
+
+> 💡 **Troubleshooting**: If you get a "conda is not recognized" error, close and reopen your command prompt, then try again. If you get some error with library version, try to remove all versions from requirements.txt and run `pip install -r requirements.txt` again. So you get the latest versions for python 3.12 or 3.13. I recommend you to use 3.10.
 
 If you face OCR errors, reinstall **paddle** and **paddleocr**:
 
 ```bash
-pip uninstall -y paddlepaddle paddlepaddle-gpu paddlex paddleocr 
+pip uninstall -y paddlepaddle paddlex paddleocr 
 python -m pip install paddlepaddle
 python -m pip install "paddleocr[all]"
 python -m pip install paddlex
 ```
 
-Then run:
-```bash
-python main.py
-```
+#### Step 4: Running the Bot
 
-* Press **F2** to **start/stop** the bot.
+1. Open Command Prompt and navigate to the Umaplay folder
+2. Run these commands:
+   ```bash
+   conda activate env_uma
+   python main.py
+   ```
+
+* Press **F2** to **start/stop** the bot during gameplay. Or F7, F8, F9 depending on your configs.
 
 ---
 
-#### Updating the project
-I usually push new updates, bug fixes, etc. To update just run these commands:
+#### Updating the Project
+
+I regularly push new updates and bug fixes. To update:
+
+**Option 1: Using Web UI (Easiest)**
+- Use the **Pull from GitHub** button in the Web UI
+- There's also a **Force Update** button if needed
+- Restart the bot after updating
+
+![Pull button](assets/doc/git_pull.png)
+
+**Option 2: Manual Update**
+Open Command Prompt in the Umaplay folder and run:
 ```bash
+conda activate env_uma
 git reset --hard
 git pull
 pip install -r requirements.txt
 ```
 
-Reset hard is just in case you modified some files. Pip install may be needed because I could install new libraries.
-
-Good news, you (maybe) can use this button in WEB UI to pull from github directly also there is another button to 'force' the update. You still need to restart the full script after that:
-
-![Pull button](assets/doc/git_pull.png)
-
----
-
-#### (experimental) Installation with pre-created script
-
-Clone the repo and just open/run the file: **scripts/run_uma.bat**. No Conda stuff, everything should be automatically installed in 'venv'. Very straightforward but it can fail. So better follow the previous instructions.
+> ⚠️ **Note**: `git reset --hard` will discard any local changes you made to files.
 
 ---
 
@@ -185,6 +217,9 @@ You can set:
 
 - **Schedule races**:
 ![UI](assets/doc/UI-races.png)
+
+- **Shop Configuration (Team Trials / Daily races)**:
+![UI](assets/doc/UI-shop.png)
 ---
 
 ## Known Issues
@@ -258,57 +293,29 @@ The bot uses multiple AI components to make decisions:
 
 ## 🆕 Changelog (latest)
 
-**:rocket: Umaplay v0.2.0 — Major Update!**
+**:rocket: Umaplay v0.3.0 — Major Update!**
+### 🆕 What's New in 0.3.0
 
-**Highlights**
+#### Navigator Logic
+- **Team Trials**: Set your preferred banner (1-3) instead of always defaulting to the bottom one
+- **Shop Automation**: New dedicated shop configuration with support for buying Star Pieces and Parfait (make sure you have enough gold!)
+- **Roulette / Prize Derby**: New auto-spin flow with button state detection (Press F9 to enable)
 
-**[NEW] Auto Team Trials Bot (Alpha)**
-* Start with **F7**
-* Handles shop purchases
-* Supports session resume
+#### Support Cards & Hints
+- **Custom Support Priority**: Configure hint preferences with custom scores based on importance
 
-**[NEW] :horse_racing: Auto Daily Races Bot (Alpha)**
-* Start with **F8**
-* Handles shop purchases
-* Supports session resume
+#### Bug Fixes and Improvements
+- More robust race flow when you don't have the required trophy
+- New template-matching endpoint with caching and multiscale support
+- No-OpenCV mode for remote clients
+- Improved Navigator YOLO model
+- Various timing and reliability improvements
 
-**AI YOLO Model Updates**
-* Retrained with **100+ new images**
-* Better detection of **rainbows** and **support cards**
-* Added detection for **support_tazuna** card
-* Created new AI model for Team Trials
-
-**:dart: Training Strategy / Policy**
-* *Undertrain stat % threshold* now configurable in **Web UI** (default: 6%)
-* Improved decision making for top 3 stats
-* Option to **disable races** if no good options
-* Smarter **summer training** (avoids energy overcap)
-* Improved Tazuna card recreation handling
-
-**:date: Race Scheduler Fixes**
-* Fixed detection for similar events (e.g., *Tokyo Yushun* vs *Japanese Oaks*)
-* Better handling of "varies" race conditions from Gametora DB
-* Fixed issue where ~75% of scheduled races were skipped
-
-**Skill Buying Improvements**
-* Optimized interval checks to reduce unnecessary checks
-
-**:globe_with_meridians: Web UI Enhancements**
-* Moved **hint configuration** to presets
-* Wired custom **failure % / minimal auto rest %** settings
-* Browser now auto-opens
-
-**General Bug Fixes**
-* Trainee event options now properly override global settings
-* Improved event text matching
-* Added **automatic cleanup** for debug folder if >250 MB at startup
-
-### Next up (v0.3.0 Roadmap)
-1. **New cards/trainings**: Automate integration with ChatGPT pipeline
-2. **Skill buying**: Improve title recognition and prevent double purchases
-3. **Team trials**: Better stale state handling
-4. **Bot Strategy**: Hint support priority, race skipping for rainbows, and more
-
+### Next steps (0.4.0):
+- Refactor code to support multiple scenarios and the explosions from Aoharu Hai (Unity Cup)
+- Review of claw machine... But I don't promise anything XD
+- Improve OCR when buying skills, specially when names are very similar as reported by Rosetta and Hibiki
+- PAL (Tazuna/Riko Kashimoto) special configurations on web UI to leverage them properly
 
 ---
 
