@@ -3,15 +3,9 @@
 This organizes the mixed notes into a clear, actionable backlog. Items are grouped by workstream and priority. “Later” holds non-urgent ideas. A final section captures non-UMA (“Meta Manager”) items so they don’t pollute the UMA queue.
 
 ================================================================================
-NEXT WORK (towards 0.3.0)
+NEXT WORK (towards 0.4.0)
 
-0.3.0 base
-Bot Strategy / Policy:
-- Hint support card priority checker
-- auto wheel clicker for bingo event?
-- Daily buy screen, to allow buying star pieces too. Request from: 
-
-0.3.1+
+0.4.0+
 Bot Strategy / Policy:
 - Lookup toggle: allow skipping **scheduled race** if training has **2+ rainbows**
   “Check first” at lobby: pre-turn heuristics before going to infirmaty, rest, etc. Pre lookup
@@ -28,8 +22,10 @@ Bot Strategy / Policy:
 
 ---------------------
 Priority for 0.4.0:
-
+not sure its its the yolo detection but it keeps picking keeping the lead when i have taking the lead selected as skills to buy
 For the claw machine, I would suggest that it only select the first plushie on the first row. This way, you can almost guarantee a successful catch and should have a much easier time dealing with it compared to trying with the other rows. If you have yet to try it that is.
+
+annotated, on 0.4.0 I'm working a 'special' exceptions / rules for that kind of similar texts. Rosetta recommended to upgrade the confidence treshold of OCR from 0.8 to 0.9, I will combine that suggestion with custom rules
 
 While we've got activity here:
 I'd suggest increasing the OCR threshold for skills to 0.9 - currently some near matches have confidence in the 0.8s such as standard distance to non-standard distance and Tokyo racecourse to Kyoto racecourse
