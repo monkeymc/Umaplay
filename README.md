@@ -1,6 +1,8 @@
 # Umamusume Auto Train
 
-> **Latest Update (v0.3.0)**: Added Team Trials banner preference, Shop automation, Roulette auto-spin, and improved Support Card hints handling. [See what's new!](#-whats-new-in-030)
+> **Latest Update (v0.3.1)**: Fixed remote template matching for support cards and race banners. [See what's new!](#-whats-new-in-031)
+> 
+> _Previous update (v0.3.0): Added Team Trials banner preference, Shop automation, Roulette auto-spin, and improved Support Card hints handling._
 
 This project is an **AI bot for Umamusume: Pretty Derby** that automates training, races, and skill management. It helps you **farm fans, clear goals, and optimize stats** without grinding manually.
 
@@ -294,6 +296,16 @@ The bot uses multiple AI components to make decisions:
 ---
 
 ## 🆕 Changelog (latest)
+
+**:bug: Umaplay v0.3.1 — Bugfix Release**
+### 🆕 What's New in 0.3.1
+
+#### Bug Fixes
+- **Remote Template Matching**: Fixed path resolution for support cards and race banners in remote inference mode
+- **Template Loading**: Improved error logging for template loading failures
+- **Path Resolution**: Added proper `public_path` computation for assets served via web server
+
+---
 
 **:rocket: Umaplay v0.3.0 — Major Update!**
 ### 🆕 What's New in 0.3.0
