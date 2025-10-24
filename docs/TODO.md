@@ -106,33 +106,4 @@ row** and racing at **0 energy**.
 
 ================================================================================
 IMPLEMENTED — PENDING VALIDATION
---------------------------------
-
-Events
-- Added SSR: Mejiro Ryan (GUTS), Narita Brian (SPD), Daiwa Scarlet (PWR), Winning Ticket (STA), Sweep Tosho (SPD), Mejiro Ardan (WIT)
-
-Team Trials
-- Bug fix: instead of clicking races, now clicks around same button, solves Stale state
-
-
-
-to validate:
-feat: add debug logging and improve race skip detection reliability
-
-feat: add Symboli Rudolf Support card in event chooser
-
-perf: reduce sleep delay and tap count in team trials navigation sequence
-
-refactor: optimize tap sequence by clicking directly on previous button
-
-refactor: improve type safety and error handling across core modules
-
-feat: add new support cards events data for Mejiro Ryan, Narita Brian, and others
-
-chore: add .windsurf directory to .gitignore
-
-chore: remove windsurf workflows and codeium ignore files
-
-fix: increase hotkey debounce to 0.8s to prevent hook/poll race conditions
-
-feat: improve race lobby button detection with progressive retries and stabilization logic
+-------
