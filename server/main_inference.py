@@ -238,12 +238,13 @@ class TemplateDescriptor(BaseModel):
     )
     hash_hex: Optional[str] = Field(None, description="Optional precomputed perceptual hash")
     metadata: Dict[str, Any] = Field(default_factory=dict)
-
-    @validator("img")
-    def _validate_img(cls, v: Optional[str], values: Dict[str, Any]) -> Optional[str]:
-        if not v and not values.get("path"):
-            raise ValueError("Either 'path' or 'img' must be provided for template")
-        return v
+    name: Optional[str] = Field(None, description="Display name override for this template")
+    public_path: Optional[str] = Field(
+        None, description="Public asset path used by remote clients for reference"
+    )
+    size: Optional[Tuple[int, int]] = Field(
+        None, description="Width/height of the template, if known"
+    )
 
 
 class TemplateMatchRequest(BaseModel):
@@ -307,10 +308,24 @@ def _prepare_template(
     metadata = dict(descriptor.metadata or {})
     if descriptor.hash_hex and "hash_hex" not in metadata:
         metadata["hash_hex"] = descriptor.hash_hex
+    if descriptor.name and "name" not in metadata:
+        metadata["name"] = descriptor.name
+    if descriptor.public_path and "public_path" not in metadata:
+        metadata["public_path"] = descriptor.public_path
+    if descriptor.size and "size" not in metadata:
+        metadata["size"] = list(descriptor.size)
+
+    # Resolve path: if public_path is provided, map it to server's local asset structure
+    resolved_path = descriptor.path
+    if descriptor.public_path and not image:
+        # public_path format: /race/G2/All Comers-Y2-9-2.png
+        # Map to server's web/public/ structure
+        public_rel = descriptor.public_path.lstrip("/")
+        resolved_path = str(Settings.ROOT_DIR / "web" / "public" / public_rel)
 
     entry = TemplateEntry(
         name=descriptor.id,
-        path=descriptor.path,
+        path=resolved_path,
         image=image,
         metadata=metadata,
     )
@@ -319,7 +334,7 @@ def _prepare_template(
     if prepared is None:
         raise HTTPException(
             status_code=404,
-            detail=f"Template '{descriptor.id}' could not be loaded",
+            detail=f"Template '{descriptor.id}' could not be loaded (path={resolved_path}, public_path={descriptor.public_path})",
         )
 
     _TEMPLATE_CACHE_STATS["misses"] += 1

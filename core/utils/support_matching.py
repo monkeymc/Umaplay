@@ -44,6 +44,15 @@ def _build_templates(deck_key: Tuple[Tuple[str, str, str], ...]) -> List[Templat
                 "[support_match] Missing asset for %s (%s/%s)", name, rarity, attribute
             )
             continue
+        
+        # Compute public_path for remote matching
+        public_path = None
+        try:
+            rel = img_path.relative_to(Settings.ROOT_DIR / "web" / "public")
+            public_path = "/" + str(rel).replace("\\", "/")
+        except ValueError:
+            pass
+        
         templates.append(
             TemplateEntry(
                 name=name,
@@ -52,6 +61,7 @@ def _build_templates(deck_key: Tuple[Tuple[str, str, str], ...]) -> List[Templat
                     "name": name,
                     "rarity": rarity,
                     "attribute": attribute,
+                    "public_path": public_path,
                 },
             )
         )
@@ -87,6 +97,7 @@ def get_support_matcher(
                 "id": entry.metadata.get("name") or entry.name,
                 "path": entry.path,
                 "metadata": dict(entry.metadata),
+                "public_path": entry.metadata.get("public_path"),
             }
             for entry in templates
         ]
