@@ -48,10 +48,14 @@ def _build_templates(deck_key: Tuple[Tuple[str, str, str], ...]) -> List[Templat
         # Compute public_path for remote matching
         public_path = None
         try:
-            rel = img_path.relative_to(Settings.ROOT_DIR / "web" / "public")
+            # img_path is absolute; try to make it relative to web/public
+            web_public = (Settings.ROOT_DIR / "web" / "public").resolve()
+            rel = img_path.resolve().relative_to(web_public)
             public_path = "/" + str(rel).replace("\\", "/")
-        except ValueError:
-            pass
+        except (ValueError, OSError) as e:
+            logger_uma.debug(
+                "[support_match] Could not compute public_path for %s: %s", img_path, e
+            )
         
         templates.append(
             TemplateEntry(
