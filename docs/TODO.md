@@ -5,13 +5,13 @@ This organizes the mixed notes into a clear, actionable backlog. Items are group
 ================================================================================
 NEXT WORK (towards 0.3.0)
 
-0.2.2
+0.3.0 base
 Bot Strategy / Policy:
 - Hint support card priority checker
 - auto wheel clicker for bingo event?
 - Daily buy screen, to allow buying star pieces too. Request from: 
 
-0.3.0
+0.3.1+
 Bot Strategy / Policy:
 - Lookup toggle: allow skipping **scheduled race** if training has **2+ rainbows**
   “Check first” at lobby: pre-turn heuristics before going to infirmaty, rest, etc. Pre lookup
