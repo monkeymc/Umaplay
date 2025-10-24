@@ -137,7 +137,7 @@ python -m pip install paddlex
    python main.py
    ```
 
-* Press **F2** to **start/stop** the bot during gameplay. Or F7, F8, F9 depending on your configs.
+* Press **F2** to **start/stop** the bot during gameplay (YOU MUST BE on **career lobby screen** (the one with the Tazuna hint icon)). Or F7, F8, F9 depending on your configs.
 
 ---
 
