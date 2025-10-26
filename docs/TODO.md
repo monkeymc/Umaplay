@@ -20,7 +20,7 @@ Web UX / UI:
 - Make it really clear of what preset is being using, visually, so we don't have problems
 
 Skill Buying:
-- @Rosetta / @Hibiki: Improve OCR ambiguos recognition (reports). non-standard vs standard for example and others of taking the lead / leading the .... This person shared some ZIP files that can help.
+- @Rosetta / @Hibiki: Improve OCR ambiguos recognition (reports). non-standard vs standard for example and others of taking the lead / leading the .... 
 """
 regarding the OCR, I would prefer to have a kind of 'exceptions' / 'custom logic' for those particular cases
 """
@@ -43,7 +43,7 @@ Events:
 
 ### 0.3.3
 Claw Machine:
-- @Rosetta: Re-check of the logic so it always Win. If first detected plushie is good enough and it is not at the border take it, if not do a full scan
+- @Rosetta: Re-check of the logic so it always Win. If first detected plushie is good enough and it is not at the border take it, if not do a full scan. Check the zips on discord
 
 Bug:
 - race.py 867 when getting the style_btns chosen, error of list index out of range
