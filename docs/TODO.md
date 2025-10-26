@@ -14,6 +14,10 @@ General:
 - Change 'hint value enabled' instead of only 'hint enabled' or hint not ignored, something more clear
 - Cleanup requirements for python 3.10, delete some unused dependencies, pin all versions. TEST in real pc
 - after selecting a tile training, wait more, to avoid 'capture' screen cinematic where it is training, same for 'back' button in training decision to go back
+- Bug: wrong click position, when resize scr cpy or even not resizing it, it is no the clicking right it is offset, put the corner at the top left
+
+Web UX / UI:
+- Make it really clear of what preset is being using, visually, so we don't have problems
 
 Skill Buying:
 - @Rosetta / @Hibiki: Improve OCR ambiguos recognition (reports). non-standard vs standard for example and others of taking the lead / leading the .... This person shared some ZIP files that can help.
@@ -21,13 +25,13 @@ Skill Buying:
 regarding the OCR, I would prefer to have a kind of 'exceptions' / 'custom logic' for those particular cases
 """
 - @EO1:Web UI: Organize the types of skills so you don't have to search every single skill you need like debuffs, stamina skills, greens, purples etc. Also include new ones and images to make it easier.
-- Improve Control for double buying of single circle skills. if hint / skill already got / bought, not take that hint anymore:
+- @sando: Improve Control for double buying of single circle skills. if hint / skill already got / bought, not take that hint anymore:
 """
 So, in our screen where we are buying skills, we have a pseudo-control to control how much time we need to buy, and that is working. The problem is that the next time that we visit the skills, that is reset, so we are buying again the same skills. So maybe we need to persist in a higher level, maybe at player level, what skills have we bought, and so the next time... So we have this memory of the skills that we bought, that were enabled, and given this, we can control to not buy more, especially the skills that has one single circle. So we only buy one, and the next time we match with the OCR we just can ignore, so we need this kind of memory to understand which skills we bought.
 """
 
 Events:
-- @EO1: Include Summer Characters and new characters and cards. Make it scalable and more easy to replicate
+- @EO1: Include Summer Characters and new characters and cards. Make it scalable and more easy to replicate. Auto web scraper with python?
 
 
 ### 0.3.3
