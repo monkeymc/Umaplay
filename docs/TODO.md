@@ -13,6 +13,7 @@ General:
 - “Hint Icon” recognition with same YOLO: so we reduce misses. Don't use color for this.
 - Change 'hint value enabled' instead of only 'hint enabled' or hint not ignored, something more clear
 - Cleanup requirements for python 3.10, delete some unused dependencies, pin all versions. TEST in real pc
+- after selecting a tile training, wait more, to avoid 'capture' screen cinematic where it is training, same for 'back' button in training decision to go back
 
 Skill Buying:
 - @Rosetta / @Hibiki: Improve OCR ambiguos recognition (reports). non-standard vs standard for example and others of taking the lead / leading the .... This person shared some ZIP files that can help.
