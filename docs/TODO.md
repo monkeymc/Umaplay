@@ -25,9 +25,14 @@ Skill Buying:
 regarding the OCR, I would prefer to have a kind of 'exceptions' / 'custom logic' for those particular cases
 """
 - @EO1:Web UI: Organize the types of skills so you don't have to search every single skill you need like debuffs, stamina skills, greens, purples etc. Also include new ones and images to make it easier.
-- @sando: Improve Control for double buying of single circle skills. if hint / skill already got / bought, not take that hint anymore:
+- Improve Control for double buying of single circle skills. if hint / skill already got / bought, not take that hint anymore:
 """
 So, in our screen where we are buying skills, we have a pseudo-control to control how much time we need to buy, and that is working. The problem is that the next time that we visit the skills, that is reset, so we are buying again the same skills. So maybe we need to persist in a higher level, maybe at player level, what skills have we bought, and so the next time... So we have this memory of the skills that we bought, that were enabled, and given this, we can control to not buy more, especially the skills that has one single circle. So we only buy one, and the next time we match with the OCR we just can ignore, so we need this kind of memory to understand which skills we bought.
+"""
+- @sando:
+"""
+one feature I'd like to see is conditional hint scoring - take a support card like SR Air Groove for instance, which is commonly featured in decks for front runner parents, and you prioritize her hints highly only until she finally gives you Groundwork, and then her hints are of no concern - I believe that would be quite achievable here since reading the buyable skill list already works well, so keeping a list of all the skills we see when scrolling through skill list and then allowing hint priority to take into account whether a skill or set of skills is already part of our available skills would make this bot quite a bit more powerful for parent farming
+if you get around to this, a toggle to check the skill list each time after a hint of a card we care about is clicked to check if we just hit an important skill or not would be nice for people who don't mind slower runs in exchange for more hint reliability
 """
 
 Events:
