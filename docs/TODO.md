@@ -10,11 +10,19 @@ This organizes the mixed notes into a clear, actionable backlog. Items are group
 General:
 - @EpharGy: Add a CLI flag to specify port, ie --port 8005
 - Base model uma full training.
-- “Hint Icon” recognition with same YOLO: so we reduce misses. Don't use color for this.
+- “Hint Icon” recognition with same YOLO: so we reduce misses. Don't use color for this. Hint icon should intersect from TOP not from bottom, or stay at top
 - Change 'hint value enabled' instead of only 'hint enabled' or hint not ignored, something more clear
 - Cleanup requirements for python 3.10, delete some unused dependencies, pin all versions. TEST in real pc
-- after selecting a tile training, wait more, to avoid 'capture' screen cinematic where it is training, same for 'back' button in training decision to go back
+- **after selecting a tile training, wait more, to avoid 'capture' screen cinematic where it is training, same for 'back' button in training decision to go back**
 - Bug: wrong click position, when resize scr cpy or even not resizing it, it is no the clicking right it is offset, put the corner at the top left
+- classifier transparent or not? handle transparents, only on main parts like screen detector (lobby)? or simple do multiple clicks when selecting  option in lobby to avoid pressing transparent. WAIT in back and after training
+- make event matcher robut, if no chain match, fallback to chain 1
+- reduce to 0.6 the confidence. For chain recognition, also quickly check for a minimal blue color (important)
+- check for overlap support cards (for example two predictions support_card, support_tazuna in the same spot, she should keep the biggest score)
+
+Team Trials:
+- If more that three banners detected, get the most 3 confident.
+- Check if banner is active/inactive, before clicking
 
 Web UX / UI:
 - Make it really clear of what preset is being using, visually, so we don't have problems
@@ -84,6 +92,9 @@ Scenario:
 Bat and executable:
 - bat is failing
 - Executable in release
+
+Team trial
+- Prioritize the ones with 'With every win' (gift)
 
 Skill Buying:
 - @EO1: List what skills the bot should prioritize and any that isn't in the selection it will randomally get in the list of skills to automatically pick: like if for the 1st part I know I need a certain uma stamina skill to win, then i would 9/10 times get it first. Add auto buy best option based on running style (with a premade priority list)
