@@ -16,7 +16,7 @@ _DEFAULT_NAV_PREFS: Dict[str, Dict[str, Any]] = {
         "parfait": False,
     },
     "team_trials": {
-        "preferred_banner": 3,
+        "preferred_banner": 1,
     },
 }
 
