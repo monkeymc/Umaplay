@@ -1152,5 +1152,6 @@ class LobbyFlow:
         )
         if ok:
             logger_uma.info("[lobby] GO BACK")
-            time.sleep(0.4)
+            # After back, wait for animation to end
+            time.sleep(1)
         return ok

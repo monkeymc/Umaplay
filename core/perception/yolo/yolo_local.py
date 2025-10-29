@@ -30,7 +30,7 @@ class LocalYOLOEngine(IDetector):
         use_gpu: Optional[bool] = None,
     ):
         self.ctrl = ctrl
-        self.weights_path = str(weights or Settings.YOLO_WEIGHTS)
+        self.weights_path = str(weights or Settings.YOLO_WEIGHTS_URA)
         self.use_gpu = Settings.USE_GPU if use_gpu is None else bool(use_gpu)
 
         logger_uma.info(f"Loading YOLO weights from: {self.weights_path}")

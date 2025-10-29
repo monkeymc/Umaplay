@@ -48,7 +48,7 @@ _DEFAULT_NAV_PREFS: Dict[str, Dict[str, Any]] = {
         "parfait": False,
     },
     "team_trials": {
-        "preferred_banner": 3,
+        "preferred_banner": 1,
     },
 }
 
@@ -85,7 +85,8 @@ class Settings:
     DEBUG_DIR: Path = Path(_env("DEBUG_DIR") or (ROOT_DIR / "debug"))
 
     # Models & weights
-    YOLO_WEIGHTS: Path = Path(_env("YOLO_WEIGHTS") or (MODELS_DIR / "uma.pt"))
+    _YOLO_WEIGHTS_URA_ENV = _env("YOLO_WEIGHTS_URA") or _env("YOLO_WEIGHTS")
+    YOLO_WEIGHTS_URA: Path = Path(_YOLO_WEIGHTS_URA_ENV or (MODELS_DIR / "uma_ura.pt"))
     YOLO_WEIGHTS_NAV: Path = Path(
         _env("YOLO_WEIGHTS_NAV") or (MODELS_DIR / "uma_nav.pt")
     )
@@ -97,7 +98,7 @@ class Settings:
 
     # --------- Detection (YOLO) ---------
     YOLO_IMGSZ: int = _env_int("YOLO_IMGSZ", default=832)
-    YOLO_CONF: float = _env_float("YOLO_CONF", default=0.61)  # should be 0.7 in general, but we are a little open...
+    YOLO_CONF: float = _env_float("YOLO_CONF", default=0.60)  # should be 0.7 in general, but we are a little conservative here...
     YOLO_IOU: float = _env_float("YOLO_IOU", default=0.45)
 
     # --------- Logging ---------
@@ -281,9 +282,9 @@ class Settings:
         }
 
         try:
-            preferred_banner = int(team.get("preferred_banner", 3))
+            preferred_banner = int(team.get("preferred_banner", 1))
         except Exception:
-            preferred_banner = 3
+            preferred_banner = 1
         preferred_banner = max(1, min(3, preferred_banner))
 
         cls.NAV_PREFS = {
