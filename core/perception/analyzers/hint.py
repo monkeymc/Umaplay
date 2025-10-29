@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 import numpy as np
 import cv2
 
@@ -147,3 +147,158 @@ class HintDetector:
             "coverage": float(coverage),
             "purity": float(purity),
         }
+
+
+@dataclass(frozen=True)
+class SupportGeometry:
+    key: int
+    bbox: Tuple[int, int, int, int]
+    width: int
+    height: int
+    center: Tuple[float, float]
+
+
+def build_support_geometries(
+    supports: Sequence[Dict[str, Any]]
+) -> List[SupportGeometry]:
+    geoms: List[SupportGeometry] = []
+    for idx, det in enumerate(supports):
+        xyxy = det.get("xyxy", (0, 0, 0, 0))
+        sx1, sy1, sx2, sy2 = [max(0, int(v)) for v in xyxy]
+        width = max(1, sx2 - sx1)
+        height = max(1, sy2 - sy1)
+        cx = 0.5 * (sx1 + sx2)
+        cy = 0.5 * (sy1 + sy2)
+        key = int(det.get("idx", idx))
+        geoms.append(
+            SupportGeometry(
+                key=key,
+                bbox=(sx1, sy1, sx2, sy2),
+                width=width,
+                height=height,
+                center=(cx, cy),
+            )
+        )
+    return geoms
+
+
+def assign_hints_to_supports(
+    support_geoms: Sequence[SupportGeometry],
+    hints: Sequence[Dict[str, Any]],
+    *,
+    canvas_height: int,
+    expand_x_frac: float = 0.35,
+    expand_top_frac: float = 0.90,
+    expand_bottom_frac: float = 0.40,
+    max_score: float = 1.8,
+) -> Tuple[Dict[int, List[Dict[str, Any]]], List[Dict[str, Any]]]:
+    assignments: Dict[int, List[Dict[str, Any]]] = {
+        geom.key: [] for geom in support_geoms
+    }
+    tile_hints: List[Dict[str, Any]] = []
+    bottom_start = max(0, canvas_height - int(canvas_height * 0.25))
+
+    for hint in hints:
+        hx1, hy1, hx2, hy2 = [float(v) for v in hint.get("xyxy", (0, 0, 0, 0))]
+        hcx = 0.5 * (hx1 + hx2)
+        hcy = 0.5 * (hy1 + hy2)
+        hconf = float(hint.get("conf", 0.0))
+
+        best_key: Optional[int] = None
+        best_score = float("inf")
+        best_geom: Optional[SupportGeometry] = None
+
+        for geom in support_geoms:
+            sx1, sy1, sx2, sy2 = geom.bbox
+            width = float(geom.width)
+            height = float(geom.height)
+
+            expand_x = expand_x_frac * width
+            expand_top = expand_top_frac * height
+            expand_bottom = expand_bottom_frac * height
+
+            ex1 = sx1 - expand_x
+            ex2 = sx2 + expand_x
+            ey1 = sy1 - expand_top
+            ey2 = sy2 + expand_bottom
+
+            if not (ex1 <= hcx <= ex2 and ey1 <= hcy <= ey2):
+                continue
+
+            dx = abs(hcx - geom.center[0]) / max(1.0, width)
+            if hcy < sy1:
+                dy = (sy1 - hcy) / max(1.0, height)
+            elif hcy <= sy2:
+                dy = 0.0
+            else:
+                dy = ((hcy - sy2) / max(1.0, height)) * 1.5
+
+            score = dx + dy
+            if sx1 <= hcx <= sx2 and sy1 <= hcy <= sy2:
+                score *= 0.7
+
+            if score < best_score:
+                best_score = score
+                best_key = geom.key
+                best_geom = geom
+
+        if not support_geoms:
+            tile_hints.append(
+                {
+                    "conf": hconf,
+                    "xyxy": (hx1, hy1, hx2, hy2),
+                    "center": (hcx, hcy),
+                    "reason": "no_supports",
+                }
+            )
+            continue
+
+        if best_geom is None:
+            best_geom = min(
+                support_geoms,
+                key=lambda g: abs(hcx - g.center[0]) + abs(hcy - g.center[1]),
+            )
+            best_key = best_geom.key
+            best_score = float("inf")
+
+        sx1, sy1, sx2, sy2 = best_geom.bbox
+        width = float(best_geom.width)
+        height = float(best_geom.height)
+
+        horizontal_gap = abs(hcx - best_geom.center[0]) / max(1.0, width)
+        if hcy < sy1:
+            vertical_gap = (sy1 - hcy) / max(1.0, height)
+        elif hcy <= sy2:
+            vertical_gap = 0.0
+        else:
+            vertical_gap = (hcy - sy2) / max(1.0, height)
+
+        is_bottom_region = max(hy1, hy2) >= bottom_start
+        is_far_from_support = (
+            vertical_gap >= 0.75
+            or horizontal_gap >= 1.35
+            or (is_bottom_region and vertical_gap >= 0.45)
+        )
+
+        if best_score <= max_score or not is_far_from_support:
+            assignments.setdefault(best_key, []).append(
+                {
+                    "source": "yolo",
+                    "conf": hconf,
+                    "xyxy": (hx1, hy1, hx2, hy2),
+                    "center": (hcx, hcy),
+                    "score": float(best_score),
+                    "fallback": bool(best_score > max_score),
+                }
+            )
+        else:
+            tile_hints.append(
+                {
+                    "conf": hconf,
+                    "xyxy": (hx1, hy1, hx2, hy2),
+                    "center": (hcx, hcy),
+                    "reason": "far_from_support",
+                }
+            )
+
+    return assignments, tile_hints

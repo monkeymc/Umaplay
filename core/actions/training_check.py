@@ -9,6 +9,10 @@ import numpy as np
 from PIL import Image
 
 from core.perception.extractors.training_metrics import extract_failure_pct_for_tile
+from core.perception.analyzers.hint import (
+    assign_hints_to_supports,
+    build_support_geometries,
+)
 from core.perception.yolo.interface import IDetector
 from core.settings import Settings
 from core.types import DetectionDict
@@ -262,6 +266,28 @@ def scan_training_screen(
                     if _iou(dx, k.get("xyxy")) >= iou_thr:
                         drop = True
                         break
+
+                    kc = k.get("xyxy")
+                    if kc is None:
+                        continue
+
+                    cx_d, cy_d = _center(dx)
+                    cx_k, cy_k = _center(kc)
+
+                    kx1, ky1, kx2, ky2 = [float(v) for v in kc]
+                    dx1, dy1, dx2, dy2 = [float(v) for v in dx]
+
+                    center_overlap = (
+                        kx1 <= cx_d <= kx2
+                        and ky1 <= cy_d <= ky2
+                    ) or (
+                        dx1 <= cx_k <= dx2
+                        and dy1 <= cy_k <= dy2
+                    )
+
+                    if center_overlap:
+                        drop = True
+                        break
                 if not drop:
                     kept.append(d)
             return kept
@@ -276,6 +302,26 @@ def scan_training_screen(
         supports = _nms_by_iou(supports_raw, iou_thr=0.50)
         parts_bar = [d for d in cur_parsed if d["name"] == "support_bar"]
         parts_type = [d for d in cur_parsed if d["name"] == "support_type"]
+
+        # Hint detections (primary source going forward)
+        conf_support_hint = 0.45
+        hints_raw = [
+            d
+            for d in cur_parsed
+            if d["name"] == "support_hint" and d.get("conf", 0.0) >= conf_support_hint
+        ]
+        hints = _nms_by_iou(hints_raw, iou_thr=0.30)
+        support_geoms = build_support_geometries(supports)
+        support_assignments, tile_hints = assign_hints_to_supports(
+            support_geoms,
+            hints,
+            canvas_height=frame_bgr.shape[0],
+        )
+
+        if tile_hints:
+            logger_uma.debug(
+                "[support_hint] Tile hints detected=%d", len(tile_hints)
+            )
 
         def _inside(inner, outer, pad=2):
             ix1, iy1, ix2, iy2 = inner
@@ -295,8 +341,8 @@ def scan_training_screen(
         enriched: List[Dict] = []
         any_rainbow = False
 
-        for s in supports:
-            x1, y1, x2, y2 = [max(0, int(v)) for v in s["xyxy"]]
+        for s, geom in zip(supports, support_geoms):
+            x1, y1, x2, y2 = geom.bbox
             crop = frame_bgr[y1:y2, x1:x2].copy()
 
             # parts within this support
@@ -328,11 +374,21 @@ def scan_training_screen(
                 ].copy()
             )
 
+            support_key = geom.key
+            assigned_hints = support_assignments.get(support_key, [])
+            hint_confidence_max = (
+                max((h.get("conf", 0.0) for h in assigned_hints), default=0.0)
+                if assigned_hints
+                else 0.0
+            )
+
             attrs = analyze_support_crop(
                 s["name"],
                 crop,
                 piece_bar_bgr=bar_crop,
                 piece_type_bgr=type_crop,
+                hint_sources=assigned_hints,
+                hint_confidence_max=hint_confidence_max,
             )
 
             has_rainbow = s["name"].endswith("_rainbow") or (
@@ -341,17 +397,27 @@ def scan_training_screen(
             any_rainbow |= has_rainbow
 
             normalized_name = s["name"].replace("_rainbow", "")
+
+            has_hint_yolo = bool(attrs.get("has_hint_yolo", False))
+            has_hint_hsv = bool(attrs.get("has_hint_hsv", False))
+            hint_confidence_max = float(attrs.get("hint_confidence_max", 0.0))
+            hint_sources = attrs.get("hint_sources", assigned_hints)
+
             support_record: Dict[str, Any] = {
                 **s,
                 "name": normalized_name,
                 "support_type": attrs["support_type"],
                 "support_type_score": attrs["support_type_score"],
                 "friendship_bar": attrs["friendship_bar"],
-                "has_hint": attrs["has_hint"],
+                "has_hint": bool(attrs.get("has_hint", False)),
                 "has_rainbow": bool(has_rainbow),
+                "has_hint_yolo": has_hint_yolo,
+                "has_hint_hsv": has_hint_hsv,
+                "hint_sources": hint_sources,
+                "hint_confidence_max": hint_confidence_max,
             }
 
-            if attrs.get("has_hint") and has_priority_customization:
+            if support_record["has_hint"] and has_priority_customization:
                 if matcher is None:
                     matcher = get_runtime_support_matcher(min_confidence=min_confidence)
                 match = match_support_crop(crop, matcher=matcher)
