@@ -284,6 +284,7 @@ def handle_shop_exchange(
         sleep(1.0)
 
     attempts = 0
+    any_purchased = False
 
     all_purchased = True
     while attempts < max_cycles:

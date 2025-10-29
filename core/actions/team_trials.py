@@ -101,6 +101,15 @@ class TeamTrialsFlow:
             logger_uma.warning("[TeamTrials] No opponent banners detected")
             return
 
+        banners.sort(
+            key=lambda d: (
+                -float(d.get("conf", 0.0)),
+                -float(d["xyxy"][3]),
+            )
+        )
+        if len(banners) > 3:
+            banners = banners[:3]
+
         banners.sort(key=lambda d: d["xyxy"][1])
         preferred_index = Settings.get_team_trials_banner_pref() - 1
         preferred_index = max(0, min(len(banners) - 1, preferred_index))
