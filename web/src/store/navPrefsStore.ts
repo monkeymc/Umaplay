@@ -8,7 +8,7 @@ const DEFAULT_PREFS: NavPrefs = {
     parfait: false,
   },
   team_trials: {
-    preferred_banner: 3,
+    preferred_banner: 2,
   },
 }
 

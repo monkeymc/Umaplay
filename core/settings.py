@@ -48,7 +48,7 @@ _DEFAULT_NAV_PREFS: Dict[str, Dict[str, Any]] = {
         "parfait": False,
     },
     "team_trials": {
-        "preferred_banner": 1,
+        "preferred_banner": 2,
     },
 }
 
@@ -282,9 +282,9 @@ class Settings:
         }
 
         try:
-            preferred_banner = int(team.get("preferred_banner", 1))
+            preferred_banner = int(team.get("preferred_banner", 2))
         except Exception:
-            preferred_banner = 1
+            preferred_banner = 2
         preferred_banner = max(1, min(3, preferred_banner))
 
         cls.NAV_PREFS = {
@@ -305,7 +305,12 @@ class Settings:
     def get_team_trials_banner_pref(cls) -> int:
         team = cls.NAV_PREFS.get("team_trials") or {}
         try:
-            preferred = int(team.get("preferred_banner", _DEFAULT_NAV_PREFS["team_trials"]["preferred_banner"]))
+            preferred = int(
+                team.get(
+                    "preferred_banner",
+                    _DEFAULT_NAV_PREFS["team_trials"]["preferred_banner"],
+                )
+            )
         except Exception:
             preferred = _DEFAULT_NAV_PREFS["team_trials"]["preferred_banner"]
         return max(1, min(3, preferred))
