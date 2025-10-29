@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import threading
 import time
+import argparse
 import webbrowser
 import keyboard
 import uvicorn
@@ -615,6 +616,10 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
 # Main
 # ---------------------------
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run Umabot server")
+    parser.add_argument("--port", type=int, help="Override FastAPI server port")
+    args = parser.parse_args()
+
     ensure_nav_exists()
     # Ensure config.json exists (seed from config.sample.json if needed)
     try:
@@ -631,6 +636,9 @@ if __name__ == "__main__":
         cfg0 = {}
     Settings.apply_config(cfg0 or {})
     
+    if args.port is not None:
+        Settings.PORT = args.port
+
     # Load nav preferences
     try:
         nav_prefs = load_nav_prefs()
