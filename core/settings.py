@@ -147,6 +147,9 @@ class Settings:
 
     SUPPORT_PRIORITIES_HAVE_CUSTOMIZATION: bool = False
     SUPPORT_CUSTOM_PRIORITY_KEYS: Set[Tuple[str, str, str]] = set()
+    SUPPORT_AVOID_ENERGY: Dict[Tuple[str, str, str], bool] = {}
+    SHOW_PRESET_OVERLAY: bool = _env_bool("SHOW_PRESET_OVERLAY", True)
+    PRESET_OVERLAY_DURATION: float = _env_float("PRESET_OVERLAY_DURATION", 5.0)
     NAV_PREFS: Dict[str, Dict[str, Any]] = {
         "shop": dict(_DEFAULT_NAV_PREFS["shop"]),
         "team_trials": dict(_DEFAULT_NAV_PREFS["team_trials"]),
@@ -205,7 +208,9 @@ class Settings:
 
         preset_data = preset or {}
 
-        deck, priorities = cls._extract_support_priorities_from_preset(preset_data)
+        deck, priorities, avoid_energy = cls._extract_support_priorities_from_preset(
+            preset_data
+        )
         cls.SUPPORT_DECK = deck
         cls.SUPPORT_CARD_PRIORITIES = priorities
         custom_keys = {
@@ -213,6 +218,7 @@ class Settings:
         }
         cls.SUPPORT_CUSTOM_PRIORITY_KEYS = custom_keys
         cls.SUPPORT_PRIORITIES_HAVE_CUSTOMIZATION = bool(custom_keys)
+        cls.SUPPORT_AVOID_ENERGY = avoid_energy
 
         cls.MINIMAL_MOOD = str(preset_data.get("minimalMood", cls.MINIMAL_MOOD))
         cls.REFERENCE_STATS = preset_data.get("targetStats", cls.REFERENCE_STATS)
@@ -239,6 +245,16 @@ class Settings:
             cls.EXTERNAL_PROCESSOR_URL = url
         # Match UI/schema key: 'autoRestMinimum'
         cls.AUTO_REST_MINIMUM = int(adv.get("autoRestMinimum", cls.AUTO_REST_MINIMUM))
+        if "showPresetOverlay" in adv:
+            try:
+                cls.SHOW_PRESET_OVERLAY = bool(adv.get("showPresetOverlay"))
+            except Exception:
+                pass
+        if "presetOverlaySeconds" in adv:
+            try:
+                cls.PRESET_OVERLAY_DURATION = max(1.0, float(adv.get("presetOverlaySeconds")))
+            except Exception:
+                pass
         # Update training configuration
         undertrain_threshold = float(
             adv.get("undertrainThreshold", cls.UNDERTRAIN_THRESHOLD)
@@ -291,6 +307,17 @@ class Settings:
             "shop": normalized_shop,
             "team_trials": {"preferred_banner": preferred_banner},
         }
+
+    @classmethod
+    def get_active_preset_snapshot(cls) -> tuple[Optional[str], Optional[dict], dict]:
+        cfg = cls._last_config or {}
+        presets = (cfg.get("presets") or [])
+        active_id = cfg.get("activePresetId")
+        preset = next((p for p in presets if p.get("id") == active_id), None)
+        if not preset and presets:
+            preset = presets[0]
+            active_id = preset.get("id")
+        return active_id, preset, cfg
 
     @classmethod
     def get_shop_nav_prefs(cls) -> Dict[str, bool]:
@@ -347,7 +374,9 @@ class Settings:
             "raceIfNoGoodValue", cls.RACE_IF_NO_GOOD_VALUE
         )
 
-        deck, priorities = cls._extract_support_priorities_from_preset(preset)
+        deck, priorities, avoid_energy = cls._extract_support_priorities_from_preset(
+            preset
+        )
 
         return {
             "plan_races": plan_races,
@@ -365,6 +394,17 @@ class Settings:
                     "scoreOrangeMax": data["scoreOrangeMax"],
                 }
                 for (name, rarity, attribute), data in priorities.items()
+            ],
+            "support_avoid_energy": [
+                {
+                    "name": name,
+                    "rarity": rarity,
+                    "attribute": attribute,
+                    "avoidEnergyOverflow": avoid_energy.get(
+                        (name, rarity, attribute), True
+                    ),
+                }
+                for (name, rarity, attribute) in avoid_energy.keys()
             ],
         }
 
@@ -422,12 +462,17 @@ class Settings:
     @classmethod
     def _extract_support_priorities_from_preset(
         cls, preset: Optional[dict]
-    ) -> Tuple[List[dict], Dict[Tuple[str, str, str], Dict[str, Union[float, bool]]]]:
+    ) -> Tuple[
+        List[dict],
+        Dict[Tuple[str, str, str], Dict[str, Union[float, bool]]],
+        Dict[Tuple[str, str, str], bool],
+    ]:
         event_setup = (preset or {}).get("event_setup", {}) or {}
         supports = event_setup.get("supports", []) or []
 
         deck: List[dict] = []
         priorities: Dict[Tuple[str, str, str], Dict[str, Union[float, bool]]] = {}
+        avoid_energy: Dict[Tuple[str, str, str], bool] = {}
 
         for entry in supports:
             if not entry:
@@ -444,19 +489,26 @@ class Settings:
             except (TypeError, ValueError):
                 slot_idx = len(deck)
 
+            raw_flag = entry.get("avoidEnergyOverflow")
+            if raw_flag is None:
+                raw_flag = entry.get("avoid_energy_overflow")
+            avoid_flag = bool(raw_flag) if isinstance(raw_flag, bool) else True
+
             card_info = {
                 "slot": slot_idx,
                 "name": str(name),
                 "rarity": str(rarity),
                 "attribute": str(attribute),
+                "avoidEnergyOverflow": avoid_flag,
             }
             deck.append(card_info)
 
             key = (card_info["name"], card_info["rarity"], card_info["attribute"])
             priorities[key] = cls._normalize_priority(entry.get("priority"))
+            avoid_energy[key] = avoid_flag
 
         deck.sort(key=lambda c: c["slot"])
-        return deck, priorities
+        return deck, priorities, avoid_energy
 
 class Constants:
     map_tile_idx_to_type = {0: "SPD", 1: "STA", 2: "PWR", 3: "GUTS", 4: "WIT"}

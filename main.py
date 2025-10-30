@@ -28,6 +28,7 @@ from core.controllers.steam import SteamController
 from core.controllers.android import ScrcpyController
 from core.utils.abort import request_abort, clear_abort
 from core.utils.event_processor import UserPrefs
+from core.utils.preset_overlay import show_preset_overlay
 
 try:
     # Optional; if your Bluestacks controller is a separate class
@@ -461,6 +462,27 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
     last_ts_daily = 0.0
     last_ts_roulette = 0.0
 
+    def _show_preset_overlay_if_needed():
+        if bot_state.running:
+            return
+        if not getattr(Settings, "SHOW_PRESET_OVERLAY", False):
+            return
+        try:
+            cfg = Settings._last_config or load_config() or {}
+            presets = (cfg.get("presets") or [])
+            active_id = cfg.get("activePresetId")
+            preset = next((p for p in presets if p.get("id") == active_id), None)
+            if not preset and presets:
+                preset = presets[0]
+            name = (preset or {}).get("name") or "Unnamed preset"
+            duration = getattr(Settings, "PRESET_OVERLAY_DURATION", 5.0)
+            show_preset_overlay(
+                f"Active preset: {name}",
+                duration=max(1.0, float(duration or 0.0)),
+            )
+        except Exception as exc:
+            logger_uma.debug("[HOTKEY] Failed to display preset overlay: %s", exc)
+
     def _debounced_toggle(source: str):
         nonlocal last_ts_toggle
         now = time.time()
@@ -469,6 +491,7 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
             logger_uma.debug(f"[HOTKEY] Debounced toggle from {source}.")
             return
         last_ts_toggle = now
+        _show_preset_overlay_if_needed()
         bot_state.toggle(source=source)
 
     def _debounced_team(source: str):
