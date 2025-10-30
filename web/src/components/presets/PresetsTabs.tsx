@@ -10,20 +10,28 @@ import { presetSchema } from '@/models/config.schema'
 import { openJsonFile } from '@/services/file'
 
 export default function PresetsTabs() {
-  const { config, setActivePresetId, addPreset, deletePreset, copyPreset, renamePreset, patchPreset } = useConfigStore()
-  const presets = config.presets
-  const activeId = config.activePresetId ?? presets[0]?.id
+  const presets = useConfigStore((s) => s.config.presets)
+  const activeId = useConfigStore((s) => s.config.activePresetId ?? s.config.presets[0]?.id)
+  const selectedId = useConfigStore((s) => s.uiSelectedPresetId ?? s.config.activePresetId ?? s.config.presets[0]?.id)
+  const setSelectedPresetId = useConfigStore((s) => s.setSelectedPresetId)
+  const addPreset = useConfigStore((s) => s.addPreset)
+  const deletePreset = useConfigStore((s) => s.deletePreset)
+  const copyPreset = useConfigStore((s) => s.copyPreset)
+  const renamePreset = useConfigStore((s) => s.renamePreset)
+  const patchPreset = useConfigStore((s) => s.patchPreset)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const selected = presets.find((p) => p.id === selectedId)
   const active = presets.find((p) => p.id === activeId)
 
   const exportPreset = () => {
-    if (!active) return
-    const data = JSON.parse(JSON.stringify(active))
+    if (!selected) return
+    const data = JSON.parse(JSON.stringify(selected))
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${active.name || 'preset'}.json`
+    const fileName = selected.name || active?.name || 'preset'
+    a.download = `${fileName}.json`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -49,18 +57,26 @@ export default function PresetsTabs() {
   // Cleaner: expose an injection to add exact preset
   ;(window as any)._uma_addPreset = (p: any) => {
     useConfigStore.setState((s) => ({
-      config: { ...s.config, presets: [...s.config.presets, p], activePresetId: p.id },
+      config: { ...s.config, presets: [...s.config.presets, p] },
+      uiSelectedPresetId: p.id,
     }))
   }
   return (
     <Stack spacing={1.5}>
       <Stack direction="row" alignItems="center" spacing={1} sx={{ flexWrap: 'wrap' }}>
         <Tabs
-          value={activeId}
-          onChange={(_, v) => setActivePresetId(v)}
+          value={selectedId}
+          onChange={(_, v) => setSelectedPresetId(v)}
           variant="scrollable"
           scrollButtons="auto"
-          sx={{ flex: 1, minHeight: 44 }}
+          TabIndicatorProps={{ sx: { transition: 'transform 140ms ease-out !important' } }}
+          sx={{
+            flex: 1,
+            minHeight: 44,
+            '& .MuiTabs-indicator': {
+              transition: 'transform 140ms ease-out, width 140ms ease-out !important',
+            },
+          }}
         >
           {presets.map((p) => (
             <Tab
@@ -77,11 +93,14 @@ export default function PresetsTabs() {
                     autoFocus
                   />
                 ) : (
-                  p.name
+                  p.name + (p.id === activeId ? ' • Active' : '')
                 )
               }
               onDoubleClick={() => setEditingId(p.id)}
-              sx={{ textTransform: 'none' }}
+              sx={{
+                textTransform: 'none',
+                fontWeight: p.id === selectedId ? 600 : 400,
+              }}
             />
           ))}
         </Tabs>
@@ -92,7 +111,7 @@ export default function PresetsTabs() {
 
         <Tooltip title="Copy preset">
           <span>
-            <IconButton disabled={!active} onClick={() => active && copyPreset(active.id)}>
+            <IconButton disabled={!selected} onClick={() => selected && copyPreset(selected.id)}>
               <ContentCopyIcon />
             </IconButton>
           </span>
@@ -100,7 +119,7 @@ export default function PresetsTabs() {
 
         <Tooltip title="Delete preset">
           <span>
-            <IconButton disabled={!active} onClick={() => active && deletePreset(active.id)}>
+            <IconButton disabled={!selected} onClick={() => selected && deletePreset(selected.id)}>
               <DeleteOutlineIcon />
             </IconButton>
           </span>
@@ -109,7 +128,7 @@ export default function PresetsTabs() {
         {/* Per-preset share/import */}
         <Tooltip title="Export this preset">
           <span>
-            <IconButton disabled={!active} onClick={exportPreset}><DownloadIcon /></IconButton>
+            <IconButton disabled={!selected} onClick={exportPreset}><DownloadIcon /></IconButton>
           </span>
         </Tooltip>
         <Tooltip title="Import preset (adds as new)">
