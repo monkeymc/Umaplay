@@ -1,6 +1,13 @@
+export type SkillRarity = 'normal' | 'gold' | 'unique'
+
 export type Skill = {
   name: string
   description?: string
+  icon_filename?: string
+  color_class?: string
+  rarity?: SkillRarity
+  grade_symbol?: string
+  category?: string
 }
 
 export type RaceInstance = {

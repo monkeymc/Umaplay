@@ -12,6 +12,7 @@ import { useEventsData } from '@/hooks/useEventsData'
 import EventSetupSection from '../events/EventSetupSection'
 import { useEventsSetupStore } from '@/store/eventsSetupStore'
 import { useEffect, useRef } from 'react'
+import FieldRow from '@/components/common/FieldRow'
 
 export default function PresetPanel({ compact = false }: { compact?: boolean }) {
   const selectedId = useConfigStore((s) => s.uiSelectedPresetId ?? s.config.activePresetId ?? s.config.presets[0]?.id)
@@ -58,6 +59,26 @@ export default function PresetPanel({ compact = false }: { compact?: boolean }) 
         <TargetStats presetId={selected.id} />
         <MoodSelector presetId={selected.id} />
         <StyleSelector presetId={selected.id} />
+        <FieldRow
+          label="Skill points threshold"
+          info="Open the Skills screen on race days once points are at or above this value."
+          control={
+            <TextField
+              size="small"
+              type="number"
+              value={selected.skillPtsCheck ?? 600}
+              onChange={(e) =>
+                patchPreset(
+                  selected.id!,
+                  'skillPtsCheck',
+                  Math.max(0, Number.isFinite(Number(e.target.value)) ? Number(e.target.value) : 0),
+                )
+              }
+              inputProps={{ min: 0 }}
+              sx={{ maxWidth: 160 }}
+            />
+          }
+        />
         <SkillsPicker presetId={selected.id} />
         <Section title="Bot Strategy / Policy">
           <Stack spacing={1}>

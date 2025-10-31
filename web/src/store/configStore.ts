@@ -163,10 +163,14 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
   replaceConfig: (cfg) => set(() => {
     // Normalize presets, migrate prioritizeHint from general -> preset if needed
     const migrated = (() => {
+      const fallbackSkillPts = Number((cfg.general as any)?.skillPtsCheck ?? 600)
       const presets = (cfg.presets || []).map((p) => ({
         ...p,
         event_setup: p.event_setup ?? defaultEventSetup(),
         prioritizeHint: typeof p.prioritizeHint === 'boolean' ? p.prioritizeHint : (cfg.general as any)?.prioritizeHint ?? false,
+        skillPtsCheck: Number.isFinite(Number(p.skillPtsCheck))
+          ? Math.max(0, Number(p.skillPtsCheck))
+          : Math.max(0, fallbackSkillPts),
       }))
       const activeId = cfg.activePresetId ?? presets[0]?.id
       const active = presets.find((p) => p.id === activeId)
@@ -184,6 +188,7 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
     data.activePresetId = active?.id ?? activeId ?? config.presets[0]?.id
     // Mirror active preset's prioritizeHint into general for backward compat
     ;(data.general as any).prioritizeHint = active ? !!active.prioritizeHint : (data.general as any)?.prioritizeHint ?? false
+    ;(data.general as any).skillPtsCheck = active?.skillPtsCheck ?? (data.general as any)?.skillPtsCheck ?? 600
     localStorage.setItem(LS_KEY, JSON.stringify(data))
   },
 
@@ -195,14 +200,19 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
       const parsed = JSON.parse(raw)
       const safe = appConfigSchema.parse(parsed)
       // Migrate general.prioritizeHint -> preset.prioritizeHint, and mirror back
+      const fallbackSkillPts = Number((safe.general as any)?.skillPtsCheck ?? 600)
       const presets = safe.presets.map((p) => ({
         ...p,
         event_setup: p.event_setup ?? defaultEventSetup(),
         prioritizeHint: typeof p.prioritizeHint === 'boolean' ? p.prioritizeHint : (safe.general as any)?.prioritizeHint ?? false,
+        skillPtsCheck: Number.isFinite(Number(p.skillPtsCheck))
+          ? Math.max(0, Number(p.skillPtsCheck))
+          : Math.max(0, fallbackSkillPts),
       }))
       const activeId = safe.activePresetId ?? presets[0]?.id
       const active = presets.find((p) => p.id === activeId)
       const general = { ...safe.general, prioritizeHint: active ? !!active.prioritizeHint : (safe.general as any)?.prioritizeHint ?? false }
+      ;(general as any).skillPtsCheck = active?.skillPtsCheck ?? Math.max(0, fallbackSkillPts)
       set({ config: { ...safe, general, presets, activePresetId: active?.id ?? presets[0]?.id }, uiSelectedPresetId: active?.id ?? presets[0]?.id })
     } catch {
       // ignore
@@ -216,6 +226,7 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
     data.activePresetId = active?.id ?? activeId ?? data.presets[0]?.id
     // Mirror active preset's prioritizeHint into general for backward compat
     ;(data.general as any).prioritizeHint = active ? !!active.prioritizeHint : (data.general as any)?.prioritizeHint ?? false
+    ;(data.general as any).skillPtsCheck = active?.skillPtsCheck ?? (data.general as any)?.skillPtsCheck ?? 600
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -229,14 +240,19 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
     try {
       const safe = appConfigSchema.parse(raw)
       // Normalize + migrate prioritizeHint
+      const fallbackSkillPts = Number((safe.general as any)?.skillPtsCheck ?? 600)
       const presets = safe.presets.map((p) => ({
         ...p,
         event_setup: p.event_setup ?? defaultEventSetup(),
         prioritizeHint: typeof p.prioritizeHint === 'boolean' ? p.prioritizeHint : (safe.general as any)?.prioritizeHint ?? false,
+        skillPtsCheck: Number.isFinite(Number(p.skillPtsCheck))
+          ? Math.max(0, Number(p.skillPtsCheck))
+          : Math.max(0, fallbackSkillPts),
       }))
       const activeId = safe.activePresetId ?? presets[0]?.id
       const active = presets.find((p) => p.id === activeId)
       const general = { ...safe.general, prioritizeHint: active ? !!active.prioritizeHint : (safe.general as any)?.prioritizeHint ?? false }
+      ;(general as any).skillPtsCheck = active?.skillPtsCheck ?? Math.max(0, fallbackSkillPts)
       const normalized: AppConfig = { ...safe, general, presets, activePresetId: active?.id ?? presets[0]?.id }
       set({ config: normalized, uiSelectedPresetId: normalized.activePresetId })
       return { ok: true }

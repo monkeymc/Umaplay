@@ -83,6 +83,11 @@ class Settings:
     ASSETS_DIR: Path = Path(_env("ASSETS_DIR") or (ROOT_DIR / "web/public"))
     MODELS_DIR: Path = Path(_env("MODELS_DIR") or (ROOT_DIR / "models"))
     DEBUG_DIR: Path = Path(_env("DEBUG_DIR") or (ROOT_DIR / "debug"))
+    PREFS_DIR: Path = Path(_env("PREFS_DIR") or (ROOT_DIR / "prefs"))
+    RUNTIME_SKILL_MEMORY_PATH: Path = Path(
+        _env("RUNTIME_SKILL_MEMORY_PATH")
+        or (PREFS_DIR / "runtime_skill_memory.json")
+    )
 
     # Models & weights
     _YOLO_WEIGHTS_URA_ENV = _env("YOLO_WEIGHTS_URA") or _env("YOLO_WEIGHTS")
@@ -195,7 +200,6 @@ class Settings:
         )
         cls.HINT_IS_IMPORTANT = bool(g.get("prioritizeHint", cls.HINT_IS_IMPORTANT))
         cls.MAX_FAILURE = int(g.get("maxFailure", cls.MAX_FAILURE))
-        cls.MINIMUM_SKILL_PTS = int(g.get("skillPtsCheck", cls.MINIMUM_SKILL_PTS))
         cls.ACCEPT_CONSECUTIVE_RACE = bool(
             g.get("acceptConsecutiveRace", cls.ACCEPT_CONSECUTIVE_RACE)
         )
@@ -207,6 +211,20 @@ class Settings:
         )
 
         preset_data = preset or {}
+
+        # Minimum skill points is now per-preset. Fall back to legacy general setting if missing.
+        skill_pts_value = preset_data.get("skillPtsCheck")
+        if skill_pts_value is None:
+            skill_pts_value = g.get("skillPtsCheck", cls.MINIMUM_SKILL_PTS)
+        try:
+            cls.MINIMUM_SKILL_PTS = max(0, int(skill_pts_value))
+        except Exception:
+            try:
+                cls.MINIMUM_SKILL_PTS = max(
+                    0, int(g.get("skillPtsCheck", cls.MINIMUM_SKILL_PTS))
+                )
+            except Exception:
+                pass
 
         deck, priorities, avoid_energy = cls._extract_support_priorities_from_preset(
             preset_data
@@ -369,6 +387,11 @@ class Settings:
             preset.get("selectStyle") or preset.get("juniorStyle") or None
         )  # 'end'|'late'|'pace'|'front'|null
 
+        try:
+            minimum_skill_pts = max(0, int(preset.get("skillPtsCheck", cls.MINIMUM_SKILL_PTS)))
+        except Exception:
+            minimum_skill_pts = cls.MINIMUM_SKILL_PTS
+
         # Get the race if no good value setting from preset or use the global default
         race_if_no_good_value = preset.get(
             "raceIfNoGoodValue", cls.RACE_IF_NO_GOOD_VALUE
@@ -383,6 +406,7 @@ class Settings:
             "skill_list": skill_list,
             "select_style": select_style,
             "raceIfNoGoodValue": race_if_no_good_value,
+            "minimum_skill_pts": minimum_skill_pts,
             "support_deck": deck,
             "support_card_priorities": [
                 {

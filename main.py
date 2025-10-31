@@ -260,7 +260,7 @@ class BotState:
                 ocr=ocr,
                 yolo_engine=yolo_engine,
                 interval_stats_refresh=1,
-                minimum_skill_pts=Settings.MINIMUM_SKILL_PTS,
+                minimum_skill_pts=preset_opts.get("minimum_skill_pts", Settings.MINIMUM_SKILL_PTS),
                 prioritize_g1=False,
                 auto_rest_minimum=Settings.AUTO_REST_MINIMUM,
                 plan_races=preset_opts["plan_races"],
@@ -468,7 +468,14 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
         if not getattr(Settings, "SHOW_PRESET_OVERLAY", False):
             return
         try:
-            cfg = Settings._last_config or load_config() or {}
+            cfg = load_config() or {}
+            try:
+                Settings._last_config = dict(cfg)
+            except Exception:
+                pass
+        except Exception:
+            cfg = Settings._last_config or {}
+        try:
             presets = (cfg.get("presets") or [])
             active_id = cfg.get("activePresetId")
             preset = next((p for p in presets if p.get("id") == active_id), None)

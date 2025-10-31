@@ -12,7 +12,6 @@ export interface GeneralConfig {
   fastMode: boolean
   tryAgainOnFailedGoal: boolean
   maxFailure: number
-  skillPtsCheck: number
   acceptConsecutiveRace: boolean
   advanced: {
     hotkey: Hotkey
@@ -36,6 +35,7 @@ export interface Preset {
   minimalMood: MoodName
   juniorStyle: 'end' | 'late' | 'pace' | 'front' | null
   skillsToBuy: string[]
+  skillPtsCheck: number
   event_setup?: EventSetup
   plannedRaces: Record<string, string> // dateKey -> raceName (Y{year}-{MM}-{half})
   raceIfNoGoodValue?: boolean // Whether to race even if no good training options are available
