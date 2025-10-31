@@ -290,7 +290,7 @@ class TeamTrialsFlow:
         nav.random_center_tap(
             self.ctrl, img, clicks=random.randint(4, 5), dev_frac=0.01
         )
-        sleep(4)
+        sleep(4.2)
         img, dets = nav.collect_snapshot(
             self.waiter, self.yolo_engine, tag="team_trials_especial_reward"
         )
@@ -304,18 +304,17 @@ class TeamTrialsFlow:
                 clicks=1,
                 forbid_texts=("VIEW RACE",),
                 allow_greedy_click=True,
-                timeout_s=2.3,
+                timeout_s=2.6,
                 tag="team_trials_reward_next",
             )
-            if did_next:
-                self.waiter.click_when(
-                    classes=("button_green",),
-                    prefer_bottom=True,
-                    timeout_s=5,
-                    clicks=1,
-                    tag="team_trials_reward_next_green",
-                )
-                sleep(0.5)
+            self.waiter.click_when(
+                classes=("button_green",),
+                prefer_bottom=True,
+                timeout_s=2.8,
+                clicks=1,
+                tag="team_trials_reward_next_green",
+            )
+            sleep(0.5)
 
         did_shop = nav.handle_shop_exchange(
             self.waiter,
