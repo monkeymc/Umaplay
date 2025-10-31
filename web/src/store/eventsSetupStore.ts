@@ -7,8 +7,7 @@ import type {
   SelectedTrainee,
   EventPrefs,
   SupportPriority,
-  AttrKey,
-  Rarity,
+  RewardCategory,
 } from '@/types/events'
 
 type State = {
@@ -25,7 +24,10 @@ type State = {
   setPrefs(p: Partial<EventPrefs>): void
   setOverride(keyStep: string, pick: number): void
   setSupportPriority(slot: number, priority: SupportPriority): void
+  setRewardPriority(priority: RewardCategory[]): void
 }
+
+export const DEFAULT_REWARD_PRIORITY: RewardCategory[] = ['skill_pts', 'stats', 'hints']
 
 const EMPTY: EventSetup = {
   supports: [null, null, null, null, null, null],
@@ -35,6 +37,7 @@ const EMPTY: EventSetup = {
     overrides: {},
     patterns: [],
     defaults: { support: 1, trainee: 1, scenario: 1 },
+    rewardPriority: [...DEFAULT_REWARD_PRIORITY],
   },
 }
 
@@ -49,11 +52,71 @@ type ValidAttr = typeof VALID_ATTRS[number]
 const isValidAttr = (x: unknown): x is ValidAttr =>
   VALID_ATTRS.includes(x as ValidAttr)
 
-const pickName = (x: unknown): { name: string } | null => {
-  if (x && typeof x === 'object' && 'name' in x && typeof (x as any).name === 'string') {
-    return { name: (x as any).name }
+const ensureBoolean = (val: unknown, fallback = true): boolean =>
+  typeof val === 'boolean' ? val : fallback
+
+const normalizeRewardPriority = (raw: unknown, fallback?: RewardCategory[]): RewardCategory[] => {
+  const allowed: RewardCategory[] = ['skill_pts', 'stats', 'hints']
+  const result: RewardCategory[] = []
+  const seen = new Set<RewardCategory>()
+
+  if (Array.isArray(raw)) {
+    for (const item of raw) {
+      if (typeof item !== 'string') continue
+      const key = item.trim().toLowerCase()
+      const normalized = key === 'skill_points' ? 'skill_pts' : (allowed.includes(key as RewardCategory) ? (key as RewardCategory) : undefined)
+      if (!normalized) continue
+      if (!seen.has(normalized)) {
+        seen.add(normalized)
+        result.push(normalized)
+      }
+    }
   }
-  return null
+
+  const fallbackList = fallback && fallback.length ? fallback : DEFAULT_REWARD_PRIORITY
+  for (const cat of fallbackList) {
+    if (!seen.has(cat)) {
+      seen.add(cat)
+      result.push(cat)
+    }
+  }
+  return result
+}
+
+const pickSupport = (raw: unknown, slot: number, fallback?: SelectedSupport | null): SelectedSupport | null => {
+  if (!raw || typeof raw !== 'object') return fallback ?? null
+  if (!('name' in raw) || typeof (raw as any).name !== 'string') return fallback ?? null
+  if (!('rarity' in raw) || !isValidRarity((raw as any).rarity)) return fallback ?? null
+  if (!('attribute' in raw) || !isValidAttr((raw as any).attribute)) return fallback ?? null
+  const priority = normalizePriority((raw as any).priority)
+  const avoidEnergyOverflow = ensureBoolean(
+    (raw as any).avoidEnergyOverflow ?? (raw as any).avoid_energy_overflow,
+    fallback?.avoidEnergyOverflow ?? true
+  )
+  return {
+    slot,
+    name: (raw as any).name,
+    rarity: (raw as any).rarity,
+    attribute: (raw as any).attribute,
+    priority,
+    avoidEnergyOverflow,
+  }
+}
+
+const pickEntity = <T extends { name: string; avoidEnergyOverflow?: boolean }>(
+  raw: unknown,
+  fallback: T | null
+): T | null => {
+  if (!raw || typeof raw !== 'object' || !('name' in raw)) return fallback
+  const name = (raw as any).name
+  if (typeof name !== 'string' || !name.trim()) return fallback
+  return {
+    name,
+    avoidEnergyOverflow: ensureBoolean(
+      (raw as any).avoidEnergyOverflow ?? (raw as any).avoid_energy_overflow,
+      fallback?.avoidEnergyOverflow ?? true
+    ),
+  } as T
 }
 
 const DEFAULT_PRIORITY: SupportPriority = {
@@ -97,6 +160,7 @@ export const useEventsSetupStore = create<State>()(
           return
         }
         const cur = get().setup
+        const curPrefs = cur.prefs || EMPTY.prefs
         // supports: if the field exists, rebuild from it; otherwise keep current
         const supports: (SelectedSupport|null)[] =
           ('supports' in s)
@@ -104,24 +168,15 @@ export const useEventsSetupStore = create<State>()(
                 const raw = Array.isArray(s.supports)
                   ? (s.supports[i] as Partial<SelectedSupport> | null | undefined)
                   : undefined
-                if (!raw || !raw.name || !raw.rarity || !raw.attribute) return null
-                const rarity: Rarity   = isValidRarity(raw.rarity)   ? raw.rarity   : 'SR'
-                const attribute: AttrKey = isValidAttr(raw.attribute) ? raw.attribute : 'SPD'
-                return {
-                  slot: i,
-                  name: raw.name,
-                  rarity,
-                  attribute,
-                  priority: normalizePriority((raw as any).priority),
-                }
+                return pickSupport(raw, i, cur.supports[i] ?? null)
               })
             : cur.supports
 
         // scenario/trainee: honor explicit null if the key is present
         const scenario: SelectedScenario =
-          ('scenario' in s) ? (pickName(s.scenario) ?? null) : cur.scenario
+          ('scenario' in s) ? pickEntity<NonNullable<SelectedScenario>>(s.scenario, cur.scenario) : cur.scenario
         const trainee: SelectedTrainee =
-          ('trainee' in s) ? (pickName(s.trainee) ?? null) : cur.trainee
+          ('trainee' in s) ? pickEntity<NonNullable<SelectedTrainee>>(s.trainee, cur.trainee) : cur.trainee
 
         // prefs: if present, normalize; otherwise keep current
         const prefs: EventPrefs =
@@ -134,8 +189,12 @@ export const useEventsSetupStore = create<State>()(
                   trainee:  Number(s.prefs.defaults?.trainee  ?? 1),
                   scenario: Number(s.prefs.defaults?.scenario ?? 1),
                 },
+                rewardPriority: normalizeRewardPriority(
+                  (s.prefs as any).rewardPriority ?? (s.prefs as any).reward_priority,
+                  curPrefs.rewardPriority,
+                ),
               }
-            : cur.prefs
+            : curPrefs
 
         set({ setup: { supports, scenario, trainee, prefs }, revision: get().revision + 1 })
       },
@@ -153,12 +212,17 @@ export const useEventsSetupStore = create<State>()(
           const nextPriority = ref.priority
             ? normalizePriority(ref.priority)
             : supports[idx]?.priority || { ...DEFAULT_PRIORITY }
+          const avoidEnergyOverflow = ensureBoolean(
+            ref.avoidEnergyOverflow,
+            supports[idx]?.avoidEnergyOverflow ?? true
+          )
           supports[idx] = {
             slot: idx,
             name: ref.name,
             rarity: ref.rarity,
             attribute: ref.attribute,
             priority: nextPriority,
+            avoidEnergyOverflow,
           }
         } else {
           supports[idx] = null
@@ -168,12 +232,30 @@ export const useEventsSetupStore = create<State>()(
 
       setScenario(ref) {
         const s = get().setup
-        set({ setup: { ...s, scenario: ref ? { ...ref } : null }, revision: get().revision + 1 })
+        const next = ref
+          ? {
+              name: ref.name,
+              avoidEnergyOverflow: ensureBoolean(
+                ref.avoidEnergyOverflow,
+                s.scenario?.avoidEnergyOverflow ?? true
+              ),
+            }
+          : null
+        set({ setup: { ...s, scenario: next }, revision: get().revision + 1 })
       },
 
       setTrainee(ref) {
         const s = get().setup
-        set({ setup: { ...s, trainee: ref ? { ...ref } : null }, revision: get().revision + 1 })
+        const next = ref
+          ? {
+              name: ref.name,
+              avoidEnergyOverflow: ensureBoolean(
+                ref.avoidEnergyOverflow,
+                s.trainee?.avoidEnergyOverflow ?? true
+              ),
+            }
+          : null
+        set({ setup: { ...s, trainee: next }, revision: get().revision + 1 })
       },
 
       setPrefs(p) {
@@ -187,6 +269,7 @@ export const useEventsSetupStore = create<State>()(
             trainee: Number(p.defaults?.trainee ?? cur.defaults.trainee),
             scenario:Number(p.defaults?.scenario ?? cur.defaults.scenario),
           },
+          rewardPriority: normalizeRewardPriority(p.rewardPriority, cur.rewardPriority),
         }
         set({ setup: { ...s, prefs: next }, revision: get().revision + 1 })
       },
@@ -209,6 +292,20 @@ export const useEventsSetupStore = create<State>()(
           priority: normalizePriority(priority),
         }
         set({ setup: { ...s, supports }, revision: get().revision + 1 })
+      },
+      setRewardPriority(priority) {
+        const s = get().setup
+        const nextPriority = normalizeRewardPriority(priority, s.prefs?.rewardPriority)
+        set({
+          setup: {
+            ...s,
+            prefs: {
+              ...s.prefs,
+              rewardPriority: nextPriority,
+            },
+          },
+          revision: get().revision + 1,
+        })
       },
     })),
     {

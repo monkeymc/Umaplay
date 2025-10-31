@@ -59,6 +59,7 @@ The runtime supports Steam on Windows and Android mirrored via scrcpy, with expe
 ## SOPs
 - `docs/ai/SOPs/sop-config-back-front.md` (Reference of web folder and web UI)
 - `docs/ai/SOPs/waiter-usage-and-integration.md` (Important)
+- `docs/ai/SOPs/towards-custom-training-policy-graph.md` (Notes on evolving training-policy automation graph)
 
 ## Runtime Topology (diagram as text)
 ```
@@ -83,10 +84,10 @@ The runtime supports Steam on Windows and Android mirrored via scrcpy, with expe
 - **Entrypoint (`main.py`)** loads configuration (`server/utils.py`), applies runtime settings, builds controllers/OCR/YOLO engines, and starts the bot loop plus the FastAPI server when enabled.
 - **Agent loop (`core/agent.py`)** coordinates perception→decision→action for training careers, integrating race scheduling, skill buys, events, and the claw mini-game.
 - **AgentNav (`core/agent_nav.py`)** provides hotkey-triggered navigation flows for Team Trials and Daily Races, reusing shared perception but with dedicated YOLO weights (`Settings.YOLO_WEIGHTS_NAV`).
-- **Action flows (`core/actions/`)** modularize behaviors: lobby management, training policy scoring, races, skills, events, Team Trials (`team_trials.py`), and Daily Races (`daily_race.py`).
+- **Action flows (`core/actions/`)** modularize behaviors: lobby management, training policy scoring, races, skills, events, Team Trials (`team_trials.py`), and Daily Races (`daily_race.py`). Skill purchasing respects per-preset `skillPtsCheck` thresholds, while event handling consults per-entity energy overflow toggles plus ranked reward priorities (skill pts → stats → hints by default) before rotating choices.
 - **Controllers (`core/controllers/`)** abstract capture/input for Steam, Scrcpy, and optional BlueStacks; `core/controllers/base.py` defines the contract.
-- **Utilities (`core/utils/`)** cover logging (`logger.py`), waiters (`waiter.py`), abort handling, navigation helpers, event catalogs, and race indexing for scheduling.
-- **Settings (`core/settings.py`)** maps persisted configuration and environment flags into runtime constants, including remote inference toggles, YOLO thresholds, and nav weights.
+- **Utilities (`core/utils/`)** cover logging (`logger.py`), waiters (`waiter.py`), abort handling, navigation helpers, skill memory persistence (`skill_memory.py`), preset toast rendering (`preset_overlay.py`), event catalogs, and race indexing for scheduling.
+- **Settings (`core/settings.py`)** maps persisted configuration and environment flags into runtime constants, including remote inference toggles, YOLO thresholds, nav weights, and the active preset’s `skillPtsCheck` (fallback to legacy general config) before handing it to `Player`. `RUNTIME_SKILL_MEMORY_PATH` defaults to `prefs/runtime_skill_memory.json` but can be overridden via env.
 
 ### Control Flow Overview
 1. Load the latest config using `Settings.apply_config()` and configure logging.
@@ -161,16 +162,17 @@ This design allows the core loop to evolve independently of perception implement
 
 ## Operational Notes
 - **Execution modes**: `python main.py` starts the bot and the config server; `run_inference_server.bat` launches remote perception; `uvicorn server.main_inference:app --host 0.0.0.0 --port 8001` runs standalone inference.
-- **Hotkeys & toggles**: `BotState` binds F2 for start/stop; `AgentNav` exposes one-shot flows for Team Trials (F7), Daily Races (F8), and Roulette (F9). Roulette relies on `core/actions/roulette.py` to spin Prize Derby wheels, respects `NavState.stop()` for early exit, and reuses nav YOLO weights in `core/agent_nav.py`.
+- **Hotkeys & toggles**: `BotState` binds F2 for start/stop (and shows the active preset overlay via `core/utils/preset_overlay.py` when enabled); `AgentNav` exposes one-shot flows for Team Trials (F7), Daily Races (F8), and Roulette (F9). Roulette relies on `core/actions/roulette.py` to spin Prize Derby wheels, respects `NavState.stop()` for early exit, and reuses nav YOLO weights in `core/agent_nav.py`.
 - **Logging & observability**: `core/utils/logger.py` sets structured logs; `debug/` collects screenshots and overlays; cleanup logic in `main.py.cleanup_debug_training_if_needed()` prunes large training captures.
-- **Performance levers**: `core/settings.py` exposes YOLO image size, confidence, OCR mode (fast/server), and remote processor URLs. Nav-specific weights configured via `Settings.YOLO_WEIGHTS_NAV`.
+- **Performance levers**: `core/settings.py` exposes YOLO image size, confidence, OCR mode (fast/server), remote processor URLs, and preset overlay toggles/duration (`SHOW_PRESET_OVERLAY`, `PRESET_OVERLAY_DURATION`). Nav-specific weights configured via `Settings.YOLO_WEIGHTS_NAV`.
 - **Reliability guards**: `core/utils/abort.py` enforces safe shutdown; `core/utils/waiter.py` throttles retries; `core/actions/race.ConsecutiveRaceRefused` handles stale states.
 
 ## Data & Persistence
 - **Datasets (`datasets/in_game/`)** provide JSON for skills, races, and events consumed by backend APIs and lobby planning.
 - **YOLO datasets (`datasets/uma/`, `datasets/uma_nav/`, `datasets/coco8/`)** support ongoing model training.
 - **Models (`models/`)** store YOLO weights (`uma.pt`) and classifiers referenced by `core/settings.py` and remote inference.
-- **Prefs (`prefs/`)** persist runtime configuration (`config.json`) plus samples for onboarding.
+- **Prefs (`prefs/`)** persist runtime configuration (`config.json`) plus samples for onboarding; runtime skill memory defaults to `prefs/runtime_skill_memory.json`.
+- **Skill memory (`core/utils/skill_memory.py`)** provides `SkillMemoryManager` to track skill sightings/purchases across runs, enforcing staleness rules before persisting the JSON payload.
 - **Debug artifacts (`debug/`)** capture screenshots and overlays for tuning; cleanup automation runs when exceeding thresholds.
 - **Training scripts**: `collect_training_data.py`, `collect_data_training.py`, and `prepare_uma_yolo_dataset.py` manage dataset curation.
 
@@ -190,7 +192,7 @@ This design allows the core loop to evolve independently of perception implement
 
 ## Frontend Architecture
 - **Routing**: Single-page app anchored at `/` with internal layout and tabs for General vs Preset settings (`web/src/pages/Home.tsx`).
-- **State management**: Zustand store in `web/src/store/configStore.ts` manages config, exposes actions (`setGeneral`, `patchPreset`, `importJson`).
+- **State management**: Zustand store in `web/src/store/configStore.ts` manages config, exposes actions (`setGeneral`, `patchPreset`, `importJson`). Per-preset `skillPtsCheck` thresholds are mirrored into legacy general config on save/load for backwards compatibility. `useEventsSetupStore` tracks per-support/scenario/trainee energy overflow switches and a reorderable `rewardPriority` array consumed by EventFlow.
 - **Schema validation**: `web/src/models/config.schema.ts` ensures inbound configs are normalized and defaulted; migrations keep legacy fields compatible.
 - **Components**: Modular folders (`web/src/components/general/`, `web/src/components/presets/`, `web/src/components/events/`) encapsulate forms, race planners, and event editors.
 - **Daily Races tab**: `web/src/pages/Home.tsx` keeps both tabs mounted for instant switching; `web/src/components/nav/DailyRacePrefs.tsx` writes to `useNavPrefsStore`, which persists `/nav` preferences (alarm clock, star pieces, parfait) via FastAPI without re-fetching when users toggle between tabs.
