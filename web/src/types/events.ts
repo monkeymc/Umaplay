@@ -88,10 +88,13 @@ export type SelectedSupport = {
   rarity: Rarity
   attribute: AttrKey
   priority?: SupportPriority
+  avoidEnergyOverflow?: boolean
 };
 
-export type SelectedScenario = { name: string } | null
-export type SelectedTrainee  = { name: string } | null
+export type SelectedScenario = { name: string; avoidEnergyOverflow?: boolean } | null
+export type SelectedTrainee  = { name: string; avoidEnergyOverflow?: boolean } | null
+
+export type RewardCategory = 'skill_pts' | 'hints' | 'stats'
 
 // step-aware key: "type/name/attribute/rarity/eventName#s<step>"
 export type EventKey = string
@@ -104,6 +107,7 @@ export type EventPrefs = {
   overrides: EventOverrides
   patterns: EventPatterns
   defaults: EventDefaults
+  rewardPriority: RewardCategory[]
 }
 
 // --- Event Setup (what we persist locally and attach to presets on save) ---

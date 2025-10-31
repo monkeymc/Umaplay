@@ -3,7 +3,7 @@ import fnmatch
 import os
 from dataclasses import dataclass, asdict, field
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Set
 
 from PIL import Image
 import imagehash
@@ -23,6 +23,142 @@ BUILD_DIR = Path("build")  # will hold event_catalog.json
 CATALOG_JSON = Path("datasets/in_game/event_catalog.json")
 
 
+DEFAULT_REWARD_PRIORITY: List[str] = ["skill_pts", "stats", "hints"]
+
+_REWARD_KEY_TO_ALIAS: Dict[str, str] = {
+    "energy": "energy",
+    "skill_pts": "skill_pts",
+    "skill_points": "skill_pts",
+    "hint": "hints",
+    "hints": "hints",
+    "speed": "stats",
+    "spd": "stats",
+    "stamina": "stats",
+    "sta": "stats",
+    "power": "stats",
+    "pwr": "stats",
+    "guts": "stats",
+    "gut": "stats",
+    "wit": "stats",
+    "wisdom": "stats",
+    "intelligence": "stats",
+    "stats": "stats",
+}
+
+_VALID_REWARD_CATEGORIES: Set[str] = {"skill_pts", "hints", "stats"}
+
+
+def _coerce_float(val: Any) -> Optional[float]:
+    if isinstance(val, (int, float)):
+        return float(val)
+    if isinstance(val, str):
+        try:
+            return float(val.strip())
+        except Exception:
+            return None
+    return None
+
+
+def normalize_reward_priority_list(raw: Optional[Any]) -> List[str]:
+    if not isinstance(raw, (list, tuple)):
+        return list(DEFAULT_REWARD_PRIORITY)
+    seen: Set[str] = set()
+    result: List[str] = []
+    for item in raw:
+        if not isinstance(item, str):
+            continue
+        key = item.strip().lower()
+        if not key:
+            continue
+        mapped = _REWARD_KEY_TO_ALIAS.get(key, key)
+        if mapped in _VALID_REWARD_CATEGORIES and mapped not in seen:
+            result.append(mapped)
+            seen.add(mapped)
+    if not result:
+        return list(DEFAULT_REWARD_PRIORITY)
+    return result
+
+
+def max_positive_energy(outcomes: List[Dict[str, Any]]) -> int:
+    max_gain = 0
+
+    def visit(node: Any) -> None:
+        nonlocal max_gain
+        if isinstance(node, dict):
+            for k, v in node.items():
+                key = str(k).strip().lower()
+                if key == "energy":
+                    val = _coerce_float(v)
+                    if val is not None and val > 0:
+                        max_gain = max(max_gain, int(val))
+                visit(v)
+        elif isinstance(node, (list, tuple)):
+            for item in node:
+                visit(item)
+
+    visit(outcomes)
+    return max_gain
+
+
+def extract_reward_categories(outcomes: List[Dict[str, Any]]) -> Set[str]:
+    categories: Set[str] = set()
+
+    def visit(node: Any) -> None:
+        if isinstance(node, dict):
+            for k, v in node.items():
+                key = str(k).strip().lower()
+                mapped = _REWARD_KEY_TO_ALIAS.get(key)
+                if mapped == "skill_pts":
+                    val = _coerce_float(v)
+                    if val is None or val > 0:
+                        categories.add("skill_pts")
+                elif mapped == "hints":
+                    if isinstance(v, (list, tuple)):
+                        if any(v):
+                            categories.add("hints")
+                    elif v:
+                        categories.add("hints")
+                elif mapped == "stats":
+                    val = _coerce_float(v)
+                    if (isinstance(v, (int, float)) and v > 0) or (
+                        isinstance(v, dict) or isinstance(v, (list, tuple))
+                    ) or (val is not None and val > 0):
+                        categories.add("stats")
+                visit(v)
+        elif isinstance(node, (list, tuple)):
+            for item in node:
+                visit(item)
+
+    visit(outcomes)
+    return categories & _VALID_REWARD_CATEGORIES
+
+
+def select_candidate_by_priority(
+    candidate_order: List[int],
+    safe_candidates: List[int],
+    option_categories: Dict[int, Set[str]],
+    priority: List[str],
+) -> Optional[Tuple[int, Optional[str]]]:
+    if not safe_candidates:
+        return None
+    priority = [p for p in priority if p in _VALID_REWARD_CATEGORIES] or list(
+        DEFAULT_REWARD_PRIORITY
+    )
+
+    safe_seen = set(safe_candidates)
+    for category in priority:
+        for opt in candidate_order:
+            if opt not in safe_seen:
+                continue
+            if category in option_categories.get(opt, set()):
+                return opt, category
+
+    for opt in candidate_order:
+        if opt in safe_seen:
+            return opt, None
+    return None
+
+
 def safe_phash_from_image(img: PILImage) -> Optional[int]:
     """Compute 64-bit pHash from an in-memory PIL image."""
     try:
@@ -33,8 +169,43 @@ def safe_phash_from_image(img: PILImage) -> Optional[int]:
 
 
 # -----------------------------
+# Helpers
+# -----------------------------
+
+
+def _coerce_bool(value: Any, default: bool = True) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "1", "yes", "on"}:
+            return True
+        if normalized in {"false", "0", "no", "off"}:
+                return False
+    return default
+
+
+# -----------------------------
 # Utilities
 # -----------------------------
+
+
+def _support_key(name: str, attribute: str, rarity: str) -> Tuple[str, str, str]:
+    return (
+        str(name or "").strip(),
+        str(attribute or "None").strip().upper(),
+        str(rarity or "None").strip().upper(),
+    )
+
+
+def _scenario_key(name: str) -> str:
+    return normalize_text(name or "")
+
+
+def _trainee_key(name: str) -> str:
+    return normalize_text(name or "")
 
 
 def normalize_text(s: str) -> str:
@@ -369,6 +540,18 @@ class UserPrefs:
     default_by_type: Dict[str, int]
     # alias keys (e.g., trainee/general) derived from overrides
     alias_overrides: Dict[str, int] = field(default_factory=dict)
+    # default toggle for avoiding energy overflow rotations
+    avoid_energy_overflow: bool = True
+    # per-support override for energy overflow avoidance
+    avoid_energy_overflow_by_support: Dict[Tuple[str, str, str], bool] = field(
+        default_factory=dict
+    )
+    # per-scenario override for energy overflow avoidance
+    avoid_energy_overflow_by_scenario: Dict[str, bool] = field(default_factory=dict)
+    # per-trainee override for energy overflow avoidance
+    avoid_energy_overflow_by_trainee: Dict[str, bool] = field(default_factory=dict)
+    # ranked reward preference used when avoiding energy overflow
+    reward_priority: List[str] = field(default_factory=lambda: list(DEFAULT_REWARD_PRIORITY))
 
     @staticmethod
     def load(path: Path) -> "UserPrefs":
@@ -378,6 +561,10 @@ class UserPrefs:
                 overrides={},
                 patterns=[],
                 default_by_type={"support": 1, "trainee": 1, "scenario": 1},
+                avoid_energy_overflow=True,
+                avoid_energy_overflow_by_support={},
+                avoid_energy_overflow_by_scenario={},
+                avoid_energy_overflow_by_trainee={},
             )
         with path.open("r", encoding="utf-8") as f:
             raw = json.load(f)
@@ -389,16 +576,30 @@ class UserPrefs:
         else:
             # expect list of {"pattern": "support/Kitasan*/SSR/*", "pick": 2}
             patterns = [(d.get("pattern", ""), int(d.get("pick", 1))) for d in patt_src]
-        default_by_type = raw.get(
-            "defaults", {"support": 1, "trainee": 1, "scenario": 1}
-        )
+        default_by_type = raw.get("defaults", {})
+        if not default_by_type:
+            default_by_type = {"support": 1, "trainee": 1, "scenario": 1}
         alias_overrides = _build_alias_overrides(overrides)
+
+        avoid_energy_overflow = _coerce_bool(
+            raw.get("avoid_energy_overflow", raw.get("avoidEnergyOverflow", True)),
+            default=True,
+        )
+
+        reward_priority = normalize_reward_priority_list(
+            raw.get("rewardPriority", raw.get("reward_priority"))
+        )
 
         return UserPrefs(
             overrides=overrides,
             patterns=patterns,
             default_by_type=default_by_type,
             alias_overrides=alias_overrides,
+            avoid_energy_overflow=avoid_energy_overflow,
+            avoid_energy_overflow_by_support={},
+            avoid_energy_overflow_by_scenario={},
+            avoid_energy_overflow_by_trainee={},
+            reward_priority=reward_priority,
         )
 
     # ---- build UserPrefs from the active preset inside config.json ----
@@ -420,6 +621,8 @@ class UserPrefs:
                 overrides={},
                 patterns=[],
                 default_by_type={"support": 1, "trainee": 1, "scenario": 1},
+                avoid_energy_overflow=True,
+                avoid_energy_overflow_by_support={},
             )
 
         setup = preset.get("event_setup") or {}
@@ -471,9 +674,82 @@ class UserPrefs:
             "trainee": int(d.get("trainee", 1) or 1),
             "scenario": int(d.get("scenario", 1) or 1),
         }
-        return UserPrefs(
-            overrides=overrides, patterns=patterns, default_by_type=default_by_type, alias_overrides=alias_overrides
+        raw_toggle = prefs.get("avoidEnergyOverflow")
+        if raw_toggle is None:
+            raw_toggle = prefs.get("avoid_energy_overflow")
+        avoid_energy_overflow = _coerce_bool(raw_toggle, default=True)
+
+        reward_priority = normalize_reward_priority_list(
+            prefs.get("rewardPriority") or prefs.get("reward_priority")
         )
+
+        avoid_energy_by_support: Dict[Tuple[str, str, str], bool] = {}
+        supports = setup.get("supports", []) or []
+        if isinstance(supports, list):
+            for entry in supports:
+                if not isinstance(entry, dict):
+                    continue
+                name = entry.get("name")
+                rarity = entry.get("rarity")
+                attribute = entry.get("attribute")
+                if not (name and rarity and attribute):
+                    continue
+                raw_flag = entry.get("avoidEnergyOverflow")
+                if raw_flag is None:
+                    raw_flag = entry.get("avoid_energy_overflow")
+                flag = _coerce_bool(raw_flag, default=True)
+                avoid_energy_by_support[_support_key(name, attribute, rarity)] = flag
+
+        scenario_flags: Dict[str, bool] = {}
+        scenario_entry = setup.get("scenario")
+        if isinstance(scenario_entry, dict):
+            name = scenario_entry.get("name")
+            if name:
+                raw_flag = scenario_entry.get("avoidEnergyOverflow")
+                if raw_flag is None:
+                    raw_flag = scenario_entry.get("avoid_energy_overflow")
+                scenario_flags[_scenario_key(str(name))] = _coerce_bool(
+                    raw_flag, default=True
+                )
+
+        trainee_flags: Dict[str, bool] = {}
+        trainee_entry = setup.get("trainee")
+        if isinstance(trainee_entry, dict):
+            name = trainee_entry.get("name")
+            if name:
+                raw_flag = trainee_entry.get("avoidEnergyOverflow")
+                if raw_flag is None:
+                    raw_flag = trainee_entry.get("avoid_energy_overflow")
+                trainee_flags[_trainee_key(str(name))] = _coerce_bool(
+                    raw_flag, default=True
+                )
+
+        return UserPrefs(
+            overrides=overrides,
+            patterns=patterns,
+            default_by_type=default_by_type,
+            alias_overrides=alias_overrides,
+            avoid_energy_overflow=avoid_energy_overflow,
+            avoid_energy_overflow_by_support=avoid_energy_by_support,
+            avoid_energy_overflow_by_scenario=scenario_flags,
+            avoid_energy_overflow_by_trainee=trainee_flags,
+            reward_priority=reward_priority,
+        )
+
+    def should_avoid_energy(self, rec: EventRecord) -> bool:
+        if rec.type == "support":
+            key = _support_key(rec.name, rec.attribute, rec.rarity)
+            if key in self.avoid_energy_overflow_by_support:
+                return self.avoid_energy_overflow_by_support[key]
+        elif rec.type == "scenario":
+            key = _scenario_key(rec.name)
+            if key in self.avoid_energy_overflow_by_scenario:
+                return self.avoid_energy_overflow_by_scenario[key]
+        elif rec.type == "trainee":
+            key = _trainee_key(rec.name)
+            if key in self.avoid_energy_overflow_by_trainee:
+                return self.avoid_energy_overflow_by_trainee[key]
+        return self.avoid_energy_overflow
 
     def pick_for(self, rec: EventRecord) -> int:
         """

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, replace
-from typing import List, Optional, Tuple, Dict, Any
+from typing import List, Optional, Tuple, Dict, Any, Set
 
 import numpy as np
 import cv2
@@ -23,6 +23,9 @@ from core.utils.event_processor import (
     UserPrefs,
     Query,
     retrieve_best,
+    max_positive_energy,
+    extract_reward_categories,
+    select_candidate_by_priority,
 )
 
 # -----------------------------
@@ -397,40 +400,87 @@ class EventFlow:
             )
             return self._fallback_click_top(choices_sorted, debug)
 
-        # (7) If we know current energy, attempt to avoid overfilling it.
-        #     Heuristic: treat an option as "adds energy" if any outcome has energy>0.
-        def _max_positive_energy_for(opt_num: int) -> int:
-            try:
-                outcomes = best.rec.options.get(str(opt_num), []) or []
-                gains = [
-                    int(o.get("energy", 0))
-                    for o in outcomes
-                    if isinstance(o, dict)
-                    and isinstance(o.get("energy", 0), (int, float))
-                ]
-                return max([g for g in gains if g > 0], default=0)
-            except Exception:
-                return 0
-
+        # (7) If we know current energy, attempt to avoid overfilling it and honor reward priorities.
         adjusted_pick = pick
-        if current_energy is not None and expected_n >= 1:
-            # cycle starting from the chosen option, pick the first that won't overflow
-            for shift in range(expected_n):
-                candidate = ((pick - 1 + shift) % expected_n) + 1
-                gain = _max_positive_energy_for(candidate)
-                if gain <= 0:
-                    # safe: no energy gain
-                    adjusted_pick = candidate
-                    break
-                if (current_energy + gain) <= max_energy_cap:
-                    adjusted_pick = candidate
-                    break
-            if adjusted_pick != pick:
-                debug["pick_adjusted_due_to_energy"] = {
-                    "from": pick,
-                    "to": adjusted_pick,
-                }
+        avoid_overflow = True
+        if hasattr(self.prefs, "should_avoid_energy"):
+            try:
+                avoid_overflow = bool(self.prefs.should_avoid_energy(best.rec))
+            except Exception:
+                avoid_overflow = getattr(self.prefs, "avoid_energy_overflow", True)
+        else:
+            avoid_overflow = getattr(self.prefs, "avoid_energy_overflow", True)
+        debug["avoid_energy_overflow"] = avoid_overflow
+
+        if avoid_overflow and current_energy is not None and expected_n >= 1:
+            candidate_order = [((pick - 1 + shift) % expected_n) + 1 for shift in range(expected_n)]
+
+            option_categories: Dict[int, Set[str]] = {}
+            option_energy_gain: Dict[int, int] = {}
+            safe_candidates: List[int] = []
+
+            for option_num in range(1, expected_n + 1):
+                outcomes_raw = best.rec.options.get(str(option_num), []) or []
+                if not isinstance(outcomes_raw, list):
+                    outcomes = [outcomes_raw]
+                else:
+                    outcomes = outcomes_raw
+
+                gain = max_positive_energy(outcomes)
+                option_energy_gain[option_num] = gain
+
+                if gain <= 0 or (current_energy + gain) <= max_energy_cap:
+                    safe_candidates.append(option_num)
+
+                option_categories[option_num] = extract_reward_categories(outcomes)
+
+            reward_priority = list(getattr(self.prefs, "reward_priority", []))
+            selection = select_candidate_by_priority(
+                candidate_order,
+                safe_candidates,
+                option_categories,
+                reward_priority,
+            )
+
+            if selection:
+                candidate, matched_category = selection
+                adjusted_pick = candidate
+                if adjusted_pick != pick:
+                    debug["pick_adjusted_due_to_energy"] = {
+                        "from": pick,
+                        "to": adjusted_pick,
+                        "reason": "reward_priority" if matched_category else "energy_safe",
+                    }
+                if matched_category:
+                    debug["reward_priority_match"] = matched_category
+            elif safe_candidates:
+                for candidate in candidate_order:
+                    if candidate in safe_candidates:
+                        adjusted_pick = candidate
+                        if adjusted_pick != pick:
+                            debug["pick_adjusted_due_to_energy"] = {
+                                "from": pick,
+                                "to": adjusted_pick,
+                                "reason": "energy_safe",
+                            }
+                        break
+
+            debug.setdefault("energy_gain_by_option", option_energy_gain)
+            debug.setdefault(
+                "reward_categories_by_option",
+                {str(k): sorted(v) for k, v in option_categories.items() if v},
+            )
         pick = adjusted_pick
+
+        available_n = len(choices_sorted)
+        if pick > available_n:
+            logger_uma.warning(
+                "[event] Adjusted pick=%d exceeds detected %d choices; fallback to top.",
+                pick,
+                available_n,
+            )
+            debug["available_choices"] = available_n
+            return self._fallback_click_top(choices_sorted, debug)
 
         # 8) Click selected option (top-to-bottom order)
         target = choices_sorted[pick - 1]
