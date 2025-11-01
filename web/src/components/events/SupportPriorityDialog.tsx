@@ -55,6 +55,18 @@ export default function SupportPriorityDialog({ open, support, onClose }: Props)
   const [recheckAfterHint, setRecheckAfterHint] = useState<boolean>(!!support?.priority?.recheckAfterHint)
   const { data: allSkills = [] } = useQuery({ queryKey: ['skills'], queryFn: fetchSkills })
 
+  const skillOptions = useMemo(() => {
+    const seen = new Set<string>()
+    const names: string[] = []
+    for (const item of allSkills) {
+      const name = typeof item?.name === 'string' ? item.name.trim() : ''
+      if (!name || seen.has(name)) continue
+      seen.add(name)
+      names.push(name)
+    }
+    return names
+  }, [allSkills])
+
   useEffect(() => {
     setEnabled(current.enabled)
     setScoreBlueGreen(current.scoreBlueGreen)
@@ -182,9 +194,14 @@ export default function SupportPriorityDialog({ open, support, onClose }: Props)
                 </Stack>
                 <Autocomplete
                   multiple
-                  options={allSkills.map((s:any) => s.name)}
+                  options={skillOptions}
                   value={skills}
                   onChange={(_, vals) => setSkills(vals as string[])}
+                  filterOptions={(options, state) => {
+                    const input = state.inputValue.trim().toLowerCase()
+                    if (!input) return options
+                    return options.filter((name) => name.toLowerCase().includes(input))
+                  }}
                   renderInput={(params) => (
                     <TextField {...params} size="small" placeholder="Select required skills" />
                   )}
