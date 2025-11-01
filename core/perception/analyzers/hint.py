@@ -189,7 +189,7 @@ def assign_hints_to_supports(
     canvas_height: int,
     expand_x_frac: float = 0.35,
     expand_top_frac: float = 0.90,
-    expand_bottom_frac: float = 0.40,
+    expand_bottom_frac: float = 0.25,
     max_score: float = 1.8,
 ) -> Tuple[Dict[int, List[Dict[str, Any]]], List[Dict[str, Any]]]:
     assignments: Dict[int, List[Dict[str, Any]]] = {
@@ -197,6 +197,15 @@ def assign_hints_to_supports(
     }
     tile_hints: List[Dict[str, Any]] = []
     bottom_start = max(0, canvas_height - int(canvas_height * 0.25))
+
+    anchor_x_lo = 0.60
+    anchor_y_hi = 0.40
+    bar_y_start = 0.70
+    left_penalty_weight = 1.2
+    bottom_penalty_weight = 1.5
+    bar_surcharge = 0.35
+    inside_bonus = 0.85
+    margin_better = 0.12
 
     for hint in hints:
         hx1, hy1, hx2, hy2 = [float(v) for v in hint.get("xyxy", (0, 0, 0, 0))]
@@ -225,19 +234,32 @@ def assign_hints_to_supports(
             if not (ex1 <= hcx <= ex2 and ey1 <= hcy <= ey2):
                 continue
 
+            rx = (hcx - sx1) / max(1.0, width)
+            ry = (hcy - sy1) / max(1.0, height)
+
             dx = abs(hcx - geom.center[0]) / max(1.0, width)
             if hcy < sy1:
                 dy = (sy1 - hcy) / max(1.0, height)
             elif hcy <= sy2:
                 dy = 0.0
             else:
-                dy = ((hcy - sy2) / max(1.0, height)) * 1.5
+                dy = (hcy - sy2) / max(1.0, height)
 
-            score = dx + dy
-            if sx1 <= hcx <= sx2 and sy1 <= hcy <= sy2:
-                score *= 0.7
+            score = dx + 0.6 * dy
 
-            if score < best_score:
+            if rx < anchor_x_lo:
+                score += (anchor_x_lo - rx) * left_penalty_weight
+
+            if ry > anchor_y_hi:
+                score += (ry - anchor_y_hi) * bottom_penalty_weight
+                if ry >= bar_y_start:
+                    score += bar_surcharge
+
+            inside = sx1 <= hcx <= sx2 and sy1 <= hcy <= sy2
+            if inside:
+                score *= inside_bonus
+
+            if (best_key is None) or (score < best_score - margin_better):
                 best_score = score
                 best_key = geom.key
                 best_geom = geom
