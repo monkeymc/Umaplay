@@ -11,32 +11,39 @@ import RaceScheduler from './RaceScheduler'
 import { useEventsData } from '@/hooks/useEventsData'
 import EventSetupSection from '../events/EventSetupSection'
 import { useEventsSetupStore } from '@/store/eventsSetupStore'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+import FieldRow from '@/components/common/FieldRow'
 
 export default function PresetPanel({ compact = false }: { compact?: boolean }) {
-  const cfg = useConfigStore((s) => s.config)
+  const selectedId = useConfigStore((s) => s.uiSelectedPresetId ?? s.config.activePresetId ?? s.config.presets[0]?.id)
+  const selected = useConfigStore((s) => selectedId ? s.config.presets.find((p) => p.id === selectedId) : undefined)
   const renamePreset = useConfigStore((s) => s.renamePreset)
   const patchPreset = useConfigStore((s) => s.patchPreset)
-  const activeId = cfg.activePresetId ?? cfg.presets[0]?.id
-  const active = cfg.presets.find((p) => p.id === activeId)
   const eventsIndex = useEventsData()
+  const lastSyncedRevision = useRef<number>(-1)
 
   // 1) Hydrate Event Setup only when active preset id changes
   const importSetup = useEventsSetupStore((s) => s.importSetup)
   const revision = useEventsSetupStore((s) => s.revision)
   useEffect(() => {
-    if (active?.event_setup) importSetup(active.event_setup)
+    // Defer hydration to next tick to avoid blocking tab switch
+    const timer = setTimeout(() => {
+      if (selected?.event_setup) importSetup(selected.event_setup)
+      lastSyncedRevision.current = revision
+    }, 0)
+    return () => clearTimeout(timer)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeId])
+  }, [selectedId])
 
   // 2) On any EventSetup change, write it back into the active preset (so export & LocalStorage keep it)
   useEffect(() => {
-    if (!activeId) return
+    if (!selectedId || lastSyncedRevision.current === revision) return
+    lastSyncedRevision.current = revision
     const setup = useEventsSetupStore.getState().getSetup()
-    patchPreset(activeId, 'event_setup', setup)
-  }, [activeId, revision, patchPreset])
+    patchPreset(selectedId, 'event_setup', setup)
+  }, [revision, selectedId, patchPreset])
 
-  if (!active) return null
+  if (!selected) return null
 
   return (
     <Section title="Preset">
@@ -44,23 +51,43 @@ export default function PresetPanel({ compact = false }: { compact?: boolean }) 
         <TextField
           label="Preset name"
           size="small"
-          value={active.name}
-          onChange={(e) => renamePreset(active.id, e.target.value)}
+          value={selected.name}
+          onChange={(e) => renamePreset(selected.id, e.target.value)}
           sx={{ maxWidth: 360 }}
         />
-        <PriorityStats presetId={active.id} />
-        <TargetStats presetId={active.id} />
-        <MoodSelector presetId={active.id} />
-        <StyleSelector presetId={active.id} />
-        <SkillsPicker presetId={active.id} />
+        <PriorityStats presetId={selected.id} />
+        <TargetStats presetId={selected.id} />
+        <MoodSelector presetId={selected.id} />
+        <StyleSelector presetId={selected.id} />
+        <FieldRow
+          label="Skill points threshold"
+          info="Open the Skills screen on race days once points are at or above this value."
+          control={
+            <TextField
+              size="small"
+              type="number"
+              value={selected.skillPtsCheck ?? 600}
+              onChange={(e) =>
+                patchPreset(
+                  selected.id!,
+                  'skillPtsCheck',
+                  Math.max(0, Number.isFinite(Number(e.target.value)) ? Number(e.target.value) : 0),
+                )
+              }
+              inputProps={{ min: 0 }}
+              sx={{ maxWidth: 160 }}
+            />
+          }
+        />
+        <SkillsPicker presetId={selected.id} />
         <Section title="Bot Strategy / Policy">
           <Stack spacing={1}>
 
             <FormControlLabel
               control={
                 <Switch
-                  checked={!!active.raceIfNoGoodValue}
-                  onChange={(e) => patchPreset(active.id!, 'raceIfNoGoodValue', e.target.checked)}
+                  checked={!!selected.raceIfNoGoodValue}
+                  onChange={(e) => patchPreset(selected.id!, 'raceIfNoGoodValue', e.target.checked)}
                 />
               }
               label={
@@ -77,8 +104,8 @@ export default function PresetPanel({ compact = false }: { compact?: boolean }) 
             <FormControlLabel
               control={
                 <Switch
-                  checked={!!active.prioritizeHint}
-                  onChange={(e) => patchPreset(active.id!, 'prioritizeHint', e.target.checked)}
+                  checked={!!selected.prioritizeHint}
+                  onChange={(e) => patchPreset(selected.id!, 'prioritizeHint', e.target.checked)}
                 />
               }
               label={
@@ -95,7 +122,7 @@ export default function PresetPanel({ compact = false }: { compact?: boolean }) 
           </Stack>
         </Section>
         {eventsIndex && <EventSetupSection index={eventsIndex} />}
-        <RaceScheduler presetId={active.id} compact={compact} />
+        <RaceScheduler presetId={selected.id} compact={compact} />
       </Stack>
     </Section>
   )

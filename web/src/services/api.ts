@@ -58,6 +58,21 @@ export async function saveNavPrefs(prefs: NavPrefs): Promise<NavPrefs> {
   return (payload?.data as NavPrefs) ?? payload ?? prefs
 }
 
+export async function fetchSkillMemory(): Promise<Record<string, unknown>> {
+  const res = await fetch('/admin/skill-memory', { cache: 'no-store' })
+  if (res.status === 404) return {}
+  if (!res.ok) throw new Error('Failed to load skill memory snapshot')
+  return res.json()
+}
+
+export async function clearSkillMemory(): Promise<void> {
+  const res = await fetch('/admin/skill-memory', { method: 'DELETE' })
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '')
+    throw new Error(txt || 'Failed to clear skill memory')
+  }
+}
+
 // Save whole app config to backend (server writes root config.json)
 export async function saveServerConfig(payload: unknown): Promise<void> {
   const r = await fetch('/config', {

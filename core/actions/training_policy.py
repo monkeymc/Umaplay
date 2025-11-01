@@ -501,17 +501,29 @@ def decide_action_training(
                     flexible_gap = MAX_SV_GAP
 
                     # Wit h at least some value, default >= 0.5
-                    if under_idx is not None and under_sv and under_sv > 0:
+                    if under_idx is not None:
+                        under_sv = float(under_sv or 0.0)
+                        severe_gap = gap >= UNDERTRAIN_DELTA * 2
+
                         if gap > UNDERTRAIN_DELTA * 1.5:
                             # accept more gap respect to best play
                             flexible_gap += 0.25
+                        if severe_gap:
+                            # extra slack when we are drastically under the reference
+                            flexible_gap += 1
+
+                        min_sv_gate = max(0.5, low_pick_sv_gate / 2)
+                        meets_sv_requirement = under_sv >= min_sv_gate or severe_gap
+
                         if gap > UNDERTRAIN_DELTA and (
                             (top_allowed_idx is None or gap_top_under < flexible_gap)
-                            and under_sv >= max(0.5, low_pick_sv_gate / 2)
+                            and meets_sv_requirement
                         ):
                             because(
                                 f"Undertrained {under_stat} by {gap:.1%} vs reference; "
-                                f"choosing its best SV {under_sv:.2f} (overall best {top_allowed_sv:.2f}, current gap between best option and undertrained option={gap_top_under:.2f} < flexible_gap={flexible_gap}). So let's train under stat tile"
+                                f"choosing its best SV {under_sv:.2f} (overall best {top_allowed_sv:.2f}, current gap between best option and undertrained option={gap_top_under:.2f} < flexible_gap={flexible_gap}). "
+                                + ("Severity override engaged; " if severe_gap else "")
+                                + "So let's train under stat tile"
                             )
                             return (
                                 TrainAction.TRAIN_MAX,

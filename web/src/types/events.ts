@@ -80,6 +80,11 @@ export type SupportPriority = {
   enabled: boolean;
   scoreBlueGreen: number;
   scoreOrangeMax: number;
+  // Deprioritize this support's hints once these skills are acquired (ANY match)
+  skillsRequiredForPriority?: string[];
+  // After taking a hint from this support, immediately re-check the skills screen
+  // to attempt buying any newly unlocked required skills.
+  recheckAfterHint?: boolean;
 };
 
 export type SelectedSupport = {
@@ -87,11 +92,15 @@ export type SelectedSupport = {
   name: string
   rarity: Rarity
   attribute: AttrKey
+  rewardPriority?: RewardCategory[]
   priority?: SupportPriority
+  avoidEnergyOverflow?: boolean
 };
 
-export type SelectedScenario = { name: string } | null
-export type SelectedTrainee  = { name: string } | null
+export type SelectedScenario = { name: string; avoidEnergyOverflow?: boolean; rewardPriority?: RewardCategory[] } | null
+export type SelectedTrainee  = { name: string; avoidEnergyOverflow?: boolean; rewardPriority?: RewardCategory[] } | null
+
+export type RewardCategory = 'skill_pts' | 'hints' | 'stats'
 
 // step-aware key: "type/name/attribute/rarity/eventName#s<step>"
 export type EventKey = string
@@ -104,6 +113,7 @@ export type EventPrefs = {
   overrides: EventOverrides
   patterns: EventPatterns
   defaults: EventDefaults
+  rewardPriority: RewardCategory[]
 }
 
 // --- Event Setup (what we persist locally and attach to presets on save) ---

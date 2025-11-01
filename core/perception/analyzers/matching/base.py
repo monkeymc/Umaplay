@@ -44,6 +44,7 @@ class PreparedTemplate:
     hist: np.ndarray
     hash: Any
     metadata: Dict[str, Any]
+    mask: Optional[np.ndarray] = None
 
 
 @dataclass
@@ -97,24 +98,53 @@ class TemplateMatcherBase:
     def _prepare_entry(self, entry: TemplateEntry) -> Optional[PreparedTemplate]:
         cv2 = _require_cv2()
         try:
+            # Load template preserving alpha if present to build a portrait mask
+            tmpl_bgr: np.ndarray
+            tmpl_mask: Optional[np.ndarray] = None
+
+            # Load image preserving alpha channel for mask extraction
             if entry.image is not None:
-                tmpl_bgr = to_bgr(entry.image)
+                pil = entry.image if isinstance(entry.image, Image.Image) else Image.fromarray(entry.image)
             elif entry.path:
-                tmpl_bgr = to_bgr(entry.path)
+                pil = Image.open(entry.path)
             else:
                 raise ValueError("TemplateEntry requires either image or path")
+
+            # Convert to RGBA to extract alpha mask, then use to_bgr for consistent color handling
+            pil_rgba = pil.convert("RGBA")
+            rgba_arr = np.array(pil_rgba)
+            alpha = rgba_arr[:, :, 3]
+            tmpl_mask = (alpha > 10).astype(np.uint8) * 255 if alpha.size > 0 else None
+
+            # Use to_bgr for consistent color conversion (handles PIL RGB → BGR correctly)
+            tmpl_bgr = to_bgr(pil_rgba)
 
             tmpl_bgr = np.ascontiguousarray(tmpl_bgr)
             tmpl_gray, tmpl_edges = self.prepare_gray_edges(tmpl_bgr)
 
             metadata = dict(entry.metadata or {})
             hash_hex = metadata.pop("hash_hex", None)
+
+            # For template hash, neutralize the outside-of-mask region to the masked mean to reduce background bias
+            if tmpl_mask is not None and tmpl_mask.size:
+                mask_bool = tmpl_mask > 0
+                rgb_for_hash = cv2.cvtColor(tmpl_bgr, cv2.COLOR_BGR2RGB)
+                if mask_bool.any():
+                    mean_pix = rgb_for_hash[mask_bool].mean(axis=0).astype(np.uint8)
+                    rgb_hash = rgb_for_hash.copy()
+                    rgb_hash[~mask_bool] = mean_pix
+                else:
+                    rgb_hash = rgb_for_hash
+                pil_for_hash = Image.fromarray(rgb_hash)
+            else:
+                pil_for_hash = Image.fromarray(cv2.cvtColor(tmpl_bgr, cv2.COLOR_BGR2RGB))
+
             if hash_hex is not None:
                 tmpl_hash = hex_to_hash(str(hash_hex))
             else:
-                tmpl_hash = phash(Image.fromarray(cv2.cvtColor(tmpl_bgr, cv2.COLOR_BGR2RGB)))
+                tmpl_hash = phash(pil_for_hash)
 
-            tmpl_hist = self._histogram(tmpl_bgr)
+            tmpl_hist = self._histogram(tmpl_bgr, mask=tmpl_mask)
 
             return PreparedTemplate(
                 name=entry.name,
@@ -125,6 +155,7 @@ class TemplateMatcherBase:
                 hist=tmpl_hist,
                 hash=tmpl_hash,
                 metadata=metadata,
+                mask=tmpl_mask,
             )
         except Exception as exc:
             logger_uma.debug(
@@ -136,9 +167,14 @@ class TemplateMatcherBase:
 
     def _prepare_region(self, region_bgr: np.ndarray) -> RegionFeatures:
         cv2 = _require_cv2()
+        # Ensure canonical BGR regardless of source (RGB/BGRA/PIL)
+        region_bgr = to_bgr(region_bgr)
         region_bgr = np.ascontiguousarray(region_bgr)
+
         reg_gray, reg_edges = self.prepare_gray_edges(region_bgr)
         reg_hist = self._histogram(region_bgr)
+
+        # Perceptual hash over normalized BGR region
         reg_hash = phash(Image.fromarray(cv2.cvtColor(region_bgr, cv2.COLOR_BGR2RGB)))
         h, w = region_bgr.shape[:2]
         return RegionFeatures(
@@ -178,6 +214,7 @@ class TemplateMatcherBase:
             template.gray,
             template.edges,
             region.shape,
+            template.mask,
         )
         hash_score = self._hash_score(region.hash, template.hash)
         hist_score = self._hist_compare(region.hist, template.hist)
@@ -203,6 +240,7 @@ class TemplateMatcherBase:
         template_gray: np.ndarray,
         template_edges: np.ndarray,
         region_shape: Tuple[int, int],
+        template_mask: Optional[np.ndarray] = None,
     ) -> float:
         cv2 = _require_cv2()
         try:
@@ -235,12 +273,32 @@ class TemplateMatcherBase:
                     continue
                 resized_gray = cv2.resize(tmpl_gray, (tw, th), interpolation=cv2.INTER_AREA)
                 resized_edges = cv2.resize(tmpl_edges, (tw, th), interpolation=cv2.INTER_AREA)
+                if template_mask is not None and template_mask.size:
+                    m = cv2.resize(template_mask, (tw, th), interpolation=cv2.INTER_NEAREST)
+                    if m.dtype != np.uint8:
+                        m = m.astype(np.uint8)
+                else:
+                    m = None
 
-                res_gray = cv2.matchTemplate(region_gray, resized_gray, cv2.TM_CCOEFF_NORMED)
-                sc_gray = float(res_gray.max()) if res_gray.size else 0.0
+                # Use masked CCORR_NORMED (OpenCV >=4.2 supports mask)
+                try:
+                    res_gray = cv2.matchTemplate(
+                        region_gray, resized_gray, cv2.TM_CCORR_NORMED, mask=m
+                    )
+                    sc_gray = float(res_gray.max()) if res_gray.size else 0.0
+                except cv2.error:
+                    # Fallback: unmasked
+                    res_gray = cv2.matchTemplate(region_gray, resized_gray, cv2.TM_CCOEFF_NORMED)
+                    sc_gray = float(res_gray.max()) if res_gray.size else 0.0
 
-                res_edges = cv2.matchTemplate(region_edges, resized_edges, cv2.TM_CCOEFF_NORMED)
-                sc_edges = float(res_edges.max()) if res_edges.size else 0.0
+                try:
+                    res_edges = cv2.matchTemplate(
+                        region_edges, resized_edges, cv2.TM_CCORR_NORMED, mask=m
+                    )
+                    sc_edges = float(res_edges.max()) if res_edges.size else 0.0
+                except cv2.error:
+                    res_edges = cv2.matchTemplate(region_edges, resized_edges, cv2.TM_CCOEFF_NORMED)
+                    sc_edges = float(res_edges.max()) if res_edges.size else 0.0
 
                 fused = self.tm_gray_weight * sc_gray + self.tm_edge_weight * sc_edges
                 if fused > best:
@@ -263,11 +321,14 @@ class TemplateMatcherBase:
         edges = cv2.Canny(gray, lower, upper)
         return gray, edges
 
+
     @staticmethod
-    def _histogram(bgr: np.ndarray) -> np.ndarray:
+    def _histogram(bgr: np.ndarray, mask: Optional[np.ndarray] = None) -> np.ndarray:
         cv2 = _require_cv2()
-        hist = cv2.calcHist([bgr], [0, 1, 2], None, [8, 8, 8], [0, 256, 0, 256, 0, 256])
-        cv2.normalize(hist, hist)
+        hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
+        # 2D histogram on H and S; mask restricts to portrait when available
+        hist = cv2.calcHist([hsv], [0, 1], mask, [180, 256], [0, 180, 0, 256])
+        cv2.normalize(hist, hist, 0, 1, cv2.NORM_MINMAX)
         return hist
 
     @staticmethod

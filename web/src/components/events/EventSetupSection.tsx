@@ -1,12 +1,15 @@
 import { useMemo, useState } from 'react'
 import {
-  Box, Card, CardActionArea, CardContent, Chip, Dialog, DialogContent, DialogTitle,
-  Divider, IconButton, InputAdornment, Stack, TextField, Tooltip, Typography
+  Box, Card, CardActionArea, CardContent, Chip, Dialog, DialogActions, DialogContent, DialogTitle,
+  Divider, FormControlLabel, IconButton, InputAdornment, Stack, Switch, TextField, Tooltip, Typography
 } from '@mui/material'
+
 import EditIcon from '@mui/icons-material/Tune'
 import CloseIcon from '@mui/icons-material/Close'
 import SearchIcon from '@mui/icons-material/Search'
 import PriorityHighIcon from '@mui/icons-material/PriorityHigh'
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward'
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 import type {
   EventsIndex,
   SupportSet,
@@ -15,6 +18,7 @@ import type {
   AttrKey,
   EventOptionEffect,
   ChoiceEvent,
+  RewardCategory,
 } from '@/types/events'
 import SmartImage from '@/components/common/SmartImage'
 import { supportImageCandidates, scenarioImageCandidates, traineeImageCandidates, supportTypeIcons } from '@/utils/imagePaths'
@@ -106,7 +110,10 @@ function SupportPickerDialog({
         }
         const filt = q ? list.filter(s => s.name.toLowerCase().includes(q)) : list
         byAttrOut[attr] = filt
-        if (q) all = all.concat(filt)
+        if (q) {
+          // keep global list nicely sorted as well
+          all = all.concat(filt)
+        }
       }
     }
     if (q) {
@@ -281,6 +288,10 @@ function EventOptionsDialog({
   open, onClose, title, items,
   type, // determines fallback pick
   onPick,
+  energyToggle,
+  onToggle,
+  rewardPriority,
+  onPriorityChange,
 }: {
   open: boolean
   onClose: () => void
@@ -297,6 +308,10 @@ function EventOptionsDialog({
   }[]
   type: 'support'|'scenario'|'trainee'
   onPick: (keyStep: string, pick: number) => void
+  energyToggle: boolean | null
+  onToggle?: (value: boolean) => void
+  rewardPriority: RewardCategory[]
+  onPriorityChange: (next: RewardCategory[]) => void
 }) {
   const prefs = useEventsSetupStore((s) => s.setup.prefs)
   const [q, setQ] = useState('')
@@ -329,6 +344,17 @@ function EventOptionsDialog({
       : items),
     [items, q]
   )
+
+  const handlePriorityMove = (index: number, delta: -1 | 1) => {
+    const next = [...rewardPriority]
+    const target = index + delta
+    if (target < 0 || target >= next.length) return
+    const tmp = next[target]
+    next[target] = next[index]
+    next[index] = tmp
+    onPriorityChange(next)
+  }
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle sx={{ display:'flex', alignItems:'center' }}>
@@ -425,7 +451,69 @@ function EventOptionsDialog({
             )
           })}
         </Stack>
+
+        <Divider sx={{ my: 2 }} />
+
+        <Stack spacing={1}>
+          <Typography variant="subtitle2">Energy reward priority</Typography>
+          <Typography variant="body2" color="text.secondary">
+            When avoiding energy overflow, the bot will prefer options that grant the first available reward in this list.
+          </Typography>
+          <Stack spacing={1}>
+            {rewardPriority.map((cat: RewardCategory, idx: number) => (
+              <Stack
+                key={cat}
+                direction="row"
+                alignItems="center"
+                spacing={1}
+                sx={{
+                  px: 1,
+                  py: 0.5,
+                  borderRadius: 1,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  bgcolor: 'action.hover',
+                }}
+              >
+                <Typography variant="body2" sx={{ flex: 1, textTransform: 'capitalize' }}>
+                  {cat.replace('_', ' ')}
+                </Typography>
+                <IconButton
+                  size="small"
+                  onClick={() => handlePriorityMove(idx, -1)}
+                  disabled={idx === 0}
+                >
+                  <ArrowUpwardIcon fontSize="small" />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={() => handlePriorityMove(idx, 1)}
+                  disabled={idx === rewardPriority.length - 1}
+                >
+                  <ArrowDownwardIcon fontSize="small" />
+                </IconButton>
+              </Stack>
+            ))}
+          </Stack>
+        </Stack>
       </DialogContent>
+      {!!onToggle && (
+        <DialogActions sx={{ justifyContent: 'space-between', px: 3, py: 2 }}>
+          <Typography variant="body2" color="text.secondary">
+            When energy would overflow, skip options that add energy for this selection.
+          </Typography>
+          <FormControlLabel
+            control={(
+              <Switch
+                size="small"
+                checked={!!energyToggle}
+                onChange={(_, checked) => onToggle(checked)}
+              />
+            )}
+            label="Avoid energy overcap"
+          />
+        </DialogActions>
+      )}
     </Dialog>
   )
 }
@@ -439,12 +527,24 @@ export default function EventSetupSection({ index }: Props) {
   const setScenario = useEventsSetupStore((s) => s.setScenario)
   const setTrainee  = useEventsSetupStore((s) => s.setTrainee)
   const setOverride = useEventsSetupStore((s) => s.setOverride)
+  const globalRewardPriority = useEventsSetupStore((s) => s.setup.prefs.rewardPriority)
+  const setRewardPriority = useEventsSetupStore((s) => s.setRewardPriority)
+  const setSupportRewardPriority = useEventsSetupStore((s) => s.setSupportRewardPriority)
+  const setScenarioRewardPriority = useEventsSetupStore((s) => s.setScenarioRewardPriority)
+  const setTraineeRewardPriority = useEventsSetupStore((s) => s.setTraineeRewardPriority)
 
   // dialogs state
   const [pickSlot, setPickSlot] = useState<number | null>(null)
   const [scenarioOpen, setScenarioOpen] = useState(false)
   const [traineeOpen, setTraineeOpen] = useState(false)
-  const [optionsFor, setOptionsFor] = useState<{ type:'support'|'scenario'|'trainee'; title: string; items: any[] } | null>(null)
+  const [optionsFor, setOptionsFor] = useState<{
+    type:'support'|'scenario'|'trainee'
+    slot?: number
+    title: string
+    items: any[]
+    energyToggle: boolean | null
+    onToggle?: (value: boolean) => void
+  } | null>(null)
   const [prioritySlot, setPrioritySlot] = useState<number | null>(null)
 
   const openOptionsForSupport = (slot: number) => {
@@ -453,7 +553,6 @@ export default function EventSetupSection({ index }: Props) {
     // Runtime: index.supports is Map<AttrKey, Map<Rarity, SupportSet[]>>
     let set: SupportSet | undefined
     const byAttr = index.supports as any
-    console.log("DEBUG openOptionsForSupport index.supports", index.supports)
     if (byAttr instanceof Map) {
       const rarMap = byAttr.get(sel.attribute)
       if (rarMap instanceof Map) {
@@ -487,7 +586,26 @@ export default function EventSetupSection({ index }: Props) {
       })),
     }))
 
-    setOptionsFor({ type: 'support', title: `${set.name} — events`, items })
+    const currentToggle = sel.avoidEnergyOverflow ?? true
+    setOptionsFor({
+      type: 'support',
+      slot,
+      title: `${set.name} — events`,
+      items,
+      energyToggle: currentToggle,
+      onToggle: (checked) => {
+        const latest = useEventsSetupStore.getState().setup.supports[slot]
+        if (!latest) return
+        setSupport(slot, {
+          name: latest.name,
+          rarity: latest.rarity,
+          attribute: latest.attribute,
+          priority: latest.priority,
+          avoidEnergyOverflow: checked,
+        })
+        setOptionsFor((state) => (state ? { ...state, energyToggle: checked } : state))
+      },
+    })
   }
 
   const openOptionsForScenario = () => {
@@ -511,7 +629,19 @@ export default function EventSetupSection({ index }: Props) {
         outcomes: Array.isArray(arr) ? arr : [],
       })),
     }))
-    setOptionsFor({ type: 'scenario', title: `${set.name} — events`, items })
+    const currentToggle = scenario.avoidEnergyOverflow ?? true
+    setOptionsFor({
+      type: 'scenario',
+      title: `${set.name} — events`,
+      items,
+      energyToggle: currentToggle,
+      onToggle: (checked) => {
+        const prev = useEventsSetupStore.getState().setup.scenario
+        if (!prev) return
+        setScenario({ name: prev.name, avoidEnergyOverflow: checked })
+        setOptionsFor((state) => (state ? { ...state, energyToggle: checked } : state))
+      },
+    })
   }
 
   const openOptionsForTrainee = () => {
@@ -553,7 +683,19 @@ export default function EventSetupSection({ index }: Props) {
         outcomes: Array.isArray(arr) ? arr : [],
       })),
     }))
-    setOptionsFor({ type: 'trainee', title: `${trainee.name} — events`, items })
+    const currentToggle = trainee.avoidEnergyOverflow ?? true
+    setOptionsFor({
+      type: 'trainee',
+      title: `${trainee.name} — events`,
+      items,
+      energyToggle: currentToggle,
+      onToggle: (checked) => {
+        const prev = useEventsSetupStore.getState().setup.trainee
+        if (!prev) return
+        setTrainee({ name: prev.name, avoidEnergyOverflow: checked })
+        setOptionsFor((state) => (state ? { ...state, energyToggle: checked } : state))
+      },
+    })
   }
 
   return (
@@ -594,13 +736,19 @@ export default function EventSetupSection({ index }: Props) {
                           {(() => {
                             const pr = sel.priority
                             const hasCustom = pr
-                              ? (!pr.enabled || pr.scoreBlueGreen !== 0.75 || pr.scoreOrangeMax !== 0.5)
+                              ? (
+                                  !pr.enabled ||
+                                  pr.scoreBlueGreen !== 0.75 ||
+                                  pr.scoreOrangeMax !== 0.5 ||
+                                  (Array.isArray(pr.skillsRequiredForPriority) && pr.skillsRequiredForPriority.length > 0) ||
+                                  Boolean(pr.recheckAfterHint)
+                                )
                               : false
                             if (!pr) return null
                             return (
                               <Stack spacing={0.5} alignItems="center" sx={{ textAlign: 'center', width: '100%' }}>
                                 <Typography variant="caption" color="text.secondary">
-                                  {pr.enabled ? 'Hint enabled' : 'Hint disabled'}
+                                  {pr.enabled ? 'Hint values enabled' : 'Hint values ignored'}
                                 </Typography>
                                 {hasCustom && (
                                   <Chip size="small" color="info" label="Custom hint" />
@@ -621,32 +769,45 @@ export default function EventSetupSection({ index }: Props) {
                   </CardActionArea>
 
                   {sel && (
-                    <Tooltip title="Customize event options">
-                      <Box
-                        role="button"
-                        onClick={(e) => { e.stopPropagation(); openOptionsForSupport(idx) }}
-                        sx={{
-                          position:'absolute', top:6, right:6, width:28, height:28, display:'grid',
-                          placeItems:'center', borderRadius:2, bgcolor:'background.paper',
-                          border:'2px solid', borderColor:'black', cursor:'pointer'
-                        }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </Box>
-                    </Tooltip>
-                  )}
-                  {sel && (
-                    <Tooltip title="Hint priority settings">
+                    <Tooltip title="Hint priority settings" placement="right">
                       <Box
                         role="button"
                         onClick={(e) => { e.stopPropagation(); setPrioritySlot(idx) }}
                         sx={{
-                          position:'absolute', top:6, left:6, width:28, height:28, display:'grid',
-                          placeItems:'center', borderRadius:2, bgcolor:'background.paper',
-                          border:'2px solid', borderColor:'black', cursor:'pointer'
+                          position:'absolute', top:6, right:6, width:28, height:28, display:'grid',
+                          placeItems:'center', borderRadius:2,
+                          background: 'linear-gradient(135deg, rgba(240, 21, 21, 0.92), rgba(255,140,189,0.88))',
+                          border:'1px solid', borderColor:'black',
+                          color: 'white', cursor:'pointer',
+                          transition: 'transform 0.12s ease, box-shadow 0.12s ease',
+                          '&:hover': {
+                            transform: 'translateY(-1px)',
+                            boxShadow: '0 0 10px rgba(255,64,129,0.65)',
+                          },
                         }}
                       >
                         <PriorityHighIcon fontSize="small" />
+                      </Box>
+                    </Tooltip>
+                  )}
+                  {sel && (
+                    <Tooltip title="Customize event options" placement="right">
+                      <Box
+                        role="button"
+                        onClick={(e) => { e.stopPropagation(); openOptionsForSupport(idx) }}
+                        sx={{
+                          position:'absolute', top:40, right:6, width:28, height:28, display:'grid',
+                          placeItems:'center', borderRadius:2,
+                          bgcolor: 'background.paper',
+                          border:'2px solid', borderColor:'black', cursor:'pointer',
+                          transition: 'transform 0.12s ease, box-shadow 0.12s ease',
+                          '&:hover': {
+                            transform: 'translateY(-1px)',
+                            boxShadow: '0 0 10px rgba(64, 185, 255, 0.65)',
+                          },
+                        }}
+                      >
+                        <EditIcon fontSize="small" />
                       </Box>
                     </Tooltip>
                   )}
@@ -746,7 +907,9 @@ export default function EventSetupSection({ index }: Props) {
         onPick={(s) => {
           if (pickSlot == null) return
           const rarity = (s.rarity === 'SSR' || s.rarity === 'SR' || s.rarity === 'R') ? s.rarity : 'SR'
-          setSupport(pickSlot, { name: s.name, rarity, attribute: s.attribute })
+          const prev = supports[pickSlot]
+          const avoid = prev?.avoidEnergyOverflow ?? true
+          setSupport(pickSlot, { name: s.name, rarity, attribute: s.attribute, avoidEnergyOverflow: avoid })
           setPickSlot(null)
         }}
       />
@@ -754,13 +917,23 @@ export default function EventSetupSection({ index }: Props) {
         open={scenarioOpen}
         onClose={() => setScenarioOpen(false)}
         scenarios={index.scenarios}
-        onPick={(s)=>{ setScenario({ name: s.name }); setScenarioOpen(false) }}
+        onPick={(s)=>{
+          const avoid = scenario?.avoidEnergyOverflow ?? true
+          const rewardPriority = scenario?.rewardPriority ?? globalRewardPriority
+          setScenario({ name: s.name, avoidEnergyOverflow: avoid, rewardPriority })
+          setScenarioOpen(false)
+        }}
       />
       <TraineePickerDialog
         open={traineeOpen}
         onClose={() => setTraineeOpen(false)}
         trainees={Array.from(((index.trainees as any)?.specific ?? new Map()).values()) as TraineeSet[]}
-        onPick={(t)=>{ setTrainee({ name: t.name }); setTraineeOpen(false) }}
+        onPick={(t)=>{
+          const avoid = trainee?.avoidEnergyOverflow ?? true
+          const rewardPriority = trainee?.rewardPriority ?? globalRewardPriority
+          setTrainee({ name: t.name, avoidEnergyOverflow: avoid, rewardPriority })
+          setTraineeOpen(false)
+        }}
       />
 
       {optionsFor && (
@@ -770,7 +943,33 @@ export default function EventSetupSection({ index }: Props) {
           title={optionsFor.title}
           items={optionsFor.items}
           type={optionsFor.type}
+          energyToggle={optionsFor.energyToggle}
           onPick={(keyStep, pick) => { setOverride(keyStep, pick) }}
+          onToggle={optionsFor.onToggle}
+          rewardPriority={(function () {
+            if (optionsFor.type === 'support') {
+              const target = typeof optionsFor.slot === 'number' ? supports[optionsFor.slot] : null
+              return target?.rewardPriority ?? globalRewardPriority
+            }
+            if (optionsFor.type === 'scenario') {
+              return scenario?.rewardPriority ?? globalRewardPriority
+            }
+            if (optionsFor.type === 'trainee') {
+              return trainee?.rewardPriority ?? globalRewardPriority
+            }
+            return globalRewardPriority
+          })()}
+          onPriorityChange={(next) => {
+            if (optionsFor.type === 'support' && typeof optionsFor.slot === 'number') {
+              setSupportRewardPriority(optionsFor.slot, next)
+            } else if (optionsFor.type === 'scenario') {
+              setScenarioRewardPriority(next)
+            } else if (optionsFor.type === 'trainee') {
+              setTraineeRewardPriority(next)
+            } else {
+              setRewardPriority(next)
+            }
+          }}
         />
       )}
 

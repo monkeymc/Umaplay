@@ -2,8 +2,11 @@
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass
-from typing import List, Optional, Tuple, Dict, Any
+from dataclasses import dataclass, replace
+from typing import List, Optional, Tuple, Dict, Any, Set
+
+import numpy as np
+import cv2
 
 from PIL import Image
 
@@ -20,6 +23,9 @@ from core.utils.event_processor import (
     UserPrefs,
     Query,
     retrieve_best,
+    max_positive_energy,
+    extract_reward_categories,
+    select_candidate_by_priority,
 )
 
 # -----------------------------
@@ -52,8 +58,51 @@ def _sort_top_to_bottom(dets: List[DetectionDict]) -> List[DetectionDict]:
     return sorted(dets, key=lambda d: float(d["xyxy"][1]))
 
 
-def _count_chain_steps(parsed: List[DetectionDict]) -> Optional[int]:
+_CHAIN_BLUE_CFG = {
+    "h_center": 105,
+    "h_tol": 12,
+    "s_min": 80,
+    "v_min": 100,
+    "coverage_min": 0.20,
+}
+
+
+def _is_blue_chain(frame: Image.Image, det: DetectionDict) -> bool:
+    box = det.get("xyxy")
+    if not box:
+        return False
+
+    crop = _crop(frame, tuple(box))
+    if crop.width <= 1 or crop.height <= 1:
+        return False
+
+    bgr = cv2.cvtColor(np.array(crop), cv2.COLOR_RGB2BGR)
+    hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
+    h, s, v = hsv[..., 0], hsv[..., 1], hsv[..., 2]
+
+    cfg = _CHAIN_BLUE_CFG
+    h_center = cfg["h_center"]
+    tol = cfg["h_tol"]
+    lo = (h_center - tol) % 180
+    hi = (h_center + tol) % 180
+    if lo <= hi:
+        band = (h >= lo) & (h <= hi)
+    else:
+        band = (h >= lo) | (h <= hi)
+    mask = band & (s >= cfg["s_min"]) & (v >= cfg["v_min"])
+
+    coverage = float(np.count_nonzero(mask)) / max(1.0, mask.size)
+    return coverage >= cfg["coverage_min"]
+
+
+def _count_chain_steps(parsed: List[DetectionDict], *, frame: Optional[Image.Image] = None) -> Optional[int]:
     steps = [d for d in parsed if d.get("name") == "event_chain"]
+    if not steps:
+        return None
+
+    if frame is not None:
+        steps = [d for d in steps if _is_blue_chain(frame, d)]
+
     return len(steps) if steps else None
 
 
@@ -188,7 +237,7 @@ class EventFlow:
         debug["max_energy_cap"] = max_energy_cap
         # 1) Collect detections
         card = _pick_event_card(parsed_objects_screen)
-        chain_step_hint = _count_chain_steps(parsed_objects_screen)
+        chain_step_hint = _count_chain_steps(parsed_objects_screen, frame=frame)
         if chain_step_hint is None and card is not None:
             chain_step_hint = 1
         choices = _choices(parsed_objects_screen, conf_min=self.conf_min_choice)
@@ -240,8 +289,30 @@ class EventFlow:
             portrait_image=portrait_img,  # <- PIL accepted by retriever (see diff)
         )
 
+        q_used = q
+
         # 4) Retrieve & rank
-        cands = retrieve_best(self.catalog, q, top_k=3, min_score=0.8)
+        cands = retrieve_best(self.catalog, q, top_k=3, min_score=0.65)
+
+        if not cands and q.chain_step_hint and q.chain_step_hint != 1:
+            q_fallback = replace(q, chain_step_hint=1)
+            cands = retrieve_best(self.catalog, q_fallback, top_k=3, min_score=0.8)
+            debug["chain_step_hint_fallback"] = {
+                "from": q.chain_step_hint,
+                "to": 1,
+                "candidates_found": len(cands),
+            }
+            if cands:
+                logger_uma.info(
+                    "[event] Chain hint fallback succeeded: %s -> 1.",
+                    q.chain_step_hint,
+                )
+                q_used = q_fallback
+            else:
+                logger_uma.warning(
+                    "[event] Chain hint fallback failed after forcing step 1."
+                )
+
         if not cands:
             logger_uma.warning(
                 "[event] No candidates from retriever; falling back to top option."
@@ -249,6 +320,7 @@ class EventFlow:
             return self._fallback_click_top(choices_sorted, debug)
 
         best = cands[0]
+        debug["chain_step_hint_used"] = q_used.chain_step_hint
         debug["top_match"] = {
             "key": best.rec.key,
             "key_step": best.rec.key_step,
@@ -328,42 +400,93 @@ class EventFlow:
             )
             return self._fallback_click_top(choices_sorted, debug)
 
-        # (7) If we know current energy, attempt to avoid overfilling it.
-        #     Heuristic: treat an option as "adds energy" if any outcome has energy>0.
-        def _max_positive_energy_for(opt_num: int) -> int:
-            try:
-                outcomes = best.rec.options.get(str(opt_num), []) or []
-                gains = [
-                    int(o.get("energy", 0))
-                    for o in outcomes
-                    if isinstance(o, dict)
-                    and isinstance(o.get("energy", 0), (int, float))
-                ]
-                return max([g for g in gains if g > 0], default=0)
-            except Exception:
-                return 0
-
+        # (7) If we know current energy, attempt to avoid overfilling it and honor reward priorities.
         adjusted_pick = pick
-        if current_energy is not None and expected_n >= 1:
-            # cycle starting from the chosen option, pick the first that won't overflow
-            for shift in range(expected_n):
-                candidate = ((pick - 1 + shift) % expected_n) + 1
-                gain = _max_positive_energy_for(candidate)
-                if gain <= 0:
-                    # safe: no energy gain
-                    adjusted_pick = candidate
-                    break
-                if (current_energy + gain) <= max_energy_cap:
-                    adjusted_pick = candidate
-                    break
-            if adjusted_pick != pick:
-                debug["pick_adjusted_due_to_energy"] = {
-                    "from": pick,
-                    "to": adjusted_pick,
-                }
+        avoid_overflow = True
+        if hasattr(self.prefs, "should_avoid_energy"):
+            try:
+                avoid_overflow = bool(self.prefs.should_avoid_energy(best.rec))
+            except Exception:
+                avoid_overflow = getattr(self.prefs, "avoid_energy_overflow", True)
+        else:
+            avoid_overflow = getattr(self.prefs, "avoid_energy_overflow", True)
+        debug["avoid_energy_overflow"] = avoid_overflow
+
+        if avoid_overflow and current_energy is not None and expected_n >= 1:
+            candidate_order = [((pick - 1 + shift) % expected_n) + 1 for shift in range(expected_n)]
+
+            option_categories: Dict[int, Set[str]] = {}
+            option_energy_gain: Dict[int, int] = {}
+            safe_candidates: List[int] = []
+
+            for option_num in range(1, expected_n + 1):
+                outcomes_raw = best.rec.options.get(str(option_num), []) or []
+                if not isinstance(outcomes_raw, list):
+                    outcomes = [outcomes_raw]
+                else:
+                    outcomes = outcomes_raw
+
+                gain = max_positive_energy(outcomes)
+                option_energy_gain[option_num] = gain
+
+                if gain <= 0 or (current_energy + gain) <= max_energy_cap:
+                    safe_candidates.append(option_num)
+
+                option_categories[option_num] = extract_reward_categories(outcomes)
+
+            try:
+                reward_priority = list(self.prefs.reward_priority_for(best.rec))
+            except AttributeError:
+                reward_priority = list(getattr(self.prefs, "reward_priority", []))
+            selection = None
+            if pick not in safe_candidates:
+                selection = select_candidate_by_priority(
+                    candidate_order,
+                    safe_candidates,
+                    option_categories,
+                    reward_priority,
+                )
+
+            if selection:
+                candidate, matched_category = selection
+                adjusted_pick = candidate
+                if adjusted_pick != pick:
+                    debug["pick_adjusted_due_to_energy"] = {
+                        "from": pick,
+                        "to": adjusted_pick,
+                        "reason": "reward_priority" if matched_category else "energy_safe",
+                    }
+                if matched_category:
+                    debug["reward_priority_match"] = matched_category
+            elif safe_candidates:
+                for candidate in candidate_order:
+                    if candidate in safe_candidates:
+                        adjusted_pick = candidate
+                        if adjusted_pick != pick:
+                            debug["pick_adjusted_due_to_energy"] = {
+                                "from": pick,
+                                "to": adjusted_pick,
+                                "reason": "energy_safe",
+                            }
+                        break
+
+            debug.setdefault("energy_gain_by_option", option_energy_gain)
+            debug.setdefault(
+                "reward_categories_by_option",
+                {str(k): sorted(v) for k, v in option_categories.items() if v},
+            )
         pick = adjusted_pick
 
-        # 8) Click selected option (top-to-bottom order)
+        available_n = len(choices_sorted)
+        if pick > available_n:
+            logger_uma.warning(
+                "[event] Adjusted pick=%d exceeds detected %d choices; fallback to top.",
+                pick,
+                available_n,
+            )
+            debug["available_choices"] = available_n
+            return self._fallback_click_top(choices_sorted, debug)
+
         target = choices_sorted[pick - 1]
         self.ctrl.click_xyxy_center(target["xyxy"], clicks=1)
         logger_uma.info(

@@ -9,3 +9,5 @@ Remember to read the sops
 - After validation, wait for the user to request migration before writing the finalized code into `.py` files; the user performs the copy step.
 - Even if a prototype looks complete, pause and ask for explicit approval before creating or modifying any `.py` file; keep working inside the notebook until the user confirms.
 - Jupyter Notebook is just a helper for me, it's a utility to quickly execute this code but at the end I will be just doing copy-paste in the new files. I will not ask you to generate the new files, probably, because I can do that manually. Use real names in implementations, don't use for example MymodulePrototype or something like that. 
+- Use good practices and modularization
+- Follow the SOLID and clean code / architecture principles

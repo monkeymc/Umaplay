@@ -3,11 +3,12 @@ import type { AppConfig, GeneralConfig, Preset, StatKey } from './types'
 
 // Lightweight re-declare to avoid circulars in schema:
 const eventDefaults = { support: 1, trainee: 1, scenario: 1 }
+const defaultRewardPriority = ['skill_pts', 'stats', 'hints'] as const
 export const defaultEventSetup = () => ({
   supports: [null, null, null, null, null, null],
   scenario: null,
   trainee: null,
-  prefs: { overrides: {}, patterns: [], defaults: eventDefaults },
+  prefs: { overrides: {}, patterns: [], defaults: eventDefaults, rewardPriority: [...defaultRewardPriority] },
 })
 
 export const STAT_KEYS: StatKey[] = ['SPD', 'STA', 'PWR', 'GUTS', 'WIT']
@@ -18,7 +19,6 @@ export const generalSchema = z.object({
   fastMode: z.boolean().default(false),
   tryAgainOnFailedGoal: z.boolean().default(true),
   maxFailure: z.number().int().min(0).max(99).default(20),
-  skillPtsCheck: z.number().int().min(0).default(600),
   acceptConsecutiveRace: z.boolean().default(true),
   advanced: z.object({
     hotkey: z.enum(['F1', 'F2', 'F3', 'F4']).default('F2'),
@@ -52,6 +52,7 @@ export const presetSchema = z.object({
   minimalMood: z.enum(['AWFUL', 'BAD', 'NORMAL', 'GOOD', 'GREAT']),
   juniorStyle: z.enum(['end', 'late', 'pace', 'front']).nullable(),
   skillsToBuy: z.array(z.string()),
+  skillPtsCheck: z.number().int().min(0).default(600),
   plannedRaces: z.record(z.string(), z.string()),
   raceIfNoGoodValue: z.boolean().default(false),
   prioritizeHint: z.boolean().default(false),
@@ -63,17 +64,35 @@ export const presetSchema = z.object({
       enabled: z.boolean().default(true),
       scoreBlueGreen: z.number().min(0).max(10).default(0.75),
       scoreOrangeMax: z.number().min(0).max(10).default(0.5),
-    }).default({ enabled: true, scoreBlueGreen: 0.75, scoreOrangeMax: 0.5 })
+      skillsRequiredForPriority: z.array(z.string()).default([]),
+      recheckAfterHint: z.boolean().default(false),
+    }).default({
+      enabled: true,
+      scoreBlueGreen: 0.75,
+      scoreOrangeMax: 0.5,
+      skillsRequiredForPriority: [],
+      recheckAfterHint: false,
+    })
 
     const selectedSupport = z.object({
       slot: z.number(),
       name: z.string(),
       rarity,
       attribute: attr,
+      rewardPriority: z.array(z.enum(['skill_pts', 'stats', 'hints'])).default(['skill_pts', 'stats', 'hints']).optional(),
       priority: supportPriority.optional(),
+      avoidEnergyOverflow: z.boolean().default(true).optional(),
     })
-    const selectedScenario = z.object({ name: z.string() }).nullable()
-    const selectedTrainee  = z.object({ name: z.string() }).nullable()
+    const selectedScenario = z.object({
+      name: z.string(),
+      avoidEnergyOverflow: z.boolean().default(true).optional(),
+      rewardPriority: z.array(z.enum(['skill_pts', 'stats', 'hints'])).default(['skill_pts', 'stats', 'hints']).optional(),
+    }).nullable()
+    const selectedTrainee  = z.object({
+      name: z.string(),
+      avoidEnergyOverflow: z.boolean().default(true).optional(),
+      rewardPriority: z.array(z.enum(['skill_pts', 'stats', 'hints'])).default(['skill_pts', 'stats', 'hints']).optional(),
+    }).nullable()
 
     const defaults = { support: 1, trainee: 1, scenario: 1 }
     const eventPrefs = z.object({
@@ -85,13 +104,21 @@ export const presetSchema = z.object({
         trainee: z.number().default(1),
         scenario: z.number().default(1),
       }).default(defaults),
+      rewardPriority: z
+        .array(z.enum(['skill_pts', 'stats', 'hints']))
+        .default(['skill_pts', 'stats', 'hints']),
     })
 
     const eventSetup = z.object({
       supports: z.array(selectedSupport.nullable()).length(6).default([null, null, null, null, null, null]),
       scenario: selectedScenario.default(null),
       trainee:  selectedTrainee.default(null),
-      prefs:    eventPrefs.default({ overrides: {}, patterns: [], defaults }),
+      prefs:    eventPrefs.default({
+        overrides: {},
+        patterns: [],
+        defaults: { support: 1, trainee: 1, scenario: 1 },
+        rewardPriority: ['skill_pts', 'stats', 'hints'],
+      }),
     })
 
     return eventSetup
@@ -99,7 +126,12 @@ export const presetSchema = z.object({
     supports: [null, null, null, null, null, null],
     scenario: null,
     trainee:  null,
-    prefs: { overrides: {}, patterns: [], defaults: { support: 1, trainee: 1, scenario: 1 } },
+    prefs: {
+      overrides: {},
+      patterns: [],
+      defaults: { support: 1, trainee: 1, scenario: 1 },
+      rewardPriority: ['skill_pts', 'stats', 'hints'],
+    },
   }),
 })
 
@@ -117,6 +149,7 @@ export const defaultPreset = (id: string, name: string): Preset => ({
   priorityStats: ['SPD', 'STA', 'WIT', 'PWR', 'GUTS'],
   raceIfNoGoodValue: false,
   prioritizeHint: false,
+  skillPtsCheck: 600,
   targetStats: {
     SPD: 1150,
     STA: 900,

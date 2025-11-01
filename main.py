@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import threading
 import time
+import argparse
 import webbrowser
 import keyboard
 import uvicorn
@@ -27,6 +28,7 @@ from core.controllers.steam import SteamController
 from core.controllers.android import ScrcpyController
 from core.utils.abort import request_abort, clear_abort
 from core.utils.event_processor import UserPrefs
+from core.utils.preset_overlay import show_preset_overlay
 
 try:
     # Optional; if your Bluestacks controller is a separate class
@@ -258,7 +260,7 @@ class BotState:
                 ocr=ocr,
                 yolo_engine=yolo_engine,
                 interval_stats_refresh=1,
-                minimum_skill_pts=Settings.MINIMUM_SKILL_PTS,
+                minimum_skill_pts=preset_opts.get("minimum_skill_pts", Settings.MINIMUM_SKILL_PTS),
                 prioritize_g1=False,
                 auto_rest_minimum=Settings.AUTO_REST_MINIMUM,
                 plan_races=preset_opts["plan_races"],
@@ -460,6 +462,34 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
     last_ts_daily = 0.0
     last_ts_roulette = 0.0
 
+    def _show_preset_overlay_if_needed():
+        if bot_state.running:
+            return
+        if not getattr(Settings, "SHOW_PRESET_OVERLAY", False):
+            return
+        try:
+            cfg = load_config() or {}
+            try:
+                Settings._last_config = dict(cfg)
+            except Exception:
+                pass
+        except Exception:
+            cfg = Settings._last_config or {}
+        try:
+            presets = (cfg.get("presets") or [])
+            active_id = cfg.get("activePresetId")
+            preset = next((p for p in presets if p.get("id") == active_id), None)
+            if not preset and presets:
+                preset = presets[0]
+            name = (preset or {}).get("name") or "Unnamed preset"
+            duration = getattr(Settings, "PRESET_OVERLAY_DURATION", 5.0)
+            show_preset_overlay(
+                f"Active preset: {name}",
+                duration=max(1.0, float(duration or 0.0)),
+            )
+        except Exception as exc:
+            logger_uma.debug("[HOTKEY] Failed to display preset overlay: %s", exc)
+
     def _debounced_toggle(source: str):
         nonlocal last_ts_toggle
         now = time.time()
@@ -468,6 +498,7 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
             logger_uma.debug(f"[HOTKEY] Debounced toggle from {source}.")
             return
         last_ts_toggle = now
+        _show_preset_overlay_if_needed()
         bot_state.toggle(source=source)
 
     def _debounced_team(source: str):
@@ -615,6 +646,10 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
 # Main
 # ---------------------------
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run Umabot server")
+    parser.add_argument("--port", type=int, help="Override FastAPI server port")
+    args = parser.parse_args()
+
     ensure_nav_exists()
     # Ensure config.json exists (seed from config.sample.json if needed)
     try:
@@ -631,6 +666,9 @@ if __name__ == "__main__":
         cfg0 = {}
     Settings.apply_config(cfg0 or {})
     
+    if args.port is not None:
+        Settings.PORT = args.port
+
     # Load nav preferences
     try:
         nav_prefs = load_nav_prefs()

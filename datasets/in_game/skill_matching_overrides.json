@@ -1,0 +1,139 @@
+[
+  {
+    "canonical": "Standard Distance",
+    "targets": [
+      "Standard Distance ◎",
+      "Standard Distance ○",
+      "Standard Distance ×"
+    ],
+    "require_tokens": ["standard"],
+    "forbid_tokens": ["non"]
+  },
+  {
+    "canonical": "Non-Standard Distance",
+    "targets": [
+      "Non-Standard Distance ◎",
+      "Non-Standard Distance ○",
+      "Non-Standard Distance ×"
+    ],
+    "require_tokens": ["non"],
+    "forbid_tokens": []
+  },
+  {
+    "canonical": "Taking the Lead",
+    "targets": ["Taking the Lead"],
+    "require_tokens": ["taking"],
+    "forbid_tokens": ["keep", "keeping"]
+  },
+  {
+    "canonical": "Keeping the Lead",
+    "targets": ["Keeping the Lead"],
+    "require_tokens": [],
+    "require_any": [["keep", "keeping"]],
+    "forbid_tokens": ["taking"]
+  },
+  {
+    "canonical": "Vanguard Spirit",
+    "targets": ["Vanguard Spirit"],
+    "require_tokens": ["vanguard"],
+    "forbid_tokens": ["keeping", "taking"]
+  },
+  {
+    "canonical": "Huge Lead",
+    "targets": ["Huge Lead"],
+    "require_tokens": ["huge"],
+    "forbid_tokens": ["staggering"]
+  },
+  {
+    "canonical": "Staggering Lead",
+    "targets": ["Staggering Lead"],
+    "require_tokens": ["staggering"],
+    "forbid_tokens": ["huge"]
+  },
+  {
+    "canonical": "Plan X",
+    "targets": ["Plan X"],
+    "require_tokens": ["plan", "x"],
+    "forbid_tokens": ["countermeasure"]
+  },
+  {
+    "canonical": "Countermeasure",
+    "targets": ["Countermeasure"],
+    "require_tokens": ["countermeasure"],
+    "forbid_tokens": ["plan", "x"]
+  },
+  {
+    "canonical": "Perfect Prep!",
+    "targets": ["Perfect Prep!"],
+    "require_tokens": ["perfect"],
+    "forbid_tokens": ["meticulous", "measures"]
+  },
+  {
+    "canonical": "Meticulous Measures",
+    "targets": ["Meticulous Measures"],
+    "require_tokens": ["meticulous", "measures"],
+    "forbid_tokens": ["perfect", "prep"]
+  },
+  {
+    "canonical": "Sprint Straightaways",
+    "targets": [
+      "Sprint Straightaways ◎",
+      "Sprint Straightaways ○"
+    ],
+    "require_tokens": ["straightaway"],
+    "forbid_tokens": ["corner"]
+  },
+  {
+    "canonical": "Sprint Corners",
+    "targets": [
+      "Sprint Corners ◎",
+      "Sprint Corners ○"
+    ],
+    "require_tokens": ["corner"],
+    "forbid_tokens": ["straightaway"]
+  },
+  {
+    "canonical": "Left-Handed",
+    "targets": [
+      "Left-Handed ◎",
+      "Left-Handed ○",
+      "Left-Handed ×"
+    ],
+    "require_tokens": ["left"],
+    "forbid_tokens": ["right"]
+  },
+  {
+    "canonical": "Right-Handed",
+    "targets": [
+      "Right-Handed ◎",
+      "Right-Handed ○",
+      "Right-Handed ×"
+    ],
+    "require_tokens": ["right"],
+    "forbid_tokens": ["left"]
+  },
+  {
+    "canonical": "Spring Runner",
+    "targets": ["Spring Runner"],
+    "require_tokens": ["spring"],
+    "forbid_tokens": ["summer", "fall", "winter"]
+  },
+  {
+    "canonical": "Summer Runner",
+    "targets": ["Summer Runner"],
+    "require_tokens": ["summer"],
+    "forbid_tokens": ["spring", "fall", "winter"]
+  },
+  {
+    "canonical": "Fall Runner",
+    "targets": ["Fall Runner"],
+    "require_tokens": ["fall"],
+    "forbid_tokens": ["spring", "summer", "winter"]
+  },
+  {
+    "canonical": "Winter Runner",
+    "targets": ["Winter Runner"],
+    "require_tokens": ["winter"],
+    "forbid_tokens": ["spring", "summer", "fall"]
+  }
+]
