@@ -7,16 +7,22 @@ import {
   DialogContent,
   DialogTitle,
   FormControlLabel,
+  IconButton,
   Stack,
   Switch,
   TextField,
   Typography,
+  Tooltip,
 } from '@mui/material'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+import Autocomplete from '@mui/material/Autocomplete'
 
 import SmartImage from '@/components/common/SmartImage'
 import type { SelectedSupport, SupportPriority } from '@/types/events'
 import { supportImageCandidates, supportTypeIcons } from '@/utils/imagePaths'
 import { useEventsSetupStore } from '@/store/eventsSetupStore'
+import { useQuery } from '@tanstack/react-query'
+import { fetchSkills } from '@/services/api'
 
 const DEFAULT_PRIORITY: SupportPriority = {
   enabled: true,
@@ -45,11 +51,16 @@ export default function SupportPriorityDialog({ open, support, onClose }: Props)
   const [enabled, setEnabled] = useState(current.enabled)
   const [scoreBlueGreen, setScoreBlueGreen] = useState<number>(current.scoreBlueGreen)
   const [scoreOrangeMax, setScoreOrangeMax] = useState<number>(current.scoreOrangeMax)
+  const [skills, setSkills] = useState<string[]>(() => (support?.priority?.skillsRequiredForPriority || []))
+  const [recheckAfterHint, setRecheckAfterHint] = useState<boolean>(!!support?.priority?.recheckAfterHint)
+  const { data: allSkills = [] } = useQuery({ queryKey: ['skills'], queryFn: fetchSkills })
 
   useEffect(() => {
     setEnabled(current.enabled)
     setScoreBlueGreen(current.scoreBlueGreen)
     setScoreOrangeMax(current.scoreOrangeMax)
+    setSkills(support?.priority?.skillsRequiredForPriority || [])
+    setRecheckAfterHint(!!support?.priority?.recheckAfterHint)
   }, [current])
 
   const handleSave = () => {
@@ -61,6 +72,8 @@ export default function SupportPriorityDialog({ open, support, onClose }: Props)
       enabled,
       scoreBlueGreen: clamp(scoreBlueGreen, 0, 10),
       scoreOrangeMax: clamp(scoreOrangeMax, 0, 10),
+      skillsRequiredForPriority: skills,
+      recheckAfterHint,
     }
     setSupportPriority(slot, next)
     onClose()
@@ -71,6 +84,8 @@ export default function SupportPriorityDialog({ open, support, onClose }: Props)
     setEnabled(defaults.enabled)
     setScoreBlueGreen(defaults.scoreBlueGreen)
     setScoreOrangeMax(defaults.scoreOrangeMax)
+    setSkills([])
+    setRecheckAfterHint(false)
   }
 
   const ready = Boolean(support)
@@ -153,6 +168,46 @@ export default function SupportPriorityDialog({ open, support, onClose }: Props)
             <Typography variant="body2" color="text.secondary">
               Values are applied on top of the base scoring rules. Set to zero to ignore specific hint colors when enabled.
             </Typography>
+
+            <Stack spacing={1.5}>
+              <Box>
+                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
+                  <Typography variant="subtitle2">Required skills</Typography>
+                  <Tooltip
+                    title="When ALL listed skills are already bought (in this career), this card's hint value is disabled to avoid wasting turns."
+                    placement="top"
+                  >
+                    <IconButton size="small"><InfoOutlinedIcon fontSize="small" /></IconButton>
+                  </Tooltip>
+                </Stack>
+                <Autocomplete
+                  multiple
+                  options={allSkills.map((s:any) => s.name)}
+                  value={skills}
+                  onChange={(_, vals) => setSkills(vals as string[])}
+                  renderInput={(params) => (
+                    <TextField {...params} size="small" placeholder="Select required skills" />
+                  )}
+                />
+              </Box>
+
+              <Box>
+                <FormControlLabel
+                  control={<Switch checked={recheckAfterHint} onChange={(e) => setRecheckAfterHint(e.target.checked)} />}
+                  label={
+                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                      <span>Re-check skills after hint</span>
+                      <Tooltip
+                        title="After taking a hint from this support, briefly open the Skills screen to buy the skills set on 'Required skills' ONLY for this support (ignoring the general buy list)."
+                        placement="top"
+                      >
+                        <InfoOutlinedIcon fontSize="small" />
+                      </Tooltip>
+                    </Stack>
+                  }
+                />
+              </Box>
+            </Stack>
           </Stack>
         )}
       </DialogContent>

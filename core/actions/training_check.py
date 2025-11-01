@@ -19,6 +19,7 @@ from core.types import DetectionDict
 from core.utils.analyzers import analyze_support_crop
 from core.utils.geometry import calculate_jitter
 from core.utils.logger import logger_uma
+from core.utils.skill_memory import SkillMemoryManager
 from core.utils.support_matching import (
     get_card_priority,
     get_runtime_support_matcher,
@@ -425,7 +426,7 @@ def scan_training_screen(
                     name = match.get("name", "")
                     rarity = match.get("rarity", "")
                     attribute = match.get("attribute", "")
-
+                    support_record["matched_card"] = match
                     key = (name, rarity, attribute)
                     if key not in custom_priority_keys:
                         logger_uma.debug(
@@ -433,7 +434,6 @@ def scan_training_screen(
                             key,
                         )
                     elif _register_priority_match(key, score=float(match.get("score", 0.0)), record=support_record):
-                        support_record["matched_card"] = match
                         support_record["priority_config"] = get_card_priority(
                             name,
                             rarity,
@@ -729,6 +729,14 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
       - notes (list[str])               # human-readable breakdown
     """
     out: List[TileSV] = []
+    # Skill memory used for conditional hint gating (once required skills are acquired)
+    skill_memory = SkillMemoryManager(Settings.RUNTIME_SKILL_MEMORY_PATH)
+
+    def _canon_skill(name: object) -> str:
+        s = str(name or "")
+        for sym in ("◎", "○", "×"):
+            s = s.replace(sym, "")
+        return " ".join(s.split()).strip()
 
     default_priority_cfg = Settings.default_support_priority()
     default_bluegreen_value = float(default_priority_cfg.get("scoreBlueGreen", 0.75))
@@ -761,6 +769,21 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
             priority_cfg = default_priority_cfg
             matched = False
         enabled = bool(priority_cfg.get("enabled", True))
+        # Conditional gating: if ALL required skills are already bought, drop hint value to 0
+        gated = False
+        try:
+            req = priority_cfg.get("skillsRequiredForPriority")
+            req_list = []
+            if isinstance(req, list):
+                req_list = [n for n in (_canon_skill(x) for x in req) if n]
+            elif isinstance(req, str):
+                req_list = [n for n in (_canon_skill(x) for x in str(req).split(",")) if n]
+            if req_list:
+                gated = all(skill_memory.has_bought(n) for n in req_list)
+        except Exception:
+            gated = False
+        if gated:
+            enabled = False
         label = _support_label(support)
         config_value = float(priority_cfg.get(color_key, default_value))
         base_value = config_value if matched else default_value
@@ -773,6 +796,7 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
             "matched": matched,
             "base_value": base_value,
             "important_mult": important_mult,
+            "gated": gated,
         }
         return effective_value, meta
 

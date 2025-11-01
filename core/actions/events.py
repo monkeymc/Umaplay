@@ -292,7 +292,7 @@ class EventFlow:
         q_used = q
 
         # 4) Retrieve & rank
-        cands = retrieve_best(self.catalog, q, top_k=3, min_score=0.8)
+        cands = retrieve_best(self.catalog, q, top_k=3, min_score=0.65)
 
         if not cands and q.chain_step_hint and q.chain_step_hint != 1:
             q_fallback = replace(q, chain_step_hint=1)
@@ -434,13 +434,18 @@ class EventFlow:
 
                 option_categories[option_num] = extract_reward_categories(outcomes)
 
-            reward_priority = list(getattr(self.prefs, "reward_priority", []))
-            selection = select_candidate_by_priority(
-                candidate_order,
-                safe_candidates,
-                option_categories,
-                reward_priority,
-            )
+            try:
+                reward_priority = list(self.prefs.reward_priority_for(best.rec))
+            except AttributeError:
+                reward_priority = list(getattr(self.prefs, "reward_priority", []))
+            selection = None
+            if pick not in safe_candidates:
+                selection = select_candidate_by_priority(
+                    candidate_order,
+                    safe_candidates,
+                    option_categories,
+                    reward_priority,
+                )
 
             if selection:
                 candidate, matched_category = selection
@@ -482,7 +487,6 @@ class EventFlow:
             debug["available_choices"] = available_n
             return self._fallback_click_top(choices_sorted, debug)
 
-        # 8) Click selected option (top-to-bottom order)
         target = choices_sorted[pick - 1]
         self.ctrl.click_xyxy_center(target["xyxy"], clicks=1)
         logger_uma.info(

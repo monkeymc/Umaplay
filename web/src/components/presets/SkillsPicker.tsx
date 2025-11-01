@@ -439,6 +439,9 @@ export default function SkillsPicker({ presetId }: { presetId: string }) {
                     {paginated.map((skill) => {
                     const icon = skill.icon_filename ? `/icons/skills/${skill.icon_filename}` : FALLBACK_ICON
                     const selectedState = selected.has(skill.name)
+                    const toggleSkill = () => {
+                      selectedState ? remove(skill.name) : add(skill.name)
+                    }
                     return (
                       <Grid key={skill.name} xs={12} sm={6} lg={4}>
                         <Card
@@ -458,7 +461,15 @@ export default function SkillsPicker({ presetId }: { presetId: string }) {
                             display: 'flex',
                             flexDirection: 'column',
                             width: '100%',
+                            cursor: 'pointer',
+                            '&:hover': {
+                              borderColor: theme.palette.primary.main,
+                              bgcolor: selectedState
+                                ? `${theme.palette.primary.main}12`
+                                : `${theme.palette.primary.main}0A`,
+                            },
                           }}
+                          onClick={toggleSkill}
                         >
                           <CardHeader
                             avatar={<Avatar src={icon} variant="rounded" sx={{ width: 32, height: 32 }} />}
@@ -470,7 +481,10 @@ export default function SkillsPicker({ presetId }: { presetId: string }) {
                                 </Stack>
                                 <IconButton
                                   size="small"
-                                  onClick={() => selectedState ? remove(skill.name) : add(skill.name)}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    toggleSkill()
+                                  }}
                                   color={selectedState ? 'error' : 'primary'}
                                 >
                                   {selectedState ? <RemoveCircleOutlineIcon fontSize="small" /> : <AddCircleOutlineIcon fontSize="small" />}

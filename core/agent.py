@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from time import sleep
+from typing import Any, Dict, List, Optional, Tuple
 
 from core.actions.claw import ClawGame
 from core.actions.events import EventFlow
@@ -25,8 +26,9 @@ from core.perception.ocr.interface import OCRInterface
 from core.perception.yolo.interface import IDetector
 from core.settings import Settings
 from core.utils.logger import logger_uma
-from typing import Optional
 from core.utils.text import fuzzy_contains
+from core.utils.skill_memory import SkillMemoryManager
+from core.utils.date_uma import date_index as uma_date_index
 from core.utils.waiter import PollConfig, Waiter
 from core.actions.race import ConsecutiveRaceRefused
 from core.utils.abort import abort_requested
@@ -89,6 +91,7 @@ class Player:
         self.agent_name = waiter_config.agent
 
         # Flows
+        self.skill_memory = SkillMemoryManager(Settings.RUNTIME_SKILL_MEMORY_PATH)
         self.race = RaceFlow(self.ctrl, self.ocr, self.yolo_engine, self.waiter)
         self.lobby = LobbyFlow(
             self.ctrl,
@@ -102,9 +105,15 @@ class Player:
             plan_races=self.plan_races,
         )
         self.skills_flow = SkillsFlow(
-            self.ctrl, self.ocr, self.yolo_engine, self.waiter
+            self.ctrl,
+            self.ocr,
+            self.yolo_engine,
+            self.waiter,
+            skill_memory=self.skill_memory,
         )
-        
+
+        self._log_skill_memory_load()
+
         catalog = Catalog.load(CATALOG_JSON)
         # Prefer prefs coming from config.json (passed by main); fallback to legacy file.
         self.event_flow = EventFlow(
@@ -124,8 +133,73 @@ class Player:
         self._last_skill_buy_succeeded: bool = False
         self._planned_skip_release_pending: bool = False
         self._planned_skip_release_key: Optional[str] = None
-        self._planned_skip_cooldown: int = 0
+        self._planned_skip_cooldown = 0
         self._first_race_day = True
+        self._pending_hint_recheck: bool = False
+        self._pending_hint_supports: List[Dict[str, Any]] = []
+
+    # --------------------------
+    # Skill memory helpers
+    # --------------------------
+    def _log_skill_memory_load(self) -> None:
+        meta = self.skill_memory.get_run_metadata()
+        logger_uma.info(
+            "[skill_memory] loaded preset=%s date=%s idx=%s updated=%s",
+            meta.get("preset_id"),
+            meta.get("date_key"),
+            meta.get("date_index"),
+            meta.get("updated_utc"),
+        )
+
+    def _active_preset_id(self) -> Optional[str]:
+        cfg = Settings._last_config or {}
+        active = cfg.get("activePresetId")
+        if isinstance(active, str) and active.strip():
+            return active.strip()
+        presets = cfg.get("presets")
+        if isinstance(presets, list):
+            for entry in presets:
+                if isinstance(entry, dict):
+                    pid = entry.get("id")
+                    if isinstance(pid, str) and pid.strip():
+                        return pid.strip()
+        return None
+
+    def _state_date_key(self) -> Optional[str]:
+        di = getattr(self.lobby.state, "date_info", None)
+        if di is None:
+            return None
+        try:
+            return di.as_key()
+        except Exception:
+            return None
+
+    def _state_date_index(self) -> Optional[int]:
+        di = getattr(self.lobby.state, "date_info", None)
+        if di is None:
+            return None
+        try:
+            return uma_date_index(di)
+        except Exception:
+            return None
+
+    def _refresh_skill_memory(self) -> None:
+        preset_id = self._active_preset_id()
+        date_key = self._state_date_key()
+        date_idx = self._state_date_index()
+
+        if not self.skill_memory.is_compatible_run(
+            preset_id=preset_id, date_key=date_key, date_index=date_idx
+        ):
+            logger_uma.info("[skill_memory] incompatible run detected → reset")
+            self.skill_memory.reset()
+
+        self.skill_memory.set_run_metadata(
+            preset_id=preset_id,
+            date_key=date_key,
+            date_index=date_idx,
+            commit=True,
+        )
 
     def _desired_race_today(self) -> str | None:
         """
@@ -206,12 +280,153 @@ class Player:
         self.lobby._skip_race_once = False
         self._clear_planned_skip_release()
 
+    @staticmethod
+    def _canon_skill_name(name: object) -> str:
+        s = str(name or "")
+        for sym in ("◎", "○", "×"):
+            s = s.replace(sym, "")
+        return " ".join(s.split()).strip()
+
+    def _priority_config_for_key(self, key: Optional[Tuple[str, str, str]]) -> Optional[dict]:
+        if not key:
+            return None
+        return Settings.SUPPORT_CARD_PRIORITIES.get(key)
+
+    def _missing_required_skills_for_priority(self, priority_cfg: Optional[dict]) -> list[str]:
+        if not isinstance(priority_cfg, dict):
+            return []
+        raw = priority_cfg.get("skillsRequiredForPriority")
+        if not raw:
+            return []
+        if isinstance(raw, (str, bytes)):
+            skills = [str(raw)]
+        elif isinstance(raw, list):
+            skills = [str(item) for item in raw if isinstance(item, (str, bytes))]
+        else:
+            return []
+
+        missing: list[str] = []
+        for skill in skills:
+            canon = self._canon_skill_name(skill)
+            if not canon:
+                continue
+            if not self.skill_memory.has_bought(canon):
+                missing.append(skill)
+        return missing
+
+    def _refresh_recheck_targets_cache(self) -> None:
+        remaining: set[str] = set()
+        for cfg in Settings.SUPPORT_CARD_PRIORITIES.values():
+            for skill in self._missing_required_skills_for_priority(cfg):
+                remaining.add(skill)
+        Settings.RECHECK_AFTER_HINT_SKILLS = sorted(remaining)
+
+    def _update_support_recheck_state(
+        self, keys: Optional[List[Tuple[str, str, str]]] = None
+    ) -> None:
+        mutated = False
+        if keys is not None:
+            key_set = {k for k in keys if k}
+        else:
+            key_set = None
+
+        for key, cfg in Settings.SUPPORT_CARD_PRIORITIES.items():
+            if key_set is not None and key not in key_set:
+                continue
+            missing = self._missing_required_skills_for_priority(cfg)
+            if not missing and bool(cfg.get("recheckAfterHint", False)):
+                cfg["recheckAfterHint"] = False
+                mutated = True
+
+        if mutated:
+            logger_uma.info("[post-hint] Disabled re-check for supports with fulfilled requirements")
+        self._refresh_recheck_targets_cache()
+
+    def _consume_pending_hint_recheck(self) -> bool:
+        """Run deferred skill re-check if a hint-triggered support requested it."""
+        if not self._pending_hint_recheck:
+            return False
+
+        entries = list(self._pending_hint_supports or [])
+        self._pending_hint_recheck = False
+        self._pending_hint_supports = []
+
+        supports_with_missing: list[dict] = []
+        supports_without_missing: list[dict] = []
+        targets: list[str] = []
+
+        for entry in entries:
+            key = entry.get("key")
+            priority_cfg = self._priority_config_for_key(key)
+            missing = self._missing_required_skills_for_priority(priority_cfg)
+            if not missing:
+                supports_without_missing.append(entry)
+                continue
+            supports_with_missing.append({
+                "entry": entry,
+                "key": key,
+                "missing": missing,
+            })
+            for skill in missing:
+                if skill not in targets:
+                    targets.append(skill)
+
+        if not supports_with_missing:
+            if supports_without_missing:
+                self._update_support_recheck_state(
+                    [e.get("key") for e in supports_without_missing if e.get("key")]
+                )
+            return False
+
+        opened_skills = self.lobby._go_skills()
+        if not opened_skills:
+            logger_uma.error("[post-hint] Couldn't open skills screen for pending re-check")
+            self._pending_hint_recheck = True
+            self._pending_hint_supports = [info["entry"] for info in supports_with_missing]
+            return False
+
+        sleep(0.6)
+        labels = [str(info["entry"].get("label") or "support") for info in supports_with_missing]
+        logger_uma.info(
+            "[post-hint] Re-checking skills after hint from %s. Targets: %s",
+            ", ".join(labels),
+            ", ".join(targets),
+        )
+
+        success = False
+        try:
+            success = self.skills_flow.buy(targets)
+        except Exception as e:
+            logger_uma.error("[post-hint] skills_flow.buy failed: %s", e)
+
+        keys = [info["key"] for info in supports_with_missing if info.get("key")]
+        if keys:
+            self._update_support_recheck_state(keys)
+
+        remaining_entries: list[dict] = []
+        for info in supports_with_missing:
+            key = info.get("key")
+            missing_now = self._missing_required_skills_for_priority(
+                self._priority_config_for_key(key)
+            )
+            if missing_now:
+                remaining_entries.append(info["entry"])
+
+        if remaining_entries:
+            # This means, hint selection didn't give us the skill or we didn't have enough 'skill pts' to buy it
+            # Don't reactivate recheck, to optimize speed
+            pass
+
+        return success
     # --------------------------
     # Main loop
     # --------------------------
     def run(self, *, delay: float = 0.4, max_iterations: int | None = None) -> None:
         self.ctrl.focus()
         self.is_running = True
+
+        # Ensure memory metadata is aligned at the start of a run
+        self._refresh_skill_memory()
 
         while self.is_running:
             # Hard-stop hook (F2)
@@ -319,9 +534,13 @@ class Player:
                 continue
 
             if screen == "Raceday":
+                
                 self.patience = 0
                 self.claw_turn = 0
                 self._iterations_turn += 1
+                # Keep skill memory aligned with latest state
+                self._refresh_skill_memory()
+
                 # Optimization, only buy in Raceday (where you can actually lose the career)
                 self.lobby.state.skill_pts = extract_skill_points(self.ocr, img, dets)
                 logger_uma.info(
@@ -370,6 +589,9 @@ class Player:
                     else:
                         # Track last seen points even when skipping
                         self._last_skill_pts_seen = int(self.lobby.state.skill_pts)
+                else:
+                    # if not standar buying check if recheck buying
+                    self._consume_pending_hint_recheck()
                 career_date_raw = self.lobby.state.career_date_raw or ""
 
                 race_predebut = "predebut" in career_date_raw.lower().replace("-", "")
@@ -417,10 +639,14 @@ class Player:
                     continue
 
             if screen == "Lobby" or is_lobby_summer:
+                self._consume_pending_hint_recheck()
                 self.patience = 0
                 self.claw_turn = 0
                 self._iterations_turn += 1
                 outcome, reason = self.lobby.process_turn()
+                # outcome = "TO_TRAINING"
+                # self.lobby._go_training_screen_from_lobby(img, dets)
+                # sleep(1)
 
                 if outcome == "TO_RACE":
                     if "G1" in reason.upper():
@@ -548,6 +774,11 @@ class Player:
                     logger_uma.info(f"[agent] Skills bought: {bought}")
                     self.is_running = False  # end of career
                     logger_uma.info("Detected end of career")
+                    try:
+                        self.skill_memory.reset(persist=True)
+                        logger_uma.info("[skill_memory] Reset after career completion")
+                    except Exception as exc:
+                        logger_uma.error("[skill_memory] reset failed: %s", exc)
 
                     # pick = det_filter(dets, ["lobby_skills"])[-1]
                     # x1 = pick["xyxy"][0]
@@ -603,12 +834,6 @@ class Player:
             TrainAction.TRAIN_DIRECTOR.value,
             TrainAction.TAKE_HINT.value,
         }
-        action_is_in_last_screen = action.value in (
-            TrainAction.REST.value,
-            TrainAction.RECREATION.value,
-            TrainAction.RACE.value,
-        )
-
         # Tile actions within the training screen
         if action.value in tile_actions_train and tidx is not None:
             ok = click_training_tile(self.ctrl, training_state, tidx, pause_after=5)
@@ -616,7 +841,59 @@ class Player:
                 logger_uma.error(
                     "[training] Failed to click training tile idx=%s", tidx
                 )
+                return
+            # Optional slow-path: after landing on a hint tile, defer re-check until back in lobby
+            supports_for_recheck: List[Dict[str, Any]] = []
+            try:
+                tile = None
+                tile_supports = []
+                for t in training_state:
+                    if int(t.get("tile_idx", -1)) == int(tidx):
+                        tile = t
+                        break
+                if tile:
+                    tile_supports = list(tile.get("supports") or [])
+                for s in tile_supports:
+                    if not s or not bool(s.get("has_hint", False)):
+                        continue
+                    pcfg = s.get("priority_config") or {}
+                    if isinstance(pcfg, dict) and bool(pcfg.get("recheckAfterHint", False)):
+                        matched = s.get("matched_card") or {}
+                        name = (
+                            pcfg.get("displayName")
+                            or matched.get("name")
+                            or s.get("name")
+                            or "support"
+                        )
+                        support_key = None
+                        if isinstance(matched, dict):
+                            nm = matched.get("name")
+                            rarity = matched.get("rarity")
+                            attr = matched.get("attribute")
+                            if isinstance(nm, str) and nm and isinstance(rarity, str) and isinstance(attr, str):
+                                support_key = (nm, rarity, attr)
+                        supports_for_recheck.append(
+                            {
+                                "label": str(name),
+                                "key": support_key,
+                            }
+                        )
+                if supports_for_recheck:
+                    self._pending_hint_recheck = True
+                    self._pending_hint_supports = supports_for_recheck
+                    labels = [str(entry.get("label", "support")) for entry in supports_for_recheck]
+                    logger_uma.info(
+                        "[post-hint] Deferred re-check scheduled for: %s",
+                        ", ".join(labels),
+                    )
+            except Exception as e:
+                logger_uma.error("[post-hint] Failed scheduling deferred re-check: %s", e)
             return
+        action_is_in_last_screen = action.value in (
+            TrainAction.REST.value,
+            TrainAction.RECREATION.value,
+            TrainAction.RACE.value,
+        )
 
         # Actions that require going back to the lobby
         if action_is_in_last_screen:

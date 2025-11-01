@@ -153,6 +153,8 @@ class Settings:
     SUPPORT_PRIORITIES_HAVE_CUSTOMIZATION: bool = False
     SUPPORT_CUSTOM_PRIORITY_KEYS: Set[Tuple[str, str, str]] = set()
     SUPPORT_AVOID_ENERGY: Dict[Tuple[str, str, str], bool] = {}
+    # Union of skills to re-check immediately after taking a configured hint
+    RECHECK_AFTER_HINT_SKILLS: List[str] = []
     SHOW_PRESET_OVERLAY: bool = _env_bool("SHOW_PRESET_OVERLAY", True)
     PRESET_OVERLAY_DURATION: float = _env_float("PRESET_OVERLAY_DURATION", 5.0)
     NAV_PREFS: Dict[str, Dict[str, Any]] = {
@@ -237,6 +239,23 @@ class Settings:
         cls.SUPPORT_CUSTOM_PRIORITY_KEYS = custom_keys
         cls.SUPPORT_PRIORITIES_HAVE_CUSTOMIZATION = bool(custom_keys)
         cls.SUPPORT_AVOID_ENERGY = avoid_energy
+        # Pre-compute recheck skills union for agent hook
+        try:
+            recheck_skills: Set[str] = set()
+            for data in priorities.values():
+                if not isinstance(data, dict):
+                    continue
+                if not bool(data.get("recheckAfterHint", False)):
+                    continue
+                skills = data.get("skillsRequiredForPriority")
+                if isinstance(skills, list):
+                    for s in skills:
+                        s2 = str(s).strip()
+                        if s2:
+                            recheck_skills.add(s2)
+            cls.RECHECK_AFTER_HINT_SKILLS = sorted(recheck_skills)
+        except Exception:
+            cls.RECHECK_AFTER_HINT_SKILLS = []
 
         cls.MINIMAL_MOOD = str(preset_data.get("minimalMood", cls.MINIMAL_MOOD))
         cls.REFERENCE_STATS = preset_data.get("targetStats", cls.REFERENCE_STATS)
@@ -416,6 +435,9 @@ class Settings:
                     "enabled": data["enabled"],
                     "scoreBlueGreen": data["scoreBlueGreen"],
                     "scoreOrangeMax": data["scoreOrangeMax"],
+                    # mirrors optional gating controls when present
+                    "skillsRequiredForPriority": data.get("skillsRequiredForPriority", []),
+                    "recheckAfterHint": data.get("recheckAfterHint", False),
                 }
                 for (name, rarity, attribute), data in priorities.items()
             ],
@@ -457,10 +479,23 @@ class Settings:
         enabled = bool(raw.get("enabled", True))
         score_bg = cls._clamp(raw.get("scoreBlueGreen", 0.75), 0.0, 10.0)
         score_om = cls._clamp(raw.get("scoreOrangeMax", 0.5), 0.0, 10.0)
+        # Optional gating controls coming from UI schema (ignored if absent)
+        skills = raw.get("skillsRequiredForPriority")
+        if isinstance(skills, list):
+            skills_list: List[str] = [str(s).strip() for s in skills if isinstance(s, (str, int, float))]
+            skills_list = [s for s in skills_list if s]
+        elif isinstance(skills, str):
+            skills_list = [s.strip() for s in str(skills).split(",") if s.strip()]
+        else:
+            skills_list = []
+        recheck = bool(raw.get("recheckAfterHint", False))
         return {
             "enabled": enabled,
             "scoreBlueGreen": score_bg,
             "scoreOrangeMax": score_om,
+            # Extra keys are tolerated by downstream consumers
+            "skillsRequiredForPriority": skills_list,  # type: ignore[dict-item]
+            "recheckAfterHint": recheck,  # type: ignore[dict-item]
         }
 
     @classmethod
@@ -480,6 +515,12 @@ class Settings:
         if not math.isclose(score_bg, default_bg, rel_tol=1e-6, abs_tol=1e-6):
             return True
         if not math.isclose(score_om, default_om, rel_tol=1e-6, abs_tol=1e-6):
+            return True
+        # Treat gating controls as customization when present
+        skills = priority.get("skillsRequiredForPriority")
+        if isinstance(skills, list) and len(skills) > 0:
+            return True
+        if bool(priority.get("recheckAfterHint", False)):
             return True
         return False
 

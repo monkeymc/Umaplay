@@ -64,23 +64,34 @@ export const presetSchema = z.object({
       enabled: z.boolean().default(true),
       scoreBlueGreen: z.number().min(0).max(10).default(0.75),
       scoreOrangeMax: z.number().min(0).max(10).default(0.5),
-    }).default({ enabled: true, scoreBlueGreen: 0.75, scoreOrangeMax: 0.5 })
+      skillsRequiredForPriority: z.array(z.string()).default([]),
+      recheckAfterHint: z.boolean().default(false),
+    }).default({
+      enabled: true,
+      scoreBlueGreen: 0.75,
+      scoreOrangeMax: 0.5,
+      skillsRequiredForPriority: [],
+      recheckAfterHint: false,
+    })
 
     const selectedSupport = z.object({
       slot: z.number(),
       name: z.string(),
       rarity,
       attribute: attr,
+      rewardPriority: z.array(z.enum(['skill_pts', 'stats', 'hints'])).default(['skill_pts', 'stats', 'hints']).optional(),
       priority: supportPriority.optional(),
       avoidEnergyOverflow: z.boolean().default(true).optional(),
     })
     const selectedScenario = z.object({
       name: z.string(),
       avoidEnergyOverflow: z.boolean().default(true).optional(),
+      rewardPriority: z.array(z.enum(['skill_pts', 'stats', 'hints'])).default(['skill_pts', 'stats', 'hints']).optional(),
     }).nullable()
     const selectedTrainee  = z.object({
       name: z.string(),
       avoidEnergyOverflow: z.boolean().default(true).optional(),
+      rewardPriority: z.array(z.enum(['skill_pts', 'stats', 'hints'])).default(['skill_pts', 'stats', 'hints']).optional(),
     }).nullable()
 
     const defaults = { support: 1, trainee: 1, scenario: 1 }
