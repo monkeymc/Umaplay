@@ -7,49 +7,19 @@ This organizes the mixed notes into a clear, actionable backlog. Items are group
 
 ### 0.3.2
 
-General:
-- @EpharGy: Add a CLI flag to specify port, ie --port 8005
-- Base model uma full training.
-- “Hint Icon” recognition with same YOLO: so we reduce misses. Don't use color for this. Hint icon should intersect from TOP not from bottom, or stay at top
-- Change 'hint value enabled' instead of only 'hint enabled' or hint not ignored, something more clear
-- Cleanup requirements for python 3.10, delete some unused dependencies, pin all versions. TEST in real pc
-- **after selecting a tile training, wait more, to avoid 'capture' screen cinematic where it is training, same for 'back' button in training decision to go back**
-- Bug: wrong click position, when resize scr cpy or even not resizing it, it is no the clicking right it is offset, put the corner at the top left
-- classifier transparent or not? handle transparents, only on main parts like screen detector (lobby)? or simple do multiple clicks when selecting  option in lobby to avoid pressing transparent. WAIT in back and after training
-- make event matcher robut, if no chain match, fallback to chain 1
-- reduce to 0.6 the confidence. For chain recognition, also quickly check for a minimal blue color (important)
-- check for overlap support cards (for example two predictions support_card, support_tazuna in the same spot, she should keep the biggest score)
-
-Team Trials:
-- If more that three banners detected, get the most 3 confident.
-- Check if banner is active/inactive, before clicking
-
-Web UX / UI:
-- Make it really clear of what preset is being using, visually, so we don't have problems
-
-Skill Buying:
-- @Rosetta / @Hibiki: Improve OCR ambiguos recognition (reports). non-standard vs standard for example and others of taking the lead / leading the .... 
-"""
-regarding the OCR, I would prefer to have a kind of 'exceptions' / 'custom logic' for those particular cases
-"""
-- @EO1:Web UI: Organize the types of skills so you don't have to search every single skill you need like debuffs, stamina skills, greens, purples etc. Also include new ones and images to make it easier.
-
-- Improve Control for double buying of single circle skills. if hint / skill already got / bought, not take that hint anymore:
-"""
-So, in our screen where we are buying skills, we have a pseudo-control to control how much time we need to buy, and that is working. The problem is that the next time that we visit the skills, that is reset, so we are buying again the same skills. So maybe we need to persist in a higher level, maybe at player level, what skills have we bought, and so the next time... So we have this memory of the skills that we bought, that were enabled, and given this, we can control to not buy more, especially the skills that has one single circle. So we only buy one, and the next time we match with the OCR we just can ignore, so we need this kind of memory to understand which skills we bought.
-"""
-
-- @sando:
-"""
-one feature I'd like to see is conditional hint scoring - take a support card like SR Air Groove for instance, which is commonly featured in decks for front runner parents, and you prioritize her hints highly only until she finally gives you Groundwork, and then her hints are of no concern - I believe that would be quite achievable here since reading the buyable skill list already works well, so keeping a list of all the skills we see when scrolling through skill list and then allowing hint priority to take into account whether a skill or set of skills is already part of our available skills would make this bot quite a bit more powerful for parent farming
-if you get around to this, a toggle to check the skill list each time after a hint of a card we care about is clicked to check if we just hit an important skill or not would be nice for people who don't mind slower runs in exchange for more hint reliability
-"""
-
 Events:
 - @EO1: Include Summer Characters and new characters and cards. Make it scalable and more easy to replicate. Auto web scraper with python?
 
+Bugs:
+- Yolo endpoint oguri doesn't recognize New year resolution events (is getting 2 and we get the above error)
+
+Extra:
+- Add note in support card selection to select always the deck, if using hint
 
 ### 0.3.3
+General:
+- Put distributables / binaries in S3 service (not the model though)
+
 Claw Machine:
 - @Rosetta: Re-check of the logic so it always Win. If first detected plushie is good enough and it is not at the border take it, if not do a full scan. Check the zips on discord
 
@@ -66,6 +36,60 @@ General
 - Increase timeout uvicorn so it waits for server to answer up to 1 min
 - Aoharu Hai preparation
 - Color unit testing: detected as yellow the 'green' one "yellow: +0.00"
+- Show in toast if selected scenario is ura or Aoharu, too along to the preset name
+- Add the support stuff
+Create discord stuff
+
+aoharu:
+Aoharu model:
+- not director
+- not etsuko
+- not tazuna, instead:
+for each pal we may have a different class, better if support_type class is pal (make classifier with cv2), then classify which pal, if we already nkow because of support cards, go for it
+
+new classes:
+-+ Retrain Calendar with new images
++ Calendar below aoharu turns
++ hint special training (classifier for the color)
++ flame special training (classifier to check if 'explosion, normal / remaning energy)
++ banner race
++ clock
+
+
+if support card, but not support type and not support bar -> team joined
+
+explosion only once, but jp has purple flame that can also explode
+
+already exploded doesn't have that value. It is already exploded if flame especial training is at the right instead of left, and it is purple
+
+calendar is different, and position of 'date' is different too
+
+flame alone doesn't give combo / bonus, so it is better to go 2 or more
+
+alone flame for already exploded, may be 0
+
+is better to explode in WIT to save energy? maybe explode on priority stats
+
+special hint must be with flame to fill, flame alone doesn't have value
+
+it is better to explode as soon as possible, but if we can level the flame at same time for multple, it is better
+
+
+when flame is purple, that explosion is worthit (when already exploded)
+
+first trials may be better to select second one, the rest the first one
+
+PATCH ENGLISH for jp version
+
+special training only give value if combo
+
+follow this guide to install:
+https://www.youtube.com/watch?v=2n0vHxszaWQ
+
+
+multiple explosions > multiple special normal training
+
+stats after 1200 are halved
 
 Bot Strategy / Policy:
 - Lookup toggle: allow skipping **scheduled race** if training has **2+ rainbows**
@@ -81,6 +105,12 @@ Bot Strategy / Policy:
 Events:
 - how should i respond still fails (chain). Check and validate
 - When no event detected, generate a special log in debug folder if 'debug' bool is enabled: gent.py:292: [Event] EventDecision(matched_key=None, matched_key_step=None, pick_option=1, clicked_box=(182.39614868164062, 404.23193359375, 563.8184204101562, 458.83447265625), debug={'current_energy': 64, 'max_energy_cap': 100, 'chain_step_hint': None, 'num_choices': 2, 'has_event_card': False, 'ocr_title': '', 'ocr_description': ''}). 
+
+### 0.4.1
+
+One more little idea I've just had - it would be cool if the settings "allow racing over low training" could be expanded into deciding what grades of races this is allowed to trigger with (eg. only G1s)
+MagodyBoy — 17:20
+and the minimum energy to trigger race, I think right now I check if we have >= 70% of energy
 
 ## 0.5
 
@@ -129,6 +159,7 @@ Shop:
 
 General:
 - Connection error handler (“A connection error occurred”): detect dialog with **white** and **green** buttons; handle “Title Screen” and “Retry”.
+- classifier transparent or not? handle transparents, only on main parts like screen detector (lobby)? or simple do multiple clicks when selecting  option in lobby to avoid pressing transparent. WAIT in back and after training
 
 Bot Strategy / Policy:
 - Better turn number prediction (11 or 1 for example, fails)
@@ -161,4 +192,33 @@ Bot Strategy:
 
 End2End navigator play:
 - Github Issue
+
+
+
+# TO VALIDATE:
+
+## 0.3.2
+
+Skills:
+- @Rosetta / @Hibiki: Improve OCR ambiguos recognition (reports). non-standard vs standard for example and others of taking the lead / keeping the lead, and more, I added possitive / negative tokens to improve the recognition
+
+Bot Strategy:
+- @Rosetta: Energy rotation customizable, "while it is ok to..."
+
+Hints
+- Improve Control for double buying of single circle skills. if hint / skill already got / bought, not take that hint anymore
+- @sando: Conditional hint scoring
+
+Oguri cap test:
+- Chain event recognition, do a fallback to chain 1 if no match found, also quickly check for a minimal blue color (important)
+
+in skill to buy Unique are not getting painted
+also show custom hint if required skill section changed
+
+# Not prioritized yet
+
+Team Trials
+- Check if banner is active/inactive, before clicking
+heck if banner is active/inactive, before clicking, if inactive, wait 2 sec. Here is the classifier for that: clf = ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH) - is_active = clf.predict(crop)
+
 

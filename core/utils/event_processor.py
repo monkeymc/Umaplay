@@ -9,6 +9,10 @@ from PIL import Image
 import imagehash
 from rapidfuzz import fuzz, process
 from PIL.Image import Image as PILImage
+from core.perception.analyzers.matching.base import (
+    TemplateMatcherBase,
+    TemplateEntry,
+)
 
 from core.utils.logger import logger_uma
 
@@ -260,6 +264,50 @@ def hamming_similarity64(a_int: Optional[int], b_int: Optional[int]) -> float:
     return 1.0 - (dist / 64.0)
 
 
+# -----------------------------
+# Image similarity (template+hash+hist) with lightweight cache
+# -----------------------------
+
+try:
+    _portrait_matcher: Optional[TemplateMatcherBase] = TemplateMatcherBase(ms_steps=7, tm_edge_weight=0.30)
+except Exception:  # OpenCV may be unavailable in some environments
+    _portrait_matcher = None
+
+_tmpl_cache: Dict[str, Any] = {}
+
+
+def _cv_image_similarity(portrait_img: PILImage, template_path: Optional[str]) -> Optional[float]:
+    """Return fused similarity in [0,1] using TemplateMatcherBase, or None if unavailable."""
+    if _portrait_matcher is None or not template_path:
+        return None
+    try:
+        tmpl = _tmpl_cache.get(template_path)
+        if tmpl is None:
+            entry = TemplateEntry(name=str(template_path), path=str(template_path))
+            prepared = _portrait_matcher.prepare_templates([entry])
+            tmpl = prepared[0] if prepared else None
+            if tmpl is not None:
+                _tmpl_cache[template_path] = tmpl
+        if tmpl is None:
+            return None
+
+        region = _portrait_matcher._prepare_region(portrait_img)
+        tm_sc = _portrait_matcher._template_score(
+            region.gray, region.edges, tmpl.gray, tmpl.edges, region.shape, tmpl.mask
+        )
+        hash_sc = _portrait_matcher._hash_score(region.hash, tmpl.hash)
+        hist_sc = _portrait_matcher._hist_compare(region.hist, tmpl.hist)
+        final = (
+            _portrait_matcher.tm_weight * tm_sc
+            + _portrait_matcher.hash_weight * hash_sc
+            + _portrait_matcher.hist_weight * hist_sc
+        )
+        # Clamp to [0,1] conservatively
+        return float(max(0.0, min(1.0, final)))
+    except Exception:
+        return None
+
+
 def find_event_image_path(
     ev_type: str, name: str, rarity: str, attribute: str
 ) -> Optional[Path]:
@@ -291,9 +339,8 @@ def find_event_image_path(
     # Legacy: just <name>
     candidates.append(name)
 
-    # Trainee special: profile portrait like "<name>_profile"
     if ev_type == "trainee":
-        candidates.insert(0, f"{name}_profile")
+        candidates.insert(0, f"{name}")
 
     for base in candidates:
         for ext in exts:
@@ -399,7 +446,11 @@ def build_catalog() -> None:
             continue
         seen_set_data.add(set_data)
 
-        img_path = find_event_image_path(ev_type, name, rarity, attribute)
+        if ev_type == "trainee" and normalize_text(name) != "general":
+            img_path = find_event_image_path("trainee_icon_event", name, rarity, attribute)
+        else:
+            img_path = find_event_image_path(ev_type, name, rarity, attribute)
+        
         phash = safe_phash(img_path) if img_path else None
         set_data_to_file_and_phash[set_data] = (
             str(img_path) if img_path else None,
@@ -918,10 +969,15 @@ def score_candidate(
     else:
         text_sim = 0.0
 
-    # 2) image similarity (pHash) if we have a portrait crop
-    img_sim = (
+    # 2) image similarity: prefer CV matcher when available; blend with pHash for stability
+    ph_sim = (
         hamming_similarity64(portrait_phash, rec.phash64) if portrait_phash else 0.0
     )
+    cv_sim = _cv_image_similarity(q.portrait_image, rec.image_path) if q.portrait_image is not None else None
+    if cv_sim is not None:
+        img_sim = 0.85 * float(cv_sim) + 0.15 * float(ph_sim)
+    else:
+        img_sim = float(ph_sim)
 
     # 3) hint bonus (soft constraints, deck-agnostic)
     hint_bonus = 0.0
@@ -1004,10 +1060,9 @@ def retrieve_best(
     if not pool:
         pool = list(catalog.records)
 
-    results: List[MatchResult] = [
-        score_candidate(q, rec, portrait_phash) for rec in pool
-    ]
-    results.sort(key=lambda r: r.score, reverse=True)
+    results: List[MatchResult] = [score_candidate(q, rec, portrait_phash) for rec in pool]
+    # Sort by total score, then text similarity, then image similarity for deterministic tie-breaks
+    results.sort(key=lambda r: (r.score, r.text_sim, r.img_sim), reverse=True)
     # Filter low-confidence candidates
     if min_score is not None:
         results = [r for r in results if r.score >= float(min_score)]
