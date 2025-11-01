@@ -17,7 +17,7 @@
       "Non-Standard Distance ×"
     ],
     "require_tokens": ["non"],
-    "forbid_tokens": ["standard distance"]
+    "forbid_tokens": []
   },
   {
     "canonical": "Taking the Lead",
