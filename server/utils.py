@@ -54,8 +54,8 @@ def load_dataset_json(*rel_parts: str):
     _DATASET_CACHE[key] = (mtime, data)
     return data
 
-def _normalize_reward_priority(raw: Any) -> List[str]:
-    allowed = ["skill_pts", "hints", "stats"]
+def _normalize_reward_priority(raw: Any, fallback: Optional[List[str]] = None) -> List[str]:
+    allowed = ["skill_pts", "stats", "hints"]
     aliases = {
         "skill_points": "skill_pts",
         "skillpts": "skill_pts",
@@ -73,9 +73,10 @@ def _normalize_reward_priority(raw: Any) -> List[str]:
             mapped = aliases.get(key, key)
             if mapped in allowed and mapped not in seen:
                 seen.append(mapped)
-    for fallback in allowed:
-        if fallback not in seen:
-            seen.append(fallback)
+    baseline = fallback if fallback else allowed
+    for fb in baseline:
+        if fb not in seen and fb in allowed:
+            seen.append(fb)
     return seen[: len(allowed)]
 
 def _ensure_bool(value: Any, default: bool = True) -> bool:
@@ -85,7 +86,7 @@ def _ensure_bool(value: Any, default: bool = True) -> bool:
         return bool(value)
     return default
 
-def _normalize_support(entry: Any, slot: int) -> Optional[Dict[str, Any]]:
+def _normalize_support(entry: Any, slot: int, fallback_priority: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
     if not isinstance(entry, dict):
         return None
     name = entry.get("name")
@@ -101,12 +102,17 @@ def _normalize_support(entry: Any, slot: int) -> Optional[Dict[str, Any]]:
     }
     if "priority" in entry and isinstance(entry["priority"], dict):
         result["priority"] = entry["priority"]
+    reward_priority = _normalize_reward_priority(
+        entry.get("rewardPriority", entry.get("reward_priority")),
+        fallback_priority,
+    )
+    result["rewardPriority"] = reward_priority
     result["avoidEnergyOverflow"] = _ensure_bool(
         entry.get("avoidEnergyOverflow", entry.get("avoid_energy_overflow")), True
     )
     return result
 
-def _normalize_entity(entry: Any) -> Optional[Dict[str, Any]]:
+def _normalize_entity(entry: Any, fallback_priority: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
     if not isinstance(entry, dict):
         return None
     name = entry.get("name")
@@ -117,24 +123,31 @@ def _normalize_entity(entry: Any) -> Optional[Dict[str, Any]]:
         "avoidEnergyOverflow": _ensure_bool(
             entry.get("avoidEnergyOverflow", entry.get("avoid_energy_overflow")), True
         ),
+        "rewardPriority": _normalize_reward_priority(
+            entry.get("rewardPriority", entry.get("reward_priority")),
+            fallback_priority,
+        ),
     }
 
 def load_event_setup_defaults(raw: Any) -> Dict[str, Any]:
     if not isinstance(raw, dict):
         raw = {}
 
+    prefs_raw = raw.get("prefs")
+    prefs_in = prefs_raw if isinstance(prefs_raw, dict) else {}
+    global_reward_priority = _normalize_reward_priority(
+        prefs_in.get("rewardPriority", prefs_in.get("reward_priority"))
+    )
+
     supports_out: List[Optional[Dict[str, Any]]] = []
     supports_raw = raw.get("supports")
     supports_in = supports_raw if isinstance(supports_raw, list) else []
     for idx in range(6):
         entry = supports_in[idx] if idx < len(supports_in) else None
-        supports_out.append(_normalize_support(entry, idx))
+        supports_out.append(_normalize_support(entry, idx, global_reward_priority))
 
-    scenario_out = _normalize_entity(raw.get("scenario"))
-    trainee_out = _normalize_entity(raw.get("trainee"))
-
-    prefs_raw = raw.get("prefs")
-    prefs_in = prefs_raw if isinstance(prefs_raw, dict) else {}
+    scenario_out = _normalize_entity(raw.get("scenario"), global_reward_priority)
+    trainee_out = _normalize_entity(raw.get("trainee"), global_reward_priority)
     overrides_raw = prefs_in.get("overrides")
     overrides = overrides_raw if isinstance(overrides_raw, dict) else {}
     patterns_raw = prefs_in.get("patterns")
@@ -152,9 +165,7 @@ def load_event_setup_defaults(raw: Any) -> Dict[str, Any]:
             "trainee": int(defaults.get("trainee", 1) or 1),
             "scenario": int(defaults.get("scenario", 1) or 1),
         },
-        "rewardPriority": _normalize_reward_priority(
-            prefs_in.get("rewardPriority", prefs_in.get("reward_priority"))
-        ),
+        "rewardPriority": global_reward_priority,
     }
 
     return {

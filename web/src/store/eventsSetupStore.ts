@@ -24,6 +24,9 @@ type State = {
   setPrefs(p: Partial<EventPrefs>): void
   setOverride(keyStep: string, pick: number): void
   setSupportPriority(slot: number, priority: SupportPriority): void
+  setSupportRewardPriority(slot: number, priority: RewardCategory[]): void
+  setScenarioRewardPriority(priority: RewardCategory[]): void
+  setTraineeRewardPriority(priority: RewardCategory[]): void
   setRewardPriority(priority: RewardCategory[]): void
 }
 
@@ -83,12 +86,22 @@ const normalizeRewardPriority = (raw: unknown, fallback?: RewardCategory[]): Rew
   return result
 }
 
-const pickSupport = (raw: unknown, slot: number, fallback?: SelectedSupport | null): SelectedSupport | null => {
+const pickSupport = (
+  raw: unknown,
+  slot: number,
+  fallback: SelectedSupport | null | undefined,
+  fallbackPriority: RewardCategory[]
+): SelectedSupport | null => {
   if (!raw || typeof raw !== 'object') return fallback ?? null
   if (!('name' in raw) || typeof (raw as any).name !== 'string') return fallback ?? null
   if (!('rarity' in raw) || !isValidRarity((raw as any).rarity)) return fallback ?? null
   if (!('attribute' in raw) || !isValidAttr((raw as any).attribute)) return fallback ?? null
   const priority = normalizePriority((raw as any).priority)
+  const rewardFallback = fallback?.rewardPriority ?? fallbackPriority
+  const rewardPriority = normalizeRewardPriority(
+    (raw as any).rewardPriority ?? (raw as any).reward_priority,
+    rewardFallback
+  )
   const avoidEnergyOverflow = ensureBoolean(
     (raw as any).avoidEnergyOverflow ?? (raw as any).avoid_energy_overflow,
     fallback?.avoidEnergyOverflow ?? true
@@ -99,23 +112,31 @@ const pickSupport = (raw: unknown, slot: number, fallback?: SelectedSupport | nu
     rarity: (raw as any).rarity,
     attribute: (raw as any).attribute,
     priority,
+    rewardPriority,
     avoidEnergyOverflow,
   }
 }
 
-const pickEntity = <T extends { name: string; avoidEnergyOverflow?: boolean }>(
+const pickEntity = <T extends { name: string; avoidEnergyOverflow?: boolean; rewardPriority?: RewardCategory[] }>(
   raw: unknown,
-  fallback: T | null
+  fallback: T | null,
+  fallbackPriority: RewardCategory[]
 ): T | null => {
   if (!raw || typeof raw !== 'object' || !('name' in raw)) return fallback
   const name = (raw as any).name
   if (typeof name !== 'string' || !name.trim()) return fallback
+  const rewardFallback = fallback?.rewardPriority ?? fallbackPriority
+  const rewardPriority = normalizeRewardPriority(
+    (raw as any).rewardPriority ?? (raw as any).reward_priority,
+    rewardFallback
+  )
   return {
     name,
     avoidEnergyOverflow: ensureBoolean(
       (raw as any).avoidEnergyOverflow ?? (raw as any).avoid_energy_overflow,
       fallback?.avoidEnergyOverflow ?? true
     ),
+    rewardPriority,
   } as T
 }
 
@@ -123,6 +144,8 @@ const DEFAULT_PRIORITY: SupportPriority = {
   enabled: true,
   scoreBlueGreen: 0.75,
   scoreOrangeMax: 0.5,
+  skillsRequiredForPriority: [],
+  recheckAfterHint: false,
 }
 
 const normalizePriority = (raw: unknown): SupportPriority => {
@@ -134,7 +157,19 @@ const normalizePriority = (raw: unknown): SupportPriority => {
   const scoreOrangeMax = Number.isFinite((raw as any).scoreOrangeMax)
     ? clampNumber((raw as any).scoreOrangeMax, 0, 10)
     : DEFAULT_PRIORITY.scoreOrangeMax
-  return { enabled, scoreBlueGreen, scoreOrangeMax }
+  const skillsRaw = (raw as any).skillsRequiredForPriority
+  const skills: string[] = Array.isArray(skillsRaw)
+    ? (skillsRaw as any[]).map((s) => String(s || '').trim()).filter(Boolean)
+    : typeof skillsRaw === 'string'
+      ? String(skillsRaw)
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : []
+  const recheckAfterHint = typeof (raw as any).recheckAfterHint === 'boolean'
+    ? (raw as any).recheckAfterHint
+    : DEFAULT_PRIORITY.recheckAfterHint
+  return { enabled, scoreBlueGreen, scoreOrangeMax, skillsRequiredForPriority: skills, recheckAfterHint }
 }
 
 const clampNumber = (val: number, min: number, max: number): number => {
@@ -168,15 +203,19 @@ export const useEventsSetupStore = create<State>()(
                 const raw = Array.isArray(s.supports)
                   ? (s.supports[i] as Partial<SelectedSupport> | null | undefined)
                   : undefined
-                return pickSupport(raw, i, cur.supports[i] ?? null)
+                return pickSupport(raw, i, cur.supports[i] ?? null, curPrefs.rewardPriority)
               })
             : cur.supports
 
         // scenario/trainee: honor explicit null if the key is present
         const scenario: SelectedScenario =
-          ('scenario' in s) ? pickEntity<NonNullable<SelectedScenario>>(s.scenario, cur.scenario) : cur.scenario
+          ('scenario' in s)
+            ? pickEntity<NonNullable<SelectedScenario>>(s.scenario, cur.scenario, curPrefs.rewardPriority)
+            : cur.scenario
         const trainee: SelectedTrainee =
-          ('trainee' in s) ? pickEntity<NonNullable<SelectedTrainee>>(s.trainee, cur.trainee) : cur.trainee
+          ('trainee' in s)
+            ? pickEntity<NonNullable<SelectedTrainee>>(s.trainee, cur.trainee, curPrefs.rewardPriority)
+            : cur.trainee
 
         // prefs: if present, normalize; otherwise keep current
         const prefs: EventPrefs =
@@ -209,9 +248,16 @@ export const useEventsSetupStore = create<State>()(
         const idx = Math.max(0, Math.min(5, slot))
         const supports = s.supports.slice()
         if (ref) {
+          const prev = supports[idx]
+          const isSameCard = prev?.name === ref.name && prev?.rarity === ref.rarity && prev?.attribute === ref.attribute
+          const globalFallback = s.prefs?.rewardPriority ?? DEFAULT_REWARD_PRIORITY
+          const fallbackPriority = isSameCard
+            ? (prev?.rewardPriority ?? globalFallback)
+            : globalFallback
           const nextPriority = ref.priority
             ? normalizePriority(ref.priority)
             : supports[idx]?.priority || { ...DEFAULT_PRIORITY }
+          const nextRewardPriority = normalizeRewardPriority(ref.rewardPriority, fallbackPriority)
           const avoidEnergyOverflow = ensureBoolean(
             ref.avoidEnergyOverflow,
             supports[idx]?.avoidEnergyOverflow ?? true
@@ -222,6 +268,7 @@ export const useEventsSetupStore = create<State>()(
             rarity: ref.rarity,
             attribute: ref.attribute,
             priority: nextPriority,
+            rewardPriority: nextRewardPriority,
             avoidEnergyOverflow,
           }
         } else {
@@ -239,6 +286,12 @@ export const useEventsSetupStore = create<State>()(
                 ref.avoidEnergyOverflow,
                 s.scenario?.avoidEnergyOverflow ?? true
               ),
+              rewardPriority: normalizeRewardPriority(
+                ref.rewardPriority,
+                (s.scenario?.name === ref.name
+                  ? s.scenario?.rewardPriority
+                  : undefined) ?? s.prefs?.rewardPriority ?? DEFAULT_REWARD_PRIORITY
+              ),
             }
           : null
         set({ setup: { ...s, scenario: next }, revision: get().revision + 1 })
@@ -252,6 +305,12 @@ export const useEventsSetupStore = create<State>()(
               avoidEnergyOverflow: ensureBoolean(
                 ref.avoidEnergyOverflow,
                 s.trainee?.avoidEnergyOverflow ?? true
+              ),
+              rewardPriority: normalizeRewardPriority(
+                ref.rewardPriority,
+                (s.trainee?.name === ref.name
+                  ? s.trainee?.rewardPriority
+                  : undefined) ?? s.prefs?.rewardPriority ?? DEFAULT_REWARD_PRIORITY
               ),
             }
           : null
@@ -292,6 +351,45 @@ export const useEventsSetupStore = create<State>()(
           priority: normalizePriority(priority),
         }
         set({ setup: { ...s, supports }, revision: get().revision + 1 })
+      },
+      setSupportRewardPriority(slot, priority) {
+        const s = get().setup
+        const idx = Math.max(0, Math.min(5, slot))
+        const supports = s.supports.slice()
+        const target = supports[idx]
+        if (!target) return
+        const fallback = target.rewardPriority ?? s.prefs?.rewardPriority ?? DEFAULT_REWARD_PRIORITY
+        supports[idx] = {
+          ...target,
+          rewardPriority: normalizeRewardPriority(priority, fallback),
+        }
+        set({ setup: { ...s, supports }, revision: get().revision + 1 })
+      },
+      setScenarioRewardPriority(priority) {
+        const s = get().setup
+        const next = s.scenario
+          ? {
+              ...s.scenario,
+              rewardPriority: normalizeRewardPriority(
+                priority,
+                s.scenario.rewardPriority ?? s.prefs?.rewardPriority ?? DEFAULT_REWARD_PRIORITY
+              ),
+            }
+          : null
+        set({ setup: { ...s, scenario: next }, revision: get().revision + 1 })
+      },
+      setTraineeRewardPriority(priority) {
+        const s = get().setup
+        const next = s.trainee
+          ? {
+              ...s.trainee,
+              rewardPriority: normalizeRewardPriority(
+                priority,
+                s.trainee.rewardPriority ?? s.prefs?.rewardPriority ?? DEFAULT_REWARD_PRIORITY
+              ),
+            }
+          : null
+        set({ setup: { ...s, trainee: next }, revision: get().revision + 1 })
       },
       setRewardPriority(priority) {
         const s = get().setup

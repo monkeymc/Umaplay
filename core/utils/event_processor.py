@@ -45,7 +45,7 @@ _REWARD_KEY_TO_ALIAS: Dict[str, str] = {
     "stats": "stats",
 }
 
-_VALID_REWARD_CATEGORIES: Set[str] = {"skill_pts", "hints", "stats"}
+_VALID_REWARD_CATEGORIES: Set[str] = {"skill_pts", "hints", "stats", "energy"}
 
 
 def _coerce_float(val: Any) -> Optional[float]:
@@ -124,6 +124,10 @@ def extract_reward_categories(outcomes: List[Dict[str, Any]]) -> Set[str]:
                         isinstance(v, dict) or isinstance(v, (list, tuple))
                     ) or (val is not None and val > 0):
                         categories.add("stats")
+                elif mapped == "energy":
+                    val = _coerce_float(v)
+                    if val is None or val > 0:
+                        categories.add("energy")
                 visit(v)
         elif isinstance(node, (list, tuple)):
             for item in node:
@@ -552,6 +556,12 @@ class UserPrefs:
     avoid_energy_overflow_by_trainee: Dict[str, bool] = field(default_factory=dict)
     # ranked reward preference used when avoiding energy overflow
     reward_priority: List[str] = field(default_factory=lambda: list(DEFAULT_REWARD_PRIORITY))
+    # per-entity reward priority overrides
+    reward_priority_by_support: Dict[Tuple[str, str, str], List[str]] = field(
+        default_factory=dict
+    )
+    reward_priority_by_scenario: Dict[str, List[str]] = field(default_factory=dict)
+    reward_priority_by_trainee: Dict[str, List[str]] = field(default_factory=dict)
 
     @staticmethod
     def load(path: Path) -> "UserPrefs":
@@ -600,6 +610,9 @@ class UserPrefs:
             avoid_energy_overflow_by_scenario={},
             avoid_energy_overflow_by_trainee={},
             reward_priority=reward_priority,
+            reward_priority_by_support={},
+            reward_priority_by_scenario={},
+            reward_priority_by_trainee={},
         )
 
     # ---- build UserPrefs from the active preset inside config.json ----
@@ -684,6 +697,7 @@ class UserPrefs:
         )
 
         avoid_energy_by_support: Dict[Tuple[str, str, str], bool] = {}
+        reward_priority_by_support: Dict[Tuple[str, str, str], List[str]] = {}
         supports = setup.get("supports", []) or []
         if isinstance(supports, list):
             for entry in supports:
@@ -698,9 +712,18 @@ class UserPrefs:
                 if raw_flag is None:
                     raw_flag = entry.get("avoid_energy_overflow")
                 flag = _coerce_bool(raw_flag, default=True)
-                avoid_energy_by_support[_support_key(name, attribute, rarity)] = flag
+                key = _support_key(name, attribute, rarity)
+                avoid_energy_by_support[key] = flag
+
+                raw_priority = entry.get("rewardPriority")
+                if raw_priority is None:
+                    raw_priority = entry.get("reward_priority")
+                if raw_priority is not None:
+                    priority_list = normalize_reward_priority_list(raw_priority)
+                    reward_priority_by_support[key] = priority_list
 
         scenario_flags: Dict[str, bool] = {}
+        reward_priority_by_scenario: Dict[str, List[str]] = {}
         scenario_entry = setup.get("scenario")
         if isinstance(scenario_entry, dict):
             name = scenario_entry.get("name")
@@ -708,11 +731,19 @@ class UserPrefs:
                 raw_flag = scenario_entry.get("avoidEnergyOverflow")
                 if raw_flag is None:
                     raw_flag = scenario_entry.get("avoid_energy_overflow")
-                scenario_flags[_scenario_key(str(name))] = _coerce_bool(
-                    raw_flag, default=True
-                )
+                scen_key = _scenario_key(str(name))
+                scenario_flags[scen_key] = _coerce_bool(raw_flag, default=True)
+
+                raw_priority = scenario_entry.get("rewardPriority")
+                if raw_priority is None:
+                    raw_priority = scenario_entry.get("reward_priority")
+                if raw_priority is not None:
+                    reward_priority_by_scenario[scen_key] = normalize_reward_priority_list(
+                        raw_priority
+                    )
 
         trainee_flags: Dict[str, bool] = {}
+        reward_priority_by_trainee: Dict[str, List[str]] = {}
         trainee_entry = setup.get("trainee")
         if isinstance(trainee_entry, dict):
             name = trainee_entry.get("name")
@@ -720,9 +751,16 @@ class UserPrefs:
                 raw_flag = trainee_entry.get("avoidEnergyOverflow")
                 if raw_flag is None:
                     raw_flag = trainee_entry.get("avoid_energy_overflow")
-                trainee_flags[_trainee_key(str(name))] = _coerce_bool(
-                    raw_flag, default=True
-                )
+                trainee_key = _trainee_key(str(name))
+                trainee_flags[trainee_key] = _coerce_bool(raw_flag, default=True)
+
+                raw_priority = trainee_entry.get("rewardPriority")
+                if raw_priority is None:
+                    raw_priority = trainee_entry.get("reward_priority")
+                if raw_priority is not None:
+                    reward_priority_by_trainee[trainee_key] = normalize_reward_priority_list(
+                        raw_priority
+                    )
 
         return UserPrefs(
             overrides=overrides,
@@ -734,7 +772,28 @@ class UserPrefs:
             avoid_energy_overflow_by_scenario=scenario_flags,
             avoid_energy_overflow_by_trainee=trainee_flags,
             reward_priority=reward_priority,
+            reward_priority_by_support=reward_priority_by_support,
+            reward_priority_by_scenario=reward_priority_by_scenario,
+            reward_priority_by_trainee=reward_priority_by_trainee,
         )
+
+    def reward_priority_for(self, rec: EventRecord) -> List[str]:
+        if rec.type == "support":
+            key = _support_key(rec.name, rec.attribute, rec.rarity)
+            priority = self.reward_priority_by_support.get(key)
+            if priority:
+                return list(priority)
+        elif rec.type == "scenario":
+            key = _scenario_key(rec.name)
+            priority = self.reward_priority_by_scenario.get(key)
+            if priority:
+                return list(priority)
+        elif rec.type == "trainee":
+            key = _trainee_key(rec.name)
+            priority = self.reward_priority_by_trainee.get(key)
+            if priority:
+                return list(priority)
+        return list(self.reward_priority)
 
     def should_avoid_energy(self, rec: EventRecord) -> bool:
         if rec.type == "support":
