@@ -13,6 +13,8 @@ from core.perception.analyzers.matching.base import (
     TemplateMatcherBase,
     TemplateEntry,
 )
+from core.perception.analyzers.matching.remote import RemoteTemplateMatcherBase as _RemoteTMB
+from core.settings import Settings
 
 from core.utils.logger import logger_uma
 
@@ -278,6 +280,9 @@ _tmpl_cache: Dict[str, Any] = {}
 
 def _cv_image_similarity(portrait_img: PILImage, template_path: Optional[str]) -> Optional[float]:
     """Return fused similarity in [0,1] using TemplateMatcherBase, or None if unavailable."""
+    # When remote processing is enabled, skip local CV entirely.
+    if Settings.USE_EXTERNAL_PROCESSOR:
+        return None
     if _portrait_matcher is None or not template_path:
         return None
     try:
@@ -306,6 +311,21 @@ def _cv_image_similarity(portrait_img: PILImage, template_path: Optional[str]) -
         return float(max(0.0, min(1.0, final)))
     except Exception:
         return None
+
+
+def _public_path_from_image_path(image_path: Optional[str]) -> Optional[str]:
+    if not image_path:
+        return None
+    p = str(image_path).replace("\\", "/")
+    # Expect paths like 'web/public/events/trainee_icon_event/Name.png'
+    marker = "web/public/"
+    idx = p.find(marker)
+    if idx >= 0:
+        rel = p[idx + len(marker) :]
+    else:
+        # Already relative?
+        rel = p.lstrip("/")
+    return rel or None
 
 
 def find_event_image_path(
@@ -953,7 +973,7 @@ class MatchResult:
 
 
 def score_candidate(
-    q: Query, rec: EventRecord, portrait_phash: Optional[int]
+    q: Query, rec: EventRecord, portrait_phash: Optional[int], cv_sim_override: Optional[float] = None
 ) -> MatchResult:
     # 1) text similarity on titles (normalized)
     qt = normalize_text(q.ocr_title)
@@ -973,7 +993,11 @@ def score_candidate(
     ph_sim = (
         hamming_similarity64(portrait_phash, rec.phash64) if portrait_phash else 0.0
     )
-    cv_sim = _cv_image_similarity(q.portrait_image, rec.image_path) if q.portrait_image is not None else None
+    cv_sim = (
+        float(cv_sim_override)
+        if cv_sim_override is not None
+        else (_cv_image_similarity(q.portrait_image, rec.image_path) if q.portrait_image is not None else None)
+    )
     if cv_sim is not None:
         img_sim = 0.85 * float(cv_sim) + 0.15 * float(ph_sim)
     else:
@@ -1060,7 +1084,36 @@ def retrieve_best(
     if not pool:
         pool = list(catalog.records)
 
-    results: List[MatchResult] = [score_candidate(q, rec, portrait_phash) for rec in pool]
+    # Prepare optional remote CV similarities once per query to avoid local OpenCV on thin clients
+    remote_cv: Dict[str, float] = {}
+    if (
+        Settings.USE_EXTERNAL_PROCESSOR
+        and q.portrait_image is not None
+    ):
+        try:
+            templates: List[Dict[str, Any]] = []
+            for rec in pool:
+                pub = _public_path_from_image_path(rec.image_path)
+                if not pub:
+                    continue
+                templates.append({
+                    "id": rec.key,
+                    "public_path": f"/{pub}",
+                    "name": rec.name,
+                    "metadata": {"name": rec.name, "public_path": f"/{pub}"},
+                })
+            if templates:
+                remote = _RemoteTMB(templates, min_confidence=0.0)
+                matches = remote.match(q.portrait_image)
+                for m in matches:
+                    # m.name echoes descriptor.id
+                    remote_cv[str(m.name)] = float(m.score)
+        except Exception:
+            remote_cv = {}
+
+    results: List[MatchResult] = [
+        score_candidate(q, rec, portrait_phash, remote_cv.get(rec.key)) for rec in pool
+    ]
     # Sort by total score, then text similarity, then image similarity for deterministic tie-breaks
     results.sort(key=lambda r: (r.score, r.text_sim, r.img_sim), reverse=True)
     # Filter low-confidence candidates
