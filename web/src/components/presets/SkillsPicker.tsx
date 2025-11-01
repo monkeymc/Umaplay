@@ -274,6 +274,17 @@ export default function SkillsPicker({ presetId }: { presetId: string }) {
         {preset.skillsToBuy.map(n => {
           const skill = skills.find(s => s.name === n)
           const icon = skill?.icon_filename ? `/icons/skills/${skill.icon_filename}` : FALLBACK_ICON
+          const chipStyle = skill?.rarity === 'unique'
+            ? {
+                background: rarityBgColors.unique,
+                color: theme.palette.text.primary,
+                '& .MuiChip-deleteIcon': {
+                  color: theme.palette.text.secondary,
+                },
+              }
+            : {
+                bgcolor: skill?.rarity ? rarityBgColors[skill.rarity] : 'background.paper',
+              }
           return (
             <Chip
               key={n}
@@ -282,7 +293,7 @@ export default function SkillsPicker({ presetId }: { presetId: string }) {
               size="small"
               onDelete={() => remove(n)}
               sx={{
-                bgcolor: skill?.rarity ? rarityBgColors[skill.rarity] : 'background.paper',
+                ...chipStyle,
                 maxWidth: 200,
               }}
             />
