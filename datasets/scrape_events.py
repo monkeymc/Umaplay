@@ -55,6 +55,14 @@ STAT_RX = {
     "wit":     re.compile(r"\b(?:wit|wis|wisdom|int|intelligence)\b\s*"+_RE_INT, re.I),
 }
 
+STAT_WEIGHTS = {
+    "speed": 5.0,
+    "stamina": 4.0,
+    "power": 3.0,
+    "wit": 2.0,
+    "guts": 1.0,
+}
+
 # All stats +5 / All parameters +5
 RE_ALL_STATS  = re.compile(r"\b(all\s*stats|all\s*parameters|all\s*status)\b\s*"+_RE_INT, re.I)
 # 3 random stats +6 / 2 random parameters +10
@@ -124,15 +132,41 @@ def extract_support_name(item: Tag, debug: bool) -> str:
     dbg(debug, f"[DEBUG] Support name: {name!r}")
     return name
 
+def normalize_trainee_name(name: str) -> str:
+    return T(re.sub(r"\s*\([^)]*\)\s*$", "", name or ""))
+
+def find_trainee_items(soup: BeautifulSoup, debug: bool) -> List[Tag]:
+    items: List[Tag] = []
+    for a in soup.select('a[href^="/umamusume/characters/"]'):
+        center = a.find_parent("div", attrs={"style": lambda s: isinstance(s, str) and "text-align: center" in s})
+        if not center:
+            continue
+        root = center.parent
+        if not isinstance(root, Tag):
+            continue
+        if root.select_one('div[class^="eventhelper_ewrapper__"], div[class*=" eventhelper_ewrapper__"]'):
+            if root not in items:
+                items.append(root)
+    dbg(debug, f"[DEBUG] Found trainee items: {len(items)}")
+    return items
+
+def extract_trainee_name(item: Tag, debug: bool) -> str:
+    raw = extract_support_name(item, debug)
+    nm = normalize_trainee_name(raw)
+    dbg(debug, f"[DEBUG] Trainee name normalized: {nm!r} (raw={raw!r})")
+    return nm
+
 # --------------------------- parsing helpers --------------------------------
 def normalize_label(label: str) -> str:
-    l = label.lower()
+    l = label.strip().lower()
     if "top" in l or re.fullmatch(r"1", l): return "top"
     if "mid" in l or "middle" in l or re.fullmatch(r"2", l): return "mid"
     if "bot" in l or "bottom" in l or re.fullmatch(r"3", l): return "bot"
     if re.search(r"\boption\s*1\b", l): return "top"
     if re.search(r"\boption\s*2\b", l): return "mid"
     if re.search(r"\boption\s*3\b", l): return "bot"
+    if m := re.match(r"^(?:no\.?\s*)?(\d+)\s*[.)]?$", l):
+        return m.group(1)
     return "top"
 
 def parse_effects_from_text(txt: str) -> Dict[str, Any]:
@@ -146,7 +180,9 @@ def parse_effects_from_text(txt: str) -> Dict[str, Any]:
     m = RE_RANDOM_STATS.search(txt)
     if m:
         cnt, val = int(m.group(1)), int(m.group(2))
-        eff.setdefault("random_stats", {"count": cnt, "amount": val})
+        eff["stats"] = val
+        if cnt > 1:
+            eff.setdefault("random_stats", {"count": cnt, "amount": val})
     # Individual effects
     m = RE_ENERGY.search(txt);     eff["energy"]    = int(m.group(1)) if m else eff.get("energy")
     m = RE_BOND.search(txt);       eff["bond"]      = int(m.group(1)) if m else eff.get("bond")
@@ -163,16 +199,51 @@ def parse_effects_from_text(txt: str) -> Dict[str, Any]:
 
 def parse_right_cell(right: Tag, debug: bool) -> List[Dict[str, Any]]:
     outcomes: List[Dict[str, Any]] = []
-    cur: Dict[str, Any] = {}
-    hints: List[str] = []
+
+    base_effect: Dict[str, Any] = {}
+    base_hints: List[str] = []
+    base_statuses: List[str] = []
+    optionals: List[Dict[str, Any]] = []  # each: {"effects":{}, "hints":[], "statuses":[]}
+    active_optional: Optional[Dict[str, Any]] = None
+
+    def make_outcome(effect: Dict[str, Any], hints_seq: List[str], statuses_seq: List[str]) -> Dict[str, Any]:
+        out: Dict[str, Any] = {**effect}
+        if hints_seq:
+            out["hints"] = hints_seq[:]
+        if statuses_seq:
+            if len(statuses_seq) == 1:
+                out["status"] = statuses_seq[0]
+            else:
+                out["statuses"] = statuses_seq[:]
+        return out
+
+    def push(out: Dict[str, Any]) -> None:
+        if out and out not in outcomes:
+            outcomes.append(out)
 
     def flush():
-        nonlocal cur, hints
-        if hints:
-            cur = {**cur, "hints": hints[:] }
-        if cur:
-            outcomes.append(cur)
-        cur, hints[:] = {}, []
+        nonlocal base_effect, base_hints, base_statuses, optionals, active_optional
+        base_present = bool(base_effect or base_hints or base_statuses)
+        if base_present:
+            push(make_outcome(base_effect, base_hints, base_statuses))
+        for opt in optionals:
+            combined: Dict[str, Any] = {**base_effect}
+            for k, v in opt.get("effects", {}).items():
+                if k in combined and isinstance(combined[k], (int, float)) and isinstance(v, (int, float)):
+                    combined[k] = combined[k] + v
+                else:
+                    combined[k] = v
+            combined_hints = base_hints + opt.get("hints", [])
+            combined_statuses = base_statuses + opt.get("statuses", [])
+            push(make_outcome(combined, combined_hints, combined_statuses))
+
+        if not base_present and not optionals:
+            # nothing parsed for this block
+            pass
+
+        base_effect, base_hints, base_statuses = {}, [], []
+        optionals.clear()
+        active_optional = None
 
     lines = right.find_all("div", recursive=False)
     dbg(debug, f"          [DEBUG] right-cell lines: {len(lines)}")
@@ -184,28 +255,80 @@ def parse_right_cell(right: Tag, debug: bool) -> List[Dict[str, Any]]:
             continue
 
         txt = T(li.get_text(" ", strip=True))
+        low = txt.lower()
 
-        # collect skill hints on the line
+        anchor_texts = []
         for a in li.select('.utils_linkcolor__rvv3k, a[href*="/umamusume/skills/"]'):
             nm = T(a.get_text())
             if nm:
-                hints.append(nm)
+                anchor_texts.append(nm)
+
+        line_hints: List[str] = []
+        line_statuses: List[str] = []
+        clean_txt = txt.replace("(random)", "").strip()
+
+        if anchor_texts:
+            if "status" in low:
+                line_statuses.extend(anchor_texts)
+            elif "hint" in low:
+                line_hints.extend(anchor_texts)
+            else:
+                line_hints.extend(anchor_texts)
+        else:
+            if "status" in low and clean_txt:
+                line_statuses.append(clean_txt)
+            if "hint" in low and clean_txt:
+                line_hints.append(clean_txt)
 
         eff = parse_effects_from_text(txt)
-        if eff:
-            cur.update(eff)
+        is_random_line = "(random" in low
 
-        dbg(debug, f"            [DEBUG] line: {txt!r} → eff={eff or {}} hints_now={hints}")
+        dbg(debug, f"            [DEBUG] line: {txt!r} → eff={eff or {}} line_hints={line_hints} line_statuses={line_statuses} random={is_random_line}")
+
+        if is_random_line:
+            if line_statuses:
+                # statuses remain optional outcomes
+                pass
+            elif not eff and line_hints:
+                # random hint text without branches: treat as deterministic metadata
+                base_hints.extend(line_hints)
+                continue
+            elif not eff and not line_hints and not line_statuses:
+                # nothing to record
+                continue
+            if active_optional is None:
+                active_optional = {"effects": {}, "hints": [], "statuses": []}
+                optionals.append(active_optional)
+            opt_eff = active_optional["effects"]
+            for k, v in eff.items():
+                if k in opt_eff and isinstance(opt_eff[k], (int, float)) and isinstance(v, (int, float)):
+                    opt_eff[k] = opt_eff[k] + v
+                else:
+                    opt_eff[k] = v
+            active_optional["hints"].extend(line_hints)
+            active_optional["statuses"].extend(line_statuses)
+        else:
+            active_optional = None
+            for k, v in eff.items():
+                if k in base_effect and isinstance(base_effect[k], (int, float)) and isinstance(v, (int, float)):
+                    base_effect[k] = base_effect[k] + v
+                else:
+                    base_effect[k] = v
+            base_hints.extend(line_hints)
+            base_statuses.extend(line_statuses)
 
     flush()
     return outcomes
 
 def score_outcome(eff: Dict[str, Any]) -> float:
     energy = float(eff.get("energy", 0))
-    stats_sum = sum(float(eff.get(k, 0)) for k in ("speed","stamina","power","guts","wit"))
+    stats_sum = 0.0
+    for stat, weight in STAT_WEIGHTS.items():
+        stats_sum += weight * float(eff.get(stat, 0))
     if isinstance(eff.get("random_stats"), dict):
         rs = eff["random_stats"]
-        stats_sum += float(rs.get("count", 0)) * float(rs.get("amount", 0))
+        avg_weight = sum(STAT_WEIGHTS.values()) / float(len(STAT_WEIGHTS))
+        stats_sum += avg_weight * float(rs.get("count", 0)) * float(rs.get("amount", 0))
     spts   = float(eff.get("skill_pts", 0))
     hints  = len(eff.get("hints", []))
     bond   = float(eff.get("bond", 0))
@@ -228,21 +351,46 @@ def choose_default_preference(options: Dict[str, List[Dict[str, Any]]]) -> int:
 # ------------------------------ event parsing --------------------------------
 def parse_events_in_card(item: Tag, debug: bool) -> List[Dict[str, Any]]:
     out: List[Dict[str, Any]] = []
-    sections = item.select('div[class^="eventhelper_elist__"], div[class*=" eventhelper_elist__"]')
-    dbg(debug, f"[DEBUG]   sections: {len(sections)}")
+    section_blocks: List[Tuple[Optional[Tag], List[Tag]]] = []
 
-    for s_idx, sec in enumerate(sections, 1):
+    raw_sections = item.select('div[class^="eventhelper_elist__"], div[class*=" eventhelper_elist__"]')
+    for sec in raw_sections:
         sec_header = sec.select_one('.sc-fc6527df-0')
-        sec_title = T(sec_header.get_text()) if sec_header else ""
-        default_type = "chain" if "Chain" in sec_title else "random"
+        wrappers = sec.select('div[class^="eventhelper_ewrapper__"], div[class*=" eventhelper_ewrapper__"]')
+        section_blocks.append((sec_header, wrappers))
+
+    if not section_blocks:
+        headers = item.select('div.sc-fc6527df-0')
+        for header in headers:
+            listgrid = header.find_next_sibling(
+                lambda t: isinstance(t, Tag) and any(cls.startswith("eventhelper_listgrid__") for cls in (t.get("class") or []))
+            )
+            if not isinstance(listgrid, Tag):
+                continue
+            wrappers = listgrid.select('div[class^="eventhelper_ewrapper__"], div[class*=" eventhelper_ewrapper__"]')
+            if wrappers:
+                section_blocks.append((header, wrappers))
+
+    dbg(debug, f"[DEBUG]   sections: {len(section_blocks)}")
+
+    for s_idx, (header, wrappers) in enumerate(section_blocks, 1):
+        sec_title = T(header.get_text()) if header else ""
+        if "After a Race" in sec_title:
+            default_type = "special"
+        elif "Chain" in sec_title:
+            default_type = "chain"
+        else:
+            default_type = "random"
         dbg(debug, f"[DEBUG]     section[{s_idx}] '{sec_title}' → default_type={default_type}")
 
-        wrappers = sec.select('div[class^="eventhelper_ewrapper__"], div[class*=" eventhelper_ewrapper__"]')
         dbg(debug, f"[DEBUG]       wrappers: {len(wrappers)}")
 
         for w_idx, w in enumerate(wrappers, 1):
             h = w.select_one('.tooltips_ttable_heading__DK4_X')
-            title = T(h.get_text()) if h else ""
+            title = ""
+            if h:
+                parts = [T(s) for s in h.stripped_strings if T(s)]
+                title = parts[0] if parts else ""
             etype = default_type
             step = 1
 
@@ -317,6 +465,7 @@ def main():
 
     soup = soup_from_args(args)
     items = find_support_items(soup, args.debug)
+    trainee_items = find_trainee_items(soup, args.debug)
 
     defaults = parse_support_defaults(args.support_defaults)
 
@@ -344,10 +493,28 @@ def main():
         supports.append(support_obj)
         dbg(args.debug, f"[DEBUG] Parsed support '{name}' with {len(events)} events. rarity={rarity}, attr={attr}")
 
+    # Parse trainee blocks (if present)
+    for idx, item in enumerate(trainee_items, 0):
+        name = extract_trainee_name(item, args.debug)
+        if not name:
+            dbg(args.debug, f"[WARN] Trainee[{idx}] has no name; skipping.")
+            continue
+
+        events = parse_events_in_card(item, args.debug)
+        trainee_obj = {
+            "type": "trainee",
+            "name": name,
+            "rarity": "None",
+            "attribute": "None",
+            "choice_events": events,
+        }
+        supports.append(trainee_obj)
+        dbg(args.debug, f"[DEBUG] Parsed trainee '{name}' with {len(events)} events.")
+
     with open(args.out, "w", encoding="utf-8") as f:
         json.dump(supports, f, ensure_ascii=False, indent=2)
 
-    print(f"[OK] Wrote {len(supports)} supports → {args.out}")
+    print(f"[OK] Wrote {len(supports)} entries → {args.out}")
 
 if __name__ == "__main__":
     main()
