@@ -7,6 +7,9 @@ This organizes the mixed notes into a clear, actionable backlog. Items are group
 
 ### 0.3.2
 
+### 0.3.3
+
+MOVED some req from 0.3.2 because it was already too big
 Events:
 - @EO1: Include Summer Characters and new characters and cards. Make it scalable and more easy to replicate. Auto web scraper with python?
 
@@ -16,7 +19,7 @@ Bugs:
 Extra:
 - Add note in support card selection to select always the deck, if using hint
 
-### 0.3.3
+
 General:
 - Put distributables / binaries in S3 service (not the model though)
 

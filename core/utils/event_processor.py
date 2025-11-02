@@ -7,14 +7,14 @@ import fnmatch
 import os
 from dataclasses import dataclass, asdict, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Set
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Set
 
 from PIL import Image
 import imagehash
 from rapidfuzz import fuzz, process
 from PIL.Image import Image as PILImage
 from core.perception.analyzers.matching.base import TemplateEntry, TemplateMatcherBase
-from core.perception.analyzers.matching.remote import RemoteTemplateMatcherBase as _RemoteTMB, RemoteTemplateMatch
+from core.perception.analyzers.matching.remote import RemoteTemplateMatcherBase as _RemoteTMB
 from core.settings import Settings
 
 from core.utils.logger import logger_uma
@@ -273,14 +273,18 @@ def hamming_similarity64(a_int: Optional[int], b_int: Optional[int]) -> float:
 
 # Shared template-matching options to keep local and remote behavior aligned
 _TM_OPTIONS: Dict[str, float] = {
-    "tm_weight": 0.7,
-    "hash_weight": 0.2,
-    "hist_weight": 0.1,
+    "tm_weight": 0.85,
+    "hash_weight": 0.0,
+    "hist_weight": 0.15,
     "tm_edge_weight": 0.30,
     "ms_min_scale": 0.60,
     "ms_max_scale": 1.40,
     "ms_steps": 7,
 }
+
+_CV_TEMPLATE_TEXT_THRESHOLD = 0.8
+_CV_TEMPLATE_MIN = 1
+_CV_TEMPLATE_MAX = 5
 
 try:
     _portrait_matcher: Optional[TemplateMatcherBase] = TemplateMatcherBase(
@@ -307,6 +311,7 @@ def _cv_image_similarity(portrait_img: PILImage, template_path: Optional[str]) -
     if _portrait_matcher is None or not template_path:
         return None
     try:
+        # Cache prepared template per path
         tmpl = _tmpl_cache.get(template_path)
         if tmpl is None:
             entry = TemplateEntry(name=str(template_path), path=str(template_path))
@@ -334,6 +339,21 @@ def _cv_image_similarity(portrait_img: PILImage, template_path: Optional[str]) -
         return None
 
 
+def _cv_image_similarity_variant(
+    portrait_img: PILImage, template_paths: Sequence[str]
+) -> Optional[float]:
+    if not template_paths:
+        return None
+    scores: List[float] = []
+    for path in template_paths:
+        score = _cv_image_similarity(portrait_img, path)
+        if score is not None:
+            scores.append(float(score))
+    if scores:
+        return max(scores)
+    return None
+
+
 def _public_path_from_image_path(image_path: Optional[str]) -> Optional[str]:
     if not image_path:
         return None
@@ -349,16 +369,23 @@ def _public_path_from_image_path(image_path: Optional[str]) -> Optional[str]:
     return rel or None
 
 
-def _template_spec_for_remote(rec: EventRecord) -> Optional[Dict[str, Any]]:
+def _template_spec_for_remote(
+    rec: EventRecord,
+    variant_paths: Optional[Sequence[str]] = None,
+) -> Optional[Dict[str, Any]]:
     """Build template descriptor for remote matching. Returns None if no valid image data."""
-    image_path = rec.image_path
-    if not image_path:
-        return None
-    
-    public_path = _public_path_from_image_path(image_path)
+    variant_paths = list(variant_paths or [])
+    if not variant_paths:
+        image_path = rec.image_path
+        if image_path:
+            variant_paths = [image_path]
+        else:
+            return None
+
+    public_path = _public_path_from_image_path(variant_paths[0])
     if not public_path:
         return None
-    
+
     payload: Dict[str, Any] = {
         "id": rec.key,
         "public_path": f"/{public_path}",
@@ -368,27 +395,74 @@ def _template_spec_for_remote(rec: EventRecord) -> Optional[Dict[str, Any]]:
         },
     }
 
-    # Include precomputed hash if available
     if rec.phash64 is not None:
         payload["hash_hex"] = f"{int(rec.phash64) & ((1 << 64) - 1):016x}"
 
-    # Inline image as fallback if server doesn't have the asset
-    cached = _template_b64_cache.get(image_path)
-    if cached is None:
-        try:
-            with Image.open(image_path) as img:
-                buf = io.BytesIO()
-                img.save(buf, format="PNG")
-                cached = base64.b64encode(buf.getvalue()).decode("ascii")
-                _template_b64_cache[image_path] = cached
-        except Exception:
-            # If we can't load the image locally, don't include this template
-            return None
-    
-    if cached:
-        payload["img"] = cached
-    
+    encoded_images: List[str] = []
+    for image_path in variant_paths[:10]:
+        cached = _template_b64_cache.get(image_path)
+        if cached is None:
+            try:
+                with Image.open(image_path) as img:
+                    buf = io.BytesIO()
+                    img.save(buf, format="PNG")
+                    cached = base64.b64encode(buf.getvalue()).decode("ascii")
+                    _template_b64_cache[image_path] = cached
+            except Exception:
+                cached = None
+        if cached:
+            encoded_images.append(cached)
+
+    if not encoded_images:
+        return None
+
+    payload["metadata"]["variant_count"] = len(encoded_images)
+    payload["metadata"]["variant_paths"] = [
+        _public_path_from_image_path(path) for path in variant_paths
+    ]
+    if len(encoded_images) == 1:
+        payload["img"] = encoded_images[0]
+    else:
+        payload["variant_imgs"] = encoded_images
+
     return payload
+
+
+def _title_similarity(q_title_norm: str, rec: EventRecord) -> float:
+    if not q_title_norm:
+        return 0.0
+    ts_token = fuzz.token_set_ratio(q_title_norm, rec.title_norm) / 100.0
+    ts_ratio = fuzz.ratio(q_title_norm, rec.title_norm) / 100.0
+    ts_partial = fuzz.partial_ratio(q_title_norm, rec.title_norm) / 100.0
+    text_sim = 0.5 * ts_token + 0.3 * ts_ratio + 0.2 * ts_partial
+    if q_title_norm == rec.title_norm:
+        text_sim = 1.0
+    return float(text_sim)
+
+
+def _select_cv_candidates(q: "Query", pool: List[EventRecord]) -> List[EventRecord]:
+    q_title_norm = normalize_text(q.ocr_title)
+    if not q_title_norm:
+        return pool
+
+    scored: List[Tuple[EventRecord, float]] = []
+    for rec in pool:
+        sim = _title_similarity(q_title_norm, rec)
+        if sim > 0.0:
+            scored.append((rec, sim))
+
+    if not scored:
+        return pool
+
+    scored.sort(key=lambda item: item[1], reverse=True)
+    filtered = [rec for rec, sim in scored if sim >= _CV_TEMPLATE_TEXT_THRESHOLD]
+
+    if len(filtered) < _CV_TEMPLATE_MIN:
+        filtered = [rec for rec, _ in scored[:_CV_TEMPLATE_MAX]]
+    else:
+        filtered = filtered[:_CV_TEMPLATE_MAX]
+
+    return filtered or pool
 
 
 def find_event_image_path(
@@ -454,12 +528,13 @@ class EventRecord:
     title_norm: str  # normalized event_name for fast match
     image_path: Optional[str]  # representative icon path (per name+rarity)
     phash64: Optional[int]  # 64-bit pHash int
+    image_variants: Tuple[str, ...] = ()
 
     @staticmethod
     def from_json_item(
         parent: Dict,
         ev_item: Dict,
-        phash_map: Dict[Tuple[str, str, str, str], Tuple[Optional[str], Optional[int]]],
+        phash_map: Dict[Tuple[str, ...], Tuple[Optional[str], Optional[int]]],
     ) -> "EventRecord":
         ev_type = parent.get("type", "")
         name = parent.get("name", "")
@@ -493,6 +568,7 @@ class EventRecord:
             title_norm=title_norm,
             image_path=(str(img_path) if img_path else None),
             phash64=phash,
+            image_variants=tuple(phash_map.get((ev_type, name, rarity, attribute, "variants"), ()) or (str(img_path),) if img_path else ()),
         )
 
 
@@ -1036,7 +1112,11 @@ class MatchResult:
 
 
 def score_candidate(
-    q: Query, rec: EventRecord, portrait_phash: Optional[int], cv_sim_override: Optional[float] = None
+    q: Query,
+    rec: EventRecord,
+    portrait_phash: Optional[int],
+    cv_sim_override: Optional[float] = None,
+    cv_allowed_keys: Optional[Set[str]] = None,
 ) -> MatchResult:
     # 1) text similarity on titles (normalized)
     qt = normalize_text(q.ocr_title)
@@ -1056,11 +1136,13 @@ def score_candidate(
     ph_sim = (
         hamming_similarity64(portrait_phash, rec.phash64) if portrait_phash else 0.0
     )
-    cv_sim = (
-        float(cv_sim_override)
-        if cv_sim_override is not None
-        else (_cv_image_similarity(q.portrait_image, rec.image_path) if q.portrait_image is not None else None)
-    )
+    cv_sim: Optional[float]
+    if cv_sim_override is not None:
+        cv_sim = float(cv_sim_override)
+    elif q.portrait_image is not None and (cv_allowed_keys is None or rec.key in cv_allowed_keys):
+        cv_sim = _cv_image_similarity(q.portrait_image, rec.image_path)
+    else:
+        cv_sim = None
     if cv_sim is not None:
         img_sim = 0.85 * float(cv_sim) + 0.15 * float(ph_sim)
     else:
@@ -1149,22 +1231,29 @@ def retrieve_best(
 
     # Prepare optional remote CV similarities once per query to avoid local OpenCV on thin clients
     remote_cv: Dict[str, float] = {}
+    cv_allowed_keys: Optional[Set[str]] = None
+    if q.portrait_image is not None:
+        cv_candidate_records = _select_cv_candidates(q, pool)
+        cv_allowed_keys = {rec.key for rec in cv_candidate_records}
+    else:
+        cv_candidate_records = pool
+
     if (
         Settings.USE_EXTERNAL_PROCESSOR
         and q.portrait_image is not None
     ):
         try:
             templates: List[Dict[str, Any]] = []
-            for rec in pool:
+            for rec in cv_candidate_records:
                 spec = _template_spec_for_remote(rec)
                 if spec:  # Only include templates with valid image data
                     templates.append(spec)
-            
+
             # Only call remote if we have valid templates with images
             if templates:
                 logger_uma.debug(
-                    "[event_processor] Remote template match: %d valid templates from pool of %d",
-                    len(templates), len(pool)
+                    "[event_processor] Remote template match: %d valid templates (filtered %d of %d)",
+                    len(templates), len(cv_candidate_records), len(pool)
                 )
                 remote = _RemoteTMB(templates, min_confidence=0.0, options=_TM_OPTIONS)
                 remote.mode = "generic"
@@ -1176,15 +1265,22 @@ def retrieve_best(
                 )
             else:
                 logger_uma.debug(
-                    "[event_processor] No valid templates with images in pool of %d, skipping remote match",
-                    len(pool)
+                    "[event_processor] No valid templates with images after filtering (%d of pool %d), skipping remote match",
+                    len(cv_candidate_records), len(pool)
                 )
         except Exception as exc:
             logger_uma.debug("[event_processor] Remote template match failed: %s", exc)
             remote_cv = {}
 
     results: List[MatchResult] = [
-        score_candidate(q, rec, portrait_phash, remote_cv.get(rec.key)) for rec in pool
+        score_candidate(
+            q,
+            rec,
+            portrait_phash,
+            remote_cv.get(rec.key),
+            cv_allowed_keys,
+        )
+        for rec in pool
     ]
     # Sort by total score, then text similarity, then image similarity for deterministic tie-breaks
     results.sort(key=lambda r: (r.score, r.text_sim, r.img_sim), reverse=True)
