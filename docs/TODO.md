@@ -10,15 +10,10 @@ This organizes the mixed notes into a clear, actionable backlog. Items are group
 ### 0.3.3
 
 MOVED some req from 0.3.2 because it was already too big
-Events:
-- @EO1: Include Summer Characters and new characters and cards. Make it scalable and more easy to replicate. Auto web scraper with python?
+
 
 Bugs:
 - Yolo endpoint oguri doesn't recognize New year resolution events (is getting 2 and we get the above error)
-
-Extra:
-- Add note in support card selection to select always the deck, if using hint
-
 
 General:
 - Put distributables / binaries in S3 service (not the model though)
@@ -217,6 +212,10 @@ Oguri cap test:
 
 in skill to buy Unique are not getting painted
 also show custom hint if required skill section changed
+
+- @EO1: Include Summer Characters and new characters and cards. Make it scalable and more easy to replicate. Auto web scraper with python?
+
+- Probably solved by AI XD: If you choose option 2 (winning chakra) for acupuncturist, it will click the second option (reconsider) each time after selecting it
 
 # Not prioritized yet
 
