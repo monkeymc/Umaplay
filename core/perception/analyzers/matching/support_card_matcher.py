@@ -23,6 +23,7 @@ class SupportCardMatcher(TemplateMatcherBase):
         ms_min_scale: float = 0.60,
         ms_max_scale: float = 1.40,
         ms_steps: int = 9,
+        use_portrait_masking: bool = False,
         min_confidence: float = 0.0,
     ) -> None:
         super().__init__(
@@ -33,6 +34,7 @@ class SupportCardMatcher(TemplateMatcherBase):
             ms_min_scale=ms_min_scale,
             ms_max_scale=ms_max_scale,
             ms_steps=ms_steps,
+            use_portrait_masking=use_portrait_masking,
         )
         self.min_confidence = float(min_confidence)
         self._templates: List[PreparedTemplate] = []

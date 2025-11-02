@@ -292,11 +292,11 @@ class EventFlow:
         q_used = q
 
         # 4) Retrieve & rank
-        cands = retrieve_best(self.catalog, q, top_k=3, min_score=0.65)
+        cands = retrieve_best(self.catalog, q, top_k=3, min_score=0.5)
 
         if not cands and q.chain_step_hint and q.chain_step_hint != 1:
             q_fallback = replace(q, chain_step_hint=1)
-            cands = retrieve_best(self.catalog, q_fallback, top_k=3, min_score=0.8)
+            cands = retrieve_best(self.catalog, q_fallback, top_k=3, min_score=0.6)
             debug["chain_step_hint_fallback"] = {
                 "from": q.chain_step_hint,
                 "to": 1,

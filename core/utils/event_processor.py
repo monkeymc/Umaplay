@@ -19,6 +19,13 @@ from core.settings import Settings
 
 from core.utils.logger import logger_uma
 
+try:
+    import cv2
+    import numpy as np
+    _CV2_AVAILABLE = True
+except ImportError:
+    _CV2_AVAILABLE = False
+
 # -----------------------------
 # Paths (adjust if needed)
 # -----------------------------
@@ -273,18 +280,24 @@ def hamming_similarity64(a_int: Optional[int], b_int: Optional[int]) -> float:
 
 # Shared template-matching options to keep local and remote behavior aligned
 _TM_OPTIONS: Dict[str, float] = {
-    "tm_weight": 0.85,
-    "hash_weight": 0.0,
-    "hist_weight": 0.15,
-    "tm_edge_weight": 0.30,
-    "ms_min_scale": 0.60,
-    "ms_max_scale": 1.40,
-    "ms_steps": 7,
+    "tm_weight": 0.48,      # Reduced: edge-based TM no longer dominates
+    "hash_weight": 0.17,     # Mild pHash contribution
+    "hist_weight": 0.35,     # Boosted: HSV color now critical for discrimination
+    "tm_edge_weight": 0.25,  # Edge contribution within TM
+    "ms_min_scale": 0.90,    # Tighter scale range to prevent spurious matches
+    "ms_max_scale": 1.10,
+    "ms_steps": 12,
 }
 
 _CV_TEMPLATE_TEXT_THRESHOLD = 0.8
 _CV_TEMPLATE_MIN = 1
-_CV_TEMPLATE_MAX = 5
+_CV_TEMPLATE_MAX = 100
+
+# HSV hair-focused histogram configuration
+_HSV_H_BINS = 32
+_HSV_S_BINS = 32
+_HSV_RANGES = [0, 180, 0, 256]  # OpenCV HSV: H in [0,180], S in [0,255]
+_hsv_hist_cache: Dict[str, Any] = {}
 
 try:
     _portrait_matcher: Optional[TemplateMatcherBase] = TemplateMatcherBase(
@@ -302,9 +315,116 @@ except Exception:  # OpenCV may be unavailable in some environments
 _tmpl_cache: Dict[str, Any] = {}
 _template_b64_cache: Dict[str, str] = {}
 
+ImageEntry = Tuple[Optional[str], Optional[int], Tuple[str, ...]]
+
+
+def _to_bgr(img_pil: PILImage) -> Any:
+    """Convert PIL Image to OpenCV BGR array."""
+    if not _CV2_AVAILABLE:
+        return None
+    arr = np.array(img_pil.convert("RGB"))
+    return cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
+
+
+def _gray_world_white_balance(bgr: Any) -> Any:
+    """Simple white balance: scale channels so their means are equal."""
+    if bgr is None or not _CV2_AVAILABLE:
+        return bgr
+    eps = 1e-6
+    means = bgr.reshape(-1, 3).mean(axis=0) + eps
+    scale = means.mean() / means
+    balanced = np.clip(bgr * scale, 0, 255).astype(np.uint8)
+    return balanced
+
+
+def _hair_mask_from_hsv(hsv: Any) -> Any:
+    """Create mask focused on hair region (upper 60%, chroma >= 40, V in [35,235])."""
+    if hsv is None or not _CV2_AVAILABLE:
+        return None
+    H, W = hsv.shape[:2]
+    s = hsv[:, :, 1]
+    v = hsv[:, :, 2]
+
+    sat_mask = (s >= 40).astype(np.uint8)  # Keep chromatic pixels
+    v_mask = ((v >= 35) & (v <= 235)).astype(np.uint8)  # Exclude pure black/white
+
+    # Coarse hair ROI: top 60%, 5% horizontal margins
+    y0, y1 = int(0.05 * H), int(0.60 * H)
+    x0, x1 = int(0.05 * W), int(0.95 * W)
+    roi = np.zeros((H, W), np.uint8)
+    roi[y0:y1, x0:x1] = 1
+
+    mask = (sat_mask & v_mask & roi).astype(np.uint8) * 255
+    # Clean speckles with morphology
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    return mask
+
+
+def _hsv_hs_hist(bgr: Any, mask: Any) -> Any:
+    """Compute normalized 2D HSV histogram over H×S channels."""
+    if bgr is None or mask is None or not _CV2_AVAILABLE:
+        return None
+    hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
+    hist = cv2.calcHist([hsv], [0, 1], mask, [_HSV_H_BINS, _HSV_S_BINS], _HSV_RANGES)
+    cv2.normalize(hist, hist, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
+    return hist.astype(np.float32)
+
+
+def _hsv_similarity(portrait_img: PILImage, template_path: Optional[str]) -> Optional[float]:
+    """Compute HSV hair-focused histogram similarity using Bhattacharyya distance.
+    
+    Returns similarity in [0,1], or None if unavailable/error.
+    Focus on hair region with color discrimination (H×S) to distinguish look-alike portraits.
+    """
+    if not _CV2_AVAILABLE or template_path is None:
+        return None
+    try:
+        # Process portrait (query)
+        p_bgr = _to_bgr(portrait_img)
+        if p_bgr is None:
+            return None
+        p_bgr = _gray_world_white_balance(p_bgr)
+        p_hsv = cv2.cvtColor(p_bgr, cv2.COLOR_BGR2HSV)
+        p_mask = _hair_mask_from_hsv(p_hsv)
+        if p_mask is None:
+            return None
+        p_hist = _hsv_hs_hist(p_bgr, p_mask)
+        if p_hist is None:
+            return None
+
+        # Process template (cached)
+        tpl_hist = _hsv_hist_cache.get(template_path)
+        if tpl_hist is None:
+            with Image.open(template_path) as im:
+                t_bgr = _to_bgr(im)
+            if t_bgr is None:
+                return None
+            t_bgr = _gray_world_white_balance(t_bgr)
+            t_hsv = cv2.cvtColor(t_bgr, cv2.COLOR_BGR2HSV)
+            t_mask = _hair_mask_from_hsv(t_hsv)
+            if t_mask is None:
+                return None
+            tpl_hist = _hsv_hs_hist(t_bgr, t_mask)
+            if tpl_hist is not None:
+                _hsv_hist_cache[template_path] = tpl_hist
+
+        if tpl_hist is None:
+            return None
+
+        # Bhattacharyya distance → similarity
+        dist = cv2.compareHist(p_hist, tpl_hist, cv2.HISTCMP_BHATTACHARYYA)
+        sim = 1.0 - float(np.clip(dist, 0.0, 1.0))
+        return sim
+    except Exception:
+        return None
+
 
 def _cv_image_similarity(portrait_img: PILImage, template_path: Optional[str]) -> Optional[float]:
-    """Return fused similarity in [0,1] using TemplateMatcherBase, or None if unavailable."""
+    """Return fused similarity in [0,1] using TemplateMatcherBase + HSV hair-focused histogram.
+    
+    Uses HSV histogram (hair-focused) instead of plain RGB histogram for better color discrimination.
+    """
     # When remote processing is enabled, skip local CV entirely.
     if Settings.USE_EXTERNAL_PROCESSOR:
         return None
@@ -327,13 +447,23 @@ def _cv_image_similarity(portrait_img: PILImage, template_path: Optional[str]) -
             region.gray, region.edges, tmpl.gray, tmpl.edges, region.shape, tmpl.mask
         )
         hash_sc = _portrait_matcher._hash_score(region.hash, tmpl.hash)
-        hist_sc = _portrait_matcher._hist_compare(region.hist, tmpl.hist)
+
+        # Use HSV hair-focused histogram for color discrimination
+        hsv_sc = _hsv_similarity(portrait_img, template_path)
+        if hsv_sc is None:
+            # Fallback to original histogram if HSV fails
+            hist_sc = _portrait_matcher._hist_compare(region.hist, tmpl.hist)
+        else:
+            hist_sc = hsv_sc
+
         final = (
             _portrait_matcher.tm_weight * tm_sc
             + _portrait_matcher.hash_weight * hash_sc
             + _portrait_matcher.hist_weight * hist_sc
         )
         # Clamp to [0,1] conservatively
+        # if tmpl.name.lower().__contains__("silence") or tmpl.name.lower().__contains__("grass"):
+        #     pass
         return float(max(0.0, min(1.0, final)))
     except Exception:
         return None
@@ -367,6 +497,38 @@ def _public_path_from_image_path(image_path: Optional[str]) -> Optional[str]:
         # Already relative?
         rel = p.lstrip("/")
     return rel or None
+
+
+def _list_trainee_variant_paths(name: str) -> List[Path]:
+    base_dir = ASSETS_EVENTS_DIR / "trainee_icon_event"
+    exts = (".png", ".jpg", ".jpeg", ".webp")
+    candidates: List[Path] = []
+
+    variant_dir = base_dir / name
+    if variant_dir.is_dir():
+        for ext in exts:
+            for path in sorted(variant_dir.glob(f"*{ext}")):
+                if path.is_file():
+                    candidates.append(path)
+
+    # Include flat files (legacy layouts)
+    for ext in exts:
+        direct = base_dir / f"{name}{ext}"
+        if direct.exists():
+            candidates.append(direct)
+    for ext in exts:
+        for path in sorted(base_dir.glob(f"{name}_*{ext}")):
+            if path.is_file():
+                candidates.append(path)
+
+    seen: Set[str] = set()
+    unique: List[Path] = []
+    for path in candidates:
+        key = str(path.resolve())
+        if key not in seen:
+            seen.add(key)
+            unique.append(path)
+    return unique
 
 
 def _template_spec_for_remote(
@@ -475,6 +637,11 @@ def find_event_image_path(
     folder = ASSETS_EVENTS_DIR / ev_type
     exts = (".png", ".jpg", ".jpeg", ".webp")
 
+    if ev_type == "trainee_icon_event":
+        variants = _list_trainee_variant_paths(name)
+        if variants:
+            return variants[0]
+
     attr = (attribute or "None").strip()
     rar = (rarity or "None").strip()
     attr_up = attr.upper()
@@ -534,7 +701,7 @@ class EventRecord:
     def from_json_item(
         parent: Dict,
         ev_item: Dict,
-        phash_map: Dict[Tuple[str, ...], Tuple[Optional[str], Optional[int]]],
+        phash_map: Dict[Tuple[str, ...], "ImageEntry"],
     ) -> "EventRecord":
         ev_type = parent.get("type", "")
         name = parent.get("name", "")
@@ -551,9 +718,16 @@ class EventRecord:
         title_norm = normalize_text(ev_name)
         key = f"{ev_type}/{name}/{attribute}/{rarity}/{ev_name}"
 
-        img_path, phash = phash_map.get(
-            (ev_type, name, rarity, attribute), (None, None)
+        img_path, phash, variants = phash_map.get(
+            (ev_type, name, rarity, attribute), (None, None, ())
         )
+        variants_tuple: Tuple[str, ...]
+        if variants:
+            variants_tuple = tuple(str(v) for v in variants)
+        elif img_path:
+            variants_tuple = (str(img_path),)
+        else:
+            variants_tuple = ()
         return EventRecord(
             key=key,
             key_step=f"{key}#s{chain_step if chain_step is not None else 1}",
@@ -568,7 +742,7 @@ class EventRecord:
             title_norm=title_norm,
             image_path=(str(img_path) if img_path else None),
             phash64=phash,
-            image_variants=tuple(phash_map.get((ev_type, name, rarity, attribute, "variants"), ()) or (str(img_path),) if img_path else ()),
+            image_variants=variants_tuple,
         )
 
 
@@ -590,9 +764,7 @@ def build_catalog() -> None:
         root = json.load(f)
 
     # Precompute phash for each (type,name,rarity)
-    set_data_to_file_and_phash: Dict[
-        Tuple[str, str, str, str], Tuple[Optional[str], Optional[int]]
-    ] = {}
+    set_data_to_file_and_phash: Dict[Tuple[str, str, str, str], ImageEntry] = {}
     seen_set_data = set()
 
     for parent in root:
@@ -605,15 +777,30 @@ def build_catalog() -> None:
             continue
         seen_set_data.add(set_data)
 
+        variants: Tuple[str, ...] = ()
         if ev_type == "trainee" and normalize_text(name) != "general":
-            img_path = find_event_image_path("trainee_icon_event", name, rarity, attribute)
+            variant_paths = _list_trainee_variant_paths(name)
+            variant_hashes: List[int] = []
+            variant_paths_str: List[str] = []
+            for path in variant_paths:
+                ph = safe_phash(path)
+                if ph is not None:
+                    variant_hashes.append(ph)
+                variant_paths_str.append(str(path))
+            img_path = variant_paths[0] if variant_paths else find_event_image_path("trainee_icon_event", name, rarity, attribute)
+            combined_hash = None
+            if variant_hashes:
+                combined_hash = sum(variant_hashes) // len(variant_hashes)
+            phash = combined_hash if combined_hash is not None else (safe_phash(img_path) if img_path else None)
+            variants = tuple(variant_paths_str)
         else:
             img_path = find_event_image_path(ev_type, name, rarity, attribute)
-        
-        phash = safe_phash(img_path) if img_path else None
+            phash = safe_phash(img_path) if img_path else None
+
         set_data_to_file_and_phash[set_data] = (
             str(img_path) if img_path else None,
             phash,
+            variants,
         )
 
     # Expand to event records
@@ -1140,11 +1327,15 @@ def score_candidate(
     if cv_sim_override is not None:
         cv_sim = float(cv_sim_override)
     elif q.portrait_image is not None and (cv_allowed_keys is None or rec.key in cv_allowed_keys):
-        cv_sim = _cv_image_similarity(q.portrait_image, rec.image_path)
+        # Use all variants for this trainee/support/scenario
+        if rec.image_variants:
+            cv_sim = _cv_image_similarity_variant(q.portrait_image, rec.image_variants)
+        else:
+            cv_sim = _cv_image_similarity(q.portrait_image, rec.image_path)
     else:
         cv_sim = None
     if cv_sim is not None:
-        img_sim = 0.85 * float(cv_sim) + 0.15 * float(ph_sim)
+        img_sim = 0.9 * float(cv_sim) + 0.1 * float(ph_sim)
     else:
         img_sim = float(ph_sim)
 
@@ -1175,7 +1366,7 @@ def retrieve_best(
     catalog: Catalog,
     q: Query,
     top_k: int = 5,
-    min_score: float = 0.75,
+    min_score: float = 0.5,
 ) -> List[MatchResult]:
     """
     Apply hint-driven *pre-filters* first (type → name → rarity). Each filter is
@@ -1232,6 +1423,8 @@ def retrieve_best(
     # Prepare optional remote CV similarities once per query to avoid local OpenCV on thin clients
     remote_cv: Dict[str, float] = {}
     cv_allowed_keys: Optional[Set[str]] = None
+    cv_candidate_records: List[EventRecord] = []
+    
     if q.portrait_image is not None:
         cv_candidate_records = _select_cv_candidates(q, pool)
         cv_allowed_keys = {rec.key for rec in cv_candidate_records}
@@ -1245,7 +1438,9 @@ def retrieve_best(
         try:
             templates: List[Dict[str, Any]] = []
             for rec in cv_candidate_records:
-                spec = _template_spec_for_remote(rec)
+                # Send all variants for this record
+                variant_paths = list(rec.image_variants) if rec.image_variants else None
+                spec = _template_spec_for_remote(rec, variant_paths)
                 if spec:  # Only include templates with valid image data
                     templates.append(spec)
 
@@ -1272,6 +1467,8 @@ def retrieve_best(
             logger_uma.debug("[event_processor] Remote template match failed: %s", exc)
             remote_cv = {}
 
+    # Score only the CV-filtered candidates (or full pool if no portrait)
+    scoring_pool = cv_candidate_records if cv_candidate_records else pool
     results: List[MatchResult] = [
         score_candidate(
             q,
@@ -1280,11 +1477,10 @@ def retrieve_best(
             remote_cv.get(rec.key),
             cv_allowed_keys,
         )
-        for rec in pool
+        for rec in scoring_pool
     ]
     # Sort by total score, then text similarity, then image similarity for deterministic tie-breaks
     results.sort(key=lambda r: (r.score, r.text_sim, r.img_sim), reverse=True)
-    # Filter low-confidence candidates
-    if min_score is not None:
-        results = [r for r in results if r.score >= float(min_score)]
-    return results[:top_k]
+    results = [r for r in results if r.score >= float(min_score)]
+    results_k = results[:top_k]
+    return results_k
