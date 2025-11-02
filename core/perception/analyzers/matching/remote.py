@@ -76,7 +76,8 @@ _DEFAULT_OPTIONS: Dict[str, float] = {
 
 
 class RemoteTemplateMatcherBase:
-    MODE = "template_match"
+    # Server expects one of: 'support_cards' | 'race_banners' | 'generic'
+    MODE = "generic"
 
     def __init__(
         self,

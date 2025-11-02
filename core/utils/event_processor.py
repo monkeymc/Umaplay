@@ -1,3 +1,7 @@
+from __future__ import annotations
+
+import base64
+import io
 import json
 import fnmatch
 import os
@@ -9,11 +13,8 @@ from PIL import Image
 import imagehash
 from rapidfuzz import fuzz, process
 from PIL.Image import Image as PILImage
-from core.perception.analyzers.matching.base import (
-    TemplateMatcherBase,
-    TemplateEntry,
-)
-from core.perception.analyzers.matching.remote import RemoteTemplateMatcherBase as _RemoteTMB
+from core.perception.analyzers.matching.base import TemplateEntry, TemplateMatcherBase
+from core.perception.analyzers.matching.remote import RemoteTemplateMatcherBase as _RemoteTMB, RemoteTemplateMatch
 from core.settings import Settings
 
 from core.utils.logger import logger_uma
@@ -276,6 +277,18 @@ except Exception:  # OpenCV may be unavailable in some environments
     _portrait_matcher = None
 
 _tmpl_cache: Dict[str, Any] = {}
+_template_b64_cache: Dict[str, str] = {}
+
+# Shared template-matching options to keep local and remote behavior aligned
+_TM_OPTIONS: Dict[str, float] = {
+    "tm_weight": 0.7,
+    "hash_weight": 0.2,
+    "hist_weight": 0.1,
+    "tm_edge_weight": 0.30,
+    "ms_min_scale": 0.60,
+    "ms_max_scale": 1.40,
+    "ms_steps": 7,
+}
 
 
 def _cv_image_similarity(portrait_img: PILImage, template_path: Optional[str]) -> Optional[float]:
@@ -326,6 +339,39 @@ def _public_path_from_image_path(image_path: Optional[str]) -> Optional[str]:
         # Already relative?
         rel = p.lstrip("/")
     return rel or None
+
+
+def _template_spec_for_remote(rec: EventRecord) -> Optional[Dict[str, Any]]:
+    image_path = rec.image_path or ""
+    public_path = _public_path_from_image_path(image_path)
+    payload: Dict[str, Any] = {
+        "id": rec.key,
+        "metadata": {"name": rec.name},
+    }
+    if public_path:
+        public = f"/{public_path}"
+        payload["public_path"] = public
+        payload["metadata"]["public_path"] = public
+
+    if rec.phash64 is not None:
+        payload["hash_hex"] = f"{int(rec.phash64) & ((1 << 64) - 1):016x}"
+
+    if image_path:
+        cached = _template_b64_cache.get(image_path)
+        if cached is None:
+            try:
+                with Image.open(image_path) as img:
+                    buf = io.BytesIO()
+                    img.save(buf, format="PNG")
+                    cached = base64.b64encode(buf.getvalue()).decode("ascii")
+            except Exception:
+                cached = None
+            if cached is not None:
+                _template_b64_cache[image_path] = cached
+        if cached:
+            payload["img"] = cached
+
+    return payload
 
 
 def find_event_image_path(
@@ -1092,22 +1138,20 @@ def retrieve_best(
     ):
         try:
             templates: List[Dict[str, Any]] = []
+            key_to_template: Dict[str, Dict[str, Any]] = {}
             for rec in pool:
-                pub = _public_path_from_image_path(rec.image_path)
-                if not pub:
+                spec = _template_spec_for_remote(rec)
+                if not spec:
                     continue
-                templates.append({
-                    "id": rec.key,
-                    "public_path": f"/{pub}",
-                    "name": rec.name,
-                    "metadata": {"name": rec.name, "public_path": f"/{pub}"},
-                })
+                templates.append(spec)
+                key_to_template[spec["id"]] = spec
             if templates:
-                remote = _RemoteTMB(templates, min_confidence=0.0)
+                remote = _RemoteTMB(templates, min_confidence=0.0, options=_TM_OPTIONS)
+                # Server expects mode in {support_cards, race_banners, generic}
+                remote.mode = "generic"
                 matches = remote.match(q.portrait_image)
-                for m in matches:
-                    # m.name echoes descriptor.id
-                    remote_cv[str(m.name)] = float(m.score)
+                for match in matches:
+                    remote_cv[str(match.name)] = float(match.score)
         except Exception:
             remote_cv = {}
 
