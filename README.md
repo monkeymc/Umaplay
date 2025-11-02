@@ -205,6 +205,13 @@ You can change the configuration at http://127.0.0.1:8000/
 
 **Important: Don't forget to press 'Save Config' button**
 
+> ⚠️ **Critical Setup Reminder**: For reliable runs, always set **all of the following** in the Web UI before starting the bot:
+> 1. **Deck preset** (select the support deck you actually loaded in-game)
+> 2. **Scenario preset** (e.g., Grand Masters, Aoharu, Make a New Track)
+> 3. **Trainee preset** (the exact character you are training this run)
+>
+> Mismatched deck/scenario/trainee selections cause portrait matching and event overrides to fail, so double-check these three fields each time you swap accounts, decks, or seasonal alts.
+
 You can set:
 - **General configurations** (window title, modes, fast mode, advanced settings)
 - **Presets** (target stats, priority stats, moods, skills, race scheduler)

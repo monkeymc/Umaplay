@@ -315,10 +315,10 @@ def _prepare_template(
     if descriptor.size and "size" not in metadata:
         metadata["size"] = list(descriptor.size)
 
-    # Resolve path: if public_path is provided, map it to server's local asset structure
+    # Resolve path: if public_path is provided and no inline image, map to server's local asset structure
     resolved_path = descriptor.path
-    if descriptor.public_path and not image:
-        # public_path format: /race/G2/All Comers-Y2-9-2.png
+    if descriptor.public_path and image is None:
+        # public_path format: /events/trainee_icon_event/Vodka.png
         # Map to server's web/public/ structure
         public_rel = descriptor.public_path.lstrip("/")
         resolved_path = str(Settings.ROOT_DIR / "web" / "public" / public_rel)
@@ -332,9 +332,18 @@ def _prepare_template(
 
     prepared = matcher._prepare_entry(entry)
     if prepared is None:
+        detail_parts = [f"Template '{descriptor.id}' could not be loaded."]
+        if resolved_path:
+            detail_parts.append(f"path={resolved_path}")
+        if descriptor.public_path:
+            detail_parts.append(f"public_path={descriptor.public_path}")
+        if image is not None:
+            detail_parts.append("(inline image provided)")
+        else:
+            detail_parts.append("(no inline image)")
         raise HTTPException(
             status_code=404,
-            detail=f"Template '{descriptor.id}' could not be loaded (path={resolved_path}, public_path={descriptor.public_path})",
+            detail=" ".join(detail_parts),
         )
 
     _TEMPLATE_CACHE_STATS["misses"] += 1
@@ -377,8 +386,7 @@ def template_match(req: TemplateMatchRequest) -> Dict[str, Any]:
             "hits": _TEMPLATE_CACHE_STATS["hits"],
             "misses": _TEMPLATE_CACHE_STATS["misses"],
         }
-
-        return {
+        result = {
             "meta": {
                 "mode": req.mode,
                 "agent": req.agent,
@@ -398,7 +406,8 @@ def template_match(req: TemplateMatchRequest) -> Dict[str, Any]:
                 for m in matches
             ],
         }
-    except HTTPException:
-        raise
+        return result
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Template matching failure: {e}")

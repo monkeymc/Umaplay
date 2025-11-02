@@ -15,11 +15,12 @@ from core.settings import Settings
 from core.utils.logger import logger_uma
 from core.utils.geometry import crop_pil
 from core.utils.text import (
-    fuzzy_contains,
-    fuzzy_best_match,
     fix_common_ocr_confusions,
     fuzzy_ratio,
+    tokenize_ocr_text,
 )
+from core.utils.skill_matching import SkillMatcher
+from core.utils.skill_memory import SkillMemoryManager
 from core.perception.is_button_active import ActiveButtonClassifier
 from core.types import DetectionDict
 from core.utils.yolo_objects import inside, yolo_signature
@@ -41,6 +42,7 @@ class SkillsFlow:
         ocr: OCRInterface,
         yolo_engine: IDetector,
         waiter: Waiter,
+        skill_memory: Optional[SkillMemoryManager] = None,
     ) -> None:
         self.ctrl = ctrl
         self.ocr = ocr
@@ -48,6 +50,10 @@ class SkillsFlow:
         self.waiter = waiter
         # Preload once for speed
         self._clf = ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH)
+        self._skill_matcher = SkillMatcher.from_dataset()
+        self._skill_memory = skill_memory or SkillMemoryManager(
+            Settings.RUNTIME_SKILL_MEMORY_PATH
+        )
 
     # --------------------------
     # Public API
@@ -61,6 +67,7 @@ class SkillsFlow:
         ocr_threshold: float = 0.75,  # experimental
         scroll_time_range: Tuple[int, int] = (6, 7),
         early_stop: bool = True,
+        date_key: Optional[str] = None,
     ) -> bool:
         """
         End-to-end skill buying.
@@ -92,6 +99,7 @@ class SkillsFlow:
                 ocr_threshold=ocr_threshold,
                 desired_counts=desired_counts,
                 purchases_made=purchases_made,
+                date_key=date_key,
             )
             any_clicked |= clicked
 
@@ -248,6 +256,41 @@ class SkillsFlow:
         return True
 
     @staticmethod
+    def _canonical_skill_name(name: Optional[str]) -> Optional[str]:
+        if not name:
+            return None
+        cleaned = name
+        for symbol in ("◎", "○", "×"):
+            cleaned = cleaned.replace(symbol, "")
+        cleaned = " ".join(cleaned.split()).strip()
+        return cleaned or None
+
+    @staticmethod
+    def _grade_from_name(name: Optional[str]) -> Optional[str]:
+        if not name:
+            return None
+        for symbol in ("◎", "○", "×"):
+            if symbol in name:
+                return symbol
+        return None
+
+    @staticmethod
+    def _grade_from_text(text: str) -> Optional[str]:
+        for symbol in ("◎", "○", "×"):
+            if symbol in (text or ""):
+                return symbol
+        return None
+
+    def _already_bought(self, canonical_name: str, grade_symbol: Optional[str]) -> bool:
+        if not self._skill_memory:
+            return False
+        # Only check exact grade match; allow upgrading from ○ to ◎
+        return bool(
+            grade_symbol
+            and self._skill_memory.has_bought(canonical_name, grade=grade_symbol)
+        )
+
+    @staticmethod
     def _skill_title_roi(
         square_xyxy: Tuple[int, int, int, int],
     ) -> Tuple[int, int, int, int]:
@@ -289,6 +332,7 @@ class SkillsFlow:
         ocr_threshold: float,
         desired_counts: Dict[str, int],
         purchases_made: Dict[str, int],
+        date_key: Optional[str],
     ) -> Tuple[bool, Image.Image, List[DetectionDict], List[Tuple[str, int, int]]]:
         """
         Single pass: find all skills_square + their BUY button; OCR title-band and
@@ -301,6 +345,7 @@ class SkillsFlow:
 
         clicked_any = False
         ocr_titles_sig: List[Tuple[str, int, int]] = []
+        seen_dirty = False
 
         for sq in squares:
             buy = self._find_buy_inside(sq, buys)
@@ -317,6 +362,7 @@ class SkillsFlow:
             title_crop = crop_pil(game_img, self._skill_title_roi(sq["xyxy"]), pad=2)
             raw_text = self.ocr.text(title_crop) or ""
             norm_text = self._norm_title(raw_text)
+            tokens = tokenize_ocr_text(norm_text)
             # Record OCR title signature with coarse position buckets.
             x1, y1, x2, y2 = sq["xyxy"]
             cx = int((x1 + x2) / 2) // 8
@@ -324,25 +370,74 @@ class SkillsFlow:
             if norm_text:
                 ocr_titles_sig.append((norm_text, cx, cy))
 
-            # quick contains or fallback to best fuzzy match
-            contains_any = any(
-                fuzzy_contains(norm_text, self._norm_title(t), threshold=ocr_threshold)
-                for t in targets
-            )
+            matches: List[Tuple[str, float, str]] = []
+            diagnostics: List[Tuple[str, bool, float, str]] = []
+            for target in targets:
+                normalized_target = self._norm_title(target)
+                ok, reason, score = self._skill_matcher.evaluate(
+                    norm_text,
+                    tokens,
+                    target,
+                    normalized_target,
+                    threshold=ocr_threshold,
+                )
+                diagnostics.append((target, ok, score, reason))
+                if ok:
+                    matches.append((target, score, reason))
+
+            contains_any = bool(matches)
             # Weighted best match: prioritize certain key terms
             KEY_UPWEIGHT = ("groundwork", "left-handed", "corner connoisseur")
             best_name, best_score = None, 0.0
-            for t in targets:
-                base_score = fuzzy_ratio(norm_text, self._norm_title(t))
-                if any(k in self._norm_title(t) for k in KEY_UPWEIGHT):
-                    base_score += 0.05
-                if base_score > best_score:
-                    best_score = base_score
-                    best_name = t
+            if matches:
+                for tgt, score, reason in matches:
+                    normalized_target = self._norm_title(tgt)
+                    boost = 0.05 if any(k in normalized_target for k in KEY_UPWEIGHT) else 0.0
+                    weighted = score + boost
+                    if weighted > best_score:
+                        best_score = weighted
+                        best_name = tgt
+                        match_reason = reason
+            else:
+                match_reason = "no_match"
+
+            if diagnostics:
+                logger_uma.debug(
+                    "[skills] matcher diag title='%s' results=%s",
+                    norm_text,
+                    [
+                        {
+                            "target": t,
+                            "ok": ok,
+                            "score": round(s, 3),
+                            "reason": r,
+                        }
+                        for t, ok, s, r in diagnostics[:4]
+                    ],
+                )
+
+            grade_symbol = self._grade_from_name(best_name) or self._grade_from_text(raw_text)
+            canonical_name = self._canonical_skill_name(best_name)
+
+            if canonical_name and self._skill_memory:
+                self._skill_memory.record_seen(
+                    canonical_name,
+                    grade=grade_symbol,
+                    date_key=date_key,
+                    commit=False,
+                )
+                seen_dirty = True
 
             # Respect purchase quotas before clicking
             if best_name is not None and (contains_any or best_score >= ocr_threshold):
                 if purchases_made.get(best_name, 0) >= desired_counts.get(best_name, 1):
+                    continue
+                if canonical_name and self._already_bought(canonical_name, grade_symbol):
+                    logger_uma.info(
+                        "[skills] skipping '%s' grade='%s' (already purchased)",
+                        best_name,
+                        grade_symbol or SkillMemoryManager.ANY_GRADE,
+                    )
                     continue
                 # Click: center + slight upward offset to counter inertia
                 bx1, by1, bx2, by2 = buy["xyxy"]
@@ -356,14 +451,26 @@ class SkillsFlow:
                 shifted = (bx1, by1 - dy, bx2, by2 - dy)
                 self.ctrl.click_xyxy_center(shifted, clicks=1, jitter=0)
                 purchases_made[best_name] = purchases_made.get(best_name, 0) + 1
+                if canonical_name and self._skill_memory:
+                    self._skill_memory.record_bought(
+                        canonical_name,
+                        grade=grade_symbol,
+                        date_key=date_key,
+                        commit=True,
+                    )
                 logger_uma.info(
-                    "Clicked BUY for '%s' (score=%.2f) [%d/%d]",
+                    "Clicked BUY for '%s' (score=%.2f reason=%s) [%d/%d]",
                     best_name or "?",
                     best_score,
+                    match_reason,
                     purchases_made.get(best_name, 0),
                     desired_counts.get(best_name, 1),
                 )
                 clicked_any = True
+
+        if seen_dirty and self._skill_memory:
+            # Persist sightings even when no purchases occur in this pass.
+            self._skill_memory.save()
 
         return clicked_any, game_img, dets, ocr_titles_sig
 
@@ -388,7 +495,7 @@ class SkillsFlow:
         # also strip skill-rank symbols which OCR may miss (○ ◎ ×)
         TABLE = str.maketrans("", "", "·•|[](){}:;,.!?\"'`’“”○◎×")
         s = s.translate(TABLE)
-        return s
+        return s.replace("-", " ").strip()
 
     def _confirm_learn_close_back_flow(self, waiting_popup: float = 1.0) -> bool:
         """

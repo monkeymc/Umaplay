@@ -87,7 +87,7 @@ def main():
     parser.add_argument(
         "--iou", type=float, default=Settings.YOLO_IOU, help="IOU threshold"
     )
-    # If not provided, weights auto-select by --yolo-config: nav -> Settings.YOLO_WEIGHTS_NAV, training -> Settings.YOLO_WEIGHTS
+    # If not provided, weights auto-select by --yolo-config: nav -> Settings.YOLO_WEIGHTS_NAV, training -> Settings.YOLO_WEIGHTS_URA
     parser.add_argument(
         "--weights",
         type=str,
@@ -120,7 +120,7 @@ def main():
     auto_weights = (
         str(Settings.YOLO_WEIGHTS_NAV)
         if args.yolo_config == "nav"
-        else str(Settings.YOLO_WEIGHTS)
+        else str(Settings.YOLO_WEIGHTS_URA)
     )
     weights_path = args.weights or auto_weights
     conf_thr = (

@@ -1,105 +1,226 @@
 # UMA MUSUME (UmaPlay) – Backlog (organized)
 
-This organizes the mixed notes into a clear, actionable backlog. Items are grouped by workstream and priority. “Later” holds non-urgent ideas. A final section captures non-UMA (“Meta Manager”) items so they don’t pollute the UMA queue.
+This organizes the mixed notes into a clear, actionable backlog. Items are grouped by workstream and priority. “Later” holds non-urgent ideas. 
 
 ================================================================================
-NEXT WORK (towards 0.4.0)
+## 0.3
 
-0.4.0+
+### 0.3.2
+
+### 0.3.3
+
+MOVED some req from 0.3.2 because it was already too big
+
+
+Bugs:
+- Yolo endpoint oguri doesn't recognize New year resolution events (is getting 2 and we get the above error)
+
+General:
+- Put distributables / binaries in S3 service (not the model though)
+
+Claw Machine:
+- @Rosetta: Re-check of the logic so it always Win. If first detected plushie is good enough and it is not at the border take it, if not do a full scan. Check the zips on discord
+
+Bug:
+- race.py 867 when getting the style_btns chosen, error of list index out of range
+
+## 0.4
+
+### 0.4.0
+
+General
+- Add minimal testing and lint check for big refactoring
+- Remove tech debt of publich path and path in template matcher
+- Increase timeout uvicorn so it waits for server to answer up to 1 min
+- Aoharu Hai preparation
+- Color unit testing: detected as yellow the 'green' one "yellow: +0.00"
+- Show in toast if selected scenario is ura or Aoharu, too along to the preset name
+- Add the support stuff
+Create discord stuff
+
+aoharu:
+Aoharu model:
+- not director
+- not etsuko
+- not tazuna, instead:
+for each pal we may have a different class, better if support_type class is pal (make classifier with cv2), then classify which pal, if we already nkow because of support cards, go for it
+
+new classes:
+-+ Retrain Calendar with new images
++ Calendar below aoharu turns
++ hint special training (classifier for the color)
++ flame special training (classifier to check if 'explosion, normal / remaning energy)
++ banner race
++ clock
+
+
+if support card, but not support type and not support bar -> team joined
+
+explosion only once, but jp has purple flame that can also explode
+
+already exploded doesn't have that value. It is already exploded if flame especial training is at the right instead of left, and it is purple
+
+calendar is different, and position of 'date' is different too
+
+flame alone doesn't give combo / bonus, so it is better to go 2 or more
+
+alone flame for already exploded, may be 0
+
+is better to explode in WIT to save energy? maybe explode on priority stats
+
+special hint must be with flame to fill, flame alone doesn't have value
+
+it is better to explode as soon as possible, but if we can level the flame at same time for multple, it is better
+
+
+when flame is purple, that explosion is worthit (when already exploded)
+
+first trials may be better to select second one, the rest the first one
+
+PATCH ENGLISH for jp version
+
+special training only give value if combo
+
+follow this guide to install:
+https://www.youtube.com/watch?v=2n0vHxszaWQ
+
+
+multiple explosions > multiple special normal training
+
+stats after 1200 are halved
+
 Bot Strategy / Policy:
 - Lookup toggle: allow skipping **scheduled race** if training has **2+ rainbows**
   “Check first” at lobby: pre-turn heuristics before going to infirmaty, rest, etc. Pre lookup
   "Check first" allowed for races individually set
+- Parameter to define 'weak turn' / 'low 
+- PAL training:
+  - @Rosetta: Tazuna blue was worth more, you want to get it to green ASAP to unlock her dates (there's a bonus if you do it in the junior year)
+  - Make Tazuna orange/max also configurable (Also Riko Kashimoto). +0.15 (orange, yellow, max) by default
+  - Capture in lobby stats'Recreation Tazuna' for later trainig decisions
+    -> When energy needed, and tazuna available, prefer tazuna (keep the chain counting to not select one with no good energy recovery)
 
+Events:
+- how should i respond still fails (chain). Check and validate
+- When no event detected, generate a special log in debug folder if 'debug' bool is enabled: gent.py:292: [Event] EventDecision(matched_key=None, matched_key_step=None, pick_option=1, clicked_box=(182.39614868164062, 404.23193359375, 563.8184204101562, 458.83447265625), debug={'current_energy': 64, 'max_energy_cap': 100, 'chain_step_hint': None, 'num_choices': 2, 'has_event_card': False, 'ocr_title': '', 'ocr_description': ''}). 
 
+### 0.4.1
 
-- Set Tazuna card training options and special scores / logic. if support_tazuna is there, add +0.15 (orange, yellow, max). 
-- Capture in lobby stats'Recreation Tazuna' for later trainig decisions
-  -> When energy needed, and tazuna available, prefer tazuna (keep the chain counting to not select one with no good energy recovery)
-- parameter to define 'weak turn' / 'low training'
-- configurable scoring system
+One more little idea I've just had - it would be cool if the settings "allow racing over low training" could be expanded into deciding what grades of races this is allowed to trigger with (eg. only G1s)
+MagodyBoy — 17:20
+and the minimum energy to trigger race, I think right now I check if we have >= 70% of energy
 
+## 0.5
 
----------------------
-Priority for 0.4.0:
-not sure its its the yolo detection but it keeps picking keeping the lead when i have taking the lead selected as skills to buy
-For the claw machine, I would suggest that it only select the first plushie on the first row. This way, you can almost guarantee a successful catch and should have a much easier time dealing with it compared to trying with the other rows. If you have yet to try it that is.
+### 0.5.0
 
-annotated, on 0.4.0 I'm working a 'special' exceptions / rules for that kind of similar texts. Rosetta recommended to upgrade the confidence treshold of OCR from 0.8 to 0.9, I will combine that suggestion with custom rules
+Scenario:
+- Aoharu Hai
 
-While we've got activity here:
-I'd suggest increasing the OCR threshold for skills to 0.9 - currently some near matches have confidence in the 0.8s such as standard distance to non-standard distance and Tokyo racecourse to Kyoto racecourse
+Bat and executable:
+- bat is failing
+- Executable in release
 
+Team trial
+- Prioritize the ones with 'With every win' (gift)
 
-Is it possible to to add a CLI flag to specify port, ie --port 8005
-
-regarding the OCR, I would prefer to have a kind of 'exceptions' / 'custom logic' for those particular cases
-
-
-Micro elements recognizer
-- Improve Control for double buying of single circle skills:
-"""
-So, in our screen where we are buying skills, we have a pseudo-control to control how much time we need to buy, and that is working. The problem is that the next time that we visit the skills, that is reset, so we are buying again the same skills. So maybe we need to persist in a higher level, maybe at player level, what skills have we bought, and so the next time... So we have this memory of the skills that we bought, that were enabled, and given this, we can control to not buy more, especially the skills that has one single circle. So we only buy one, and the next time we match with the OCR we just can ignore, so we need this kind of memory to understand which skills we bought.
-"""
-- Prepare multiple icons recognized (Aoharu hai [Unity cup], etc. Fire blue and more)
-- “Hint” robustness: reduce misses (tune ROI, add ensemble check, raise min conf with a small hysteresis).
-- Slight WIT nerf on weak turns (prevent over-weighting).
-- put parameter in web ui, to decide when is 'weak' turn based on SV. Weak turn classifications is used to decide if go to race, rest or recreation instead of training
-
-- Daily race:
-  - when race again is disabled automatically finalize, same for money row
+Skill Buying:
+- @EO1: List what skills the bot should prioritize and any that isn't in the selection it will randomally get in the list of skills to automatically pick: like if for the 1st part I know I need a certain uma stamina skill to win, then i would 9/10 times get it first. Add auto buy best option based on running style (with a premade priority list)
 
 Bot Strategy / Policy:
-- avoid **3 races in a row
-- Final Season: consider turn number; avoid Rest on last turn but allow earlier; better plan to exploit Summer training (Rest may be worse than training).
-- Training 'S' uma with wit and speed for 'Team trials'. Particular setup
-- Suggestion: "Each card also has a different "rainbow bonus". For instance, the Manhattan Cafe STAM card has 1.2 Friendship multiplier, while Super Creek STAM has 1.375, so Super Creek should nudge the bot to click it more than Manhattan Cafe."
-- Adapt Triple Tiara, Crown, and Senior preconfigs
+- configurable scoring system for rainbows, explosion, combos
+"""@EO1:
+I also like to add one other idea, maybe like a prioritize support card you want so like kitasan or maybe Tazuna since I am not sure how pals are intergrated in the script
 
-Turns
-- Better turn number prediction (11 or 1 for example, fails)
-
-UI / UX
-- End-of-career: if nothing was bought, ensure it goes **Back** correctly.
+@Undertaker-86 Issue at Github:
+Each card also has a different "rainbow bonus". For instance, the Manhattan Cafe STAM card has 1.2 Friendship multiplier, while Super Creek STAM has 1.375, so Super Creek should nudge the bot to click it more than Manhattan Cafe.
+"""
+- Put parameter in web ui, to decide when is 'weak' turn based on SV or others configs. """Weak turn classifications is used to decide if go to race, rest or recreation instead of training"""
+- Change text to: Allow Racing when 'weak turn'
+- @EpharGy: Director / Riko Kashimoto custom configs: option to add more and more weight to the Director with the aim to be green by 2nd Skill  increase check.
+- Slight WIT nerf on weak turns (prevent over-weighting).
+- put rainbow in hint icon or something like that it is not clear what it is right now
+- after two failed retried, change style position to front
 
 Team trials:
-- handle 'story unlocked' (press close button), before shop
+- handle 'story unlocked'  (press close button), before shop. And "New High score" message (test on monday)
+- infinite loop when nothing to do in team trials but in go button check log 'log_team_trials_0.5.0.txt'
+- improve team trials the 6 clicks, check if we are in that screen and do as much or as less clicks as needed instead of precomputing
+
+Shop:
+- Error loop in shop when nothing to buy, partial state, check on debug 'log_shop_0.5.0.txt'
+
+
+## 0.6
+
+### 0.6.0
+
+General:
+- Connection error handler (“A connection error occurred”): detect dialog with **white** and **green** buttons; handle “Title Screen” and “Retry”.
+- classifier transparent or not? handle transparents, only on main parts like screen detector (lobby)? or simple do multiple clicks when selecting  option in lobby to avoid pressing transparent. WAIT in back and after training
+
+Bot Strategy / Policy:
+- Better turn number prediction (11 or 1 for example, fails)
+- Final Season: consider turn number on strategy and configuration; avoid Rest on last turn but allow earlier.
+- optimization formula as recommended in a paper shared on discord
+- For fans goals, we can wait a little more,  like winning maiden, we don't need to take it immediattly we can wait for weak turn add  configuration for this
+
+QoL:
+- Adapt Triple Tiara, Crown, and Senior preconfigs for race scheduler
+- improvement: show data about support cards: which skills they have, and more, also for trainees. Like gametora
+
+Coach (assistant / helper instead of Auto):
+- @Rocostre
+"""
+As I was experimenting with it, I thought it would be great if, in a future update, you could experiment with an AI coach or something similar. This could involve adding an overlay to the game that provides guidance based on the current preset and its own calculations. Instead of relying solely on an automated bot, it could also offer an option for an overlay assistant to suggest actions.
+LLM?
+"""
+
+
+## 0.7
+
+### 0.7.0
+
+General:
+- More human like behavior
+
+Bot Strategy:
+- Fast mode: like human pre check rainbow buttons / hints, to decide if keep watching options or not. For example if rainbows in 2  tiles then we need to investigate, otherwise we can do a shortcut
+- Fans handling for “director training” decisions or similar events.
+
+End2End navigator play:
+- Github Issue
+
+
+
+# TO VALIDATE:
+
+## 0.3.2
 
 Skills:
-  - Add auto buy best option based on running style (with a premade priority list)
-  - Bug recognizing titles (75% of accuracy)
+- @Rosetta / @Hibiki: Improve OCR ambiguos recognition (reports). non-standard vs standard for example and others of taking the lead / keeping the lead, and more, I added possitive / negative tokens to improve the recognition
 
-================================================================================
-LATER (nice-to-have / backlog)
-------------------------------
-Mobile / UI
-- On mobile, avoid tapping “View result” too quickly (misclassifies as inactive).
-- Web UI perf: investigate skills.json / races.json bottlenecks.
-- Reduce BlueStacks crop.
-- Decrease usage of ram in backend too
-- adb version, emulator support
+Bot Strategy:
+- @Rosetta: Energy rotation customizable, "while it is ok to..."
 
-- Gold Ship training restriction coverage.
+Hints
+- Improve Control for double buying of single circle skills. if hint / skill already got / bought, not take that hint anymore
+- @sando: Conditional hint scoring
 
-Skill lis:
-- Early stop at scrolling skill list at endgame when all desired 3 hints bought (fix case where first isn’t bought).
+Oguri cap test:
+- Chain event recognition, do a fallback to chain 1 if no match found, also quickly check for a minimal blue color (important)
 
-Racing
-- Prioritize **G1** and **fans**: smart search to train for fans when needed.
-- Reactivity: race handling is slow — reduce latencies.
+in skill to buy Unique are not getting painted
+also show custom hint if required skill section changed
 
-Control & Safety
-- Implement **immediate stop** (do not wait for routine end).
+- @EO1: Include Summer Characters and new characters and cards. Make it scalable and more easy to replicate. Auto web scraper with python?
 
-Edge cases
-- SIM phone notification: click a plausible button if shown.
-- Fans handling for “director training” decisions.
+- Probably solved by AI XD: If you choose option 2 (winning chakra) for acupuncturist, it will click the second option (reconsider) each time after selecting it
 
-Racing & Schedule
-- Connection error handler (“A connection error occurred”): detect dialog with **white** and **green** buttons; handle “Title Screen” and “Retry”.
-row** and racing at **0 energy**.
+# Not prioritized yet
+
+Team Trials
+- Check if banner is active/inactive, before clicking
+heck if banner is active/inactive, before clicking, if inactive, wait 2 sec. Here is the classifier for that: clf = ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH) - is_active = clf.predict(crop)
 
 
-================================================================================
-IMPLEMENTED — PENDING VALIDATION
--------

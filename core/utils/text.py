@@ -1,5 +1,5 @@
 import re
-from typing import Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple
 import unicodedata
 from difflib import SequenceMatcher
 
@@ -52,6 +52,21 @@ def _normalize_ocr(s: str) -> str:
     s = re.sub(r"[^a-z0-9]+", " ", s)
     s = re.sub(r"\s+", " ", s).strip()
     return s
+
+
+def normalize_ocr_text(s: str) -> str:
+    """Public helper for OCR normalization without domain fixes."""
+
+    return _normalize_ocr(s)
+
+
+def tokenize_ocr_text(s: str) -> List[str]:
+    """Tokenize OCR text after normalization."""
+
+    norm = normalize_ocr_text(s)
+    if not norm:
+        return []
+    return norm.split()
 
 
 def normalize_race_card_text(s: str) -> str:

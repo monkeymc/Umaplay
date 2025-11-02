@@ -48,7 +48,7 @@ _DEFAULT_NAV_PREFS: Dict[str, Dict[str, Any]] = {
         "parfait": False,
     },
     "team_trials": {
-        "preferred_banner": 3,
+        "preferred_banner": 2,
     },
 }
 
@@ -83,9 +83,15 @@ class Settings:
     ASSETS_DIR: Path = Path(_env("ASSETS_DIR") or (ROOT_DIR / "web/public"))
     MODELS_DIR: Path = Path(_env("MODELS_DIR") or (ROOT_DIR / "models"))
     DEBUG_DIR: Path = Path(_env("DEBUG_DIR") or (ROOT_DIR / "debug"))
+    PREFS_DIR: Path = Path(_env("PREFS_DIR") or (ROOT_DIR / "prefs"))
+    RUNTIME_SKILL_MEMORY_PATH: Path = Path(
+        _env("RUNTIME_SKILL_MEMORY_PATH")
+        or (PREFS_DIR / "runtime_skill_memory.json")
+    )
 
     # Models & weights
-    YOLO_WEIGHTS: Path = Path(_env("YOLO_WEIGHTS") or (MODELS_DIR / "uma.pt"))
+    _YOLO_WEIGHTS_URA_ENV = _env("YOLO_WEIGHTS_URA") or _env("YOLO_WEIGHTS")
+    YOLO_WEIGHTS_URA: Path = Path(_YOLO_WEIGHTS_URA_ENV or (MODELS_DIR / "uma_ura.pt"))
     YOLO_WEIGHTS_NAV: Path = Path(
         _env("YOLO_WEIGHTS_NAV") or (MODELS_DIR / "uma_nav.pt")
     )
@@ -97,7 +103,7 @@ class Settings:
 
     # --------- Detection (YOLO) ---------
     YOLO_IMGSZ: int = _env_int("YOLO_IMGSZ", default=832)
-    YOLO_CONF: float = _env_float("YOLO_CONF", default=0.61)  # should be 0.7 in general, but we are a little open...
+    YOLO_CONF: float = _env_float("YOLO_CONF", default=0.60)  # should be 0.7 in general, but we are a little conservative here...
     YOLO_IOU: float = _env_float("YOLO_IOU", default=0.45)
 
     # --------- Logging ---------
@@ -120,7 +126,7 @@ class Settings:
     AGENT_NAME_NAV: str = "agent_nav"
     USE_EXTERNAL_PROCESSOR = False
     EXTERNAL_PROCESSOR_URL = "http://127.0.0.1:8001"
-    TEMPLATE_MATCH_TIMEOUT: float = _env_float("TEMPLATE_MATCH_TIMEOUT", default=8.0)
+    TEMPLATE_MATCH_TIMEOUT: float = _env_float("TEMPLATE_MATCH_TIMEOUT", default=300.0)
 
     REFERENCE_STATS = {
         "SPD": 1150,
@@ -146,6 +152,11 @@ class Settings:
 
     SUPPORT_PRIORITIES_HAVE_CUSTOMIZATION: bool = False
     SUPPORT_CUSTOM_PRIORITY_KEYS: Set[Tuple[str, str, str]] = set()
+    SUPPORT_AVOID_ENERGY: Dict[Tuple[str, str, str], bool] = {}
+    # Union of skills to re-check immediately after taking a configured hint
+    RECHECK_AFTER_HINT_SKILLS: List[str] = []
+    SHOW_PRESET_OVERLAY: bool = _env_bool("SHOW_PRESET_OVERLAY", True)
+    PRESET_OVERLAY_DURATION: float = _env_float("PRESET_OVERLAY_DURATION", 5.0)
     NAV_PREFS: Dict[str, Dict[str, Any]] = {
         "shop": dict(_DEFAULT_NAV_PREFS["shop"]),
         "team_trials": dict(_DEFAULT_NAV_PREFS["team_trials"]),
@@ -191,7 +202,6 @@ class Settings:
         )
         cls.HINT_IS_IMPORTANT = bool(g.get("prioritizeHint", cls.HINT_IS_IMPORTANT))
         cls.MAX_FAILURE = int(g.get("maxFailure", cls.MAX_FAILURE))
-        cls.MINIMUM_SKILL_PTS = int(g.get("skillPtsCheck", cls.MINIMUM_SKILL_PTS))
         cls.ACCEPT_CONSECUTIVE_RACE = bool(
             g.get("acceptConsecutiveRace", cls.ACCEPT_CONSECUTIVE_RACE)
         )
@@ -204,7 +214,23 @@ class Settings:
 
         preset_data = preset or {}
 
-        deck, priorities = cls._extract_support_priorities_from_preset(preset_data)
+        # Minimum skill points is now per-preset. Fall back to legacy general setting if missing.
+        skill_pts_value = preset_data.get("skillPtsCheck")
+        if skill_pts_value is None:
+            skill_pts_value = g.get("skillPtsCheck", cls.MINIMUM_SKILL_PTS)
+        try:
+            cls.MINIMUM_SKILL_PTS = max(0, int(skill_pts_value))
+        except Exception:
+            try:
+                cls.MINIMUM_SKILL_PTS = max(
+                    0, int(g.get("skillPtsCheck", cls.MINIMUM_SKILL_PTS))
+                )
+            except Exception:
+                pass
+
+        deck, priorities, avoid_energy = cls._extract_support_priorities_from_preset(
+            preset_data
+        )
         cls.SUPPORT_DECK = deck
         cls.SUPPORT_CARD_PRIORITIES = priorities
         custom_keys = {
@@ -212,6 +238,24 @@ class Settings:
         }
         cls.SUPPORT_CUSTOM_PRIORITY_KEYS = custom_keys
         cls.SUPPORT_PRIORITIES_HAVE_CUSTOMIZATION = bool(custom_keys)
+        cls.SUPPORT_AVOID_ENERGY = avoid_energy
+        # Pre-compute recheck skills union for agent hook
+        try:
+            recheck_skills: Set[str] = set()
+            for data in priorities.values():
+                if not isinstance(data, dict):
+                    continue
+                if not bool(data.get("recheckAfterHint", False)):
+                    continue
+                skills = data.get("skillsRequiredForPriority")
+                if isinstance(skills, list):
+                    for s in skills:
+                        s2 = str(s).strip()
+                        if s2:
+                            recheck_skills.add(s2)
+            cls.RECHECK_AFTER_HINT_SKILLS = sorted(recheck_skills)
+        except Exception:
+            cls.RECHECK_AFTER_HINT_SKILLS = []
 
         cls.MINIMAL_MOOD = str(preset_data.get("minimalMood", cls.MINIMAL_MOOD))
         cls.REFERENCE_STATS = preset_data.get("targetStats", cls.REFERENCE_STATS)
@@ -238,6 +282,16 @@ class Settings:
             cls.EXTERNAL_PROCESSOR_URL = url
         # Match UI/schema key: 'autoRestMinimum'
         cls.AUTO_REST_MINIMUM = int(adv.get("autoRestMinimum", cls.AUTO_REST_MINIMUM))
+        if "showPresetOverlay" in adv:
+            try:
+                cls.SHOW_PRESET_OVERLAY = bool(adv.get("showPresetOverlay"))
+            except Exception:
+                pass
+        if "presetOverlaySeconds" in adv:
+            try:
+                cls.PRESET_OVERLAY_DURATION = max(1.0, float(adv.get("presetOverlaySeconds")))
+            except Exception:
+                pass
         # Update training configuration
         undertrain_threshold = float(
             adv.get("undertrainThreshold", cls.UNDERTRAIN_THRESHOLD)
@@ -281,15 +335,26 @@ class Settings:
         }
 
         try:
-            preferred_banner = int(team.get("preferred_banner", 3))
+            preferred_banner = int(team.get("preferred_banner", 2))
         except Exception:
-            preferred_banner = 3
+            preferred_banner = 2
         preferred_banner = max(1, min(3, preferred_banner))
 
         cls.NAV_PREFS = {
             "shop": normalized_shop,
             "team_trials": {"preferred_banner": preferred_banner},
         }
+
+    @classmethod
+    def get_active_preset_snapshot(cls) -> tuple[Optional[str], Optional[dict], dict]:
+        cfg = cls._last_config or {}
+        presets = (cfg.get("presets") or [])
+        active_id = cfg.get("activePresetId")
+        preset = next((p for p in presets if p.get("id") == active_id), None)
+        if not preset and presets:
+            preset = presets[0]
+            active_id = preset.get("id")
+        return active_id, preset, cfg
 
     @classmethod
     def get_shop_nav_prefs(cls) -> Dict[str, bool]:
@@ -304,7 +369,12 @@ class Settings:
     def get_team_trials_banner_pref(cls) -> int:
         team = cls.NAV_PREFS.get("team_trials") or {}
         try:
-            preferred = int(team.get("preferred_banner", _DEFAULT_NAV_PREFS["team_trials"]["preferred_banner"]))
+            preferred = int(
+                team.get(
+                    "preferred_banner",
+                    _DEFAULT_NAV_PREFS["team_trials"]["preferred_banner"],
+                )
+            )
         except Exception:
             preferred = _DEFAULT_NAV_PREFS["team_trials"]["preferred_banner"]
         return max(1, min(3, preferred))
@@ -336,18 +406,26 @@ class Settings:
             preset.get("selectStyle") or preset.get("juniorStyle") or None
         )  # 'end'|'late'|'pace'|'front'|null
 
+        try:
+            minimum_skill_pts = max(0, int(preset.get("skillPtsCheck", cls.MINIMUM_SKILL_PTS)))
+        except Exception:
+            minimum_skill_pts = cls.MINIMUM_SKILL_PTS
+
         # Get the race if no good value setting from preset or use the global default
         race_if_no_good_value = preset.get(
             "raceIfNoGoodValue", cls.RACE_IF_NO_GOOD_VALUE
         )
 
-        deck, priorities = cls._extract_support_priorities_from_preset(preset)
+        deck, priorities, avoid_energy = cls._extract_support_priorities_from_preset(
+            preset
+        )
 
         return {
             "plan_races": plan_races,
             "skill_list": skill_list,
             "select_style": select_style,
             "raceIfNoGoodValue": race_if_no_good_value,
+            "minimum_skill_pts": minimum_skill_pts,
             "support_deck": deck,
             "support_card_priorities": [
                 {
@@ -357,8 +435,22 @@ class Settings:
                     "enabled": data["enabled"],
                     "scoreBlueGreen": data["scoreBlueGreen"],
                     "scoreOrangeMax": data["scoreOrangeMax"],
+                    # mirrors optional gating controls when present
+                    "skillsRequiredForPriority": data.get("skillsRequiredForPriority", []),
+                    "recheckAfterHint": data.get("recheckAfterHint", False),
                 }
                 for (name, rarity, attribute), data in priorities.items()
+            ],
+            "support_avoid_energy": [
+                {
+                    "name": name,
+                    "rarity": rarity,
+                    "attribute": attribute,
+                    "avoidEnergyOverflow": avoid_energy.get(
+                        (name, rarity, attribute), True
+                    ),
+                }
+                for (name, rarity, attribute) in avoid_energy.keys()
             ],
         }
 
@@ -387,10 +479,23 @@ class Settings:
         enabled = bool(raw.get("enabled", True))
         score_bg = cls._clamp(raw.get("scoreBlueGreen", 0.75), 0.0, 10.0)
         score_om = cls._clamp(raw.get("scoreOrangeMax", 0.5), 0.0, 10.0)
+        # Optional gating controls coming from UI schema (ignored if absent)
+        skills = raw.get("skillsRequiredForPriority")
+        if isinstance(skills, list):
+            skills_list: List[str] = [str(s).strip() for s in skills if isinstance(s, (str, int, float))]
+            skills_list = [s for s in skills_list if s]
+        elif isinstance(skills, str):
+            skills_list = [s.strip() for s in str(skills).split(",") if s.strip()]
+        else:
+            skills_list = []
+        recheck = bool(raw.get("recheckAfterHint", False))
         return {
             "enabled": enabled,
             "scoreBlueGreen": score_bg,
             "scoreOrangeMax": score_om,
+            # Extra keys are tolerated by downstream consumers
+            "skillsRequiredForPriority": skills_list,  # type: ignore[dict-item]
+            "recheckAfterHint": recheck,  # type: ignore[dict-item]
         }
 
     @classmethod
@@ -411,17 +516,28 @@ class Settings:
             return True
         if not math.isclose(score_om, default_om, rel_tol=1e-6, abs_tol=1e-6):
             return True
+        # Treat gating controls as customization when present
+        skills = priority.get("skillsRequiredForPriority")
+        if isinstance(skills, list) and len(skills) > 0:
+            return True
+        if bool(priority.get("recheckAfterHint", False)):
+            return True
         return False
 
     @classmethod
     def _extract_support_priorities_from_preset(
         cls, preset: Optional[dict]
-    ) -> Tuple[List[dict], Dict[Tuple[str, str, str], Dict[str, Union[float, bool]]]]:
+    ) -> Tuple[
+        List[dict],
+        Dict[Tuple[str, str, str], Dict[str, Union[float, bool]]],
+        Dict[Tuple[str, str, str], bool],
+    ]:
         event_setup = (preset or {}).get("event_setup", {}) or {}
         supports = event_setup.get("supports", []) or []
 
         deck: List[dict] = []
         priorities: Dict[Tuple[str, str, str], Dict[str, Union[float, bool]]] = {}
+        avoid_energy: Dict[Tuple[str, str, str], bool] = {}
 
         for entry in supports:
             if not entry:
@@ -438,19 +554,26 @@ class Settings:
             except (TypeError, ValueError):
                 slot_idx = len(deck)
 
+            raw_flag = entry.get("avoidEnergyOverflow")
+            if raw_flag is None:
+                raw_flag = entry.get("avoid_energy_overflow")
+            avoid_flag = bool(raw_flag) if isinstance(raw_flag, bool) else True
+
             card_info = {
                 "slot": slot_idx,
                 "name": str(name),
                 "rarity": str(rarity),
                 "attribute": str(attribute),
+                "avoidEnergyOverflow": avoid_flag,
             }
             deck.append(card_info)
 
             key = (card_info["name"], card_info["rarity"], card_info["attribute"])
             priorities[key] = cls._normalize_priority(entry.get("priority"))
+            avoid_energy[key] = avoid_flag
 
         deck.sort(key=lambda c: c["slot"])
-        return deck, priorities
+        return deck, priorities, avoid_energy
 
 class Constants:
     map_tile_idx_to_type = {0: "SPD", 1: "STA", 2: "PWR", 3: "GUTS", 4: "WIT"}

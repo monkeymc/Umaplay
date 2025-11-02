@@ -29,6 +29,7 @@ export default function GeneralForm() {
   const [update, setUpdate] = useState<{is_update_available:boolean; latest?:string; html_url?:string} | null>(null)
   const [version, setVersion] = useState<string>('—')
   const [confirmForce, setConfirmForce] = useState(false)
+  
 
   useEffect(() => {
     let mounted = true
@@ -203,20 +204,6 @@ export default function GeneralForm() {
         />
 
         <FieldRow
-          label="Skill Pts Check"
-          control={
-            <TextField
-              size="small"
-              type="number"
-              value={g.skillPtsCheck}
-              onChange={(e) => setGeneral({ skillPtsCheck: Number(e.target.value || 0) })}
-              inputProps={{ min: 0 }}
-            />
-          }
-          info="If skill points ≥ this value in Raceday, the agent opens Skills to buy."
-        />
-
-        <FieldRow
           label="Accept consecutive race"
           control={
             <FormControlLabel
@@ -274,6 +261,7 @@ export default function GeneralForm() {
             >
               Force update
             </Button>
+            
           </Box>
           <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 0.5 }}>
             <br></br>
@@ -314,6 +302,8 @@ export default function GeneralForm() {
             </Button>
           </DialogActions>
         </Dialog>
+
+        
 
         <Snackbar
           open={snack.open}

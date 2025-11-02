@@ -1,4 +1,4 @@
-import { Container, Stack, Box, Tabs, Tab, Paper } from '@mui/material'
+import { Container, Stack, Box, Tabs, Tab, Paper, Chip } from '@mui/material'
 import GeneralForm from '@/components/general/GeneralForm'
 import SaveLoadBar from '@/components/common/SaveLoadBar'
 import { useEffect, useRef, useState } from 'react'
@@ -11,6 +11,7 @@ import TeamTrialsPrefs from '@/components/nav/TeamTrialsPrefs'
 export default function Home() {
   const saveLocal = useConfigStore((s) => s.saveLocal)
   const config = useConfigStore((s) => s.config)
+  const getActivePreset = useConfigStore((s) => s.getActivePreset)
   const collapsed = useConfigStore((s) => s.uiGeneralCollapsed)
   const [tab, setTab] = useState<'scenario' | 'shop' | 'team_trials'>('scenario')
   const configLoadedRef = useRef(false)
@@ -33,6 +34,8 @@ export default function Home() {
     const t = setTimeout(() => saveLocal(), 300)
     return () => clearTimeout(t)
   }, [config, saveLocal])
+
+  const { preset: activePreset } = getActivePreset()
 
   return (
     <Container maxWidth="xl" sx={{ py: 4, px: { xs: 2, sm: 3 } }}>
@@ -126,6 +129,45 @@ export default function Home() {
 
             <Box className="col">
               <Stack spacing={3}>
+                {activePreset && (
+                  <Chip
+                    color="primary"
+                    variant="filled"
+                    icon={<span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ffffff', display: 'inline-block' }} />}
+                    label={`Active preset: ${activePreset.name || 'Unnamed preset'}`}
+                    sx={{
+                      alignSelf: 'flex-start',
+                      fontWeight: 600,
+                      px: 2,
+                      py: 0.75,
+                      height: 36,
+                      borderRadius: 2.5,
+                      boxShadow: (theme) => 
+                        theme.palette.mode === 'dark'
+                          ? `0 2px 8px ${theme.palette.primary.main}66`
+                          : `0 2px 8px ${theme.palette.primary.main}44`,
+                      bgcolor: (theme) => 
+                        theme.palette.mode === 'dark'
+                          ? theme.palette.primary.dark
+                          : theme.palette.primary.main,
+                      color: '#ffffff',
+                      border: (theme) => 
+                        theme.palette.mode === 'dark'
+                          ? `1px solid ${theme.palette.primary.main}`
+                          : 'none',
+                      '& .MuiChip-icon': {
+                        color: '#ffffff',
+                        ml: 0,
+                        mr: 1,
+                      },
+                      '& .MuiChip-label': {
+                        px: 0,
+                        fontSize: { xs: 13, sm: 14 },
+                        color: '#ffffff',
+                      },
+                    }}
+                  />
+                )}
                 <PresetsShell compact={collapsed} />
               </Stack>
             </Box>

@@ -101,6 +101,15 @@ class TeamTrialsFlow:
             logger_uma.warning("[TeamTrials] No opponent banners detected")
             return
 
+        banners.sort(
+            key=lambda d: (
+                -float(d.get("conf", 0.0)),
+                -float(d["xyxy"][3]),
+            )
+        )
+        if len(banners) > 3:
+            banners = banners[:3]
+
         banners.sort(key=lambda d: d["xyxy"][1])
         preferred_index = Settings.get_team_trials_banner_pref() - 1
         preferred_index = max(0, min(len(banners) - 1, preferred_index))
@@ -281,7 +290,7 @@ class TeamTrialsFlow:
         nav.random_center_tap(
             self.ctrl, img, clicks=random.randint(4, 5), dev_frac=0.01
         )
-        sleep(4)
+        sleep(4.2)
         img, dets = nav.collect_snapshot(
             self.waiter, self.yolo_engine, tag="team_trials_especial_reward"
         )
@@ -295,18 +304,17 @@ class TeamTrialsFlow:
                 clicks=1,
                 forbid_texts=("VIEW RACE",),
                 allow_greedy_click=True,
-                timeout_s=2.3,
+                timeout_s=2.6,
                 tag="team_trials_reward_next",
             )
-            if did_next:
-                self.waiter.click_when(
-                    classes=("button_green",),
-                    prefer_bottom=True,
-                    timeout_s=5,
-                    clicks=1,
-                    tag="team_trials_reward_next_green",
-                )
-                sleep(0.5)
+            self.waiter.click_when(
+                classes=("button_green",),
+                prefer_bottom=True,
+                timeout_s=2.8,
+                clicks=1,
+                tag="team_trials_reward_next_green",
+            )
+            sleep(0.5)
 
         did_shop = nav.handle_shop_exchange(
             self.waiter,

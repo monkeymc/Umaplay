@@ -4,8 +4,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 from PIL import Image
-
-from ultralytics import YOLO
+from ultralytics.models import YOLO
 
 from core.perception.yolo.interface import IDetector
 from core.controllers.base import IController, RegionXYWH
@@ -30,7 +29,7 @@ class LocalYOLOEngine(IDetector):
         use_gpu: Optional[bool] = None,
     ):
         self.ctrl = ctrl
-        self.weights_path = str(weights or Settings.YOLO_WEIGHTS)
+        self.weights_path = str(weights or Settings.YOLO_WEIGHTS_URA)
         self.use_gpu = Settings.USE_GPU if use_gpu is None else bool(use_gpu)
 
         logger_uma.info(f"Loading YOLO weights from: {self.weights_path}")
@@ -97,8 +96,14 @@ class LocalYOLOEngine(IDetector):
                 time.strftime("%Y%m%d-%H%M%S") + f"_{int((time.time() % 1) * 1000):03d}"
             )
 
-            conf_line = f"{min(float(d.get('conf', 0.0)) for d in lows):.2f}"
-            raw_path = out_dir_raw / f"{tag}_{ts}_{conf_line}.png"
+            lowest = min(lows, key=lambda d: float(d.get("conf", 0.0)))
+            conf_line = f"{float(lowest.get('conf', 0.0)):.2f}"
+            raw_name = str(lowest.get("name", "unknown")).strip()
+            class_segment = "".join(
+                ch if ch.isalnum() or ch in "-_" else "-" for ch in raw_name
+            ) or "unknown"
+
+            raw_path = out_dir_raw / f"{tag}_{ts}_{class_segment}_{conf_line}.png"
             pil_img.save(raw_path)
             logger_uma.debug("saved low-conf training debug -> %s", raw_path)
         except Exception as e:

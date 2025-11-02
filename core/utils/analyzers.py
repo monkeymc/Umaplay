@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import os
-from typing import Dict, Optional
+from typing import Any, Dict, Optional, Sequence
 
 import numpy as np
 
@@ -49,6 +49,8 @@ def analyze_support_crop(
     *,
     piece_bar_bgr: Optional[np.ndarray] = None,
     piece_type_bgr: Optional[np.ndarray] = None,
+    hint_sources: Optional[Sequence[Dict[str, Any]]] = None,
+    hint_confidence_max: float = 0.0,
 ) -> Dict:
     """
     Run support-type, friendship-bar, and hint analyzers on a single crop (BGR).
@@ -64,6 +66,9 @@ def analyze_support_crop(
             "is_max": False,
         },
         "has_hint": False,
+        "has_hint_yolo": False,
+        "has_hint_hsv": False,
+        "hint_confidence_max": float(hint_confidence_max),
     }
 
     # cv2.imwrite("test2.png", piece_bar_bgr) to see images
@@ -94,11 +99,22 @@ def analyze_support_crop(
     except Exception as e:
         logger_uma.debug("friendship_bar analyze error: %s", e)
 
-    # hint
+    # hint (YOLO provenance first, HSV as fallback)
+    has_hint_yolo = bool(hint_sources)
+    has_hint_hsv = False
     try:
         hd = hint_det.analyze(bgr)
-        out["has_hint"] = bool(hd["has_hint"])
+        has_hint_hsv = bool(hd["has_hint"])
     except Exception as e:
         logger_uma.debug("hint analyze error: %s", e)
+
+    if has_hint_yolo:
+        out["has_hint"] = True
+        out["has_hint_yolo"] = True
+        out["hint_confidence_max"] = float(max(hint_confidence_max, out["hint_confidence_max"]))
+        out["hint_sources"] = list(hint_sources)
+    elif has_hint_hsv:
+        out["has_hint"] = True
+        out["has_hint_hsv"] = True
 
     return out

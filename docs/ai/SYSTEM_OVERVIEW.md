@@ -59,6 +59,7 @@ The runtime supports Steam on Windows and Android mirrored via scrcpy, with expe
 ## SOPs
 - `docs/ai/SOPs/sop-config-back-front.md` (Reference of web folder and web UI)
 - `docs/ai/SOPs/waiter-usage-and-integration.md` (Important)
+- `docs/ai/SOPs/towards-custom-training-policy-graph.md` (Notes on evolving training-policy automation graph)
 
 ## Runtime Topology (diagram as text)
 ```
@@ -81,12 +82,14 @@ The runtime supports Steam on Windows and Android mirrored via scrcpy, with expe
 
 ## Runtime Core Loop
 - **Entrypoint (`main.py`)** loads configuration (`server/utils.py`), applies runtime settings, builds controllers/OCR/YOLO engines, and starts the bot loop plus the FastAPI server when enabled.
-- **Agent loop (`core/agent.py`)** coordinates perception→decision→action for training careers, integrating race scheduling, skill buys, events, and the claw mini-game.
+- **Agent loop (`core/agent.py`)** coordinates perception→decision→action for training careers, integrating race scheduling, skill buys, events, and the claw mini-game. Deferred post-hint skill rechecks now persist intent (`_pending_hint_recheck`) until the loop returns to a stable screen (Lobby/Raceday) before reopening the Skills view and retrying purchases with guardrails against forced navigation. Event handling (
+  `core/actions/events.EventFlow`) fuses YOLO+OCR hints with template matching scores that blend multi-scale TM, perceptual hash, and HSV hair histograms (with gray-world balancing/masks) so lookalike trainees (e.g., seasonal alts) stay separable. When presets specify a trainee in
+  `config.json`, the retriever promotes that card even if it scores slightly lower, providing a deterministic override for portrait ties while retaining normal ranking for supports/scenarios.
 - **AgentNav (`core/agent_nav.py`)** provides hotkey-triggered navigation flows for Team Trials and Daily Races, reusing shared perception but with dedicated YOLO weights (`Settings.YOLO_WEIGHTS_NAV`).
-- **Action flows (`core/actions/`)** modularize behaviors: lobby management, training policy scoring, races, skills, events, Team Trials (`team_trials.py`), and Daily Races (`daily_race.py`).
+- **Action flows (`core/actions/`)** modularize behaviors: lobby management, training policy scoring, races, skills, events, Team Trials (`team_trials.py`), and Daily Races (`daily_race.py`). Skill purchasing respects per-preset `skillPtsCheck` thresholds, while event handling consults per-entity energy overflow toggles plus ranked reward priorities (skill pts → stats → hints by default) before rotating choices. `core/utils/event_processor.UserPrefs` now persists reward priority maps per support/scenario/trainee, and `EventFlow` falls back to the global order only when entity-specific lists are absent. When an event would overcap energy, `EventFlow.process_event_screen()` scores each option (via `max_positive_energy()` and `extract_reward_categories()`), builds the rotation order around the player-preferred pick, and only reorders if the chosen option violates the energy cap. Safe alternatives are then filtered by reward priority, preferring matches that satisfy the entity-specific ranking before defaulting to the first non-overflowing candidate, with adjustments surfaced through debug telemetry.
 - **Controllers (`core/controllers/`)** abstract capture/input for Steam, Scrcpy, and optional BlueStacks; `core/controllers/base.py` defines the contract.
-- **Utilities (`core/utils/`)** cover logging (`logger.py`), waiters (`waiter.py`), abort handling, navigation helpers, event catalogs, and race indexing for scheduling.
-- **Settings (`core/settings.py`)** maps persisted configuration and environment flags into runtime constants, including remote inference toggles, YOLO thresholds, and nav weights.
+- **Utilities (`core/utils/`)** cover logging (`logger.py`), waiters (`waiter.py`), abort handling, navigation helpers, skill memory persistence (`skill_memory.py`), preset toast rendering (`preset_overlay.py`), event catalogs, and race indexing for scheduling. `SkillMemoryManager` maintains grade-specific skill purchases (e.g., distinguishing `○` vs. `◎` variants), shares a single instance with `SkillsFlow`, and auto-resets on career completion so each run starts from a clean slate. `event_processor.py` normalizes per-entity reward priorities coming from config, builds lookup tables consumed downstream, and fuses template matching + pHash + histogram scores when comparing trainee portraits; when `Settings.USE_EXTERNAL_PROCESSOR` is enabled the portrait matching offloads to the remote `/template-match` service so thin clients avoid OpenCV costs while retaining the same fused score.
+- **Settings (`core/settings.py`)** maps persisted configuration and environment flags into runtime constants, including remote inference toggles, YOLO thresholds, nav weights, and the active preset’s `skillPtsCheck` (fallback to legacy general config) before handing it to `Player`. `RUNTIME_SKILL_MEMORY_PATH` defaults to `prefs/runtime_skill_memory.json` but can be overridden via env.
 
 ### Control Flow Overview
 1. Load the latest config using `Settings.apply_config()` and configure logging.
@@ -100,7 +103,8 @@ This design allows the core loop to evolve independently of perception implement
 ## Perception & Automation Stack
 - **Vision**: `core/perception/yolo/` wraps local (`yolo_local.py`) and remote (`yolo_remote.py`) detectors; `core/perception/ocr/` exposes PaddleOCR engines (`ocr_local.py`, `ocr_remote.py`).
 - **Analyzers**: `core/perception/analyzers/` classifies screens, detects UI states, and supports navigation heuristics.
-- **Template matching**: `core/perception/analyzers/matching/` prepares histogram/hash caches and now guards OpenCV usage at runtime; when `cv2` is missing, remote template matching endpoints (`server/main_inference.py`) handle the workload so client-only builds stay lightweight.
+- **Hint detection**: `core/perception/analyzers/hint.py` fuses HSV ROI checks with anchor-aware hint assignment so YOLO detections favor the card's top-right quadrant and penalize support_bar overlaps, preventing jump misassociation.
+- **Template matching**: `core/perception/analyzers/matching/` prepares histogram/hash caches, performs gray-world balancing, and extracts HSV hair-region fingerprints before combining them with multi-scale TM + perceptual hash scores. OpenCV usage is feature-gated so thin clients can route calls to the remote `/template-match` endpoint (`server/main_inference.py`) when local `cv2` is unavailable.
 - **Extractors**: `core/perception/extractors/` pulls structured stats, goals, and energy values used by flows.
 - **Button activation**: `core/perception/is_button_active.py` provides classifier logic for interactable buttons.
 - **Waiter synchronization**: `core/utils/waiter.py` coordinates detection loops and click retries across flows.
@@ -113,7 +117,7 @@ This design allows the core loop to evolve independently of perception implement
 - **UI**: `web/src/components/events/EventSetupSection.tsx` surfaces a `Custom hint` badge and opens `SupportPriorityDialog.tsx` where users toggle *Hint enabled/disabled*, adjust blue/green vs. orange/max multipliers, or ignore hints entirely.
 - **Config plumbing**: The preset schema extends `SelectedSupport.priority`; `Settings.apply_config()` stores `SUPPORT_CARD_PRIORITIES` plus derived flags (`SUPPORT_PRIORITIES_HAVE_CUSTOMIZATION`, `SUPPORT_CUSTOM_PRIORITY_KEYS`).
 - **Classification**: `core/actions/training_check.py` initializes a cached `SupportCardMatcher` (`core/utils/support_matching.py`, `core/perception/analyzers/matching/support_card_matcher.py`) only when customized hints exist, then assigns deck templates per tile via a single-pass matcher to avoid duplicate matches.
-- **Scoring**: `compute_support_values()` applies the highest hint bonus per tile, honoring card-specific multipliers, blacklist, and the global `HINT_IS_IMPORTANT` toggle; `training_policy.py` consumes `sv_by_type` to decide whether hint tiles beat risk caps.
+- **Scoring**: `compute_support_values()` applies the highest hint bonus per tile, honoring card-specific multipliers, blacklist, and the global `HINT_IS_IMPORTANT` toggle; `training_policy.py` consumes `sv_by_type` to decide whether hint tiles beat risk caps. Supports configured with `recheckAfterHint` only retain that flag until all required skills have been bought—once satisfied, the agent clears the flag and the Skills recheck target set (`Settings.RECHECK_AFTER_HINT_SKILLS`) the next time memory refreshes.
 
 ## Services / Apps
 ### Python Runtime
@@ -132,13 +136,13 @@ This design allows the core loop to evolve independently of perception implement
 - **Key internal dependencies**: `server/utils.py`, `server/updater.py`, `core/version.py`.
 - **External dependencies**: FastAPI, Uvicorn.
 - **Data/config locations**: `prefs/`, `web/dist/` for static assets.
-- **Observability**: Console logs, HTTP responses with error detail.
+- **Observability**: Console logs, HTTP responses with error detail. When handling template matching requests, the service caches prepared templates under `web/public/` (e.g., trainee portraits) so remote hint/event lookups stay fast for thin clients.
 
 ### Remote Inference Service
-- **Purpose**: Offload OCR and YOLO detection to a stronger host.
+- **Purpose**: Offload OCR, YOLO detection, and OpenCV-heavy template matching to a stronger host.
 - **Entrypoints**: `server/main_inference.py`.
-- **Public interfaces**: `/ocr`, `/yolo`, `/health`.
-- **Key internal dependencies**: `core/perception/ocr/ocr_local.py`, `core/perception/yolo/yolo_local.py`, Torch.
+- **Public interfaces**: `/ocr`, `/yolo`, `/template-match`, `/health`.
+- **Key internal dependencies**: `core/perception/ocr/ocr_local.py`, `core/perception/yolo/yolo_local.py`, template matcher helpers in `core/perception/analyzers/matching/`, Torch.
 - **Data/config locations**: `models/`, `datasets/uma_nav/` weights referenced by `Settings.YOLO_WEIGHTS_NAV`.
 - **Observability**: Response metadata includes checksums, model identifiers.
 
@@ -161,16 +165,17 @@ This design allows the core loop to evolve independently of perception implement
 
 ## Operational Notes
 - **Execution modes**: `python main.py` starts the bot and the config server; `run_inference_server.bat` launches remote perception; `uvicorn server.main_inference:app --host 0.0.0.0 --port 8001` runs standalone inference.
-- **Hotkeys & toggles**: `BotState` binds F2 for start/stop; `AgentNav` exposes one-shot flows for Team Trials (F7), Daily Races (F8), and Roulette (F9). Roulette relies on `core/actions/roulette.py` to spin Prize Derby wheels, respects `NavState.stop()` for early exit, and reuses nav YOLO weights in `core/agent_nav.py`.
+- **Hotkeys & toggles**: `BotState` binds F2 for start/stop (and shows the active preset overlay via `core/utils/preset_overlay.py` when enabled); `AgentNav` exposes one-shot flows for Team Trials (F7), Daily Races (F8), and Roulette (F9). Roulette relies on `core/actions/roulette.py` to spin Prize Derby wheels, respects `NavState.stop()` for early exit, and reuses nav YOLO weights in `core/agent_nav.py`.
 - **Logging & observability**: `core/utils/logger.py` sets structured logs; `debug/` collects screenshots and overlays; cleanup logic in `main.py.cleanup_debug_training_if_needed()` prunes large training captures.
-- **Performance levers**: `core/settings.py` exposes YOLO image size, confidence, OCR mode (fast/server), and remote processor URLs. Nav-specific weights configured via `Settings.YOLO_WEIGHTS_NAV`.
+- **Performance levers**: `core/settings.py` exposes YOLO image size, confidence, OCR mode (fast/server), remote processor URLs, and preset overlay toggles/duration (`SHOW_PRESET_OVERLAY`, `PRESET_OVERLAY_DURATION`). Nav-specific weights configured via `Settings.YOLO_WEIGHTS_NAV`.
 - **Reliability guards**: `core/utils/abort.py` enforces safe shutdown; `core/utils/waiter.py` throttles retries; `core/actions/race.ConsecutiveRaceRefused` handles stale states.
 
 ## Data & Persistence
-- **Datasets (`datasets/in_game/`)** provide JSON for skills, races, and events consumed by backend APIs and lobby planning.
+- **Datasets (`datasets/in_game/`)** provide JSON for skills, races, and events consumed by backend APIs and lobby planning; trainee entries now retain seasonal suffixes (e.g., `(Summer)`) while normalizing legacy `(Original)` noise, and each row carries a stable `id` (`{name}_{attribute}_{rarity}`) for downstream joins.
 - **YOLO datasets (`datasets/uma/`, `datasets/uma_nav/`, `datasets/coco8/`)** support ongoing model training.
 - **Models (`models/`)** store YOLO weights (`uma.pt`) and classifiers referenced by `core/settings.py` and remote inference.
-- **Prefs (`prefs/`)** persist runtime configuration (`config.json`) plus samples for onboarding.
+- **Prefs (`prefs/`)** persist runtime configuration (`config.json`) plus samples for onboarding; runtime skill memory defaults to `prefs/runtime_skill_memory.json`.
+- **Skill memory (`core/utils/skill_memory.py`)** provides `SkillMemoryManager` to track skill sightings/purchases across runs, enforcing staleness rules before persisting the JSON payload. Runtime saves immediately reload to keep in-memory state aligned with disk, and the manager resets on end-of-career so subsequent runs do not inherit prior skill buys.
 - **Debug artifacts (`debug/`)** capture screenshots and overlays for tuning; cleanup automation runs when exceeding thresholds.
 - **Training scripts**: `collect_training_data.py`, `collect_data_training.py`, and `prepare_uma_yolo_dataset.py` manage dataset curation.
 
@@ -190,9 +195,10 @@ This design allows the core loop to evolve independently of perception implement
 
 ## Frontend Architecture
 - **Routing**: Single-page app anchored at `/` with internal layout and tabs for General vs Preset settings (`web/src/pages/Home.tsx`).
-- **State management**: Zustand store in `web/src/store/configStore.ts` manages config, exposes actions (`setGeneral`, `patchPreset`, `importJson`).
+- **State management**: Zustand store in `web/src/store/configStore.ts` manages config, exposes actions (`setGeneral`, `patchPreset`, `importJson`). Per-preset `skillPtsCheck` thresholds are mirrored into legacy general config on save/load for backwards compatibility. `useEventsSetupStore` tracks per-support/scenario/trainee energy overflow switches and reward priority stacks, syncing them with per-entity config payloads while maintaining a global fallback order.
 - **Schema validation**: `web/src/models/config.schema.ts` ensures inbound configs are normalized and defaulted; migrations keep legacy fields compatible.
 - **Components**: Modular folders (`web/src/components/general/`, `web/src/components/presets/`, `web/src/components/events/`) encapsulate forms, race planners, and event editors.
+- **Skills picker**: `web/src/components/presets/SkillsPicker.tsx` now provides a dialog with search, rarity/category filters, pagination, and inline toggles for adding/removing skills, surfacing rarity-aware styling (e.g., gradient badges for unique skills) synced with preset `skillsToBuy` arrays.
 - **Daily Races tab**: `web/src/pages/Home.tsx` keeps both tabs mounted for instant switching; `web/src/components/nav/DailyRacePrefs.tsx` writes to `useNavPrefsStore`, which persists `/nav` preferences (alarm clock, star pieces, parfait) via FastAPI without re-fetching when users toggle between tabs.
 - **Styling**: MUI theme toggles via `uiTheme` state; `web/src/App.tsx` consumes design tokens.
 - **Build**: Vite config in `web/vite.config.ts`; production output in `web/dist/` served by FastAPI.

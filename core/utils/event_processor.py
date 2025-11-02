@@ -1,16 +1,30 @@
+from __future__ import annotations
+
+import base64
+import io
 import json
 import fnmatch
 import os
 from dataclasses import dataclass, asdict, field
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Set
 
 from PIL import Image
 import imagehash
 from rapidfuzz import fuzz, process
 from PIL.Image import Image as PILImage
+from core.perception.analyzers.matching.base import TemplateEntry, TemplateMatcherBase
+from core.perception.analyzers.matching.remote import RemoteTemplateMatcherBase as _RemoteTMB
+from core.settings import Settings
 
 from core.utils.logger import logger_uma
+
+try:
+    import cv2
+    import numpy as np
+    _CV2_AVAILABLE = True
+except ImportError:
+    _CV2_AVAILABLE = False
 
 # -----------------------------
 # Paths (adjust if needed)
@@ -23,6 +37,146 @@ BUILD_DIR = Path("build")  # will hold event_catalog.json
 CATALOG_JSON = Path("datasets/in_game/event_catalog.json")
 
 
+DEFAULT_REWARD_PRIORITY: List[str] = ["skill_pts", "stats", "hints"]
+
+_REWARD_KEY_TO_ALIAS: Dict[str, str] = {
+    "energy": "energy",
+    "skill_pts": "skill_pts",
+    "skill_points": "skill_pts",
+    "hint": "hints",
+    "hints": "hints",
+    "speed": "stats",
+    "spd": "stats",
+    "stamina": "stats",
+    "sta": "stats",
+    "power": "stats",
+    "pwr": "stats",
+    "guts": "stats",
+    "gut": "stats",
+    "wit": "stats",
+    "wisdom": "stats",
+    "intelligence": "stats",
+    "stats": "stats",
+}
+
+_VALID_REWARD_CATEGORIES: Set[str] = {"skill_pts", "hints", "stats", "energy"}
+
+
+def _coerce_float(val: Any) -> Optional[float]:
+    if isinstance(val, (int, float)):
+        return float(val)
+    if isinstance(val, str):
+        try:
+            return float(val.strip())
+        except Exception:
+            return None
+    return None
+
+
+def normalize_reward_priority_list(raw: Optional[Any]) -> List[str]:
+    if not isinstance(raw, (list, tuple)):
+        return list(DEFAULT_REWARD_PRIORITY)
+    seen: Set[str] = set()
+    result: List[str] = []
+    for item in raw:
+        if not isinstance(item, str):
+            continue
+        key = item.strip().lower()
+        if not key:
+            continue
+        mapped = _REWARD_KEY_TO_ALIAS.get(key, key)
+        if mapped in _VALID_REWARD_CATEGORIES and mapped not in seen:
+            result.append(mapped)
+            seen.add(mapped)
+    if not result:
+        return list(DEFAULT_REWARD_PRIORITY)
+    return result
+
+
+def max_positive_energy(outcomes: List[Dict[str, Any]]) -> int:
+    max_gain = 0
+
+    def visit(node: Any) -> None:
+        nonlocal max_gain
+        if isinstance(node, dict):
+            for k, v in node.items():
+                key = str(k).strip().lower()
+                if key == "energy":
+                    val = _coerce_float(v)
+                    if val is not None and val > 0:
+                        max_gain = max(max_gain, int(val))
+                visit(v)
+        elif isinstance(node, (list, tuple)):
+            for item in node:
+                visit(item)
+
+    visit(outcomes)
+    return max_gain
+
+
+def extract_reward_categories(outcomes: List[Dict[str, Any]]) -> Set[str]:
+    categories: Set[str] = set()
+
+    def visit(node: Any) -> None:
+        if isinstance(node, dict):
+            for k, v in node.items():
+                key = str(k).strip().lower()
+                mapped = _REWARD_KEY_TO_ALIAS.get(key)
+                if mapped == "skill_pts":
+                    val = _coerce_float(v)
+                    if val is None or val > 0:
+                        categories.add("skill_pts")
+                elif mapped == "hints":
+                    if isinstance(v, (list, tuple)):
+                        if any(v):
+                            categories.add("hints")
+                    elif v:
+                        categories.add("hints")
+                elif mapped == "stats":
+                    val = _coerce_float(v)
+                    if (isinstance(v, (int, float)) and v > 0) or (
+                        isinstance(v, dict) or isinstance(v, (list, tuple))
+                    ) or (val is not None and val > 0):
+                        categories.add("stats")
+                elif mapped == "energy":
+                    val = _coerce_float(v)
+                    if val is None or val > 0:
+                        categories.add("energy")
+                visit(v)
+        elif isinstance(node, (list, tuple)):
+            for item in node:
+                visit(item)
+
+    visit(outcomes)
+    return categories & _VALID_REWARD_CATEGORIES
+
+
+def select_candidate_by_priority(
+    candidate_order: List[int],
+    safe_candidates: List[int],
+    option_categories: Dict[int, Set[str]],
+    priority: List[str],
+) -> Optional[Tuple[int, Optional[str]]]:
+    if not safe_candidates:
+        return None
+    priority = [p for p in priority if p in _VALID_REWARD_CATEGORIES] or list(
+        DEFAULT_REWARD_PRIORITY
+    )
+
+    safe_seen = set(safe_candidates)
+    for category in priority:
+        for opt in candidate_order:
+            if opt not in safe_seen:
+                continue
+            if category in option_categories.get(opt, set()):
+                return opt, category
+
+    for opt in candidate_order:
+        if opt in safe_seen:
+            return opt, None
+    return None
+
+
 def safe_phash_from_image(img: PILImage) -> Optional[int]:
     """Compute 64-bit pHash from an in-memory PIL image."""
     try:
@@ -33,8 +187,43 @@ def safe_phash_from_image(img: PILImage) -> Optional[int]:
 
 
 # -----------------------------
+# Helpers
+# -----------------------------
+
+
+def _coerce_bool(value: Any, default: bool = True) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "1", "yes", "on"}:
+            return True
+        if normalized in {"false", "0", "no", "off"}:
+                return False
+    return default
+
+
+# -----------------------------
 # Utilities
 # -----------------------------
+
+
+def _support_key(name: str, attribute: str, rarity: str) -> Tuple[str, str, str]:
+    return (
+        str(name or "").strip(),
+        str(attribute or "None").strip().upper(),
+        str(rarity or "None").strip().upper(),
+    )
+
+
+def _scenario_key(name: str) -> str:
+    return normalize_text(name or "")
+
+
+def _trainee_key(name: str) -> str:
+    return normalize_text(name or "")
 
 
 def normalize_text(s: str) -> str:
@@ -85,6 +274,365 @@ def hamming_similarity64(a_int: Optional[int], b_int: Optional[int]) -> float:
     return 1.0 - (dist / 64.0)
 
 
+# -----------------------------
+# Image similarity (template+hash+hist) with lightweight cache
+# -----------------------------
+
+# Shared template-matching options to keep local and remote behavior aligned
+_TM_OPTIONS: Dict[str, float] = {
+    "tm_weight": 0.48,      # Reduced: edge-based TM no longer dominates
+    "hash_weight": 0.17,     # Mild pHash contribution
+    "hist_weight": 0.35,     # Boosted: HSV color now critical for discrimination
+    "tm_edge_weight": 0.25,  # Edge contribution within TM
+    "ms_min_scale": 0.90,    # Tighter scale range to prevent spurious matches
+    "ms_max_scale": 1.10,
+    "ms_steps": 12,
+}
+
+_CV_TEMPLATE_TEXT_THRESHOLD = 0.9
+_CV_TEMPLATE_MIN = 1
+_CV_TEMPLATE_MAX = 100
+
+# HSV hair-focused histogram configuration
+_HSV_H_BINS = 32
+_HSV_S_BINS = 32
+_HSV_RANGES = [0, 180, 0, 256]  # OpenCV HSV: H in [0,180], S in [0,255]
+_hsv_hist_cache: Dict[str, Any] = {}
+
+try:
+    _portrait_matcher: Optional[TemplateMatcherBase] = TemplateMatcherBase(
+        tm_weight=_TM_OPTIONS["tm_weight"],
+        hash_weight=_TM_OPTIONS["hash_weight"],
+        hist_weight=_TM_OPTIONS["hist_weight"],
+        tm_edge_weight=_TM_OPTIONS["tm_edge_weight"],
+        ms_min_scale=_TM_OPTIONS["ms_min_scale"],
+        ms_max_scale=_TM_OPTIONS["ms_max_scale"],
+        ms_steps=int(_TM_OPTIONS["ms_steps"]),
+    )
+except Exception:  # OpenCV may be unavailable in some environments
+    _portrait_matcher = None
+
+_tmpl_cache: Dict[str, Any] = {}
+_template_b64_cache: Dict[str, str] = {}
+
+ImageEntry = Tuple[Optional[str], Optional[int], Tuple[str, ...]]
+
+
+def _to_bgr(img_pil: PILImage) -> Any:
+    """Convert PIL Image to OpenCV BGR array."""
+    if not _CV2_AVAILABLE:
+        return None
+    arr = np.array(img_pil.convert("RGB"))
+    return cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
+
+
+def _gray_world_white_balance(bgr: Any) -> Any:
+    """Simple white balance: scale channels so their means are equal."""
+    if bgr is None or not _CV2_AVAILABLE:
+        return bgr
+    eps = 1e-6
+    means = bgr.reshape(-1, 3).mean(axis=0) + eps
+    scale = means.mean() / means
+    balanced = np.clip(bgr * scale, 0, 255).astype(np.uint8)
+    return balanced
+
+
+def _hair_mask_from_hsv(hsv: Any) -> Any:
+    """Create mask focused on hair region (upper 60%, chroma >= 40, V in [35,235])."""
+    if hsv is None or not _CV2_AVAILABLE:
+        return None
+    H, W = hsv.shape[:2]
+    s = hsv[:, :, 1]
+    v = hsv[:, :, 2]
+
+    sat_mask = (s >= 40).astype(np.uint8)  # Keep chromatic pixels
+    v_mask = ((v >= 35) & (v <= 235)).astype(np.uint8)  # Exclude pure black/white
+
+    # Coarse hair ROI: top 60%, 5% horizontal margins
+    y0, y1 = int(0.05 * H), int(0.60 * H)
+    x0, x1 = int(0.05 * W), int(0.95 * W)
+    roi = np.zeros((H, W), np.uint8)
+    roi[y0:y1, x0:x1] = 1
+
+    mask = (sat_mask & v_mask & roi).astype(np.uint8) * 255
+    # Clean speckles with morphology
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    return mask
+
+
+def _hsv_hs_hist(bgr: Any, mask: Any) -> Any:
+    """Compute normalized 2D HSV histogram over H×S channels."""
+    if bgr is None or mask is None or not _CV2_AVAILABLE:
+        return None
+    hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
+    hist = cv2.calcHist([hsv], [0, 1], mask, [_HSV_H_BINS, _HSV_S_BINS], _HSV_RANGES)
+    cv2.normalize(hist, hist, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX)
+    return hist.astype(np.float32)
+
+
+def _hsv_similarity(portrait_img: PILImage, template_path: Optional[str]) -> Optional[float]:
+    """Compute HSV hair-focused histogram similarity using Bhattacharyya distance.
+    
+    Returns similarity in [0,1], or None if unavailable/error.
+    Focus on hair region with color discrimination (H×S) to distinguish look-alike portraits.
+    """
+    if not _CV2_AVAILABLE or template_path is None:
+        return None
+    try:
+        # Process portrait (query)
+        p_bgr = _to_bgr(portrait_img)
+        if p_bgr is None:
+            return None
+        p_bgr = _gray_world_white_balance(p_bgr)
+        p_hsv = cv2.cvtColor(p_bgr, cv2.COLOR_BGR2HSV)
+        p_mask = _hair_mask_from_hsv(p_hsv)
+        if p_mask is None:
+            return None
+        p_hist = _hsv_hs_hist(p_bgr, p_mask)
+        if p_hist is None:
+            return None
+
+        # Process template (cached)
+        tpl_hist = _hsv_hist_cache.get(template_path)
+        if tpl_hist is None:
+            with Image.open(template_path) as im:
+                t_bgr = _to_bgr(im)
+            if t_bgr is None:
+                return None
+            t_bgr = _gray_world_white_balance(t_bgr)
+            t_hsv = cv2.cvtColor(t_bgr, cv2.COLOR_BGR2HSV)
+            t_mask = _hair_mask_from_hsv(t_hsv)
+            if t_mask is None:
+                return None
+            tpl_hist = _hsv_hs_hist(t_bgr, t_mask)
+            if tpl_hist is not None:
+                _hsv_hist_cache[template_path] = tpl_hist
+
+        if tpl_hist is None:
+            return None
+
+        # Bhattacharyya distance → similarity
+        dist = cv2.compareHist(p_hist, tpl_hist, cv2.HISTCMP_BHATTACHARYYA)
+        sim = 1.0 - float(np.clip(dist, 0.0, 1.0))
+        return sim
+    except Exception:
+        return None
+
+
+def _cv_image_similarity(portrait_img: PILImage, template_path: Optional[str]) -> Optional[float]:
+    """Return fused similarity in [0,1] using TemplateMatcherBase + HSV hair-focused histogram.
+    
+    Uses HSV histogram (hair-focused) instead of plain RGB histogram for better color discrimination.
+    """
+    # When remote processing is enabled, skip local CV entirely.
+    if Settings.USE_EXTERNAL_PROCESSOR:
+        return None
+    if _portrait_matcher is None or not template_path:
+        return None
+    try:
+        # Cache prepared template per path
+        tmpl = _tmpl_cache.get(template_path)
+        if tmpl is None:
+            entry = TemplateEntry(name=str(template_path), path=str(template_path))
+            prepared = _portrait_matcher.prepare_templates([entry])
+            tmpl = prepared[0] if prepared else None
+            if tmpl is not None:
+                _tmpl_cache[template_path] = tmpl
+        if tmpl is None:
+            return None
+
+        region = _portrait_matcher._prepare_region(portrait_img)
+        tm_sc = _portrait_matcher._template_score(
+            region.gray, region.edges, tmpl.gray, tmpl.edges, region.shape, tmpl.mask
+        )
+        hash_sc = _portrait_matcher._hash_score(region.hash, tmpl.hash)
+
+        # Use HSV hair-focused histogram for color discrimination
+        hsv_sc = _hsv_similarity(portrait_img, template_path)
+        if hsv_sc is None:
+            # Fallback to original histogram if HSV fails
+            hist_sc = _portrait_matcher._hist_compare(region.hist, tmpl.hist)
+        else:
+            hist_sc = hsv_sc
+
+        final = (
+            _portrait_matcher.tm_weight * tm_sc
+            + _portrait_matcher.hash_weight * hash_sc
+            + _portrait_matcher.hist_weight * hist_sc
+        )
+        # Clamp to [0,1] conservatively
+        # if tmpl.name.lower().__contains__("silence") or tmpl.name.lower().__contains__("grass"):
+        #     pass
+        return float(max(0.0, min(1.0, final)))
+    except Exception:
+        return None
+
+
+def _cv_image_similarity_variant(
+    portrait_img: PILImage, template_paths: Sequence[str]
+) -> Optional[float]:
+    if not template_paths:
+        return None
+    scores: List[float] = []
+    for path in template_paths:
+        score = _cv_image_similarity(portrait_img, path)
+        if score is not None:
+            scores.append(float(score))
+    if scores:
+        return max(scores)
+    return None
+
+
+def _public_path_from_image_path(image_path: Optional[str]) -> Optional[str]:
+    if not image_path:
+        return None
+    p = str(image_path).replace("\\", "/")
+    # Expect paths like 'web/public/events/trainee_icon_event/Name.png'
+    marker = "web/public/"
+    idx = p.find(marker)
+    if idx >= 0:
+        rel = p[idx + len(marker) :]
+    else:
+        # Already relative?
+        rel = p.lstrip("/")
+    return rel or None
+
+
+def _list_trainee_variant_paths(name: str) -> List[Path]:
+    base_dir = ASSETS_EVENTS_DIR / "trainee_icon_event"
+    exts = (".png", ".jpg", ".jpeg", ".webp")
+    candidates: List[Path] = []
+
+    variant_dir = base_dir / name
+    if variant_dir.is_dir():
+        for ext in exts:
+            for path in sorted(variant_dir.glob(f"*{ext}")):
+                if path.is_file():
+                    candidates.append(path)
+
+    # Include flat files (legacy layouts)
+    for ext in exts:
+        direct = base_dir / f"{name}{ext}"
+        if direct.exists():
+            candidates.append(direct)
+    for ext in exts:
+        for path in sorted(base_dir.glob(f"{name}_*{ext}")):
+            if path.is_file():
+                candidates.append(path)
+
+    seen: Set[str] = set()
+    unique: List[Path] = []
+    for path in candidates:
+        key = str(path.resolve())
+        if key not in seen:
+            seen.add(key)
+            unique.append(path)
+    return unique
+
+
+def _template_spec_for_remote(
+    rec: EventRecord,
+    variant_paths: Optional[Sequence[str]] = None,
+) -> Optional[Dict[str, Any]]:
+    """Build template descriptor for remote matching. Returns None if no valid image data."""
+    variant_paths = list(variant_paths or [])
+    if not variant_paths:
+        image_path = rec.image_path
+        if image_path:
+            variant_paths = [image_path]
+        else:
+            return None
+
+    public_path = _public_path_from_image_path(variant_paths[0])
+    if not public_path:
+        return None
+
+    payload: Dict[str, Any] = {
+        "id": rec.key,
+        "public_path": f"/{public_path}",
+        "metadata": {
+            "name": rec.name,
+            "public_path": f"/{public_path}",
+        },
+    }
+
+    if rec.phash64 is not None:
+        payload["hash_hex"] = f"{int(rec.phash64) & ((1 << 64) - 1):016x}"
+
+    encoded_images: List[str] = []
+    for image_path in variant_paths[:10]:
+        cached = _template_b64_cache.get(image_path)
+        if cached is None:
+            try:
+                with Image.open(image_path) as img:
+                    buf = io.BytesIO()
+                    img.save(buf, format="PNG")
+                    cached = base64.b64encode(buf.getvalue()).decode("ascii")
+                    _template_b64_cache[image_path] = cached
+            except Exception:
+                cached = None
+        if cached:
+            encoded_images.append(cached)
+
+    if not encoded_images:
+        return None
+
+    payload["metadata"]["variant_count"] = len(encoded_images)
+    payload["metadata"]["variant_paths"] = [
+        _public_path_from_image_path(path) for path in variant_paths
+    ]
+    if len(encoded_images) == 1:
+        payload["img"] = encoded_images[0]
+    else:
+        payload["variant_imgs"] = encoded_images
+
+    return payload
+
+
+def _title_similarity(q_title_norm: str, rec: EventRecord) -> float:
+    if not q_title_norm:
+        return 0.0
+    ts_token = fuzz.token_set_ratio(q_title_norm, rec.title_norm) / 100.0
+    ts_ratio = fuzz.ratio(q_title_norm, rec.title_norm) / 100.0
+    ts_partial = fuzz.partial_ratio(q_title_norm, rec.title_norm) / 100.0
+    text_sim = 0.5 * ts_token + 0.3 * ts_ratio + 0.2 * ts_partial
+    if q_title_norm == rec.title_norm:
+        text_sim = 1.0
+    return float(text_sim)
+
+
+def _select_cv_candidates(q: "Query", pool: List[EventRecord]) -> List[EventRecord]:
+    q_title_norm = normalize_text(q.ocr_title)
+    if not q_title_norm:
+        return pool
+
+    scored: List[Tuple[EventRecord, float]] = []
+    for rec in pool:
+        sim = _title_similarity(q_title_norm, rec)
+        if sim > 0.0:
+            scored.append((rec, sim))
+
+    if not scored:
+        return pool
+
+    scored.sort(key=lambda item: item[1], reverse=True)
+    filtered = [rec for rec, sim in scored if sim >= _CV_TEMPLATE_TEXT_THRESHOLD]
+
+    if len(filtered) < _CV_TEMPLATE_MIN:
+        logger_uma.warning("Not enough candidates for %s. filtering with half of the Threshold", q_title_norm)
+        
+        filtered = [rec for rec, sim in scored if sim >= _CV_TEMPLATE_TEXT_THRESHOLD/2]
+
+        if len(filtered) < _CV_TEMPLATE_MIN:
+            logger_uma.warning("Fallback to top %d candidates", _CV_TEMPLATE_MIN)
+            filtered = [rec for rec, _ in scored[:_CV_TEMPLATE_MAX]]
+    else:
+        filtered = filtered[:_CV_TEMPLATE_MAX]
+
+    return filtered or pool
+
+
 def find_event_image_path(
     ev_type: str, name: str, rarity: str, attribute: str
 ) -> Optional[Path]:
@@ -94,6 +642,11 @@ def find_event_image_path(
     """
     folder = ASSETS_EVENTS_DIR / ev_type
     exts = (".png", ".jpg", ".jpeg", ".webp")
+
+    if ev_type == "trainee_icon_event":
+        variants = _list_trainee_variant_paths(name)
+        if variants:
+            return variants[0]
 
     attr = (attribute or "None").strip()
     rar = (rarity or "None").strip()
@@ -116,9 +669,8 @@ def find_event_image_path(
     # Legacy: just <name>
     candidates.append(name)
 
-    # Trainee special: profile portrait like "<name>_profile"
     if ev_type == "trainee":
-        candidates.insert(0, f"{name}_profile")
+        candidates.insert(0, f"{name}")
 
     for base in candidates:
         for ext in exts:
@@ -149,12 +701,13 @@ class EventRecord:
     title_norm: str  # normalized event_name for fast match
     image_path: Optional[str]  # representative icon path (per name+rarity)
     phash64: Optional[int]  # 64-bit pHash int
+    image_variants: Tuple[str, ...] = ()
 
     @staticmethod
     def from_json_item(
         parent: Dict,
         ev_item: Dict,
-        phash_map: Dict[Tuple[str, str, str, str], Tuple[Optional[str], Optional[int]]],
+        phash_map: Dict[Tuple[str, ...], "ImageEntry"],
     ) -> "EventRecord":
         ev_type = parent.get("type", "")
         name = parent.get("name", "")
@@ -171,9 +724,16 @@ class EventRecord:
         title_norm = normalize_text(ev_name)
         key = f"{ev_type}/{name}/{attribute}/{rarity}/{ev_name}"
 
-        img_path, phash = phash_map.get(
-            (ev_type, name, rarity, attribute), (None, None)
+        img_path, phash, variants = phash_map.get(
+            (ev_type, name, rarity, attribute), (None, None, ())
         )
+        variants_tuple: Tuple[str, ...]
+        if variants:
+            variants_tuple = tuple(str(v) for v in variants)
+        elif img_path:
+            variants_tuple = (str(img_path),)
+        else:
+            variants_tuple = ()
         return EventRecord(
             key=key,
             key_step=f"{key}#s{chain_step if chain_step is not None else 1}",
@@ -188,6 +748,7 @@ class EventRecord:
             title_norm=title_norm,
             image_path=(str(img_path) if img_path else None),
             phash64=phash,
+            image_variants=variants_tuple,
         )
 
 
@@ -209,9 +770,7 @@ def build_catalog() -> None:
         root = json.load(f)
 
     # Precompute phash for each (type,name,rarity)
-    set_data_to_file_and_phash: Dict[
-        Tuple[str, str, str, str], Tuple[Optional[str], Optional[int]]
-    ] = {}
+    set_data_to_file_and_phash: Dict[Tuple[str, str, str, str], ImageEntry] = {}
     seen_set_data = set()
 
     for parent in root:
@@ -224,11 +783,30 @@ def build_catalog() -> None:
             continue
         seen_set_data.add(set_data)
 
-        img_path = find_event_image_path(ev_type, name, rarity, attribute)
-        phash = safe_phash(img_path) if img_path else None
+        variants: Tuple[str, ...] = ()
+        if ev_type == "trainee" and normalize_text(name) != "general":
+            variant_paths = _list_trainee_variant_paths(name)
+            variant_hashes: List[int] = []
+            variant_paths_str: List[str] = []
+            for path in variant_paths:
+                ph = safe_phash(path)
+                if ph is not None:
+                    variant_hashes.append(ph)
+                variant_paths_str.append(str(path))
+            img_path = variant_paths[0] if variant_paths else find_event_image_path("trainee_icon_event", name, rarity, attribute)
+            combined_hash = None
+            if variant_hashes:
+                combined_hash = sum(variant_hashes) // len(variant_hashes)
+            phash = combined_hash if combined_hash is not None else (safe_phash(img_path) if img_path else None)
+            variants = tuple(variant_paths_str)
+        else:
+            img_path = find_event_image_path(ev_type, name, rarity, attribute)
+            phash = safe_phash(img_path) if img_path else None
+
         set_data_to_file_and_phash[set_data] = (
             str(img_path) if img_path else None,
             phash,
+            variants,
         )
 
     # Expand to event records
@@ -369,6 +947,26 @@ class UserPrefs:
     default_by_type: Dict[str, int]
     # alias keys (e.g., trainee/general) derived from overrides
     alias_overrides: Dict[str, int] = field(default_factory=dict)
+    # default toggle for avoiding energy overflow rotations
+    avoid_energy_overflow: bool = True
+    # per-support override for energy overflow avoidance
+    avoid_energy_overflow_by_support: Dict[Tuple[str, str, str], bool] = field(
+        default_factory=dict
+    )
+    # per-scenario override for energy overflow avoidance
+    avoid_energy_overflow_by_scenario: Dict[str, bool] = field(default_factory=dict)
+    # per-trainee override for energy overflow avoidance
+    avoid_energy_overflow_by_trainee: Dict[str, bool] = field(default_factory=dict)
+    # ranked reward preference used when avoiding energy overflow
+    reward_priority: List[str] = field(default_factory=lambda: list(DEFAULT_REWARD_PRIORITY))
+    # per-entity reward priority overrides
+    reward_priority_by_support: Dict[Tuple[str, str, str], List[str]] = field(
+        default_factory=dict
+    )
+    reward_priority_by_scenario: Dict[str, List[str]] = field(default_factory=dict)
+    reward_priority_by_trainee: Dict[str, List[str]] = field(default_factory=dict)
+    # Preferred trainee name from config (for portrait disambiguation)
+    preferred_trainee_name: Optional[str] = None
 
     @staticmethod
     def load(path: Path) -> "UserPrefs":
@@ -378,6 +976,10 @@ class UserPrefs:
                 overrides={},
                 patterns=[],
                 default_by_type={"support": 1, "trainee": 1, "scenario": 1},
+                avoid_energy_overflow=True,
+                avoid_energy_overflow_by_support={},
+                avoid_energy_overflow_by_scenario={},
+                avoid_energy_overflow_by_trainee={},
             )
         with path.open("r", encoding="utf-8") as f:
             raw = json.load(f)
@@ -389,16 +991,33 @@ class UserPrefs:
         else:
             # expect list of {"pattern": "support/Kitasan*/SSR/*", "pick": 2}
             patterns = [(d.get("pattern", ""), int(d.get("pick", 1))) for d in patt_src]
-        default_by_type = raw.get(
-            "defaults", {"support": 1, "trainee": 1, "scenario": 1}
-        )
+        default_by_type = raw.get("defaults", {})
+        if not default_by_type:
+            default_by_type = {"support": 1, "trainee": 1, "scenario": 1}
         alias_overrides = _build_alias_overrides(overrides)
+
+        avoid_energy_overflow = _coerce_bool(
+            raw.get("avoid_energy_overflow", raw.get("avoidEnergyOverflow", True)),
+            default=True,
+        )
+
+        reward_priority = normalize_reward_priority_list(
+            raw.get("rewardPriority", raw.get("reward_priority"))
+        )
 
         return UserPrefs(
             overrides=overrides,
             patterns=patterns,
             default_by_type=default_by_type,
             alias_overrides=alias_overrides,
+            avoid_energy_overflow=avoid_energy_overflow,
+            avoid_energy_overflow_by_support={},
+            avoid_energy_overflow_by_scenario={},
+            avoid_energy_overflow_by_trainee={},
+            reward_priority=reward_priority,
+            reward_priority_by_support={},
+            reward_priority_by_scenario={},
+            reward_priority_by_trainee={},
         )
 
     # ---- build UserPrefs from the active preset inside config.json ----
@@ -420,6 +1039,8 @@ class UserPrefs:
                 overrides={},
                 patterns=[],
                 default_by_type={"support": 1, "trainee": 1, "scenario": 1},
+                avoid_energy_overflow=True,
+                avoid_energy_overflow_by_support={},
             )
 
         setup = preset.get("event_setup") or {}
@@ -471,9 +1092,131 @@ class UserPrefs:
             "trainee": int(d.get("trainee", 1) or 1),
             "scenario": int(d.get("scenario", 1) or 1),
         }
-        return UserPrefs(
-            overrides=overrides, patterns=patterns, default_by_type=default_by_type, alias_overrides=alias_overrides
+        raw_toggle = prefs.get("avoidEnergyOverflow")
+        if raw_toggle is None:
+            raw_toggle = prefs.get("avoid_energy_overflow")
+        avoid_energy_overflow = _coerce_bool(raw_toggle, default=True)
+
+        reward_priority = normalize_reward_priority_list(
+            prefs.get("rewardPriority") or prefs.get("reward_priority")
         )
+
+        avoid_energy_by_support: Dict[Tuple[str, str, str], bool] = {}
+        reward_priority_by_support: Dict[Tuple[str, str, str], List[str]] = {}
+        supports = setup.get("supports", []) or []
+        if isinstance(supports, list):
+            for entry in supports:
+                if not isinstance(entry, dict):
+                    continue
+                name = entry.get("name")
+                rarity = entry.get("rarity")
+                attribute = entry.get("attribute")
+                if not (name and rarity and attribute):
+                    continue
+                raw_flag = entry.get("avoidEnergyOverflow")
+                if raw_flag is None:
+                    raw_flag = entry.get("avoid_energy_overflow")
+                flag = _coerce_bool(raw_flag, default=True)
+                key = _support_key(name, attribute, rarity)
+                avoid_energy_by_support[key] = flag
+
+                raw_priority = entry.get("rewardPriority")
+                if raw_priority is None:
+                    raw_priority = entry.get("reward_priority")
+                if raw_priority is not None:
+                    priority_list = normalize_reward_priority_list(raw_priority)
+                    reward_priority_by_support[key] = priority_list
+
+        scenario_flags: Dict[str, bool] = {}
+        reward_priority_by_scenario: Dict[str, List[str]] = {}
+        scenario_entry = setup.get("scenario")
+        if isinstance(scenario_entry, dict):
+            name = scenario_entry.get("name")
+            if name:
+                raw_flag = scenario_entry.get("avoidEnergyOverflow")
+                if raw_flag is None:
+                    raw_flag = scenario_entry.get("avoid_energy_overflow")
+                scen_key = _scenario_key(str(name))
+                scenario_flags[scen_key] = _coerce_bool(raw_flag, default=True)
+
+                raw_priority = scenario_entry.get("rewardPriority")
+                if raw_priority is None:
+                    raw_priority = scenario_entry.get("reward_priority")
+                if raw_priority is not None:
+                    reward_priority_by_scenario[scen_key] = normalize_reward_priority_list(
+                        raw_priority
+                    )
+
+        trainee_flags: Dict[str, bool] = {}
+        reward_priority_by_trainee: Dict[str, List[str]] = {}
+        preferred_trainee_name: Optional[str] = None
+        trainee_entry = setup.get("trainee")
+        if isinstance(trainee_entry, dict):
+            name = trainee_entry.get("name")
+            if name:
+                preferred_trainee_name = str(name).strip()
+                raw_flag = trainee_entry.get("avoidEnergyOverflow")
+                if raw_flag is None:
+                    raw_flag = trainee_entry.get("avoid_energy_overflow")
+                trainee_key = _trainee_key(str(name))
+                trainee_flags[trainee_key] = _coerce_bool(raw_flag, default=True)
+
+                raw_priority = trainee_entry.get("rewardPriority")
+                if raw_priority is None:
+                    raw_priority = trainee_entry.get("reward_priority")
+                if raw_priority is not None:
+                    reward_priority_by_trainee[trainee_key] = normalize_reward_priority_list(
+                        raw_priority
+                    )
+
+        return UserPrefs(
+            overrides=overrides,
+            patterns=patterns,
+            default_by_type=default_by_type,
+            alias_overrides=alias_overrides,
+            avoid_energy_overflow=avoid_energy_overflow,
+            avoid_energy_overflow_by_support=avoid_energy_by_support,
+            avoid_energy_overflow_by_scenario=scenario_flags,
+            avoid_energy_overflow_by_trainee=trainee_flags,
+            reward_priority=reward_priority,
+            reward_priority_by_support=reward_priority_by_support,
+            reward_priority_by_scenario=reward_priority_by_scenario,
+            reward_priority_by_trainee=reward_priority_by_trainee,
+            preferred_trainee_name=preferred_trainee_name,
+        )
+
+    def reward_priority_for(self, rec: EventRecord) -> List[str]:
+        if rec.type == "support":
+            key = _support_key(rec.name, rec.attribute, rec.rarity)
+            priority = self.reward_priority_by_support.get(key)
+            if priority:
+                return list(priority)
+        elif rec.type == "scenario":
+            key = _scenario_key(rec.name)
+            priority = self.reward_priority_by_scenario.get(key)
+            if priority:
+                return list(priority)
+        elif rec.type == "trainee":
+            key = _trainee_key(rec.name)
+            priority = self.reward_priority_by_trainee.get(key)
+            if priority:
+                return list(priority)
+        return list(self.reward_priority)
+
+    def should_avoid_energy(self, rec: EventRecord) -> bool:
+        if rec.type == "support":
+            key = _support_key(rec.name, rec.attribute, rec.rarity)
+            if key in self.avoid_energy_overflow_by_support:
+                return self.avoid_energy_overflow_by_support[key]
+        elif rec.type == "scenario":
+            key = _scenario_key(rec.name)
+            if key in self.avoid_energy_overflow_by_scenario:
+                return self.avoid_energy_overflow_by_scenario[key]
+        elif rec.type == "trainee":
+            key = _trainee_key(rec.name)
+            if key in self.avoid_energy_overflow_by_trainee:
+                return self.avoid_energy_overflow_by_trainee[key]
+        return self.avoid_energy_overflow
 
     def pick_for(self, rec: EventRecord) -> int:
         """
@@ -544,7 +1287,7 @@ class Catalog:
 
 @dataclass
 class Query:
-    # Minimal info you’ll have from OCR/UI
+    # Minimal info you'll have from OCR/UI
     ocr_title: str
     # Optional hints (help scoring if provided)
     type_hint: Optional[str] = None  # support|trainee|scenario
@@ -555,6 +1298,7 @@ class Query:
     portrait_path: Optional[str] = None  # optional: path to portrait/icon
     portrait_image: Optional[PILImage] = None  # optional: PIL image crop (in-memory)
     portrait_phash: Optional[int] = None  # optional: precomputed 64-bit pHash
+    preferred_trainee_name: Optional[str] = None  # optional: trainee name from config for disambiguation
 
 
 @dataclass
@@ -567,7 +1311,11 @@ class MatchResult:
 
 
 def score_candidate(
-    q: Query, rec: EventRecord, portrait_phash: Optional[int]
+    q: Query,
+    rec: EventRecord,
+    portrait_phash: Optional[int],
+    cv_sim_override: Optional[float] = None,
+    cv_allowed_keys: Optional[Set[str]] = None,
 ) -> MatchResult:
     # 1) text similarity on titles (normalized)
     qt = normalize_text(q.ocr_title)
@@ -583,10 +1331,25 @@ def score_candidate(
     else:
         text_sim = 0.0
 
-    # 2) image similarity (pHash) if we have a portrait crop
-    img_sim = (
+    # 2) image similarity: prefer CV matcher when available; blend with pHash for stability
+    ph_sim = (
         hamming_similarity64(portrait_phash, rec.phash64) if portrait_phash else 0.0
     )
+    cv_sim: Optional[float]
+    if cv_sim_override is not None:
+        cv_sim = float(cv_sim_override)
+    elif q.portrait_image is not None and (cv_allowed_keys is None or rec.key in cv_allowed_keys):
+        # Use all variants for this trainee/support/scenario
+        if rec.image_variants:
+            cv_sim = _cv_image_similarity_variant(q.portrait_image, rec.image_variants)
+        else:
+            cv_sim = _cv_image_similarity(q.portrait_image, rec.image_path)
+    else:
+        cv_sim = None
+    if cv_sim is not None:
+        img_sim = 0.9 * float(cv_sim) + 0.1 * float(ph_sim)
+    else:
+        img_sim = float(ph_sim)
 
     # 3) hint bonus (soft constraints, deck-agnostic)
     hint_bonus = 0.0
@@ -615,7 +1378,7 @@ def retrieve_best(
     catalog: Catalog,
     q: Query,
     top_k: int = 5,
-    min_score: float = 0.75,
+    min_score: float = 0.5,
 ) -> List[MatchResult]:
     """
     Apply hint-driven *pre-filters* first (type → name → rarity). Each filter is
@@ -669,11 +1432,113 @@ def retrieve_best(
     if not pool:
         pool = list(catalog.records)
 
+    # Prepare optional remote CV similarities once per query to avoid local OpenCV on thin clients
+    remote_cv: Dict[str, float] = {}
+    cv_allowed_keys: Optional[Set[str]] = None
+    cv_candidate_records: List[EventRecord] = []
+    
+    if q.portrait_image is not None:
+        cv_candidate_records = _select_cv_candidates(q, pool)
+        cv_allowed_keys = {rec.key for rec in cv_candidate_records}
+    else:
+        cv_candidate_records = pool
+
+    if (
+        Settings.USE_EXTERNAL_PROCESSOR
+        and q.portrait_image is not None
+    ):
+        try:
+            templates: List[Dict[str, Any]] = []
+            for rec in cv_candidate_records:
+                # Send all variants for this record
+                variant_paths = list(rec.image_variants) if rec.image_variants else None
+                spec = _template_spec_for_remote(rec, variant_paths)
+                if spec:  # Only include templates with valid image data
+                    templates.append(spec)
+
+            # Only call remote if we have valid templates with images
+            if templates:
+                logger_uma.debug(
+                    "[event_processor] OCR Title: %s, Type Hint: %s, Name Hint: %s, Rarity Hint: %s, Attribute Hint: %s, Chain Step Hint: %s, Preferred Trainee Name: %s",
+                    q.ocr_title,
+                    q.type_hint,
+                    q.name_hint,
+                    q.rarity_hint,
+                    q.attribute_hint,
+                    q.chain_step_hint,
+                    q.preferred_trainee_name,
+                )
+
+                remote = _RemoteTMB(templates, min_confidence=0.0, options=_TM_OPTIONS)
+                remote.mode = "generic"
+                matches = remote.match(q.portrait_image)
+                for match in matches:
+                    remote_cv[str(match.name)] = float(match.score)
+                logger_uma.debug(
+                    "[event_processor] Remote match returned %d scores", len(remote_cv)
+                )
+            else:
+                logger_uma.debug(
+                    "[event_processor] No valid templates with images after filtering (%d of pool %d), skipping remote match",
+                    len(cv_candidate_records), len(pool)
+                )
+        except Exception as exc:
+            logger_uma.debug("[event_processor] Remote template match failed: %s", exc)
+            remote_cv = {}
+
+    # Score only the CV-filtered candidates (or full pool if no portrait)
+    scoring_pool = cv_candidate_records if cv_candidate_records else pool
     results: List[MatchResult] = [
-        score_candidate(q, rec, portrait_phash) for rec in pool
+        score_candidate(
+            q,
+            rec,
+            portrait_phash,
+            remote_cv.get(rec.key),
+            cv_allowed_keys,
+        )
+        for rec in scoring_pool
     ]
-    results.sort(key=lambda r: r.score, reverse=True)
-    # Filter low-confidence candidates
-    if min_score is not None:
-        results = [r for r in results if r.score >= float(min_score)]
-    return results[:top_k]
+    # Sort by total score, then text similarity, then image similarity for deterministic tie-breaks
+    results.sort(key=lambda r: (r.score, r.text_sim, r.img_sim), reverse=True)
+    results = [r for r in results if r.score >= float(min_score)]
+    
+    # Trainee name preference override: if configured trainee name matches any result, prefer it
+    if q.type_hint == "trainee" and q.preferred_trainee_name and len(results) > 1:
+        preferred_norm = normalize_text(q.preferred_trainee_name)
+        preferred_found = False
+        for i, result in enumerate(results):
+            result_name_norm = normalize_text(result.rec.name)
+            if result_name_norm == preferred_norm:
+                # Found a match: move it to position 0 if not already there
+                if i > 0:
+                    logger_uma.info(
+                        "[retrieve_best] Trainee preference override: '%s' (score=%.3f) promoted over '%s' (score=%.3f)",
+                        result.rec.name,
+                        result.score,
+                        results[0].rec.name,
+                        results[0].score,
+                    )
+                    results.insert(0, results.pop(i))
+                preferred_found = True
+                break
+        
+        # If preferred trainee not found, fallback to 'trainee/general/None/None' if available
+        if not preferred_found:
+            for i, result in enumerate(results):
+                if (result.rec.type == "trainee" and 
+                    result.rec.name == "general" and 
+                    result.rec.rarity == "None" and 
+                    result.rec.attribute == "None"):
+                    if i > 0:
+                        logger_uma.info(
+                            "[retrieve_best] Trainee preference failed, using general fallback: '%s' (score=%.3f) promoted over '%s' (score=%.3f)",
+                            result.rec.event_name,
+                            result.score,
+                            results[0].rec.name,
+                            results[0].score,
+                        )
+                        results.insert(0, results.pop(i))
+                    break
+    
+    results_k = results[:top_k]
+    return results_k

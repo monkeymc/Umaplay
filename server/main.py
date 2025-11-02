@@ -15,6 +15,7 @@ from server.utils import (
     load_nav_prefs,
     save_nav_prefs,
     ensure_nav_exists,
+    load_event_setup_defaults,
 )
 from server.updater import latest_info
 from core.version import __version__
@@ -86,17 +87,60 @@ if race_dir.exists():
 # -----------------------------
 @app.get("/api/skills")
 def api_skills():
-    """
-    Returns: list[ { name: str, description?: str } ]
-    Source: datasets/in_game/skills.json
-    """
+    """Return skills enriched with derived category, filtering out unreleased/obsolete."""
     data = load_dataset_json("skills.json")
-    if data is None:
-        return []  # frontend handles empty gracefully
-    # Ensure consistent shape
-    if isinstance(data, list):
-        return data
-    return []
+    if not isinstance(data, list):
+        return []
+
+    icons_dir = repo_root() / "web" / "public" / "icons" / "skills"
+    try:
+        available_icons = {
+            entry.name for entry in icons_dir.iterdir() if entry.is_file()
+        }
+    except FileNotFoundError:
+        available_icons = set()
+
+    def derive_category(icon_filename: str | None) -> str:
+        if not icon_filename:
+            return "unknown"
+        base = icon_filename.rsplit("/", 1)[-1]
+        if base.endswith(".png"):
+            base = base[:-4]
+        parts = base.split("_")
+        if len(parts) >= 4:
+            cat_id = parts[3]
+            # Normalize category by removing rarity suffix (last digit for 4+ digit IDs)
+            # e.g., 10011/10012/10013 -> 1001, 20041/20042 -> 2004
+            if len(cat_id) >= 4 and cat_id.isdigit():
+                return cat_id[:-1]
+            return cat_id
+        if len(parts) >= 3:
+            return parts[2]
+        return "unknown"
+
+    enriched = []
+    for entry in data:
+        if not isinstance(entry, dict):
+            continue
+        # Skip skills without icon (not in game yet)
+        icon_filename = entry.get("icon_filename")
+        if not icon_filename or not isinstance(icon_filename, str):
+            continue
+        if icon_filename.lower() == "utx_ico_skill_9999.png":
+            continue
+        if icon_filename not in available_icons:
+            continue
+        # Skip obsolete skills
+        name = entry.get("name", "")
+        if "obsolete" in name.lower():
+            continue
+        enriched.append(
+            {
+                **entry,
+                "category": derive_category(icon_filename),
+            }
+        )
+    return enriched
 
 
 @app.get("/api/races")
@@ -134,13 +178,14 @@ def api_events():
 def get_preset_event_setup(preset_id: str) -> Dict[str, Any]:
     """
     Return the event_setup object stored in the given preset.
-    If not present, return {} (caller can decide defaults).
+    If not present, return schema-backed defaults.
     """
     cfg = load_config() or {}
     presets = cfg.get("presets", [])
     for p in presets:
         if p.get("id") == preset_id:
-            return p.get("event_setup", {}) or {}
+            setup = p.get("event_setup")
+            return load_event_setup_defaults(setup)
     raise HTTPException(status_code=404, detail="Preset not found")
 
 
@@ -148,13 +193,14 @@ def get_preset_event_setup(preset_id: str) -> Dict[str, Any]:
 def put_preset_event_setup(preset_id: str, payload: Dict[str, Any]):
     """
     Upsert the `event_setup` object inside a matching preset,
-    without touching the rest of the config.
+    normalizing via schema defaults without touching the rest of the config.
     """
     cfg = load_config() or {}
     presets = cfg.get("presets", [])
     for p in presets:
         if p.get("id") == preset_id:
-            p["event_setup"] = payload or {}
+            normalized = load_event_setup_defaults(payload)
+            p["event_setup"] = normalized
             save_config(cfg)
             return {"status": "ok", "preset_id": preset_id}
     raise HTTPException(status_code=404, detail="Preset not found")
