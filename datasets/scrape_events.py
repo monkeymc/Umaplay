@@ -162,10 +162,10 @@ def find_trainee_items(soup: BeautifulSoup, debug: bool) -> List[Tag]:
     return items
 
 def extract_trainee_name(item: Tag, debug: bool) -> str:
-    raw = extract_support_name(item, debug)
-    nm = normalize_trainee_name(raw)
-    dbg(debug, f"[DEBUG] Trainee name normalized: {nm!r} (raw={raw!r})")
-    return nm
+    # Keep full name including parentheses for trainees (e.g., "Special Week (Summer)")
+    name = extract_support_name(item, debug)
+    dbg(debug, f"[DEBUG] Trainee name: {name!r}")
+    return name
 
 # --------------------------- parsing helpers --------------------------------
 def normalize_label(label: str) -> str:
@@ -608,6 +608,12 @@ def main():
         if not name:
             dbg(args.debug, f"[WARN] Trainee[{idx}] has no name; skipping.")
             continue
+        
+        # Clean "(Original)" suffix from trainee names
+        original_name = name
+        name = re.sub(r'\s*\(Original\)\s*$', '', name, flags=re.IGNORECASE).strip()
+        if name != original_name:
+            dbg(args.debug, f"[DEBUG] Cleaned trainee name: '{original_name}' → '{name}'")
 
         events = parse_events_in_card(item, args.debug)
         trainee_obj = {
@@ -615,6 +621,7 @@ def main():
             "name": name,
             "rarity": "None",
             "attribute": "None",
+            "id": f"{name}_None_None",
             "choice_events": events,
         }
         supports.append(trainee_obj)
