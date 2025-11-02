@@ -126,7 +126,7 @@ class Settings:
     AGENT_NAME_NAV: str = "agent_nav"
     USE_EXTERNAL_PROCESSOR = False
     EXTERNAL_PROCESSOR_URL = "http://127.0.0.1:8001"
-    TEMPLATE_MATCH_TIMEOUT: float = _env_float("TEMPLATE_MATCH_TIMEOUT", default=8.0)
+    TEMPLATE_MATCH_TIMEOUT: float = _env_float("TEMPLATE_MATCH_TIMEOUT", default=300.0)
 
     REFERENCE_STATS = {
         "SPD": 1150,

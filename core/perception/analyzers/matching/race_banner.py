@@ -57,6 +57,7 @@ class RaceBannerMatcher(TemplateMatcherBase):
         ms_min_scale: float = 0.60,
         ms_max_scale: float = 1.40,
         ms_steps: int = 9,
+        use_portrait_masking: bool = False,
     ) -> None:
         super().__init__(
             tm_weight=tm_weight,
@@ -66,6 +67,7 @@ class RaceBannerMatcher(TemplateMatcherBase):
             ms_min_scale=ms_min_scale,
             ms_max_scale=ms_max_scale,
             ms_steps=ms_steps,
+            use_portrait_masking=use_portrait_masking,
         )
         self.default_roi = roi
         self._cache: Dict[str, PreparedTemplate] = {}

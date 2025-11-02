@@ -81,6 +81,7 @@ class TemplateMatcherBase:
         ms_min_scale: float = 0.60,
         ms_max_scale: float = 1.40,
         ms_steps: int = 9,
+        use_portrait_masking: bool = False,
     ) -> None:
         self.tm_weight = float(tm_weight)
         self.hash_weight = float(hash_weight)
@@ -94,6 +95,48 @@ class TemplateMatcherBase:
         self.ms_min_scale = float(ms_min_scale)
         self.ms_max_scale = float(ms_max_scale)
         self.ms_steps = int(max(1, ms_steps))
+        self.use_portrait_masking = bool(use_portrait_masking)
+
+    @staticmethod
+    def _gray_world_white_balance(bgr: np.ndarray) -> np.ndarray:
+        """Simple white balance to normalize color casts (e.g., golden tints)."""
+        if bgr is None or bgr.size == 0:
+            return bgr
+        eps = 1e-6
+        means = bgr.reshape(-1, 3).mean(axis=0) + eps
+        scale = means.mean() / means
+        balanced = np.clip(bgr * scale, 0, 255).astype(np.uint8)
+        return balanced
+
+    @staticmethod
+    def _portrait_hair_mask(hsv: np.ndarray) -> np.ndarray:
+        """Create mask focused on hair/face region for better color discrimination.
+        
+        Targets upper 60% of image with saturation >= 40 and value in [35, 235].
+        Excludes gray background and uniform clothing areas.
+        """
+        cv2 = _require_cv2()
+        if hsv is None or hsv.size == 0:
+            return np.ones(hsv.shape[:2], dtype=np.uint8) * 255
+        
+        H, W = hsv.shape[:2]
+        s = hsv[:, :, 1]
+        v = hsv[:, :, 2]
+
+        sat_mask = (s >= 40).astype(np.uint8)
+        v_mask = ((v >= 35) & (v <= 235)).astype(np.uint8)
+
+        # Hair/face ROI: top 60%, 5% horizontal margins
+        y0, y1 = int(0.05 * H), int(0.60 * H)
+        x0, x1 = int(0.05 * W), int(0.95 * W)
+        roi = np.zeros((H, W), np.uint8)
+        roi[y0:y1, x0:x1] = 1
+
+        mask = (sat_mask & v_mask & roi).astype(np.uint8) * 255
+        # Clean speckles
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+        return mask
 
     def _prepare_entry(self, entry: TemplateEntry) -> Optional[PreparedTemplate]:
         cv2 = _require_cv2()
@@ -118,8 +161,12 @@ class TemplateMatcherBase:
 
             # Use to_bgr for consistent color conversion (handles PIL RGB → BGR correctly)
             tmpl_bgr = to_bgr(pil_rgba)
-
             tmpl_bgr = np.ascontiguousarray(tmpl_bgr)
+            
+            # Apply white balance if portrait masking enabled
+            if self.use_portrait_masking:
+                tmpl_bgr = self._gray_world_white_balance(tmpl_bgr)
+            
             tmpl_gray, tmpl_edges = self.prepare_gray_edges(tmpl_bgr)
 
             metadata = dict(entry.metadata or {})
@@ -143,6 +190,11 @@ class TemplateMatcherBase:
                 tmpl_hash = hex_to_hash(str(hash_hex))
             else:
                 tmpl_hash = phash(pil_for_hash)
+            
+            # Generate hair-focused mask for portraits if enabled and no alpha mask exists
+            if self.use_portrait_masking and tmpl_mask is None:
+                tmpl_hsv = cv2.cvtColor(tmpl_bgr, cv2.COLOR_BGR2HSV)
+                tmpl_mask = self._portrait_hair_mask(tmpl_hsv)
 
             tmpl_hist = self._histogram(tmpl_bgr, mask=tmpl_mask)
 
@@ -170,9 +222,20 @@ class TemplateMatcherBase:
         # Ensure canonical BGR regardless of source (RGB/BGRA/PIL)
         region_bgr = to_bgr(region_bgr)
         region_bgr = np.ascontiguousarray(region_bgr)
+        
+        # Apply white balance if portrait masking enabled
+        if self.use_portrait_masking:
+            region_bgr = self._gray_world_white_balance(region_bgr)
 
         reg_gray, reg_edges = self.prepare_gray_edges(region_bgr)
-        reg_hist = self._histogram(region_bgr)
+        
+        # Apply hair-focused mask for histogram if portrait mode enabled
+        reg_mask = None
+        if self.use_portrait_masking:
+            reg_hsv = cv2.cvtColor(region_bgr, cv2.COLOR_BGR2HSV)
+            reg_mask = self._portrait_hair_mask(reg_hsv)
+        
+        reg_hist = self._histogram(region_bgr, mask=reg_mask)
 
         # Perceptual hash over normalized BGR region
         reg_hash = phash(Image.fromarray(cv2.cvtColor(region_bgr, cv2.COLOR_BGR2RGB)))
@@ -251,8 +314,6 @@ class TemplateMatcherBase:
             tmpl_gray = template_gray
             tmpl_edges = template_edges
             tmpl_h, tmpl_w = tmpl_gray.shape[:2]
-            if tmpl_h <= 0 or tmpl_w <= 0:
-                return 0.0
 
             min_scale = min(self.ms_min_scale, self.ms_max_scale)
             max_scale = max(self.ms_min_scale, self.ms_max_scale)
@@ -327,7 +388,8 @@ class TemplateMatcherBase:
         cv2 = _require_cv2()
         hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV)
         # 2D histogram on H and S; mask restricts to portrait when available
-        hist = cv2.calcHist([hsv], [0, 1], mask, [180, 256], [0, 180, 0, 256])
+        # Use 32x32 bins for robustness (vs 180x256 high resolution)
+        hist = cv2.calcHist([hsv], [0, 1], mask, [32, 32], [0, 180, 0, 256])
         cv2.normalize(hist, hist, 0, 1, cv2.NORM_MINMAX)
         return hist
 

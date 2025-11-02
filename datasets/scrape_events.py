@@ -40,10 +40,13 @@ W_MOOD     = 2.0
 
 # ------------------------------- regexes ------------------------------------
 _RE_INT       = r"([+\-]?\d+)"
+_RE_RANGE     = r"([+\-]?\d+)\s*/\s*([+\-]?\d+)"  # e.g., "-5/-20" or "10/20"
 RE_ENERGY     = re.compile(r"\benergy\b\s*"+_RE_INT, re.I)
+RE_ENERGY_RANGE = re.compile(r"\benergy\b\s*"+_RE_RANGE, re.I)
 RE_BOND       = re.compile(r"\bbond\b\s*"+_RE_INT, re.I)
 RE_SKILLPTS   = re.compile(r"\bskill\s*(?:points|pts)\b\s*"+_RE_INT, re.I)
 RE_MOOD       = re.compile(r"\bmood\b\s*"+_RE_INT, re.I)
+RE_LAST_TRAINED_STAT = re.compile(r"\blast\s*trained\s*stat\b\s*"+_RE_INT, re.I)
 RE_MOTIV_UP   = re.compile(r"\b(mood|motivation)\b.*\b(up|good)\b", re.I)
 RE_MOTIV_DOWN = re.compile(r"\b(mood|motivation)\b.*\b(down|bad)\b", re.I)
 
@@ -53,6 +56,14 @@ STAT_RX = {
     "power":   re.compile(r"\bpower\b\s*"+_RE_INT, re.I),
     "guts":    re.compile(r"\bguts\b\s*"+_RE_INT, re.I),
     "wit":     re.compile(r"\b(?:wit|wis|wisdom|int|intelligence)\b\s*"+_RE_INT, re.I),
+}
+
+STAT_RX_RANGE = {
+    "speed":   re.compile(r"\bspeed\b\s*"+_RE_RANGE, re.I),
+    "stamina": re.compile(r"\bstamina\b\s*"+_RE_RANGE, re.I),
+    "power":   re.compile(r"\bpower\b\s*"+_RE_RANGE, re.I),
+    "guts":    re.compile(r"\bguts\b\s*"+_RE_RANGE, re.I),
+    "wit":     re.compile(r"\b(?:wit|wis|wisdom|int|intelligence)\b\s*"+_RE_RANGE, re.I),
 }
 
 STAT_WEIGHTS = {
@@ -151,10 +162,10 @@ def find_trainee_items(soup: BeautifulSoup, debug: bool) -> List[Tag]:
     return items
 
 def extract_trainee_name(item: Tag, debug: bool) -> str:
-    raw = extract_support_name(item, debug)
-    nm = normalize_trainee_name(raw)
-    dbg(debug, f"[DEBUG] Trainee name normalized: {nm!r} (raw={raw!r})")
-    return nm
+    # Keep full name including parentheses for trainees (e.g., "Special Week (Summer)")
+    name = extract_support_name(item, debug)
+    dbg(debug, f"[DEBUG] Trainee name: {name!r}")
+    return name
 
 # --------------------------- parsing helpers --------------------------------
 def normalize_label(label: str) -> str:
@@ -169,8 +180,14 @@ def normalize_label(label: str) -> str:
         return m.group(1)
     return "top"
 
-def parse_effects_from_text(txt: str) -> Dict[str, Any]:
+def parse_effects_from_text(txt: str) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
+    """
+    Parse effects from text. Returns (primary_effect, alternate_effect).
+    alternate_effect is None unless range notation is detected (e.g., "Energy -5/-20").
+    """
     eff: Dict[str, Any] = {}
+    alt_eff: Optional[Dict[str, Any]] = None
+    
     # All stats
     m = RE_ALL_STATS.search(txt)
     if m:
@@ -183,19 +200,53 @@ def parse_effects_from_text(txt: str) -> Dict[str, Any]:
         eff["stats"] = val
         if cnt > 1:
             eff.setdefault("random_stats", {"count": cnt, "amount": val})
-    # Individual effects
-    m = RE_ENERGY.search(txt);     eff["energy"]    = int(m.group(1)) if m else eff.get("energy")
+    
+    # Check for range notation first (e.g., "Energy -5/-20")
+    m_range = RE_ENERGY_RANGE.search(txt)
+    if m_range:
+        val1, val2 = int(m_range.group(1)), int(m_range.group(2))
+        eff["energy"] = val1
+        alt_eff = {"energy": val2}
+    else:
+        m = RE_ENERGY.search(txt)
+        if m:
+            eff["energy"] = int(m.group(1))
+    
+    # Bond and skill_pts (no range notation seen in practice)
     m = RE_BOND.search(txt);       eff["bond"]      = int(m.group(1)) if m else eff.get("bond")
     m = RE_SKILLPTS.search(txt);   eff["skill_pts"] = int(m.group(1)) if m else eff.get("skill_pts")
+    
+    # Mood
     m = RE_MOOD.search(txt)
     if m: eff["mood"] = int(m.group(1))
     else:
         if RE_MOTIV_UP.search(txt):   eff["mood"] = 1
         if RE_MOTIV_DOWN.search(txt): eff["mood"] = -1
-    for k, rx in STAT_RX.items():
-        if m := rx.search(txt):
-            eff[k] = int(m.group(1))
-    return {k: v for k, v in eff.items() if v not in (None, "", [], {})}
+    
+    # Last trained stat
+    m = RE_LAST_TRAINED_STAT.search(txt)
+    if m:
+        eff["last_trained_stat"] = int(m.group(1))
+    
+    # Individual stats - check for range notation
+    for k, rx_range in STAT_RX_RANGE.items():
+        if m := rx_range.search(txt):
+            val1, val2 = int(m.group(1)), int(m.group(2))
+            eff[k] = val1
+            if alt_eff is None:
+                alt_eff = {}
+            alt_eff[k] = val2
+            break  # Only one stat should have range notation per line
+    else:
+        # No range found, check for single values
+        for k, rx in STAT_RX.items():
+            if m := rx.search(txt):
+                eff[k] = int(m.group(1))
+    
+    clean_eff = {k: v for k, v in eff.items() if v not in (None, "", [], {})}
+    clean_alt = {k: v for k, v in (alt_eff or {}).items() if v not in (None, "", [], {})} if alt_eff else None
+    
+    return clean_eff, clean_alt
 
 def parse_right_cell(right: Tag, debug: bool) -> List[Dict[str, Any]]:
     outcomes: List[Dict[str, Any]] = []
@@ -205,6 +256,8 @@ def parse_right_cell(right: Tag, debug: bool) -> List[Dict[str, Any]]:
     base_statuses: List[str] = []
     optionals: List[Dict[str, Any]] = []  # each: {"effects":{}, "hints":[], "statuses":[]}
     active_optional: Optional[Dict[str, Any]] = None
+    has_range_variation: bool = False  # Track if we need to create range-based outcomes
+    range_variations: List[Dict[str, Any]] = []  # Store alternate values from ranges
 
     def make_outcome(effect: Dict[str, Any], hints_seq: List[str], statuses_seq: List[str]) -> Dict[str, Any]:
         out: Dict[str, Any] = {**effect}
@@ -222,20 +275,56 @@ def parse_right_cell(right: Tag, debug: bool) -> List[Dict[str, Any]]:
             outcomes.append(out)
 
     def flush():
-        nonlocal base_effect, base_hints, base_statuses, optionals, active_optional
+        nonlocal base_effect, base_hints, base_statuses, optionals, active_optional, has_range_variation, range_variations
         base_present = bool(base_effect or base_hints or base_statuses)
-        if base_present:
-            push(make_outcome(base_effect, base_hints, base_statuses))
-        for opt in optionals:
-            combined: Dict[str, Any] = {**base_effect}
-            for k, v in opt.get("effects", {}).items():
-                if k in combined and isinstance(combined[k], (int, float)) and isinstance(v, (int, float)):
-                    combined[k] = combined[k] + v
-                else:
-                    combined[k] = v
-            combined_hints = base_hints + opt.get("hints", [])
-            combined_statuses = base_statuses + opt.get("statuses", [])
-            push(make_outcome(combined, combined_hints, combined_statuses))
+        
+        # If we have range variations, generate outcomes for each variation
+        if has_range_variation and range_variations:
+            # Create outcome with primary values
+            if base_present:
+                push(make_outcome(base_effect, base_hints, base_statuses))
+            for opt in optionals:
+                combined: Dict[str, Any] = {**base_effect}
+                for k, v in opt.get("effects", {}).items():
+                    if k in combined and isinstance(combined[k], (int, float)) and isinstance(v, (int, float)):
+                        combined[k] = combined[k] + v
+                    else:
+                        combined[k] = v
+                combined_hints = base_hints + opt.get("hints", [])
+                combined_statuses = base_statuses + opt.get("statuses", [])
+                push(make_outcome(combined, combined_hints, combined_statuses))
+            
+            # Create outcomes with alternate values from range
+            for alt_vals in range_variations:
+                alt_effect = {**base_effect}
+                for k, v in alt_vals.items():
+                    alt_effect[k] = v
+                if base_present:
+                    push(make_outcome(alt_effect, base_hints, base_statuses))
+                for opt in optionals:
+                    combined: Dict[str, Any] = {**alt_effect}
+                    for k, v in opt.get("effects", {}).items():
+                        if k in combined and isinstance(combined[k], (int, float)) and isinstance(v, (int, float)):
+                            combined[k] = combined[k] + v
+                        else:
+                            combined[k] = v
+                    combined_hints = base_hints + opt.get("hints", [])
+                    combined_statuses = base_statuses + opt.get("statuses", [])
+                    push(make_outcome(combined, combined_hints, combined_statuses))
+        else:
+            # No range variations, use standard logic
+            if base_present:
+                push(make_outcome(base_effect, base_hints, base_statuses))
+            for opt in optionals:
+                combined: Dict[str, Any] = {**base_effect}
+                for k, v in opt.get("effects", {}).items():
+                    if k in combined and isinstance(combined[k], (int, float)) and isinstance(v, (int, float)):
+                        combined[k] = combined[k] + v
+                    else:
+                        combined[k] = v
+                combined_hints = base_hints + opt.get("hints", [])
+                combined_statuses = base_statuses + opt.get("statuses", [])
+                push(make_outcome(combined, combined_hints, combined_statuses))
 
         if not base_present and not optionals:
             # nothing parsed for this block
@@ -244,6 +333,8 @@ def parse_right_cell(right: Tag, debug: bool) -> List[Dict[str, Any]]:
         base_effect, base_hints, base_statuses = {}, [], []
         optionals.clear()
         active_optional = None
+        has_range_variation = False
+        range_variations.clear()
 
     lines = right.find_all("div", recursive=False)
     dbg(debug, f"          [DEBUG] right-cell lines: {len(lines)}")
@@ -280,12 +371,25 @@ def parse_right_cell(right: Tag, debug: bool) -> List[Dict[str, Any]]:
             if "hint" in low and clean_txt:
                 line_hints.append(clean_txt)
 
-        eff = parse_effects_from_text(txt)
+        eff, alt_eff = parse_effects_from_text(txt)
         is_random_line = "(random" in low
 
-        dbg(debug, f"            [DEBUG] line: {txt!r} → eff={eff or {}} line_hints={line_hints} line_statuses={line_statuses} random={is_random_line}")
+        dbg(debug, f"            [DEBUG] line: {txt!r} → eff={eff or {}} alt_eff={alt_eff or {}} line_hints={line_hints} line_statuses={line_statuses} random={is_random_line}")
 
-        if is_random_line:
+        # If we have alt_eff from range notation, mark that we need to generate range variations
+        if alt_eff:
+            has_range_variation = True
+            range_variations.append(alt_eff)
+            # Process eff normally into base_effect
+            active_optional = None
+            for k, v in eff.items():
+                if k in base_effect and isinstance(base_effect[k], (int, float)) and isinstance(v, (int, float)):
+                    base_effect[k] = base_effect[k] + v
+                else:
+                    base_effect[k] = v
+            base_hints.extend(line_hints)
+            base_statuses.extend(line_statuses)
+        elif is_random_line:
             if line_statuses:
                 # statuses remain optional outcomes
                 pass
@@ -337,14 +441,19 @@ def score_outcome(eff: Dict[str, Any]) -> float:
             W_HINT*hints + W_BOND*bond + W_MOOD*mood)
 
 def choose_default_preference(options: Dict[str, List[Dict[str, Any]]]) -> int:
+    """
+    Choose the best option using WORST-CASE scoring for each option.
+    This ensures we don't prefer options with potentially bad random outcomes.
+    """
     best_key = 1
     best_score = float("-inf")
     for k, outs in options.items():
         if not outs:
             continue
-        avg = sum(score_outcome(o) for o in outs) / float(len(outs))
-        if avg > best_score:
-            best_score = avg
+        # Use minimum score (worst case) for this option
+        worst_case = min(score_outcome(o) for o in outs)
+        if worst_case > best_score:
+            best_score = worst_case
             best_key = int(k) if str(k).isdigit() else 1
     return best_key
 
@@ -499,6 +608,12 @@ def main():
         if not name:
             dbg(args.debug, f"[WARN] Trainee[{idx}] has no name; skipping.")
             continue
+        
+        # Clean "(Original)" suffix from trainee names
+        original_name = name
+        name = re.sub(r'\s*\(Original\)\s*$', '', name, flags=re.IGNORECASE).strip()
+        if name != original_name:
+            dbg(args.debug, f"[DEBUG] Cleaned trainee name: '{original_name}' → '{name}'")
 
         events = parse_events_in_card(item, args.debug)
         trainee_obj = {
@@ -506,6 +621,7 @@ def main():
             "name": name,
             "rarity": "None",
             "attribute": "None",
+            "id": f"{name}_None_None",
             "choice_events": events,
         }
         supports.append(trainee_obj)

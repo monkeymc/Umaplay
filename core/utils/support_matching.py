@@ -110,7 +110,18 @@ def get_support_matcher(
             min_confidence=min_confidence,
         )
     else:
-        matcher = SupportCardMatcher(templates, min_confidence=min_confidence)
+        matcher = SupportCardMatcher(
+            templates,
+            min_confidence=min_confidence,
+            tm_weight=0.48,
+            hash_weight=0.17,
+            hist_weight=0.35,
+            tm_edge_weight=0.25,
+            ms_min_scale=0.90,
+            ms_max_scale=1.10,
+            ms_steps=12,
+            use_portrait_masking=True,  # Enable hair-focused color matching
+        )
 
     if use_remote:
         _MATCHER_CACHE_REMOTE[deck_key] = matcher  # type: ignore[assignment]
