@@ -289,7 +289,7 @@ _TM_OPTIONS: Dict[str, float] = {
     "ms_steps": 12,
 }
 
-_CV_TEMPLATE_TEXT_THRESHOLD = 0.8
+_CV_TEMPLATE_TEXT_THRESHOLD = 0.9
 _CV_TEMPLATE_MIN = 1
 _CV_TEMPLATE_MAX = 100
 
@@ -620,7 +620,13 @@ def _select_cv_candidates(q: "Query", pool: List[EventRecord]) -> List[EventReco
     filtered = [rec for rec, sim in scored if sim >= _CV_TEMPLATE_TEXT_THRESHOLD]
 
     if len(filtered) < _CV_TEMPLATE_MIN:
-        filtered = [rec for rec, _ in scored[:_CV_TEMPLATE_MAX]]
+        logger_uma.warning("Not enough candidates for %s. filtering with half of the Threshold", q_title_norm)
+        
+        filtered = [rec for rec, sim in scored if sim >= _CV_TEMPLATE_TEXT_THRESHOLD/2]
+
+        if len(filtered) < _CV_TEMPLATE_MIN:
+            logger_uma.warning("Fallback to top %d candidates", _CV_TEMPLATE_MIN)
+            filtered = [rec for rec, _ in scored[:_CV_TEMPLATE_MAX]]
     else:
         filtered = filtered[:_CV_TEMPLATE_MAX]
 
@@ -1453,9 +1459,16 @@ def retrieve_best(
             # Only call remote if we have valid templates with images
             if templates:
                 logger_uma.debug(
-                    "[event_processor] Remote template match: %d valid templates (filtered %d of %d)",
-                    len(templates), len(cv_candidate_records), len(pool)
+                    "[event_processor] OCR Title: %s, Type Hint: %s, Name Hint: %s, Rarity Hint: %s, Attribute Hint: %s, Chain Step Hint: %s, Preferred Trainee Name: %s",
+                    q.ocr_title,
+                    q.type_hint,
+                    q.name_hint,
+                    q.rarity_hint,
+                    q.attribute_hint,
+                    q.chain_step_hint,
+                    q.preferred_trainee_name,
                 )
+
                 remote = _RemoteTMB(templates, min_confidence=0.0, options=_TM_OPTIONS)
                 remote.mode = "generic"
                 matches = remote.match(q.portrait_image)
@@ -1492,6 +1505,7 @@ def retrieve_best(
     # Trainee name preference override: if configured trainee name matches any result, prefer it
     if q.type_hint == "trainee" and q.preferred_trainee_name and len(results) > 1:
         preferred_norm = normalize_text(q.preferred_trainee_name)
+        preferred_found = False
         for i, result in enumerate(results):
             result_name_norm = normalize_text(result.rec.name)
             if result_name_norm == preferred_norm:
@@ -1505,7 +1519,26 @@ def retrieve_best(
                         results[0].score,
                     )
                     results.insert(0, results.pop(i))
+                preferred_found = True
                 break
+        
+        # If preferred trainee not found, fallback to 'trainee/general/None/None' if available
+        if not preferred_found:
+            for i, result in enumerate(results):
+                if (result.rec.type == "trainee" and 
+                    result.rec.name == "general" and 
+                    result.rec.rarity == "None" and 
+                    result.rec.attribute == "None"):
+                    if i > 0:
+                        logger_uma.info(
+                            "[retrieve_best] Trainee preference failed, using general fallback: '%s' (score=%.3f) promoted over '%s' (score=%.3f)",
+                            result.rec.event_name,
+                            result.score,
+                            results[0].rec.name,
+                            results[0].score,
+                        )
+                        results.insert(0, results.pop(i))
+                    break
     
     results_k = results[:top_k]
     return results_k
