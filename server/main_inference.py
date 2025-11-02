@@ -398,7 +398,7 @@ def template_match(req: TemplateMatchRequest) -> Dict[str, Any]:
                 for m in matches
             ],
         }
-    except HTTPException:
-        raise
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Template matching failure: {e}")

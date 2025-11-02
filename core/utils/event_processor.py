@@ -271,14 +271,6 @@ def hamming_similarity64(a_int: Optional[int], b_int: Optional[int]) -> float:
 # Image similarity (template+hash+hist) with lightweight cache
 # -----------------------------
 
-try:
-    _portrait_matcher: Optional[TemplateMatcherBase] = TemplateMatcherBase(ms_steps=7, tm_edge_weight=0.30)
-except Exception:  # OpenCV may be unavailable in some environments
-    _portrait_matcher = None
-
-_tmpl_cache: Dict[str, Any] = {}
-_template_b64_cache: Dict[str, str] = {}
-
 # Shared template-matching options to keep local and remote behavior aligned
 _TM_OPTIONS: Dict[str, float] = {
     "tm_weight": 0.7,
@@ -289,6 +281,22 @@ _TM_OPTIONS: Dict[str, float] = {
     "ms_max_scale": 1.40,
     "ms_steps": 7,
 }
+
+try:
+    _portrait_matcher: Optional[TemplateMatcherBase] = TemplateMatcherBase(
+        tm_weight=_TM_OPTIONS["tm_weight"],
+        hash_weight=_TM_OPTIONS["hash_weight"],
+        hist_weight=_TM_OPTIONS["hist_weight"],
+        tm_edge_weight=_TM_OPTIONS["tm_edge_weight"],
+        ms_min_scale=_TM_OPTIONS["ms_min_scale"],
+        ms_max_scale=_TM_OPTIONS["ms_max_scale"],
+        ms_steps=int(_TM_OPTIONS["ms_steps"]),
+    )
+except Exception:  # OpenCV may be unavailable in some environments
+    _portrait_matcher = None
+
+_tmpl_cache: Dict[str, Any] = {}
+_template_b64_cache: Dict[str, str] = {}
 
 
 def _cv_image_similarity(portrait_img: PILImage, template_path: Optional[str]) -> Optional[float]:
@@ -342,35 +350,44 @@ def _public_path_from_image_path(image_path: Optional[str]) -> Optional[str]:
 
 
 def _template_spec_for_remote(rec: EventRecord) -> Optional[Dict[str, Any]]:
-    image_path = rec.image_path or ""
+    """Build template descriptor for remote matching. Returns None if no valid image data."""
+    image_path = rec.image_path
+    if not image_path:
+        return None
+    
     public_path = _public_path_from_image_path(image_path)
+    if not public_path:
+        return None
+    
     payload: Dict[str, Any] = {
         "id": rec.key,
-        "metadata": {"name": rec.name},
+        "public_path": f"/{public_path}",
+        "metadata": {
+            "name": rec.name,
+            "public_path": f"/{public_path}",
+        },
     }
-    if public_path:
-        public = f"/{public_path}"
-        payload["public_path"] = public
-        payload["metadata"]["public_path"] = public
 
+    # Include precomputed hash if available
     if rec.phash64 is not None:
         payload["hash_hex"] = f"{int(rec.phash64) & ((1 << 64) - 1):016x}"
 
-    if image_path:
-        cached = _template_b64_cache.get(image_path)
-        if cached is None:
-            try:
-                with Image.open(image_path) as img:
-                    buf = io.BytesIO()
-                    img.save(buf, format="PNG")
-                    cached = base64.b64encode(buf.getvalue()).decode("ascii")
-            except Exception:
-                cached = None
-            if cached is not None:
+    # Inline image as fallback if server doesn't have the asset
+    cached = _template_b64_cache.get(image_path)
+    if cached is None:
+        try:
+            with Image.open(image_path) as img:
+                buf = io.BytesIO()
+                img.save(buf, format="PNG")
+                cached = base64.b64encode(buf.getvalue()).decode("ascii")
                 _template_b64_cache[image_path] = cached
-        if cached:
-            payload["img"] = cached
-
+        except Exception:
+            # If we can't load the image locally, don't include this template
+            return None
+    
+    if cached:
+        payload["img"] = cached
+    
     return payload
 
 
@@ -1138,21 +1155,32 @@ def retrieve_best(
     ):
         try:
             templates: List[Dict[str, Any]] = []
-            key_to_template: Dict[str, Dict[str, Any]] = {}
             for rec in pool:
                 spec = _template_spec_for_remote(rec)
-                if not spec:
-                    continue
-                templates.append(spec)
-                key_to_template[spec["id"]] = spec
+                if spec:  # Only include templates with valid image data
+                    templates.append(spec)
+            
+            # Only call remote if we have valid templates with images
             if templates:
+                logger_uma.debug(
+                    "[event_processor] Remote template match: %d valid templates from pool of %d",
+                    len(templates), len(pool)
+                )
                 remote = _RemoteTMB(templates, min_confidence=0.0, options=_TM_OPTIONS)
-                # Server expects mode in {support_cards, race_banners, generic}
                 remote.mode = "generic"
                 matches = remote.match(q.portrait_image)
                 for match in matches:
                     remote_cv[str(match.name)] = float(match.score)
-        except Exception:
+                logger_uma.debug(
+                    "[event_processor] Remote match returned %d scores", len(remote_cv)
+                )
+            else:
+                logger_uma.debug(
+                    "[event_processor] No valid templates with images in pool of %d, skipping remote match",
+                    len(pool)
+                )
+        except Exception as exc:
+            logger_uma.debug("[event_processor] Remote template match failed: %s", exc)
             remote_cv = {}
 
     results: List[MatchResult] = [
