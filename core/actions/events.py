@@ -218,6 +218,8 @@ class EventFlow:
         self.prefs = prefs
         self.conf_min_choice = conf_min_choice
         self.debug_visual = debug_visual
+        # Track last event clicked to detect confirmation phases (e.g., Acupuncturist)
+        self._last_event_clicked: Optional[Tuple[str, int, int]] = None  # (key_step, pick, expected_n)
 
     # ----- public API -----
 
@@ -478,6 +480,24 @@ class EventFlow:
             )
         pick = adjusted_pick
 
+        # Detect confirmation phase: if same event as last time with fewer options, override to option 1
+        if self._last_event_clicked is not None:
+            last_key_step, last_pick, last_expected_n = self._last_event_clicked
+            # Confirmation phase indicators:
+            # - Same event (key_step matches)
+            # - Fewer options detected than expected
+            # - Original pick was > 1
+            if (best.rec.key_step == last_key_step and 
+                len(choices_sorted) < expected_n and 
+                last_pick > 1):
+                logger_uma.info(
+                    "[event] Confirmation phase detected for '%s': overriding pick from %d to 1 (confirm choice).",
+                    best.rec.event_name or best.rec.key_step,
+                    pick
+                )
+                pick = 1
+                debug["confirmation_phase_override"] = True
+
         available_n = len(choices_sorted)
         if pick > available_n:
             logger_uma.warning(
@@ -490,6 +510,10 @@ class EventFlow:
 
         target = choices_sorted[pick - 1]
         self.ctrl.click_xyxy_center(target["xyxy"], clicks=1)
+        
+        # Update last event state for confirmation phase detection
+        self._last_event_clicked = (best.rec.key_step, pick, expected_n)
+        
         logger_uma.info(
             "[event] Clicked option #%d for %s (score=%.3f, energy=%s/%s).",
             pick,
@@ -514,6 +538,9 @@ class EventFlow:
         choices_sorted: List[DetectionDict],
         debug: Dict[str, Any],
     ) -> EventDecision:
+        # Reset state when falling back since we don't have a proper match
+        self._last_event_clicked = None
+        
         if not choices_sorted:
             logger_uma.info("[event] No event_choice to click.")
             return EventDecision(
