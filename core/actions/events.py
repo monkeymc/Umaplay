@@ -287,6 +287,7 @@ class EventFlow:
             rarity_hint=None,  # not available; portrait helps instead
             chain_step_hint=chain_step_hint,
             portrait_image=portrait_img,  # <- PIL accepted by retriever (see diff)
+            preferred_trainee_name=self.prefs.preferred_trainee_name if type_hint == "trainee" else None,
         )
 
         q_used = q

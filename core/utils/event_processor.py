@@ -959,6 +959,8 @@ class UserPrefs:
     )
     reward_priority_by_scenario: Dict[str, List[str]] = field(default_factory=dict)
     reward_priority_by_trainee: Dict[str, List[str]] = field(default_factory=dict)
+    # Preferred trainee name from config (for portrait disambiguation)
+    preferred_trainee_name: Optional[str] = None
 
     @staticmethod
     def load(path: Path) -> "UserPrefs":
@@ -1141,10 +1143,12 @@ class UserPrefs:
 
         trainee_flags: Dict[str, bool] = {}
         reward_priority_by_trainee: Dict[str, List[str]] = {}
+        preferred_trainee_name: Optional[str] = None
         trainee_entry = setup.get("trainee")
         if isinstance(trainee_entry, dict):
             name = trainee_entry.get("name")
             if name:
+                preferred_trainee_name = str(name).strip()
                 raw_flag = trainee_entry.get("avoidEnergyOverflow")
                 if raw_flag is None:
                     raw_flag = trainee_entry.get("avoid_energy_overflow")
@@ -1172,6 +1176,7 @@ class UserPrefs:
             reward_priority_by_support=reward_priority_by_support,
             reward_priority_by_scenario=reward_priority_by_scenario,
             reward_priority_by_trainee=reward_priority_by_trainee,
+            preferred_trainee_name=preferred_trainee_name,
         )
 
     def reward_priority_for(self, rec: EventRecord) -> List[str]:
@@ -1276,7 +1281,7 @@ class Catalog:
 
 @dataclass
 class Query:
-    # Minimal info you’ll have from OCR/UI
+    # Minimal info you'll have from OCR/UI
     ocr_title: str
     # Optional hints (help scoring if provided)
     type_hint: Optional[str] = None  # support|trainee|scenario
@@ -1287,6 +1292,7 @@ class Query:
     portrait_path: Optional[str] = None  # optional: path to portrait/icon
     portrait_image: Optional[PILImage] = None  # optional: PIL image crop (in-memory)
     portrait_phash: Optional[int] = None  # optional: precomputed 64-bit pHash
+    preferred_trainee_name: Optional[str] = None  # optional: trainee name from config for disambiguation
 
 
 @dataclass
@@ -1482,5 +1488,24 @@ def retrieve_best(
     # Sort by total score, then text similarity, then image similarity for deterministic tie-breaks
     results.sort(key=lambda r: (r.score, r.text_sim, r.img_sim), reverse=True)
     results = [r for r in results if r.score >= float(min_score)]
+    
+    # Trainee name preference override: if configured trainee name matches any result, prefer it
+    if q.type_hint == "trainee" and q.preferred_trainee_name and len(results) > 1:
+        preferred_norm = normalize_text(q.preferred_trainee_name)
+        for i, result in enumerate(results):
+            result_name_norm = normalize_text(result.rec.name)
+            if result_name_norm == preferred_norm:
+                # Found a match: move it to position 0 if not already there
+                if i > 0:
+                    logger_uma.info(
+                        "[retrieve_best] Trainee preference override: '%s' (score=%.3f) promoted over '%s' (score=%.3f)",
+                        result.rec.name,
+                        result.score,
+                        results[0].rec.name,
+                        results[0].score,
+                    )
+                    results.insert(0, results.pop(i))
+                break
+    
     results_k = results[:top_k]
     return results_k
