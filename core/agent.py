@@ -137,6 +137,9 @@ class Player:
         self._first_race_day = True
         self._pending_hint_recheck: bool = False
         self._pending_hint_supports: List[Dict[str, Any]] = []
+        # Single event option counter (for slow-rendering UI)
+        self._single_event_option_counter: int = 0
+        self._single_event_option_threshold: int = 5
 
     # --------------------------
     # Skill memory helpers
@@ -458,6 +461,8 @@ class Player:
             self._tick_planned_skip_release()
 
             if unknown_screen:
+                # Reset event stale counter when on unknown screen
+                self._single_event_option_counter = 0
                 threshold = 0.65
                 if self.patience > 20:
                     # try to auto recover
@@ -499,8 +504,36 @@ class Player:
                         break
                 continue
 
+            if screen == "EventStale":
+                # Single event option detected (slow-rendering UI)
+                self.claw_turn = 0
+                event_choices = [d for d in dets if d.get("name") == "event_choice" and float(d.get("conf", 0.0)) >= 0.60]
+                
+                if len(event_choices) == 1:
+                    self._single_event_option_counter += 1
+                    logger_uma.debug(
+                        "[event] EventStale: Single option detected (%d/%d). Waiting for more options to render...",
+                        self._single_event_option_counter,
+                        self._single_event_option_threshold,
+                    )
+                    
+                    if self._single_event_option_counter >= self._single_event_option_threshold:
+                        logger_uma.info(
+                            "[event] EventStale: Threshold reached (%d). Clicking the only available option.",
+                            self._single_event_option_threshold,
+                        )
+                        choice = event_choices[0]
+                        self.ctrl.click_xyxy_center(choice["xyxy"], clicks=1)
+                        self._single_event_option_counter = 0
+                else:
+                    # Shouldn't happen in EventStale, but reset if it does
+                    self._single_event_option_counter = 0
+                continue
+
             if screen == "Event":
                 self.claw_turn = 0
+                # Reset counter when we have proper event screen with multiple options
+                self._single_event_option_counter = 0
                 # pass what we know about current energy (may be None if not read yet)
                 self.lobby.state.energy = extract_energy_pct(img, dets)
                 curr_energy = self.lobby.state.energy or 100

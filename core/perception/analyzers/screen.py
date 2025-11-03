@@ -133,7 +133,8 @@ def classify_screen(
             "has_button_claw_action": has_button_claw_action,
             "has_claw": has_claw,
         }
-
+    if n_event_choices == 1:
+        return "EventStale", {"event_choices": n_event_choices}
     # 5) Fallback
     return "Unknown", {
         "training_buttons": n_train,

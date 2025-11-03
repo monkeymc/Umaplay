@@ -37,6 +37,7 @@ ScreenName = Literal[
     "Training",
     "FinalScreen",
     "ClawMachine",
+    "EventStale",
     "Unknown",
 ]
 
