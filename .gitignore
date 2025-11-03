@@ -37,11 +37,12 @@ debug
 runs
 
 datasets/coco8/**
-datasets/uma/*
 datasets/uma_nav/*
-!datasets/uma/raw/
-datasets/uma/raw/*
 models/base/*
+datasets/uma/*
+!datasets/uma/raw
+datasets/uma/raw/*
+!datasets/uma/raw/gitkeep.txt
 
 README.ai.md
 README.train.md
