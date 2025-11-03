@@ -1,8 +1,11 @@
 # Umamusume Auto Train
 
-> **Latest Update (v0.3.1)**: Fixed remote template matching for support cards and race banners. [See what's new!](#-whats-new-in-031)
+> 🔧 **Bug Fix (v0.3.3)**: Ongoing model fixes
+
+> **Latest Update (v0.3.2)**: Skill memory, hint scoring, portrait disambiguation, and new scraper pipeline. [See what's new!](#-whats-new-in-032)
 > 
-> _Previous update (v0.3.0): Added Team Trials banner preference, Shop automation, Roulette auto-spin, and improved Support Card hints handling._
+> _Previous update (v0.3.1): Fixed remote template matching for support cards and race banners._
+>
 
 This project is an **AI bot for Umamusume: Pretty Derby** that automates training, races, and skill management. It helps you **farm fans, clear goals, and optimize stats** without grinding manually.
 
@@ -56,7 +59,8 @@ I take no responsibility for bans, issues, or account losses that may result fro
 * **Goals & Styles** – Handles special goals and lets you set racing style.
 * **Cross-Platform** – Works on PC (Steam) and Android (scrcpy/Bluestacks); resolution independent but OCR works better on bigger resolutions.
 * **Claw Machine** – Supports the claw mini-game.
-* **Hints** – Prioritize skill hints when enabled.
+* **Hints** – Prioritize skill hints when enabled, with automatic de-prioritization when the skill is already learned.
+* **Skill Memory** – Tracks purchased skills per run to prevent double-buying single-circle variants and coordinate hint scoring.
 * **Web UI** – Manage presets (stats, races, events), adjust advanced settings, switch modes, and update directly from GitHub.
 * **Auto Team Trials** – Automatically plays Team Trials with F7 hotkey, handles shop purchases, session resume, and respects your banner preference (1-3). You need to be in the race screen where the team trials, room match, daily races are.
 * **Auto Daily Races** – Automates daily races with F8 hotkey, manages shop purchases and session resume. You need to be in the race screen where the team trials, room match, daily races are.
@@ -208,7 +212,7 @@ You can change the configuration at http://127.0.0.1:8000/
 > 2. **Scenario preset** (e.g., Grand Masters, Aoharu, Make a New Track)
 > 3. **Trainee preset** (the exact character you are training this run)
 >
-> Mismatched deck/scenario/trainee selections cause portrait matching and event overrides to fail, so double-check these three fields each time you swap accounts, decks, or seasonal alts.
+> Mismatched deck/scenario/trainee selections cause portrait matching, skill memory, and event overrides to fail, so double-check these three fields each time you swap accounts, decks, or seasonal alts.
 
 You can set:
 - **General configurations** (window title, modes, fast mode, advanced settings)
@@ -301,6 +305,44 @@ The bot uses multiple AI components to make decisions:
 ---
 
 ## 🆕 Changelog (latest)
+
+### 🔧 **Bug Fix (v0.3.3)**:
+- Ongoing model fixes
+
+**:sparkles: Umaplay v0.3.2 — Parents Quality of Life Update**
+### 🆕 What's New in 0.3.2
+
+#### Skills & OCR
+- **Disambiguation tokens**: Better OCR separation for pairs like *non-standard vs. standard* and *taking vs. keeping the lead*, contributed by @Rosetta and @Hibiki.
+- **UI polish**: Cleanup courtesy of @exaltedone8267.
+
+#### Skill Memory (New Core Feature)
+- **Single-circle guard**: Prevents re-purchasing one-circle skills once acquired.
+- **Conditional hint scoring**: Automatically downranks hints for skills that are already bought, highlighting remaining targets. Thanks @sando.
+
+#### Bot Strategy
+- **Energy rotation**: User-configurable energy management, implemented with feedback from @Rosetta.
+
+#### Content & Catalog
+- **Expanded trainee/support datasets** with a new scraping pipeline (Python CLI documented under `#data-contribution`). Special thanks to @EO1.
+
+#### General Bugfixes
+- **Portrait matcher**: More reliable trainee event disambiguation.
+- **Team Trials**: Correctly detects all four opponents.
+- **Acupuncturist**: Confirmation phase auto-selects accept instead of looping on “reconsider.”
+- **Event chains**: Blue-tone validation stops gray UI elements from miscounting chain steps.
+- **YOLO + geometry**: Better mapping between hints and support cards to reduce false matches.
+
+#### Misc
+- **Preset overlay**: Displays the active preset when the bot boots (and enhanced visibility in the Web UI).
+- **CLI**: `python main.py --port <value>` now supported; thanks @ephargy.
+
+> ⚠️ If you encounter critical regressions, roll back temporarily:
+> ```bash
+> git checkout 59a5340f2c014a6d616c63b554bc0fe791513cef
+> ```
+
+---
 
 **:bug: Umaplay v0.3.1 — Bugfix Release**
 ### 🆕 What's New in 0.3.1

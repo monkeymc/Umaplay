@@ -349,12 +349,12 @@ class EventFlow:
 
         if len(choices_sorted) != expected_n:
             logger_uma.warning(
-                "[event] YOLO found %d choices but DB expects %d; retrying after delay.",
+                "[event] YOLO found %d choices but DB expects %d; waiting for options to render and retrying.",
                 len(choices_sorted),
                 expected_n,
             )
-            # Retry: wait and recapture to see if buttons render properly
-            time.sleep(0.5)
+            # Retry: wait for UI to finish rendering and recapture
+            time.sleep(0.8)  # Increased wait time for slow-rendering options
             retry_frame, _, retry_parsed = self.yolo_engine.recognize(
                 imgsz=832, conf=0.60, iou=0.45, tag="event_retry"
             )
