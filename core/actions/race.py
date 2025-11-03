@@ -788,8 +788,8 @@ class RaceFlow:
                 classes=("button_green",),
                 texts=("NEXT",),
                 prefer_bottom=True,
-                timeout_s=3.6,
-                clicks=1,
+                timeout_s=4.6,
+                clicks=2,
                 tag="race_after_flow_next",
             )
 
@@ -802,7 +802,7 @@ class RaceFlow:
                 classes=("race_after_next",),
                 texts=("NEXT",),
                 prefer_bottom=True,
-                timeout_s=6.0,
+                timeout_s=8.0,
                 clicks=random.randint(2, 4),
                 tag="race_after",
             )
