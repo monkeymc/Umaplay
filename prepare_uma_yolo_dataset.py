@@ -270,7 +270,11 @@ def enforce_split_coverage(
             counts[dst][cid] += 1
 
     def required_val(cid: int) -> int:
-        return 1 if totals[cid] >= 2 else 0
+        if totals[cid] >= 10:
+            return 3
+        elif totals[cid] >= 4:
+            return 2
+        return 1
 
     def required_train(cid: int) -> int:
         return 1 if totals[cid] > 0 else 0
