@@ -347,35 +347,42 @@ The bot uses multiple AI components to make decisions:
 **:bug: Umaplay v0.3.1 — Bugfix Release**
 ### 🆕 What's New in 0.3.1
 
-#### Bug Fixes
-- **Remote Template Matching**: Fixed path resolution for support cards and race banners in remote inference mode
-- **Template Loading**: Improved error logging for template loading failures
-- **Path Resolution**: Added proper `public_path` computation for assets served via web server
+#### Skills & OCR
+- **Disambiguation tokens**: Better OCR separation for pairs like *non-standard vs. standard* and *taking vs. keeping the lead*, contributed by @Rosetta and @Hibiki.
+- **UI polish**: Cleanup courtesy of @exaltedone8267.
+
+#### Skill Memory (New Core Feature)
+- **Single-circle guard**: Prevents re-purchasing one-circle skills once acquired.
+- **Conditional hint scoring**: Automatically downranks hints for skills that are already bought, highlighting remaining targets. Thanks @sando.
+
+#### Bot Strategy
+- **Energy rotation**: User-configurable energy management, implemented with feedback from @Rosetta.
+
+#### Content & Catalog
+- **Expanded trainee/support datasets** with a new scraping pipeline (Python CLI documented under `#data-contribution`). Special thanks to @EO1.
+
+#### General Bugfixes
+- **Portrait matcher**: More reliable trainee event disambiguation.
+- **Team Trials**: Correctly detects all four opponents.
+- **Acupuncturist**: Confirmation phase auto-selects accept instead of looping on “reconsider.”
+- **Event chains**: Blue-tone validation stops gray UI elements from miscounting chain steps.
+- **YOLO + geometry**: Better mapping between hints and support cards to reduce false matches.
+
+#### Misc
+- **Preset overlay**: Displays the active preset when the bot boots (and enhanced visibility in the Web UI).
+- **CLI**: `python main.py --port <value>` now supported; thanks @ephargy.
+
+> ⚠️ If you encounter critical regressions, roll back temporarily:
+> ```bash
+> git checkout 59a5340f2c014a6d616c63b554bc0fe791513cef
+> ```
 
 ---
 
-**:rocket: Umaplay v0.3.0 — Major Update!**
-### 🆕 What's New in 0.3.0
-
-#### Navigator Logic
-- **Team Trials**: Set your preferred banner (1-3) instead of always defaulting to the bottom one
-- **Shop Automation**: New dedicated shop configuration with support for buying Star Pieces and Parfait (make sure you have enough gold!)
-- **Roulette / Prize Derby**: New auto-spin flow with button state detection (Press F9 to enable)
-
-#### Support Cards & Hints
-- **Custom Support Priority**: Configure hint preferences with custom scores based on importance
-
-#### Bug Fixes and Improvements
-- More robust race flow when you don't have the required trophy
-- New template-matching endpoint with caching and multiscale support
-- No-OpenCV mode for remote clients
-- Improved Navigator YOLO model
-- Various timing and reliability improvements
 
 ### Next steps (0.4.0):
 - Refactor code to support multiple scenarios and the explosions from Aoharu Hai (Unity Cup)
 - Review of claw machine... But I don't promise anything XD
-- Improve OCR when buying skills, specially when names are very similar as reported by Rosetta and Hibiki
 - PAL (Tazuna/Riko Kashimoto) special configurations on web UI to leverage them properly
 
 ---
