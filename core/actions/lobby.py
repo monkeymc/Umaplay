@@ -997,7 +997,15 @@ class LobbyFlow:
         goal = (self.state.goal or "").lower()
 
         there_is_progress_text = fuzzy_contains(goal, "progress", threshold=0.58)
-        critical_goal_fans = there_is_progress_text or (
+        
+        # Detect "Win Maiden race" or similar race-winning goals
+        critical_goal_win_race = (
+            fuzzy_contains(goal, "win", 0.58)
+            and fuzzy_contains(goal, "maiden", 0.58)
+            and fuzzy_contains(goal, "race", 0.58)
+        )
+        
+        critical_goal_fans = there_is_progress_text or critical_goal_win_race or (
             fuzzy_contains(goal, "go", 0.58)
             and fuzzy_contains(goal, "fan", 0.58)
             and not fuzzy_contains(goal, "achieve", 0.58)
@@ -1029,7 +1037,7 @@ class LobbyFlow:
                 return True, f"[lobby] Critical goal G1 | turn={self.state.turn}"
             # Critical Fans
             elif critical_goal_fans:
-                return True, f"[lobby] Critical goal FANS | turn={self.state.turn}"
+                return True, f"[lobby] Critical goal FANS/MAIDEN | turn={self.state.turn}"
 
         return False, "Unknown"
 
