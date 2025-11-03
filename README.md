@@ -1,8 +1,11 @@
 # Umamusume Auto Train
 
+> 🔧 **Bug Fix (v0.3.3)**: Ongoing model fixes
+
 > **Latest Update (v0.3.2)**: Skill memory, hint scoring, portrait disambiguation, and new scraper pipeline. [See what's new!](#-whats-new-in-032)
 > 
 > _Previous update (v0.3.1): Fixed remote template matching for support cards and race banners._
+>
 
 This project is an **AI bot for Umamusume: Pretty Derby** that automates training, races, and skill management. It helps you **farm fans, clear goals, and optimize stats** without grinding manually.
 
@@ -303,8 +306,46 @@ The bot uses multiple AI components to make decisions:
 
 ## 🆕 Changelog (latest)
 
+### 🔧 **Bug Fix (v0.3.3)**:
+- Ongoing model fixes
+
 **:sparkles: Umaplay v0.3.2 — Parents Quality of Life Update**
 ### 🆕 What's New in 0.3.2
+
+#### Skills & OCR
+- **Disambiguation tokens**: Better OCR separation for pairs like *non-standard vs. standard* and *taking vs. keeping the lead*, contributed by @Rosetta and @Hibiki.
+- **UI polish**: Cleanup courtesy of @exaltedone8267.
+
+#### Skill Memory (New Core Feature)
+- **Single-circle guard**: Prevents re-purchasing one-circle skills once acquired.
+- **Conditional hint scoring**: Automatically downranks hints for skills that are already bought, highlighting remaining targets. Thanks @sando.
+
+#### Bot Strategy
+- **Energy rotation**: User-configurable energy management, implemented with feedback from @Rosetta.
+
+#### Content & Catalog
+- **Expanded trainee/support datasets** with a new scraping pipeline (Python CLI documented under `#data-contribution`). Special thanks to @EO1.
+
+#### General Bugfixes
+- **Portrait matcher**: More reliable trainee event disambiguation.
+- **Team Trials**: Correctly detects all four opponents.
+- **Acupuncturist**: Confirmation phase auto-selects accept instead of looping on “reconsider.”
+- **Event chains**: Blue-tone validation stops gray UI elements from miscounting chain steps.
+- **YOLO + geometry**: Better mapping between hints and support cards to reduce false matches.
+
+#### Misc
+- **Preset overlay**: Displays the active preset when the bot boots (and enhanced visibility in the Web UI).
+- **CLI**: `python main.py --port <value>` now supported; thanks @ephargy.
+
+> ⚠️ If you encounter critical regressions, roll back temporarily:
+> ```bash
+> git checkout 59a5340f2c014a6d616c63b554bc0fe791513cef
+> ```
+
+---
+
+**:bug: Umaplay v0.3.1 — Bugfix Release**
+### 🆕 What's New in 0.3.1
 
 #### Skills & OCR
 - **Disambiguation tokens**: Better OCR separation for pairs like *non-standard vs. standard* and *taking vs. keeping the lead*, contributed by @Rosetta and @Hibiki.
