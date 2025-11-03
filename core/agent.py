@@ -140,6 +140,9 @@ class Player:
         # Single event option counter (for slow-rendering UI)
         self._single_event_option_counter: int = 0
         self._single_event_option_threshold: int = 5
+        # EventStale loop detection
+        self._consecutive_event_stale_clicks: int = 0
+        self._force_unknown_once: bool = False
 
     # --------------------------
     # Skill memory helpers
@@ -460,8 +463,15 @@ class Player:
 
             self._tick_planned_skip_release()
 
+            # Check if we need to force unknown behavior (EventStale loop breaker)
+            if self._force_unknown_once:
+                logger_uma.info("[event] Forcing Unknown screen behavior to break EventStale loop.")
+                unknown_screen = True
+                self._force_unknown_once = False
+                self._consecutive_event_stale_clicks = 0
+
             if unknown_screen:
-                # Reset event stale counter when on unknown screen
+                # Reset event stale counters when on unknown screen
                 self._single_event_option_counter = 0
                 threshold = 0.65
                 if self.patience > 20:
@@ -507,33 +517,67 @@ class Player:
             if screen == "EventStale":
                 # Single event option detected (slow-rendering UI)
                 self.claw_turn = 0
-                event_choices = [d for d in dets if d.get("name") == "event_choice" and float(d.get("conf", 0.0)) >= 0.60]
                 
-                if len(event_choices) == 1:
-                    self._single_event_option_counter += 1
-                    logger_uma.debug(
-                        "[event] EventStale: Single option detected (%d/%d). Waiting for more options to render...",
-                        self._single_event_option_counter,
-                        self._single_event_option_threshold,
+                # Loop detection: after 2 consecutive clicks, skip to unknown; after 4, use button_green
+                if self._consecutive_event_stale_clicks == 2:
+                    logger_uma.warning(
+                        "[event] EventStale loop detected (2 consecutive clicks). Will force Unknown screen handler next iteration."
                     )
+                    self._force_unknown_once = True
+                    self._consecutive_event_stale_clicks += 1
+                    continue
+                elif self._consecutive_event_stale_clicks >= 4:
+                    logger_uma.warning(
+                        "[event] EventStale loop persists (4+ clicks). Attempting button_green fallback."
+                    )
+                    if self.waiter.click_when(
+                        classes=("button_green",),
+                        texts=("NEXT", "OK", "CLOSE", "PROCEED"),
+                        prefer_bottom=True,
+                        allow_greedy_click=True,
+                        timeout_s=0.5,
+                        tag="event_stale_fallback",
+                    ):
+                        logger_uma.info("[event] EventStale: button_green clicked successfully.")
+                        self._consecutive_event_stale_clicks = 0
+                        self._single_event_option_counter = 0
+                    else:
+                        logger_uma.warning("[event] EventStale: No button_green found. Resetting counters.")
+                        self._consecutive_event_stale_clicks = 0
+                        self._single_event_option_counter = 0
+                    continue
+                
+                if screen == "EventStale":  # Only process if not overridden to Unknown
+                    event_choices = [d for d in dets if d.get("name") == "event_choice" and float(d.get("conf", 0.0)) >= 0.60]
                     
-                    if self._single_event_option_counter >= self._single_event_option_threshold:
-                        logger_uma.info(
-                            "[event] EventStale: Threshold reached (%d). Clicking the only available option.",
+                    if len(event_choices) == 1:
+                        self._single_event_option_counter += 1
+                        logger_uma.debug(
+                            "[event] EventStale: Single option detected (%d/%d). Waiting for more options to render...",
+                            self._single_event_option_counter,
                             self._single_event_option_threshold,
                         )
-                        choice = event_choices[0]
-                        self.ctrl.click_xyxy_center(choice["xyxy"], clicks=1)
+                        
+                        if self._single_event_option_counter >= self._single_event_option_threshold:
+                            logger_uma.info(
+                                "[event] EventStale: Threshold reached (%d). Clicking the only available option. (consecutive: %d)",
+                                self._single_event_option_threshold,
+                                self._consecutive_event_stale_clicks,
+                            )
+                            choice = event_choices[0]
+                            self.ctrl.click_xyxy_center(choice["xyxy"], clicks=1)
+                            self._single_event_option_counter = 0
+                            self._consecutive_event_stale_clicks += 1
+                    else:
+                        # Shouldn't happen in EventStale, but reset if it does
                         self._single_event_option_counter = 0
-                else:
-                    # Shouldn't happen in EventStale, but reset if it does
-                    self._single_event_option_counter = 0
-                continue
+                    continue
 
             if screen == "Event":
                 self.claw_turn = 0
-                # Reset counter when we have proper event screen with multiple options
+                # Reset counters when we have proper event screen with multiple options
                 self._single_event_option_counter = 0
+                self._consecutive_event_stale_clicks = 0
                 # pass what we know about current energy (may be None if not read yet)
                 self.lobby.state.energy = extract_energy_pct(img, dets)
                 curr_energy = self.lobby.state.energy or 100
