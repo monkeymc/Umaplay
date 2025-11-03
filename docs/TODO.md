@@ -7,6 +7,7 @@ This organizes the mixed notes into a clear, actionable backlog. Items are group
 
 ### 0.3.2
 
+
 ### 0.3.3
 
 MOVED some req from 0.3.2 because it was already too big
@@ -150,6 +151,9 @@ Team trials:
 Shop:
 - Error loop in shop when nothing to buy, partial state, check on debug 'log_shop_0.5.0.txt'
 
+
+
+@Unknown: do you think you could add a feature to add the minimum fans for the unique upgrade or is that already implemented?
 
 ## 0.6
 

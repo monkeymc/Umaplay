@@ -97,7 +97,7 @@ def main():
     parser.add_argument(
         "--yolo-config",
         choices=["nav", "training"],
-        default="nav",
+        default="training",
         help="Select model configuration: navigation model or general training model",
     )
     parser.add_argument(
