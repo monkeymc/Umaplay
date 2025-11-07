@@ -9,6 +9,43 @@ export default function AdvancedSettings() {
   const { config, setGeneral } = useConfigStore()
   const [open, setOpen] = useState(false)
   const a = config.general.advanced
+  const sliderSx = {
+    width: '100%',
+    '.MuiSlider-thumb': {
+      width: 12,
+      height: 12,
+      boxShadow: 'none',
+    },
+    '.MuiSlider-thumb::before': {
+      boxShadow: 'none',
+    },
+    '.MuiSlider-rail': {
+      height: 4,
+      borderRadius: 2,
+    },
+    '.MuiSlider-track': {
+      height: 4,
+      borderRadius: 2,
+    },
+  } as const
+  const controlWrapSx = (theme: any) => ({
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 1,
+    p: 1.5,
+    border: `1px solid ${theme.palette.divider}`,
+    borderRadius: 1.5,
+    backgroundColor:
+      theme.palette.mode === 'dark'
+        ? theme.palette.background.default
+        : theme.palette.grey[50],
+    boxShadow: theme.palette.mode === 'dark'
+      ? 'inset 0 0 0 1px rgba(255,255,255,0.05)'
+      : '0 1px 2px rgba(15, 23, 42, 0.08)',
+    maxWidth: 240,
+    width: '100%',
+  })
 
   return (
     <Stack spacing={1.5}>
@@ -92,13 +129,13 @@ export default function AdvancedSettings() {
           label="Auto rest minimum"
           info="Below this energy% the bot will rest automatically."
           control={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={controlWrapSx}>
               <Slider
                 value={a.autoRestMinimum}
                 onChange={(_, v) => setGeneral({ advanced: { ...a, autoRestMinimum: Number(v) } })}
                 min={0}
                 max={100}
-                sx={{ flex: 1 }}
+                sx={sliderSx}
                 valueLabelDisplay="auto"
                 valueLabelFormat={(v) => `${v}%`}
               />
@@ -114,18 +151,19 @@ export default function AdvancedSettings() {
                     },
                   })
                 }
-                inputProps={{ min: 0, max: 100, step: 1 }}
-                sx={{ width: 80 }}
+                inputProps={{ min: 0, max: 100, step: 1, style: { textAlign: 'center' } }}
+                sx={{ width: 68, alignSelf: 'center' }}
               />
             </Box>
           }
+          sx={{ mt: 2 }}
         />
 
         <FieldRow
           label="Skills: check interval"
           info="Only open Skills every N turns on Raceday (1 = every turn)."
           control={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={controlWrapSx}>
               <Slider
                 value={a.skillCheckInterval}
                 onChange={(_, v) =>
@@ -133,7 +171,7 @@ export default function AdvancedSettings() {
                 }
                 min={1}
                 max={12}
-                sx={{ flex: 1 }}
+                sx={sliderSx}
                 valueLabelDisplay="auto"
               />
               <TextField
@@ -148,24 +186,25 @@ export default function AdvancedSettings() {
                     },
                   })
                 }
-                inputProps={{ min: 1, max: 12, step: 1 }}
-                sx={{ width: 80 }}
+                inputProps={{ min: 1, max: 12, step: 1, style: { textAlign: 'center' } }}
+                sx={{ width: 68, alignSelf: 'center' }}
               />
             </Box>
           }
+          sx={{ mt: 2 }}
         />
 
         <FieldRow
           label="Skills: points delta"
           info="Open Skills only if points increased by at least this amount since last check."
           control={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={controlWrapSx}>
               <Slider
                 value={a.skillPtsDelta}
                 onChange={(_, v) => setGeneral({ advanced: { ...a, skillPtsDelta: Number(v) } })}
                 min={0}
                 max={1000}
-                sx={{ flex: 1 }}
+                sx={sliderSx}
                 valueLabelDisplay="auto"
               />
               <TextField
@@ -180,24 +219,25 @@ export default function AdvancedSettings() {
                     },
                   })
                 }
-                inputProps={{ min: 0, max: 1000, step: 10 }}
-                sx={{ width: 100 }}
+                inputProps={{ min: 0, max: 1000, step: 10, style: { textAlign: 'center' } }}
+                sx={{ width: 68, alignSelf: 'center' }}
               />
             </Box>
           }
+          sx={{ mt: 2 }}
         />
 
         <FieldRow
           label="Undertrain threshold"
           info="Stats below this percentage of their target will be prioritized during training."
           control={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={controlWrapSx}>
               <Slider
                 value={a.undertrainThreshold}
                 onChange={(_, v) => setGeneral({ advanced: { ...a, undertrainThreshold: Number(v) } })}
                 min={0}
                 max={20}
-                sx={{ flex: 1 }}
+                sx={sliderSx}
                 valueLabelDisplay="auto"
                 valueLabelFormat={(v) => `${v}%`}
               />
@@ -213,24 +253,25 @@ export default function AdvancedSettings() {
                     },
                   })
                 }
-                inputProps={{ min: 0, max: 20, step: 1 }}
-                sx={{ width: 80 }}
+                inputProps={{ min: 0, max: 20, step: 1, style: { textAlign: 'center' } }}
+                sx={{ width: 68, alignSelf: 'center' }}
               />
             </Box>
           }
+          sx={{ mt: 2 }}
         />
 
         <FieldRow
           label="Top stats focus"
           info="Number of top stats to prioritize when considering undertraining."
           control={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={controlWrapSx}>
               <Slider
                 value={a.topStatsFocus}
                 onChange={(_, v) => setGeneral({ advanced: { ...a, topStatsFocus: Number(v) } })}
                 min={1}
                 max={5}
-                sx={{ flex: 1 }}
+                sx={sliderSx}
                 valueLabelDisplay="auto"
                 marks
               />
@@ -246,11 +287,12 @@ export default function AdvancedSettings() {
                     },
                   })
                 }
-                inputProps={{ min: 1, max: 5, step: 1 }}
-                sx={{ width: 80 }}
+                inputProps={{ min: 1, max: 5, step: 1, style: { textAlign: 'center' } }}
+                sx={{ width: 68, alignSelf: 'center' }}
               />
             </Box>
           }
+          sx={{ mt: 2 }}
         />
       </Collapse>
     </Stack>

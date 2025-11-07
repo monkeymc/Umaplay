@@ -73,8 +73,8 @@ export default function PresetPanel({ compact = false }: { compact?: boolean }) 
   if (!selected) return null
 
   return (
-    <Section title="Preset">
-      <Stack spacing={2}>
+    <Section title="Preset" sx={{ width: '100%', maxWidth: 'none' }}>
+      <Stack spacing={2} sx={{ width: '100%' }}>
         <TextField
           label="Preset name"
           size="small"
@@ -107,7 +107,7 @@ export default function PresetPanel({ compact = false }: { compact?: boolean }) 
           }
         />
         <SkillsPicker presetId={selected.id} />
-        <Section title="Bot Strategy / Policy">
+        <Section title="Bot Strategy / Policy" sx={{ variant: 'plain', px: 0, py: 0 }}>
           <Stack spacing={1}>
 
             <FormControlLabel
