@@ -20,7 +20,7 @@ def show_preset_overlay(
     duration: float = 5.0,
     x: int = 32,
     y: int = 32,
-    background: str = "#1E40AF",
+    background: str = "#10B981",  # Modern emerald green
     foreground: str = "#FFFFFF",
 ) -> None:
     """Render a toast overlay safely on the shared Tk UI thread."""
@@ -47,7 +47,7 @@ def show_preset_overlay(
             pass
         toast.configure(bg="")
 
-        container = tk.Frame(toast, bg=background, bd=0, relief="flat")
+        container = tk.Frame(toast, bg=background, bd=3, relief="solid", highlightbackground="#FFFFFF", highlightthickness=2)
         container.pack(padx=0, pady=0)
 
         body = tk.Frame(container, bg=background)
@@ -68,8 +68,9 @@ def show_preset_overlay(
             2,
             icon_size - 2,
             icon_size - 2,
-            fill="#FACC15",
-            outline="",
+            fill="#FBBF24",  # Brighter amber/gold
+            outline="#FFFFFF",
+            width=2,
         )
 
         title_font = tkfont.Font(family="Segoe UI", size=13, weight="bold")
