@@ -789,7 +789,7 @@ class RaceFlow:
                 texts=("NEXT",),
                 prefer_bottom=True,
                 timeout_s=4.6,
-                clicks=2,
+                clicks=3,
                 tag="race_after_flow_next",
             )
 

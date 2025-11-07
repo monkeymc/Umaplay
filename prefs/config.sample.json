@@ -8,6 +8,7 @@
     "prioritizeHint": false,
     "skillPtsCheck": 700,
     "acceptConsecutiveRace": true,
+    "activeScenario": "ura",
     "advanced": {
       "hotkey": "F2",
       "debugMode": true,

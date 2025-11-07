@@ -11,6 +11,7 @@ import subprocess
 import sys
 from pathlib import Path
 import shutil
+import queue
 
 from core.utils.logger import logger_uma, setup_uma_logging
 from core.settings import Settings
@@ -18,7 +19,17 @@ from core.agent import Player
 from core.agent_nav import AgentNav
 
 from server.main import app
-from server.utils import load_config, ensure_config_exists, ensure_nav_exists, load_nav_prefs
+from server.utils import (
+    load_config,
+    ensure_config_exists,
+    ensure_nav_exists,
+    load_nav_prefs,
+    save_config,
+)
+from core.utils.abort import request_abort, clear_abort
+from core.utils.event_processor import UserPrefs
+from core.utils.preset_overlay import show_preset_overlay
+from core.ui.scenario_prompt import choose_active_scenario, ScenarioSelectionCancelled
 
 # Controllers & perception interfaces
 from core.controllers.base import IController
@@ -26,9 +37,7 @@ from core.perception.ocr.interface import OCRInterface
 from core.perception.yolo.interface import IDetector
 from core.controllers.steam import SteamController
 from core.controllers.android import ScrcpyController
-from core.utils.abort import request_abort, clear_abort
-from core.utils.event_processor import UserPrefs
-from core.utils.preset_overlay import show_preset_overlay
+from core.utils.tkthread import ensure_tk_loop
 
 try:
     # Optional; if your Bluestacks controller is a separate class
@@ -454,6 +463,7 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
 
     # Track which keys successfully registered hooks (to skip in polling)
     hooked_keys = set()
+    event_q: "queue.SimpleQueue[tuple[str, str]]" = queue.SimpleQueue()
     
     # Debounce across both hook & poll paths - INCREASED to prevent race condition
     # between hook (trigger_on_release) and polling (while key pressed)
@@ -476,8 +486,14 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
         except Exception:
             cfg = Settings._last_config or {}
         try:
-            presets = (cfg.get("presets") or [])
-            active_id = cfg.get("activePresetId")
+            # Read from scenario-aware structure
+            general = cfg.get("general") or {}
+            active_scenario = general.get("activeScenario", "ura")
+            scenarios = cfg.get("scenarios") or {}
+            scenario_branch = scenarios.get(active_scenario) or {}
+            presets = scenario_branch.get("presets") or []
+            active_id = scenario_branch.get("activePresetId")
+            
             preset = next((p for p in presets if p.get("id") == active_id), None)
             if not preset and presets:
                 preset = presets[0]
@@ -490,6 +506,59 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
         except Exception as exc:
             logger_uma.debug("[HOTKEY] Failed to display preset overlay: %s", exc)
 
+    def _select_scenario_before_start() -> bool:
+        try:
+            cfg = load_config() or {}
+        except Exception as exc:
+            logger_uma.warning(
+                f"[HOTKEY] Failed to load config for scenario selection: {exc}"
+            )
+            cfg = Settings._last_config or {}
+            if not isinstance(cfg, dict):
+                cfg = {}
+
+        general = cfg.get("general")
+        if not isinstance(general, dict):
+            general = {}
+            cfg["general"] = general
+
+        last = general.get("activeScenario")
+        try:
+            choice = choose_active_scenario(last)
+        except ScenarioSelectionCancelled:
+            logger_uma.info("[HOTKEY] Scenario selection cancelled; start aborted.")
+            return False
+        choice = (choice or "ura").strip().lower()
+        if choice not in {"ura", "unity_cup"}:
+            choice = "ura"
+
+        general["activeScenario"] = choice
+
+        try:
+            Settings._last_config = dict(cfg)
+        except Exception:
+            Settings._last_config = None
+
+        try:
+            save_config(cfg)
+        except Exception as exc:
+            logger_uma.warning(
+                f"[HOTKEY] Failed to persist scenario '{choice}': {exc}"
+            )
+
+        logger_uma.info(f"[HOTKEY] Scenario selected: {choice}")
+
+        if getattr(Settings, "SHOW_PRESET_OVERLAY", False):
+            try:
+                label = choice.replace("_", " ").title()
+                show_preset_overlay(f"Scenario: {label}")
+            except Exception as exc:
+                logger_uma.debug(
+                    "[HOTKEY] Failed to display scenario overlay: %s", exc
+                )
+
+        return True
+
     def _debounced_toggle(source: str):
         nonlocal last_ts_toggle
         now = time.time()
@@ -498,6 +567,11 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
             logger_uma.debug(f"[HOTKEY] Debounced toggle from {source}.")
             return
         last_ts_toggle = now
+
+        if not bot_state.running:
+            if not _select_scenario_before_start():
+                return
+
         _show_preset_overlay_if_needed()
         bot_state.toggle(source=source)
 
@@ -572,7 +646,7 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
             logger_uma.debug(f"[HOTKEY] Registering hook for {k}…")
             keyboard.add_hotkey(
                 k,
-                lambda key=k: _debounced_toggle(f"hook:{key}"),
+                lambda key=k: event_q.put(("toggle", f"hook:{key}")),
                 suppress=False,
                 trigger_on_release=True,
             )
@@ -585,12 +659,12 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
         except Exception as e:
             logger_uma.warning(f"[HOTKEY] Could not register '{k}': {e}")
 
-    for k, fn in [("F7", _debounced_team), ("F8", _debounced_daily), ("F9", _debounced_roulette)]:
+    for k, fn_name in [("F7", "team"), ("F8", "daily"), ("F9", "roulette")]:
         try:
             logger_uma.debug(f"[HOTKEY] Registering hook for {k}…")
             keyboard.add_hotkey(
                 k,
-                lambda key=k, cb=fn: cb(f"hook:{key}"),
+                lambda key=k, name=fn_name: event_q.put((name, f"hook:{key}")),
                 suppress=False,
                 trigger_on_release=True,
             )
@@ -610,6 +684,21 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
     logger_uma.debug("[HOTKEY] Polling fallback thread running…")
     try:
         while True:
+            # Drain queued events from hook callbacks first
+            try:
+                while True:
+                    ev, source = event_q.get_nowait()
+                    if ev == "toggle":
+                        _debounced_toggle(source)
+                    elif ev == "team":
+                        _debounced_team(source)
+                    elif ev == "daily":
+                        _debounced_daily(source)
+                    elif ev == "roulette":
+                        _debounced_roulette(source)
+            except queue.Empty:
+                pass
+
             fired = False
             for k in keys_bot:
                 try:
@@ -683,18 +772,25 @@ if __name__ == "__main__":
     except Exception as e:
         logger_uma.warning(f"[SERVER] Could not cleanup debug training: {e}")
 
+    # Ensure shared Tk dispatcher loop is running before any UI usage
+    try:
+        ensure_tk_loop()
+    except Exception as exc:
+        logger_uma.warning("[INIT] Failed to start Tk loop: %s", exc)
+
     # Launch hotkey listener and server
     state = BotState()
     nav_state = NavState()
-    logger_uma.debug("[INIT] Spawning hotkey thread…")
-    threading.Thread(target=hotkey_loop, args=(state, nav_state), daemon=True).start()
+    logger_uma.debug("[INIT] Spawning server thread…")
+    srv_thread = threading.Thread(target=boot_server, daemon=True)
+    srv_thread.start()
 
     try:
-        boot_server()  # blocking
+        hotkey_loop(state, nav_state)
     except KeyboardInterrupt:
         pass
     finally:
-        logger_uma.debug("[SHUTDOWN] Stopping bot and joining thread…")
+        logger_uma.debug("[SHUTDOWN] Stopping bot and joining threads…")
         state.stop()
         if state.thread:
             state.thread.join(timeout=2.0)

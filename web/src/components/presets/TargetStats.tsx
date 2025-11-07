@@ -5,7 +5,7 @@ import { STAT_ICON } from '@/constants/ui'
 const DEFAULTS = { SPD: 1150, STA: 770, PWR: 570, GUTS: 270, WIT: 370 }
 
 export default function TargetStats({ presetId }: { presetId: string }) {
-  const preset = useConfigStore((s) => s.config.presets.find((p) => p.id === presetId))
+  const preset = useConfigStore((s) => s.getSelectedPreset().preset)
   const patchPreset = useConfigStore((s) => s.patchPreset)
 
   if (!preset) return null

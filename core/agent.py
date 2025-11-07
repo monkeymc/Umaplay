@@ -46,15 +46,7 @@ class Player:
         prioritize_g1: bool = False,
         auto_rest_minimum=26,
         plan_races: dict | None = None,
-        waiter_config: PollConfig = PollConfig(
-            imgsz=Settings.YOLO_IMGSZ,
-            conf=Settings.YOLO_CONF,
-            iou=Settings.YOLO_IOU,
-            poll_interval_s=0.5,
-            timeout_s=4.0,
-            tag=Settings.AGENT_NAME_URA,
-            agent=Settings.AGENT_NAME_URA,
-        ),
+        waiter_config: PollConfig | None = None,
         skill_list=[
             "Concentration",
             "Focus",
@@ -87,6 +79,17 @@ class Player:
         self.auto_rest_minimum = auto_rest_minimum
 
         # Shared Waiter for the whole agent
+        if waiter_config is None:
+            waiter_config = PollConfig(
+                imgsz=Settings.YOLO_IMGSZ,
+                conf=Settings.YOLO_CONF,
+                iou=Settings.YOLO_IOU,
+                poll_interval_s=0.5,
+                timeout_s=4.0,
+                tag=Settings.ACTIVE_AGENT_NAME,
+                agent=Settings.ACTIVE_AGENT_NAME,
+            )
+
         self.waiter = Waiter(self.ctrl, self.ocr, self.yolo_engine, waiter_config)
         self.agent_name = waiter_config.agent
 

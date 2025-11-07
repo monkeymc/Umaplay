@@ -1,6 +1,6 @@
 import { create } from 'zustand'
-import { appConfigSchema, defaultAppConfig, defaultPreset, defaultEventSetup } from '@/models/config.schema'
-import type { AppConfig, GeneralConfig, Preset } from '@/models/types'
+import { appConfigSchema, defaultAppConfig, defaultGeneral, defaultPreset, defaultEventSetup } from '@/models/config.schema'
+import type { AppConfig, GeneralConfig, Preset, ScenarioConfig } from '@/models/types'
 
 const LS_KEY = 'uma:config:v1'
 
@@ -9,86 +9,197 @@ type State = {
   uiTheme: 'dark' | 'light'
   uiGeneralCollapsed: boolean
   uiSelectedPresetId?: string
+  uiScenarioKey: 'ura' | 'unity_cup'
 }
 
 type Actions = {
-  // general
   setGeneral: (patch: Partial<GeneralConfig>) => void
-
-  // presets
-  setActivePresetId: (id: string) => void
-  setSelectedPresetId: (id: string) => void
-  getActivePreset: () => { id: string | undefined; preset: Preset | undefined }
-  getSelectedPreset: () => { id: string | undefined; preset: Preset | undefined }
+  setScenario: (key: 'ura' | 'unity_cup') => void
+  setActivePresetId: (id: string | undefined) => void
+  setSelectedPresetId: (id: string | undefined) => void
+  getScenarioBranch: (key?: string) => { key: 'ura' | 'unity_cup'; branch: ScenarioConfig }
+  getActivePreset: () => { scenario: 'ura' | 'unity_cup'; id: string | undefined; preset: Preset | undefined }
+  getSelectedPreset: () => { scenario: 'ura' | 'unity_cup'; id: string | undefined; preset: Preset | undefined }
   commitSelectedPreset: () => void
   addPreset: () => void
   copyPreset: (id: string) => void
   deletePreset: (id: string) => void
   renamePreset: (id: string, name: string) => void
   patchPreset: <K extends keyof Preset>(id: string, key: K, value: Preset[K]) => void
-
-  // io
   replaceConfig: (cfg: AppConfig) => void
   saveLocal: () => void
   loadLocal: () => void
   exportJson: () => void
   importJson: (raw: unknown) => { ok: boolean; error?: string }
-
-  // theme
   setUiTheme: (mode: 'dark' | 'light') => void
-
   setGeneralCollapsed: (v: boolean) => void
 }
 
 const newId = () => (crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2))
+
+const normalizeScenario = (value: unknown): 'ura' | 'unity_cup' =>
+  value === 'unity_cup' ? 'unity_cup' : 'ura'
+
+function normalizePreset(raw: any, general: Partial<GeneralConfig> | undefined): Preset {
+  const base = defaultPreset(raw?.id ?? newId(), raw?.name ?? 'Preset')
+  const fallbackSkillPts = Number((general as any)?.skillPtsCheck ?? 600)
+  const skillPts = Number.isFinite(Number(raw?.skillPtsCheck))
+    ? Math.max(0, Number(raw?.skillPtsCheck))
+    : Math.max(0, fallbackSkillPts)
+
+  return {
+    ...base,
+    ...raw,
+    id: raw?.id ?? base.id,
+    name: raw?.name ?? base.name,
+    skillPtsCheck: skillPts,
+    prioritizeHint:
+      typeof raw?.prioritizeHint === 'boolean'
+        ? raw.prioritizeHint
+        : !!(general as any)?.prioritizeHint,
+    event_setup: raw?.event_setup ?? base.event_setup,
+  }
+}
+
+const ensureScenarioMap = (scenarios?: Record<string, ScenarioConfig>): Record<string, ScenarioConfig> => {
+  const map: Record<string, ScenarioConfig> = { ...(scenarios ?? {}) }
+  if (!map.ura) map.ura = { presets: [], activePresetId: undefined }
+  if (!map.unity_cup) map.unity_cup = { presets: [], activePresetId: undefined }
+  return map
+}
+
+const resolveScenario = (config: AppConfig, scenario?: string) => {
+  const key = normalizeScenario(scenario ?? config.general?.activeScenario)
+  const map = ensureScenarioMap(config.scenarios)
+  const branch = map[key] ?? { presets: [], activePresetId: undefined }
+  map[key] = branch
+  return { key, branch, map }
+}
+
+const migrateConfig = (cfg: AppConfig): AppConfig => {
+  const baseScenarios = ensureScenarioMap(defaultAppConfig().scenarios)
+  const incomingScenarios = ensureScenarioMap((cfg as any).scenarios)
+  const scenarios = ensureScenarioMap({ ...baseScenarios, ...incomingScenarios })
+
+  const legacyPresets = (cfg as any).presets
+  const legacyActive = (cfg as any).activePresetId
+  if (Array.isArray(legacyPresets)) {
+    const normalized = legacyPresets.map((p: any) => normalizePreset(p, cfg.general))
+    scenarios.ura = {
+      presets: normalized,
+      activePresetId:
+        (typeof legacyActive === 'string' ? legacyActive : undefined) ?? normalized[0]?.id,
+    }
+  }
+
+  for (const key of Object.keys(scenarios)) {
+    const branch = scenarios[key] ?? { presets: [], activePresetId: undefined }
+    const normalizedPresets = Array.isArray(branch.presets)
+      ? branch.presets.map((p: any) => normalizePreset(p, cfg.general))
+      : []
+    const activeId = branch.activePresetId && normalizedPresets.find((p) => p.id === branch.activePresetId)
+      ? branch.activePresetId
+      : normalizedPresets[0]?.id
+    scenarios[key] = {
+      presets: normalizedPresets,
+      activePresetId: activeId,
+    }
+  }
+
+  const activeScenario = normalizeScenario(cfg?.general?.activeScenario)
+  return {
+    version: cfg.version ?? 1,
+    general: {
+      ...defaultGeneral,
+      ...cfg.general,
+      activeScenario,
+    },
+    scenarios,
+  }
+}
 
 export const useConfigStore = create<State & Actions>((set, get) => ({
   config: defaultAppConfig(),
   uiTheme: 'light',
   uiGeneralCollapsed: false,
   uiSelectedPresetId: undefined,
+  uiScenarioKey: 'ura',
 
   // ---- general
   setGeneral: (patch) =>
-    set((s) => ({ config: { ...s.config, general: { ...s.config.general, ...patch } } })),
-
-  // ---- presets
-  setActivePresetId: (id) =>
     set((s) => ({
       config: {
         ...s.config,
-        activePresetId: id,
+        general: { ...s.config.general, ...patch },
       },
     })),
 
+  // ---- presets
+  setScenario: (key) =>
+    set((s) => {
+      const scenarioKey = normalizeScenario(key)
+      const { key: resolvedKey, branch, map } = resolveScenario(s.config, scenarioKey)
+      return {
+        config: {
+          ...s.config,
+          general: { ...s.config.general, activeScenario: resolvedKey },
+          scenarios: map,
+        },
+        uiScenarioKey: resolvedKey,
+        uiSelectedPresetId: branch.activePresetId ?? branch.presets[0]?.id,
+      }
+    }),
+
+  setActivePresetId: (id) =>
+    set((s) => {
+      const { key, branch, map } = resolveScenario(s.config, s.uiScenarioKey)
+      return {
+        config: {
+          ...s.config,
+          scenarios: { ...map, [key]: { ...branch, activePresetId: id } },
+        },
+      }
+    }),
+
   setSelectedPresetId: (id) => set({ uiSelectedPresetId: id }),
+
+  getScenarioBranch: (targetKey) => {
+    const { config } = get()
+    const { key, branch } = resolveScenario(config, targetKey)
+    return { key, branch }
+  },
 
   getActivePreset: () => {
     const { config } = get()
-    const activeId = config.activePresetId ?? config.presets[0]?.id
+    const { key, branch } = resolveScenario(config)
+    const activeId = branch.activePresetId ?? branch.presets[0]?.id
     return {
+      scenario: key,
       id: activeId,
-      preset: activeId ? config.presets.find((p) => p.id === activeId) : undefined,
+      preset: activeId ? branch.presets.find((p) => p.id === activeId) : undefined,
     }
   },
 
   getSelectedPreset: () => {
-    const { config, uiSelectedPresetId } = get()
-    const selectedId = uiSelectedPresetId ?? config.activePresetId ?? config.presets[0]?.id
+    const { config, uiSelectedPresetId, uiScenarioKey } = get()
+    const { key, branch } = resolveScenario(config, uiScenarioKey)
+    const selectedId = uiSelectedPresetId ?? branch.activePresetId ?? branch.presets[0]?.id
     return {
+      scenario: key,
       id: selectedId,
-      preset: selectedId ? config.presets.find((p) => p.id === selectedId) : undefined,
+      preset: branch.presets.find((p) => p.id === selectedId),
     }
   },
 
   commitSelectedPreset: () =>
     set((s) => {
-      const selectedId = s.uiSelectedPresetId ?? s.config.activePresetId ?? s.config.presets[0]?.id
+      const { key, branch, map } = resolveScenario(s.config, s.uiScenarioKey)
+      const selectedId = s.uiSelectedPresetId ?? branch.activePresetId ?? branch.presets[0]?.id
       if (!selectedId) return {}
       return {
         config: {
           ...s.config,
-          activePresetId: selectedId,
+          scenarios: { ...map, [key]: { ...branch, activePresetId: selectedId } },
         },
         uiSelectedPresetId: selectedId,
       }
@@ -96,100 +207,110 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
 
   addPreset: () =>
     set((s) => {
-      // Make sure event_setup is a fresh object for every preset
-      const base = defaultPreset(newId(), `Preset ${s.config.presets.length + 1}`)
-      const preset: Preset = { ...base, event_setup: defaultEventSetup() }
+      const { key, branch, map } = resolveScenario(s.config, s.uiScenarioKey)
+      const preset: Preset = {
+        ...defaultPreset(newId(), `Preset ${(branch.presets?.length ?? 0) + 1}`),
+        event_setup: defaultEventSetup(),
+      }
+      const presets = [...branch.presets, preset]
       return {
-        config: { ...s.config, presets: [...s.config.presets, preset] },
+        config: {
+          ...s.config,
+          scenarios: { ...map, [key]: { ...branch, presets, activePresetId: preset.id } },
+        },
         uiSelectedPresetId: preset.id,
       }
     }),
 
   copyPreset: (id) =>
     set((s) => {
-      const src = s.config.presets.find((p) => p.id === id)
+      const { key, branch, map } = resolveScenario(s.config, s.uiScenarioKey)
+      const src = branch.presets.find((p) => p.id === id)
       if (!src) return {}
-      // Deep-clone event_setup so copies don’t share references
       const clone: Preset = {
         ...src,
         id: newId(),
         name: src.name + ' (copy)',
         event_setup: JSON.parse(JSON.stringify(src.event_setup ?? defaultEventSetup())),
       }
+      const presets = [...branch.presets, clone]
       return {
-        config: { ...s.config, presets: [...s.config.presets, clone] },
+        config: {
+          ...s.config,
+          scenarios: { ...map, [key]: { ...branch, presets, activePresetId: clone.id } },
+        },
         uiSelectedPresetId: clone.id,
       }
     }),
 
   deletePreset: (id) =>
     set((s) => {
-      const left = s.config.presets.filter((p) => p.id !== id)
-      let presets: Preset[]
-      if (left.length) {
-        presets = left
-      } else {
-        const fallback: Preset = { ...defaultPreset(newId(), 'Preset 1'), event_setup: defaultEventSetup() }
-        presets = [fallback]
-      }
+      const { key, branch, map } = resolveScenario(s.config, s.uiScenarioKey)
+      const left = branch.presets.filter((p) => p.id !== id)
+      const presets = left.length
+        ? left
+        : [{ ...defaultPreset(newId(), 'Preset 1'), event_setup: defaultEventSetup() }]
       const nextSelected = presets[presets.length - 1]?.id
-      let nextActive = s.config.activePresetId
-      if (!nextActive || !presets.find((p) => p.id === nextActive)) {
-        nextActive = nextSelected
-      }
+      const nextActive = presets.find((p) => p.id === branch.activePresetId)
+        ? branch.activePresetId
+        : nextSelected
       return {
-        config: { ...s.config, presets, activePresetId: nextActive },
+        config: {
+          ...s.config,
+          scenarios: { ...map, [key]: { ...branch, presets, activePresetId: nextActive } },
+        },
         uiSelectedPresetId: nextSelected,
       }
     }),
 
   renamePreset: (id, name) =>
-    set((s) => ({
-      config: {
-        ...s.config,
-        presets: s.config.presets.map((p) => (p.id === id ? { ...p, name } : p)),
-      },
-    })),
+    set((s) => {
+      const { key, branch, map } = resolveScenario(s.config, s.uiScenarioKey)
+      return {
+        config: {
+          ...s.config,
+          scenarios: {
+            ...map,
+            [key]: {
+              ...branch,
+              presets: branch.presets.map((p) => (p.id === id ? { ...p, name } : p)),
+            },
+          },
+        },
+      }
+    }),
 
-  patchPreset: (id, key, value) =>
-    set((s) => ({
-      config: {
-        ...s.config,
-        presets: s.config.presets.map((p) => (p.id === id ? { ...p, [key]: value } : p)),
-      },
-    })),
+  patchPreset: (id, keyPatch, value) =>
+    set((s) => {
+      const { key, branch, map } = resolveScenario(s.config, s.uiScenarioKey)
+      return {
+        config: {
+          ...s.config,
+          scenarios: {
+            ...map,
+            [key]: {
+              ...branch,
+              presets: branch.presets.map((p) => (p.id === id ? { ...p, [keyPatch]: value } : p)),
+            },
+          },
+        },
+      }
+    }),
 
   // ---- io
   replaceConfig: (cfg) => set(() => {
-    // Normalize presets, migrate prioritizeHint from general -> preset if needed
-    const migrated = (() => {
-      const fallbackSkillPts = Number((cfg.general as any)?.skillPtsCheck ?? 600)
-      const presets = (cfg.presets || []).map((p) => ({
-        ...p,
-        event_setup: p.event_setup ?? defaultEventSetup(),
-        prioritizeHint: typeof p.prioritizeHint === 'boolean' ? p.prioritizeHint : (cfg.general as any)?.prioritizeHint ?? false,
-        skillPtsCheck: Number.isFinite(Number(p.skillPtsCheck))
-          ? Math.max(0, Number(p.skillPtsCheck))
-          : Math.max(0, fallbackSkillPts),
-      }))
-      const activeId = cfg.activePresetId ?? presets[0]?.id
-      const active = presets.find((p) => p.id === activeId)
-      // Mirror back to general for backward compat on-disk
-      const general = { ...cfg.general, prioritizeHint: active ? !!active.prioritizeHint : (cfg.general as any)?.prioritizeHint ?? false }
-      return { ...cfg, general, presets, activePresetId: active?.id ?? presets[0]?.id }
-    })()
-    return { config: migrated, uiSelectedPresetId: migrated.activePresetId }
+    // Normalize scenarios map & migrate legacy structures
+    const normalized = migrateConfig(cfg)
+    return {
+      config: normalized,
+      uiSelectedPresetId: normalized.scenarios[normalized.general.activeScenario]?.activePresetId,
+      uiScenarioKey: normalized.general.activeScenario,
+    }
   }),
 
   saveLocal: () => {
-    const { config, getActivePreset } = get()
-    const { id: activeId, preset: active } = getActivePreset()
-    const data = JSON.parse(JSON.stringify(config)) as AppConfig
-    data.activePresetId = active?.id ?? activeId ?? config.presets[0]?.id
-    // Mirror active preset's prioritizeHint into general for backward compat
-    ;(data.general as any).prioritizeHint = active ? !!active.prioritizeHint : (data.general as any)?.prioritizeHint ?? false
-    ;(data.general as any).skillPtsCheck = active?.skillPtsCheck ?? (data.general as any)?.skillPtsCheck ?? 600
-    localStorage.setItem(LS_KEY, JSON.stringify(data))
+    const snapshot = mirrorGeneralFromPreset(get().config)
+    localStorage.setItem(LS_KEY, JSON.stringify(snapshot))
   },
 
   loadLocal: () => {
@@ -199,35 +320,20 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
     try {
       const parsed = JSON.parse(raw)
       const safe = appConfigSchema.parse(parsed)
-      // Migrate general.prioritizeHint -> preset.prioritizeHint, and mirror back
-      const fallbackSkillPts = Number((safe.general as any)?.skillPtsCheck ?? 600)
-      const presets = safe.presets.map((p) => ({
-        ...p,
-        event_setup: p.event_setup ?? defaultEventSetup(),
-        prioritizeHint: typeof p.prioritizeHint === 'boolean' ? p.prioritizeHint : (safe.general as any)?.prioritizeHint ?? false,
-        skillPtsCheck: Number.isFinite(Number(p.skillPtsCheck))
-          ? Math.max(0, Number(p.skillPtsCheck))
-          : Math.max(0, fallbackSkillPts),
-      }))
-      const activeId = safe.activePresetId ?? presets[0]?.id
-      const active = presets.find((p) => p.id === activeId)
-      const general = { ...safe.general, prioritizeHint: active ? !!active.prioritizeHint : (safe.general as any)?.prioritizeHint ?? false }
-      ;(general as any).skillPtsCheck = active?.skillPtsCheck ?? Math.max(0, fallbackSkillPts)
-      set({ config: { ...safe, general, presets, activePresetId: active?.id ?? presets[0]?.id }, uiSelectedPresetId: active?.id ?? presets[0]?.id })
+      const normalized = migrateConfig(safe)
+      set({
+        config: normalized,
+        uiSelectedPresetId: normalized.scenarios[normalized.general.activeScenario]?.activePresetId,
+        uiScenarioKey: normalized.general.activeScenario,
+      })
     } catch {
       // ignore
     }
   },
 
   exportJson: () => {
-    const { config, getActivePreset } = get()
-    const data = JSON.parse(JSON.stringify(config)) as AppConfig
-    const { id: activeId, preset: active } = getActivePreset()
-    data.activePresetId = active?.id ?? activeId ?? data.presets[0]?.id
-    // Mirror active preset's prioritizeHint into general for backward compat
-    ;(data.general as any).prioritizeHint = active ? !!active.prioritizeHint : (data.general as any)?.prioritizeHint ?? false
-    ;(data.general as any).skillPtsCheck = active?.skillPtsCheck ?? (data.general as any)?.skillPtsCheck ?? 600
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const snapshot = mirrorGeneralFromPreset(get().config)
+    const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -239,22 +345,12 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
   importJson: (raw) => {
     try {
       const safe = appConfigSchema.parse(raw)
-      // Normalize + migrate prioritizeHint
-      const fallbackSkillPts = Number((safe.general as any)?.skillPtsCheck ?? 600)
-      const presets = safe.presets.map((p) => ({
-        ...p,
-        event_setup: p.event_setup ?? defaultEventSetup(),
-        prioritizeHint: typeof p.prioritizeHint === 'boolean' ? p.prioritizeHint : (safe.general as any)?.prioritizeHint ?? false,
-        skillPtsCheck: Number.isFinite(Number(p.skillPtsCheck))
-          ? Math.max(0, Number(p.skillPtsCheck))
-          : Math.max(0, fallbackSkillPts),
-      }))
-      const activeId = safe.activePresetId ?? presets[0]?.id
-      const active = presets.find((p) => p.id === activeId)
-      const general = { ...safe.general, prioritizeHint: active ? !!active.prioritizeHint : (safe.general as any)?.prioritizeHint ?? false }
-      ;(general as any).skillPtsCheck = active?.skillPtsCheck ?? Math.max(0, fallbackSkillPts)
-      const normalized: AppConfig = { ...safe, general, presets, activePresetId: active?.id ?? presets[0]?.id }
-      set({ config: normalized, uiSelectedPresetId: normalized.activePresetId })
+      const normalized = migrateConfig(safe)
+      set({
+        config: normalized,
+        uiSelectedPresetId: normalized.scenarios[normalized.general.activeScenario]?.activePresetId,
+        uiScenarioKey: normalized.general.activeScenario,
+      })
       return { ok: true }
     } catch (e: any) {
       return { ok: false, error: String(e?.message || e) }
@@ -265,3 +361,19 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
   setUiTheme: (mode) => set({ uiTheme: mode }),
   setGeneralCollapsed: (v: boolean) => set({ uiGeneralCollapsed: v }),
 }))
+
+function mirrorGeneralFromPreset(config: AppConfig): AppConfig {
+  const { key, branch, map } = resolveScenario(config, config.general.activeScenario)
+  const activeId = branch.activePresetId ?? branch.presets[0]?.id
+  const activePreset = branch.presets.find((p) => p.id === activeId)
+
+  const general = { ...config.general } as Record<string, any>
+  general.prioritizeHint = activePreset ? !!activePreset.prioritizeHint : !!general.prioritizeHint
+  general.skillPtsCheck = activePreset?.skillPtsCheck ?? general.skillPtsCheck ?? 600
+
+  return {
+    ...config,
+    general: general as GeneralConfig,
+    scenarios: { ...map, [key]: { ...branch, activePresetId: activeId } },
+  }
+}

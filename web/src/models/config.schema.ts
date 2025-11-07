@@ -20,6 +20,7 @@ export const generalSchema = z.object({
   tryAgainOnFailedGoal: z.boolean().default(true),
   maxFailure: z.number().int().min(0).max(99).default(20),
   acceptConsecutiveRace: z.boolean().default(true),
+  activeScenario: z.enum(['ura', 'unity_cup']).default('ura'),
   advanced: z.object({
     hotkey: z.enum(['F1', 'F2', 'F3', 'F4']).default('F2'),
     debugMode: z.boolean().default(true),
@@ -135,11 +136,20 @@ export const presetSchema = z.object({
   }),
 })
 
+const scenarioConfigSchema = z.object({
+  presets: z.array(presetSchema),
+  activePresetId: z.string().optional(),
+})
+
 export const appConfigSchema = z.object({
   version: z.number().int(),
   general: generalSchema,
-  presets: z.array(presetSchema),
-  activePresetId: z.string().optional(),
+  scenarios: z
+    .record(z.string(), scenarioConfigSchema)
+    .default({
+      ura: { presets: [], activePresetId: undefined },
+      unity_cup: { presets: [], activePresetId: undefined },
+    }),
 })
 
 export const defaultGeneral: GeneralConfig = generalSchema.parse({})
@@ -168,6 +178,14 @@ export const defaultPreset = (id: string, name: string): Preset => ({
 export const defaultAppConfig = (): AppConfig => ({
   version: 1,
   general: defaultGeneral,
-  presets: [defaultPreset(crypto.randomUUID(), 'Preset 1')],
-  activePresetId: undefined,
+  scenarios: {
+    ura: {
+      presets: [defaultPreset(crypto.randomUUID(), 'Preset 1')],
+      activePresetId: undefined,
+    },
+    unity_cup: {
+      presets: [],
+      activePresetId: undefined,
+    },
+  },
 })

@@ -3,120 +3,100 @@
 This organizes the mixed notes into a clear, actionable backlog. Items are grouped by workstream and priority. “Later” holds non-urgent ideas. 
 
 ================================================================================
-## 0.3
-
-### 0.3.2
-
-
-### 0.3.3
-
-MOVED some req from 0.3.2 because it was already too big
-
-
-Bugs:
-- Yolo endpoint oguri doesn't recognize New year resolution events (is getting 2 and we get the above error)
-
-General:
-- Put distributables / binaries in S3 service (not the model though)
-
-Claw Machine:
-- @Rosetta: Re-check of the logic so it always Win. If first detected plushie is good enough and it is not at the border take it, if not do a full scan. Check the zips on discord
-
-Bug:
-- race.py 867 when getting the style_btns chosen, error of list index out of range
 
 ## 0.4
 
 ### 0.4.0
 
 General
-- Add minimal testing and lint check for big refactoring
-- Remove tech debt of publich path and path in template matcher
-- Increase timeout uvicorn so it waits for server to answer up to 1 min
-- Aoharu Hai preparation
-- Color unit testing: detected as yellow the 'green' one "yellow: +0.00"
-- Show in toast if selected scenario is ura or Aoharu, too along to the preset name
-- Add the support stuff
-Create discord stuff
+- Add minimal testing
 
-aoharu:
-Aoharu model:
-- not director
-- not etsuko
-- not tazuna, instead:
-for each pal we may have a different class, better if support_type class is pal (make classifier with cv2), then classify which pal, if we already nkow because of support cards, go for it
+Aoharu Hai (beta):
+- Create Label Studio project for YOLO 'large' model, considerations:
+"""
+1. not director, put kashimoto instead. She is special here, not like tazuna
+2. not etsuko (remove)
+3. not tazuna, instead:
+4. kashimoto can act as new director (no support_type icon) or as our support card (then she will have the support_type pal icon). -> team joined. For URA we need to do this if they use Riko Kashimoto here
 
 new classes:
--+ Retrain Calendar with new images
-+ Calendar below aoharu turns
-+ hint special training (classifier for the color)
-+ flame special training (classifier to check if 'explosion, normal / remaning energy)
-+ banner race
-+ clock
+-> Retrain Calendar with new images
+1. Calendar below aoharu turns
+2. hint special training (classifier for the color)
+3. flame special training (classifier to check if 'explosion, normal / remaning energy)
+4. banner race
+5. clock
+"""
 
+- Aoharu Strategy:
+"""
+1. Already exploded doesn't have that value. It is already exploded if flame especial training is at the right instead of left, and it is purple. alone flame for already exploded, will be at right, and no value involved
+2. flame alone doesn't give combo / bonus, so it is better to go 2 or more
+3. Add a priority stats for explosions (can be different than normal priority stats)
+4. special hint must be with flame at the left to fill up the container, flame alone doesn't have value, will not be filled
+5. it is better to explode as soon as possible, but if we can level the flame at same time for multple, it is better. Add a WebUI preset parameter to enable/disable 'Allow instant explode'
+6. when flame is purple, that explosion is worthit (when already exploded)
+7. first trials may be better to select second one, the rest the first one. In web ui we need to set the 'first' team oponnent selection, and then the rest.
+8. multiple explosions has much more value multiple special normal training
+"""
 
-if support card, but not support type and not support bar -> team joined
-
-explosion only once, but jp has purple flame that can also explode
-
-already exploded doesn't have that value. It is already exploded if flame especial training is at the right instead of left, and it is purple
-
-calendar is different, and position of 'date' is different too
-
-flame alone doesn't give combo / bonus, so it is better to go 2 or more
-
-alone flame for already exploded, may be 0
-
-is better to explode in WIT to save energy? maybe explode on priority stats
-
-special hint must be with flame to fill, flame alone doesn't have value
-
-it is better to explode as soon as possible, but if we can level the flame at same time for multple, it is better
-
-
-when flame is purple, that explosion is worthit (when already exploded)
-
-first trials may be better to select second one, the rest the first one
-
-PATCH ENGLISH for jp version
-
-special training only give value if combo
-
-follow this guide to install:
-https://www.youtube.com/watch?v=2n0vHxszaWQ
-
-
-multiple explosions > multiple special normal training
-
-stats after 1200 are halved
-
-Bot Strategy / Policy:
-- Lookup toggle: allow skipping **scheduled race** if training has **2+ rainbows**
-  “Check first” at lobby: pre-turn heuristics before going to infirmaty, rest, etc. Pre lookup
-  "Check first" allowed for races individually set
+General Strategy / Policy:
 - Parameter to define 'weak turn' / 'low 
 - PAL training:
   - @Rosetta: Tazuna blue was worth more, you want to get it to green ASAP to unlock her dates (there's a bonus if you do it in the junior year)
   - Make Tazuna orange/max also configurable (Also Riko Kashimoto). +0.15 (orange, yellow, max) by default
-  - Capture in lobby stats'Recreation Tazuna' for later trainig decisions
+  - Capture in lobby stats 'Recreation PAL' for later trainig decisions
     -> When energy needed, and tazuna available, prefer tazuna (keep the chain counting to not select one with no good energy recovery)
+
+QoL:
+- Show in toast if selected scenario is ura or Aoharu, too along to the preset name
+
+### 0.4.1
+
+annotated for 0.4.1, thanks for suggestions as always Rosetta
+
+For Tazuna I have stats > hints for energy overcap priority, but it will still reject dating if energy is high enough even though accepting provides stats and rejecting only a hint (I want energy overcap prevention for her third date)
+Speaking of Tazuna, I'd like to see an option that when auto rest is supposed to trigger and mood is below minimum, recreation takes priority
+Speaking of minimum mood, if it's great you often see the bot recreate for the first 2 turns, is it possible to perhaps have a different minimum mood option for the junior year or if energy is full and a friendship can be raised do that instead?
+
+
+General:
+- Create discord roles
+
+### Bugfixes
+- For initial stuff
+
+General Strategy / Policy:
+- Lookup toggle: allow skipping **scheduled race** if training has **2+ rainbows**
+  “Check first” at lobby: pre-turn heuristics before going to infirmaty, rest, etc. Pre lookup
+  "Check first" allowed for races individually set
+
+Claw Machine:
+- @Rosetta: Re-check of the logic so it always Win. If first detected plushie is good enough and it is not at the border take it, if not do a full scan. Check the zips on discord.
+
+### 0.4.2
 
 Events:
 - how should i respond still fails (chain). Check and validate
 - When no event detected, generate a special log in debug folder if 'debug' bool is enabled: gent.py:292: [Event] EventDecision(matched_key=None, matched_key_step=None, pick_option=1, clicked_box=(182.39614868164062, 404.23193359375, 563.8184204101562, 458.83447265625), debug={'current_energy': 64, 'max_energy_cap': 100, 'chain_step_hint': None, 'num_choices': 2, 'has_event_card': False, 'ocr_title': '', 'ocr_description': ''}). 
 
-### 0.4.1
+Bug:
+- race.py 867 when getting the style_btns chosen, error of list index out of range
 
+Bot Strategy:
 One more little idea I've just had - it would be cool if the settings "allow racing over low training" could be expanded into deciding what grades of races this is allowed to trigger with (eg. only G1s)
 MagodyBoy — 17:20
 and the minimum energy to trigger race, I think right now I check if we have >= 70% of energy
+
+Quality Assurance:
+- Color unit testing: detected as yellow the 'green' one "yellow: +0.00"
 
 ## 0.5
 
 ### 0.5.0
 
 Scenario:
-- Aoharu Hai
+- Aoharu Hai stabilization
 
 Bat and executable:
 - bat is failing
@@ -152,8 +132,33 @@ Shop:
 - Error loop in shop when nothing to buy, partial state, check on debug 'log_shop_0.5.0.txt'
 
 
+- transparent may be happening after pressing 'back' in training
+- fix data per trainee, (extra training and others, otherwise fit doesn't work)
+
+Template Matching:
+- for 'scenario' how does template matching works? is it used? or only text?
+
+- race scheduler improve the patience when no stars found or similar views. Speed up.
+- doc the new data augmentation including data steam checker. We need to keep that in sync with traineed, a way to check if there is consistency or if we have more information or less information in particular areas
 
 @Unknown: do you think you could add a feature to add the minimum fans for the unique upgrade or is that already implemented?
+
+
+Agent Nav: didn't recognized star pieces and bout shoes, retrain nav with more data
+
+- UX: on hint required skills, only bring the selected on 'skills to buy' to have all in sync, instead of the full list. on required skills make sure standard distance cicle or double circle are the same?
+
+- they added new choices for some events of oguri cap, grass wonders, mejiro mcqueens, mejiro ryan, agnes Tachyon, Sakura Bakushin -> automate the event scrapping
+
+Bug:
+- false positive, tried to look for this race on july 1:
+10:03:03 INFO    agent.py:789: [planned_race] skip_guard=1 after failure desired='Takarazuka Kinen' key=Y3-06-2
+10:03:03 INFO    agent.py:241: [planned_race] scheduled skip reset key=Y3-06-2 cooldown=2
+10:03:04 DEBUG   lobby.py:796: [date] prev: DateInfo(raw='Senior Year Early Jun', year_code=3, month=6, half=2). Cand: DateInfo(raw='Senior Year Early Jul', year_code=3, month=7, half=1). accepted: DateInfo(raw='Senior Year Early Jul', year_code=3, month=7, half=1)
+10:03:04 INFO    lobby.py:797: [date] monotonic: Y3-Jun-2 -> Y3-Jul-1
+
+- for trainee matcher, train a classifier, for now keep template matching. With label studio train the classifier
+- 'pre-process' based on the preset, and use the preprocess to speed up the progress
 
 ## 0.6
 
@@ -181,6 +186,12 @@ LLM?
 """
 
 
+Bot Strategy:
+- Rest and recreation during Summer Camp now cures bad conditions
+- Resting now has a chance to cure the Night owl and skit outbreak
+- You can cure slow metabolism by doing some training
+
+
 ## 0.7
 
 ### 0.7.0
@@ -195,36 +206,5 @@ Bot Strategy:
 End2End navigator play:
 - Github Issue
 
-
-
-# TO VALIDATE:
-
-## 0.3.2
-
-Skills:
-- @Rosetta / @Hibiki: Improve OCR ambiguos recognition (reports). non-standard vs standard for example and others of taking the lead / keeping the lead, and more, I added possitive / negative tokens to improve the recognition
-
-Bot Strategy:
-- @Rosetta: Energy rotation customizable, "while it is ok to..."
-
-Hints
-- Improve Control for double buying of single circle skills. if hint / skill already got / bought, not take that hint anymore
-- @sando: Conditional hint scoring
-
-Oguri cap test:
-- Chain event recognition, do a fallback to chain 1 if no match found, also quickly check for a minimal blue color (important)
-
-in skill to buy Unique are not getting painted
-also show custom hint if required skill section changed
-
-- @EO1: Include Summer Characters and new characters and cards. Make it scalable and more easy to replicate. Auto web scraper with python?
-
-- Probably solved by AI XD: If you choose option 2 (winning chakra) for acupuncturist, it will click the second option (reconsider) each time after selecting it
-
-# Not prioritized yet
-
-Team Trials
-- Check if banner is active/inactive, before clicking
-heck if banner is active/inactive, before clicking, if inactive, wait 2 sec. Here is the classifier for that: clf = ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH) - is_active = clf.predict(crop)
 
 

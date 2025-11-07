@@ -92,6 +92,9 @@ class Settings:
     # Models & weights
     _YOLO_WEIGHTS_URA_ENV = _env("YOLO_WEIGHTS_URA") or _env("YOLO_WEIGHTS")
     YOLO_WEIGHTS_URA: Path = Path(_YOLO_WEIGHTS_URA_ENV or (MODELS_DIR / "uma_ura.pt"))
+    YOLO_WEIGHTS_UNITY_CUP: Path = Path(
+        _env("YOLO_WEIGHTS_UNITY_CUP") or _YOLO_WEIGHTS_URA_ENV or (MODELS_DIR / "uma_ura.pt")
+    )
     YOLO_WEIGHTS_NAV: Path = Path(
         _env("YOLO_WEIGHTS_NAV") or (MODELS_DIR / "uma_nav.pt")
     )
@@ -123,6 +126,7 @@ class Settings:
     WINDOW_TITLE = "Umamusume"
 
     AGENT_NAME_URA: str = "ura"
+    AGENT_NAME_UNITY_CUP: str = "unity_cup"
     AGENT_NAME_NAV: str = "agent_nav"
     USE_EXTERNAL_PROCESSOR = False
     EXTERNAL_PROCESSOR_URL = "http://127.0.0.1:8001"
@@ -149,6 +153,10 @@ class Settings:
     PRIORITY_STATS = ["SPD", "STA", "WIT", "PWR", "GUTS"]
 
     MINIMAL_MOOD = "normal"
+
+    ACTIVE_SCENARIO: str = "ura"
+    ACTIVE_AGENT_NAME: str = AGENT_NAME_URA
+    ACTIVE_YOLO_WEIGHTS: Path = YOLO_WEIGHTS_URA
 
     SUPPORT_PRIORITIES_HAVE_CUSTOMIZATION: bool = False
     SUPPORT_CUSTOM_PRIORITY_KEYS: Set[Tuple[str, str, str]] = set()
@@ -205,12 +213,50 @@ class Settings:
         cls.ACCEPT_CONSECUTIVE_RACE = bool(
             g.get("acceptConsecutiveRace", cls.ACCEPT_CONSECUTIVE_RACE)
         )
+        cls.ACTIVE_SCENARIO = str(g.get("activeScenario", cls.ACTIVE_SCENARIO)).lower()
+        if cls.ACTIVE_SCENARIO not in {"ura", "unity_cup"}:
+            cls.ACTIVE_SCENARIO = "ura"
+        cls.ACTIVE_AGENT_NAME = cls.resolve_agent_name(cls.ACTIVE_SCENARIO)
+        cls.ACTIVE_YOLO_WEIGHTS = cls.resolve_yolo_weights_path(cls.ACTIVE_SCENARIO)
 
-        presets = (cfg or {}).get("presets") or []
-        active_id = (cfg or {}).get("activePresetId")
-        preset = next((p for p in presets if p.get("id") == active_id), None) or (
-            presets[0] if presets else None
+        presets: List[dict] = []
+        active_id: Optional[str] = None
+        scenarios_raw = cfg.get("scenarios") if isinstance(cfg, dict) else None
+
+        def _read_branch(raw_branch: Any) -> tuple[List[dict], Optional[str]]:
+            if not isinstance(raw_branch, dict):
+                return [], None
+            branch_presets = raw_branch.get("presets")
+            if not isinstance(branch_presets, list):
+                branch_presets = []
+            active = raw_branch.get("activePresetId")
+            if not isinstance(active, str):
+                active = None
+            return branch_presets, active
+
+        if isinstance(scenarios_raw, dict):
+            presets, active_id = _read_branch(scenarios_raw.get(cls.ACTIVE_SCENARIO))
+            if not presets:
+                # Fallback to URA branch when the selected scenario is missing
+                presets, active_id = _read_branch(scenarios_raw.get("ura"))
+
+        if not presets:
+            presets = (cfg or {}).get("presets") or []
+            active_id = (cfg or {}).get("activePresetId")
+
+        preset = next(
+            (
+                p
+                for p in presets
+                if isinstance(p, dict) and p.get("id") == active_id
+            ),
+            None,
         )
+        if not preset and presets:
+            first = presets[0]
+            preset = first if isinstance(first, dict) else None
+            if isinstance(preset, dict):
+                active_id = str(preset.get("id") or "") or active_id
 
         preset_data = preset or {}
 
@@ -378,6 +424,20 @@ class Settings:
         except Exception:
             preferred = _DEFAULT_NAV_PREFS["team_trials"]["preferred_banner"]
         return max(1, min(3, preferred))
+
+    @classmethod
+    def resolve_agent_name(cls, scenario: str | None = None) -> str:
+        key = str(scenario or cls.ACTIVE_SCENARIO or "ura").lower()
+        if key == "unity_cup":
+            return cls.AGENT_NAME_UNITY_CUP
+        return cls.AGENT_NAME_URA
+
+    @classmethod
+    def resolve_yolo_weights_path(cls, scenario: str | None = None) -> Path:
+        key = str(scenario or cls.ACTIVE_SCENARIO or "ura").lower()
+        if key == "unity_cup":
+            return cls.YOLO_WEIGHTS_UNITY_CUP
+        return cls.YOLO_WEIGHTS_URA
 
     @classmethod
     def extract_runtime_preset(cls, cfg: dict) -> dict:
