@@ -22,6 +22,7 @@ Enable smooth switching between multiple UmaMusume training scenarios by separat
 - `main.py` — lines 30-792 (hotkey loop restructuring, scenario selection flow, prompt skip when confirmed)
 - `web/src/store/configStore.ts` — lines 1-360 (scenario migration, localStorage safeguards, scenario confirmation plumbing)
 - `server/utils.py` — lines 180-260 (default + normalization for `scenarioConfirmed`)
+- `web/src/components/presets/strategy/` — new directory: UraStrategy, UnityCupStrategy, registry pattern for scenario-specific Bot Strategy components
 
 ## Work Completed in This Iteration
 - Rebuilt the scenario prompt as a Tkinter Toplevel with buttons, images, focus management, and keyboard shortcuts.
@@ -32,6 +33,7 @@ Enable smooth switching between multiple UmaMusume training scenarios by separat
 - Added aggressive focus/grab logic so the scenario chooser surfaces above VS Code.
 - Persisted `scenarioConfirmed` end-to-end and added store-level guardrails to prevent empty-save data loss.
 - Refreshed preset overlay styling with a white-bordered emerald toast and brighter status icon for better visibility.
+- Extracted Bot Strategy section into scenario-specific components using a registry pattern (`web/src/components/presets/strategy/`), enabling clean extension for Unity Cup and future scenarios without conditional sprawl.
 
 ## Current Issue or Observation
 - Need parity/unit tests to cover scenario confirmation skip path and migration safeguards (see PLAN step 7).

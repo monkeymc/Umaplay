@@ -68,11 +68,12 @@ Document the repeatable steps for introducing a brand-new training scenario (e.g
      - Provide a sample preset entry in `prefs/config.sample.json` if relevant.
 
 4. **Expose scenario in Web UI**
-   - **Files/paths**: `web/src/components/general/GeneralForm.tsx`, optional scenario-specific components, `web/public/scenarios/`
+   - **Files/paths**: `web/src/components/general/GeneralForm.tsx`, `web/src/components/presets/strategy/<scenario>Strategy.tsx`, `web/public/scenarios/`
    - **Notes:**
      - Add the toggle button with icon/label and ensure `setScenario()` handles the new key.
      - Keep accessibility text accurate; update highlighter logic if the scenario has constraints.
-     - If presets require unique layout, add scenario-specific instructions/tooltips.
+     - **Create scenario-specific Bot Strategy component** under `web/src/components/presets/strategy/`, implementing `StrategyComponentProps`, then register it in `strategy/index.ts` (see `strategy/README.md` for template).
+     - If other preset sections need customization, follow the same registry pattern for extensibility.
 
 5. **Verify persistence & hotkey behavior**
    - **Files/paths**: `main.py`, `core/ui/scenario_prompt.py`, `core/utils/preset_overlay.py`
