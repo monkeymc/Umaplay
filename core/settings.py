@@ -95,6 +95,7 @@ class Settings:
     YOLO_WEIGHTS_UNITY_CUP: Path = Path(
         _env("YOLO_WEIGHTS_UNITY_CUP") or _YOLO_WEIGHTS_URA_ENV or (MODELS_DIR / "uma_ura.pt")
     )
+
     YOLO_WEIGHTS_NAV: Path = Path(
         _env("YOLO_WEIGHTS_NAV") or (MODELS_DIR / "uma_nav.pt")
     )
@@ -127,6 +128,7 @@ class Settings:
 
     AGENT_NAME_URA: str = "ura"
     AGENT_NAME_UNITY_CUP: str = "unity_cup"
+
     AGENT_NAME_NAV: str = "agent_nav"
     USE_EXTERNAL_PROCESSOR = False
     EXTERNAL_PROCESSOR_URL = "http://127.0.0.1:8001"
@@ -213,7 +215,10 @@ class Settings:
         cls.ACCEPT_CONSECUTIVE_RACE = bool(
             g.get("acceptConsecutiveRace", cls.ACCEPT_CONSECUTIVE_RACE)
         )
-        cls.ACTIVE_SCENARIO = str(g.get("activeScenario", cls.ACTIVE_SCENARIO)).lower()
+        scenario_raw = str(g.get("activeScenario", cls.ACTIVE_SCENARIO)).strip().lower()
+        if scenario_raw == "aoharu":
+            scenario_raw = "unity_cup"
+        cls.ACTIVE_SCENARIO = scenario_raw if scenario_raw else "ura"
         if cls.ACTIVE_SCENARIO not in {"ura", "unity_cup"}:
             cls.ACTIVE_SCENARIO = "ura"
         cls.ACTIVE_AGENT_NAME = cls.resolve_agent_name(cls.ACTIVE_SCENARIO)
@@ -428,14 +433,14 @@ class Settings:
     @classmethod
     def resolve_agent_name(cls, scenario: str | None = None) -> str:
         key = str(scenario or cls.ACTIVE_SCENARIO or "ura").lower()
-        if key == "unity_cup":
+        if key in {"unity_cup", "aoharu"}:
             return cls.AGENT_NAME_UNITY_CUP
         return cls.AGENT_NAME_URA
 
     @classmethod
     def resolve_yolo_weights_path(cls, scenario: str | None = None) -> Path:
         key = str(scenario or cls.ACTIVE_SCENARIO or "ura").lower()
-        if key == "unity_cup":
+        if key in {"unity_cup", "aoharu"}:
             return cls.YOLO_WEIGHTS_UNITY_CUP
         return cls.YOLO_WEIGHTS_URA
 

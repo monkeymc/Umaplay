@@ -114,3 +114,19 @@ def test_apply_config_legacy_presets_structure_still_supported(fresh_settings):
 
     assert getattr(fresh_settings, "ACTIVE_SCENARIO") == "unity_cup"
     assert getattr(fresh_settings, "MINIMUM_SKILL_PTS") == 555
+
+
+def test_apply_config_aliases_aoharu_to_unity_cup(fresh_settings):
+    cfg = {
+        "general": _minimal_general("aoharu"),
+        "scenarios": {
+            "ura": _scenario_branch("ura", minimum_skill_pts=610),
+            "unity_cup": _scenario_branch("unity", minimum_skill_pts=740),
+        },
+    }
+
+    fresh_settings.apply_config(cfg)
+
+    assert getattr(fresh_settings, "ACTIVE_SCENARIO") == "unity_cup"
+    assert getattr(fresh_settings, "ACTIVE_AGENT_NAME") == fresh_settings.AGENT_NAME_UNITY_CUP
+    assert getattr(fresh_settings, "ACTIVE_YOLO_WEIGHTS") == fresh_settings.YOLO_WEIGHTS_UNITY_CUP

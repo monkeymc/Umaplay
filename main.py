@@ -73,9 +73,12 @@ def make_controller_from_settings() -> IController:
 
 
 def make_ocr_yolo_from_settings(
-    ctrl: IController, weights: str | None = None
+    ctrl: IController, weights: str | Path | None = None
 ) -> tuple[OCRInterface, IDetector]:
     """Build fresh OCR and YOLO engines based on current Settings."""
+    resolved_weights = weights if weights is not None else Settings.ACTIVE_YOLO_WEIGHTS
+    weights_str = str(resolved_weights) if resolved_weights is not None else None
+
     if Settings.USE_FAST_OCR:
         det_name = "PP-OCRv5_mobile_det"
         rec_name = "en_PP-OCRv5_mobile_rec"
@@ -91,9 +94,9 @@ def make_ocr_yolo_from_settings(
         from core.perception.yolo.yolo_remote import RemoteYOLOEngine
 
         ocr = RemoteOCREngine(base_url=Settings.EXTERNAL_PROCESSOR_URL)
-        if weights:
+        if weights_str:
             yolo_engine = RemoteYOLOEngine(
-                ctrl=ctrl, base_url=Settings.EXTERNAL_PROCESSOR_URL, weights=weights
+                ctrl=ctrl, base_url=Settings.EXTERNAL_PROCESSOR_URL, weights=weights_str
             )
         else:
             yolo_engine = RemoteYOLOEngine(
@@ -109,8 +112,8 @@ def make_ocr_yolo_from_settings(
         text_detection_model_name=det_name,
         text_recognition_model_name=rec_name,
     )
-    if weights:
-        yolo_engine = LocalYOLOEngine(ctrl=ctrl, weights=weights)
+    if weights_str:
+        yolo_engine = LocalYOLOEngine(ctrl=ctrl, weights=weights_str)
     else:
         yolo_engine = LocalYOLOEngine(ctrl=ctrl)
 
