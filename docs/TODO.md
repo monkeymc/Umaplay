@@ -14,10 +14,8 @@ General
 Aoharu Hai (beta):
 - Create Label Studio project for YOLO 'large' model, considerations:
 """
-1. not director, put kashimoto instead. She is special here, not like tazuna
-2. not etsuko (remove)
-3. not tazuna, instead:
-4. kashimoto can act as new director (no support_type icon) or as our support card (then she will have the support_type pal icon). -> team joined. For URA we need to do this if they use Riko Kashimoto here
+1. not director, but keep it, put kashimoto intead. She is special here, not like tazuna
+kashimoto can act as new director (no support_type icon) or as our support card (then she will have the support_type pal icon). -> team joined. For URA we need to do this if they use Riko Kashimoto here
 
 new classes:
 -> Retrain Calendar with new images
@@ -26,6 +24,7 @@ new classes:
 3. flame special training (classifier to check if 'explosion, normal / remaning energy)
 4. banner race
 5. clock
+6. Inspiration button change by: 'button_golden' to be able to support the riko confrontation
 """
 
 - Aoharu Strategy:
