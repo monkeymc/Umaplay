@@ -218,6 +218,7 @@ class Settings:
         )
         scenario_raw = str(g.get("activeScenario", cls.ACTIVE_SCENARIO)).strip().lower()
         cls.ACTIVE_SCENARIO = cls.normalize_scenario(scenario_raw)
+        cls.SCENARIO_CONFIRMED = bool(g.get("scenarioConfirmed", getattr(cls, "SCENARIO_CONFIRMED", False)))
         cls.ACTIVE_AGENT_NAME = cls.resolve_agent_name(cls.ACTIVE_SCENARIO)
         cls.ACTIVE_YOLO_WEIGHTS = cls.resolve_yolo_weights_path(cls.ACTIVE_SCENARIO)
         cls.ACTIVE_SKILL_MEMORY_PATH = cls.resolve_skill_memory_path(cls.ACTIVE_SCENARIO)

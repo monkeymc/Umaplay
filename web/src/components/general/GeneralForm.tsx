@@ -113,6 +113,16 @@ export default function GeneralForm() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: 0.5,
+                  borderRadius: 1,
+                  borderColor: 'transparent',
+                },
+                '& .MuiToggleButton-root.Mui-selected': {
+                  backgroundColor: 'primary.main',
+                  color: 'primary.contrastText',
+                  borderColor: 'primary.main',
+                },
+                '& .MuiToggleButton-root.Mui-selected:hover': {
+                  backgroundColor: 'primary.main',
                 },
               }}
             >
@@ -138,6 +148,12 @@ export default function GeneralForm() {
           }
           info="Select which training scenario the runtime will execute. Event presets still manage their own scenario preferences in the Presets → Events section."
         />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: { xs: 0, sm: '72px' } }}>
+          <Box sx={{ width: 10, height: 10, borderRadius: 0.5, bgcolor: 'primary.main' }} />
+          <Typography variant="caption" color="text.secondary">
+            {`Active scenario: ${g.activeScenario === 'unity_cup' ? 'Unity Cup' : 'URA'}${g.scenarioConfirmed ? ' (saved – hotkey will skip the prompt)' : ' (will ask once when starting via hotkey)'}`}
+          </Typography>
+        </Box>
 
         <FieldRow
           label="Mode"

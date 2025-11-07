@@ -37,6 +37,43 @@ new classes:
 6. when flame is purple, that explosion is worthit (when already exploded)
 7. first trials may be better to select second one, the rest the first one. In web ui we need to set the 'first' team oponnent selection, and then the rest.
 8. multiple explosions has much more value multiple special normal training
+
+priority explosion, but also 'disable' stat to explode in the same ui
+0.12 if no flame, 0.50 if flame at left, unity training combo 2 or more (Add 0.25 + combo * 0.25) More combo = more score, minimum of 0.25
+Here rainbow bonus will be 0.5 still, but this is configurable, with a button that says 'add rainbow combo' enabled by default with 0.25 and only applies if 2 or more rainbows, fórmula is (combo * 0.25) this way more rainbows will add more weight here (prioritize stats over explosion)
+
+combo doesn't count the ones without flame because is not worth it. Well we have a combo that add +1 to complete the 0.24 -> 0.25. Combo counting only takes the one with flames at left
+
+add a togle to 'prefer priority stats if are 0.75 less or equal' disabled by default
+
+kashimoto value 0.10
+etsuko value still 0.10
+
+flexible risk now we need to be careful because we can easily get 5 6  7 etc, reuce and increase the requirements
+
+hint default values nerf: 0.5 and orange 0.25 by default
+
+first race in unity cup should press 'watch main race' and a yellow button like inspiration appears. After that a concert appears. Handle a new screen class 'Race Stale' to detect the 'advance / next' button and press it 
+
+add on web ui a option to 'not show' the popup, and always follow web ui selection
+
+ability to disable explosion in certains stats, and also prioritize stats explosion so in case there are same scores we decide this in same ui
+
+now a weak turn may be a little up, to sleep preparing for better opportunity. May be 1.75 because two flames may be or not may be ok)
+
+"At team at last" will have options that will vary, so we need to check the OCR text to decide, by default the last one
+
+1.5 in wit (if flame) may be better than 1.75 in guts (if in priority order wit is first before guts)
+
+mantain a counter, if explosion is not in expected stats to be exploded, don't explode and check if some flame is about to fill, keep counting to do the best planning algorithm
+
+if blue ball, don't take into account in combo, we already assign 1.5 in solitary
+
+don't explode in overtrained stats
+
+if it is the final season, just explode any blue ball, doesn't matter position (prefer wit)
+
+
 """
 
 General Strategy / Policy:

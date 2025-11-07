@@ -15,7 +15,7 @@ import queue
 
 from core.utils.logger import logger_uma, setup_uma_logging
 from core.settings import Settings
-from core.agent import Player
+from core.agent_ura import Player
 from core.agent_nav import AgentNav
 
 from server.main import app
@@ -501,9 +501,10 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
             if not preset and presets:
                 preset = presets[0]
             name = (preset or {}).get("name") or "Unnamed preset"
+            scenario_label = active_scenario.replace("_", " ").title()
             duration = getattr(Settings, "PRESET_OVERLAY_DURATION", 5.0)
             show_preset_overlay(
-                f"Active preset: {name}",
+                f"Scenario: {scenario_label}\nActive preset: {name}",
                 duration=max(1.0, float(duration or 0.0)),
             )
         except Exception as exc:
@@ -525,7 +526,27 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
             general = {}
             cfg["general"] = general
 
-        last = general.get("activeScenario")
+        last = (general.get("activeScenario") or "ura").strip().lower()
+        if last not in {"ura", "unity_cup"}:
+            last = "ura"
+
+        if bool(general.get("scenarioConfirmed")):
+            general["activeScenario"] = last
+            general["scenarioConfirmed"] = True
+            try:
+                Settings._last_config = dict(cfg)
+            except Exception:
+                Settings._last_config = None
+            try:
+                save_config(cfg)
+            except Exception as exc:
+                logger_uma.debug(
+                    "[HOTKEY] Skipped scenario prompt; failed to persist confirmation: %s",
+                    exc,
+                )
+            logger_uma.debug("[HOTKEY] Scenario already confirmed: %s", last)
+            return True
+
         try:
             choice = choose_active_scenario(last)
         except ScenarioSelectionCancelled:
@@ -536,6 +557,7 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
             choice = "ura"
 
         general["activeScenario"] = choice
+        general["scenarioConfirmed"] = True
 
         try:
             Settings._last_config = dict(cfg)

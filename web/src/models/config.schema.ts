@@ -21,6 +21,7 @@ export const generalSchema = z.object({
   maxFailure: z.number().int().min(0).max(99).default(20),
   acceptConsecutiveRace: z.boolean().default(true),
   activeScenario: z.enum(['ura', 'unity_cup']).default('ura'),
+  scenarioConfirmed: z.boolean().default(false),
   advanced: z.object({
     hotkey: z.enum(['F1', 'F2', 'F3', 'F4']).default('F2'),
     debugMode: z.boolean().default(true),
@@ -42,8 +43,27 @@ export const generalSchema = z.object({
     skillCheckInterval: 3,
     skillPtsDelta: 60,
   }),
+}).default({
+  mode: 'steam',
+  windowTitle: 'Umamusume',
+  fastMode: false,
+  tryAgainOnFailedGoal: true,
+  maxFailure: 20,
+  acceptConsecutiveRace: true,
+  activeScenario: 'ura',
+  scenarioConfirmed: false,
+  advanced: {
+    hotkey: 'F2',
+    debugMode: true,
+    useExternalProcessor: false,
+    externalProcessorUrl: 'http://127.0.0.1:8001',
+    autoRestMinimum: 18,
+    undertrainThreshold: 6,
+    topStatsFocus: 3,
+    skillCheckInterval: 3,
+    skillPtsDelta: 60,
+  },
 })
-
 
 export const presetSchema = z.object({
   id: z.string(),

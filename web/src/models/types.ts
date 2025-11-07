@@ -14,6 +14,7 @@ export interface GeneralConfig {
   maxFailure: number
   acceptConsecutiveRace: boolean
   activeScenario: 'ura' | 'unity_cup'
+  scenarioConfirmed: boolean
   advanced: {
     hotkey: Hotkey
     debugMode: boolean

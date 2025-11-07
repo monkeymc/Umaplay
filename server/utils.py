@@ -191,6 +191,8 @@ def load_config() -> dict:
         general = {}
         data["general"] = general
     general.setdefault("activeScenario", "ura")
+    general.setdefault("scenarioConfirmed", False)
+    general["scenarioConfirmed"] = bool(general.get("scenarioConfirmed"))
 
     scenarios_raw = data.get("scenarios")
     scenarios = dict(scenarios_raw) if isinstance(scenarios_raw, dict) else {}

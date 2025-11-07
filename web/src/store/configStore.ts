@@ -77,12 +77,18 @@ const resolveScenario = (config: AppConfig, scenario?: string) => {
 }
 
 const migrateConfig = (cfg: AppConfig): AppConfig => {
+  console.log('[MIGRATE] Starting migration with config:', cfg)
+  
   const baseScenarios = ensureScenarioMap(defaultAppConfig().scenarios)
   const incomingScenarios = ensureScenarioMap((cfg as any).scenarios)
   const scenarios = ensureScenarioMap({ ...baseScenarios, ...incomingScenarios })
 
   const legacyPresets = (cfg as any).presets
   const legacyActive = (cfg as any).activePresetId
+  
+  console.log('[MIGRATE] Legacy presets found:', legacyPresets?.length ?? 0)
+  console.log('[MIGRATE] Legacy activePresetId:', legacyActive)
+  
   if (Array.isArray(legacyPresets)) {
     const normalized = legacyPresets.map((p: any) => normalizePreset(p, cfg.general))
     scenarios.ura = {
@@ -90,6 +96,7 @@ const migrateConfig = (cfg: AppConfig): AppConfig => {
       activePresetId:
         (typeof legacyActive === 'string' ? legacyActive : undefined) ?? normalized[0]?.id,
     }
+    console.log('[MIGRATE] Migrated', normalized.length, 'presets to scenarios.ura')
   }
 
   for (const key of Object.keys(scenarios)) {
@@ -107,7 +114,7 @@ const migrateConfig = (cfg: AppConfig): AppConfig => {
   }
 
   const activeScenario = normalizeScenario(cfg?.general?.activeScenario)
-  return {
+  const result = {
     version: cfg.version ?? 1,
     general: {
       ...defaultGeneral,
@@ -116,6 +123,12 @@ const migrateConfig = (cfg: AppConfig): AppConfig => {
     },
     scenarios,
   }
+  
+  console.log('[MIGRATE] Migration complete. Result:', result)
+  console.log('[MIGRATE] URA presets count:', result.scenarios.ura?.presets?.length ?? 0)
+  console.log('[MIGRATE] Unity Cup presets count:', result.scenarios.unity_cup?.presets?.length ?? 0)
+  
+  return result
 }
 
 export const useConfigStore = create<State & Actions>((set, get) => ({
@@ -142,7 +155,7 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
       return {
         config: {
           ...s.config,
-          general: { ...s.config.general, activeScenario: resolvedKey },
+          general: { ...s.config.general, activeScenario: resolvedKey, scenarioConfirmed: true },
           scenarios: map,
         },
         uiScenarioKey: resolvedKey,
@@ -310,23 +323,60 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
 
   saveLocal: () => {
     const snapshot = mirrorGeneralFromPreset(get().config)
+    
+    // Safety check: don't save if all scenarios are empty (likely a bug/data loss)
+    const uraPresetsCount = snapshot.scenarios?.ura?.presets?.length ?? 0
+    const unityCupPresetsCount = snapshot.scenarios?.unity_cup?.presets?.length ?? 0
+    const totalPresets = uraPresetsCount + unityCupPresetsCount
+    
+    if (totalPresets === 0) {
+      const existing = localStorage.getItem(LS_KEY)
+      if (existing) {
+        const parsed = JSON.parse(existing)
+        const existingCount = (parsed.presets?.length ?? 0) + 
+                              (parsed.scenarios?.ura?.presets?.length ?? 0) + 
+                              (parsed.scenarios?.unity_cup?.presets?.length ?? 0)
+        if (existingCount > 0) {
+          console.warn('[SAVE] BLOCKED: Attempted to overwrite', existingCount, 'presets with empty config. Keeping existing data.')
+          return
+        }
+      }
+    }
+    
+    console.log('[SAVE] Saving to localStorage:', totalPresets, 'total presets')
     localStorage.setItem(LS_KEY, JSON.stringify(snapshot))
   },
 
   loadLocal: () => {
     const raw = localStorage.getItem(LS_KEY)
-    console.log(LS_KEY, raw)
-    if (!raw) return
+    console.log('[LOAD] localStorage key:', LS_KEY)
+    console.log('[LOAD] Raw localStorage data length:', raw?.length ?? 0)
+    if (!raw) {
+      console.log('[LOAD] No localStorage data found')
+      return
+    }
     try {
       const parsed = JSON.parse(raw)
-      const safe = appConfigSchema.parse(parsed)
-      const normalized = migrateConfig(safe)
+      console.log('[LOAD] Parsed localStorage:', parsed)
+      console.log('[LOAD] Has legacy presets?', Array.isArray(parsed.presets))
+      console.log('[LOAD] Legacy presets count:', parsed.presets?.length ?? 0)
+      
+      // Migrate first, then validate - this allows legacy structures to pass through
+      const normalized = migrateConfig(parsed as any)
+      
+      console.log('[LOAD] After migration, validating with schema...')
+      // Now validate the migrated structure
+      const safe = appConfigSchema.parse(normalized)
+      
+      console.log('[LOAD] Validation passed, setting state...')
       set({
-        config: normalized,
-        uiSelectedPresetId: normalized.scenarios[normalized.general.activeScenario]?.activePresetId,
-        uiScenarioKey: normalized.general.activeScenario,
+        config: safe,
+        uiSelectedPresetId: safe.scenarios[safe.general.activeScenario]?.activePresetId,
+        uiScenarioKey: safe.general.activeScenario,
       })
-    } catch {
+      console.log('[LOAD] State updated successfully')
+    } catch (err) {
+      console.error('[LOAD] Failed to load config from localStorage:', err)
       // ignore
     }
   },

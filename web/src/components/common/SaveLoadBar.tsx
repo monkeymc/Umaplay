@@ -32,8 +32,12 @@ export default function SaveLoadBar() {
 
               // 3) Get updated config after commit
               const updatedConfig = useConfigStore.getState().config
-              const { id: activeId, preset: activePreset } = getActivePreset()
-              const presets = Array.isArray(updatedConfig?.presets) ? updatedConfig.presets : []
+              const { scenario, id: activeId, preset: activePreset } = getActivePreset()
+              
+              // Get the active scenario branch
+              const scenarios = updatedConfig?.scenarios || {}
+              const scenarioBranch = scenarios[scenario] || { presets: [], activePresetId: undefined }
+              const presets = Array.isArray(scenarioBranch.presets) ? scenarioBranch.presets : []
               const targetId = activeId || presets[0]?.id || null
 
               // 4) merge event_setup into that preset (no other changes)
@@ -41,9 +45,15 @@ export default function SaveLoadBar() {
                 targetId
                   ? {
                       ...updatedConfig,
-                      presets: presets.map((p: any) =>
-                        p.id === targetId ? { ...p, event_setup: setup } : p
-                      ),
+                      scenarios: {
+                        ...scenarios,
+                        [scenario]: {
+                          ...scenarioBranch,
+                          presets: presets.map((p: any) =>
+                            p.id === targetId ? { ...p, event_setup: setup } : p
+                          ),
+                        },
+                      },
                     }
                   : updatedConfig // if no presets, just send config as-is
 

@@ -43,6 +43,10 @@ datasets/uma/*
 !datasets/uma/raw
 datasets/uma/raw/*
 !datasets/uma/raw/gitkeep.txt
+datasets/uma_unity_cup/*
+!datasets/uma_unity_cup/raw
+datasets/uma_unity_cup/raw/*
+!datasets/uma_unity_cup/raw/gitkeep.txt
 
 README.ai.md
 README.train.md
