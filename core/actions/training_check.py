@@ -730,7 +730,10 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
     """
     out: List[TileSV] = []
     # Skill memory used for conditional hint gating (once required skills are acquired)
-    skill_memory = SkillMemoryManager(Settings.RUNTIME_SKILL_MEMORY_PATH)
+    skill_memory = SkillMemoryManager(
+        Settings.resolve_skill_memory_path(Settings.ACTIVE_SCENARIO),
+        scenario=Settings.ACTIVE_SCENARIO,
+    )
 
     def _canon_skill(name: object) -> str:
         s = str(name or "")

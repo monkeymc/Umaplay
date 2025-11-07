@@ -13,8 +13,11 @@ class SkillMemoryManager:
     ANY_GRADE = "__any__"
     STALE_SECONDS = 6 * 60 * 60  # 6 hours
 
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, *, scenario: Optional[str] = None) -> None:
         self.path = path
+        self.scenario: Optional[str] = (
+            str(scenario).strip().lower() if scenario else None
+        )
         self._data: Dict[str, object] = self._empty()
         self.load()
 
@@ -33,6 +36,15 @@ class SkillMemoryManager:
             self._data = self._empty()
             return
         self._data = self._merge_with_defaults(raw)
+        stored_scenario = self._data.get("scenario")
+        if self.scenario and stored_scenario and stored_scenario != self.scenario:
+            self._data = self._empty()
+            self.save()
+            return
+        if self.scenario and not stored_scenario:
+            self._data["scenario"] = self.scenario
+            self.save()
+            return
 
     def save(self) -> None:
         """Persist memory to disk."""
@@ -40,6 +52,11 @@ class SkillMemoryManager:
         now = time.time()
         self._data["updated_at"] = now
         self._data["updated_utc"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now))
+        if self.scenario is not None:
+            self._data["scenario"] = self.scenario
+        elif isinstance(self._data.get("scenario"), str):
+            scenario_val = self._data.get("scenario", "")
+            self._data["scenario"] = str(scenario_val).strip() or None
         self.path.parent.mkdir(parents=True, exist_ok=True)
         serialized = json.dumps(self._data, ensure_ascii=False, indent=2, sort_keys=True)
         self.path.write_text(serialized + "\n", encoding="utf-8")
@@ -67,6 +84,7 @@ class SkillMemoryManager:
         preset_id: Optional[str] = None,
         date_key: Optional[str] = None,
         date_index: Optional[int] = None,
+        scenario: Optional[str] = None,
         commit: bool = True,
     ) -> None:
         changed = False
@@ -80,6 +98,12 @@ class SkillMemoryManager:
             stored_date_index = self._safe_int(self._data.get("date_index"))
             if stored_date_index is None or date_index > stored_date_index:
                 self._data["date_index"] = int(date_index)
+                changed = True
+        scenario_value = scenario if scenario is not None else self.scenario
+        if scenario_value is not None:
+            scenario_value = str(scenario_value).strip().lower()
+            if scenario_value != self._data.get("scenario"):
+                self._data["scenario"] = scenario_value
                 changed = True
         if changed:
             now = time.time()
@@ -104,6 +128,7 @@ class SkillMemoryManager:
         preset_id: Optional[str] = None,
         date_key: Optional[str] = None,
         date_index: Optional[int] = None,
+        scenario: Optional[str] = None,
     ) -> bool:
         """Return True when stored metadata does not contradict the provided snapshot."""
         stored_preset = self._data.get("preset_id")
@@ -121,6 +146,21 @@ class SkillMemoryManager:
             # No fresh date info; rely on staleness guard only
             if self._is_stale_gap():
                 return False
+
+        scenario_value = scenario if scenario is not None else self.scenario
+        if scenario_value is not None:
+            scenario_value = str(scenario_value).strip().lower()
+        stored_scenario = self._data.get("scenario")
+        if isinstance(stored_scenario, str):
+            stored_scenario = stored_scenario.strip().lower() or None
+        else:
+            stored_scenario = None
+        if scenario_value and stored_scenario and stored_scenario != scenario_value:
+            return False
+        if scenario_value and not stored_scenario:
+            return False
+        if stored_scenario and not scenario_value:
+            return False
 
         if self._is_stale_gap():
             if stored_date and date_key and stored_date == date_key:
@@ -273,6 +313,7 @@ class SkillMemoryManager:
             "updated_utc": now_iso,
             "skills_seen": {},
             "skills_bought": {},
+            "scenario": self.scenario,
         }
 
     def _merge_with_defaults(self, payload: object) -> Dict[str, object]:
@@ -293,6 +334,11 @@ class SkillMemoryManager:
         utc_val = payload.get("updated_utc")
         if isinstance(utc_val, str) and utc_val:
             data["updated_utc"] = utc_val
+        stored_scenario = payload.get("scenario")
+        if isinstance(stored_scenario, str) and stored_scenario.strip():
+            data["scenario"] = stored_scenario.strip().lower()
+        if self.scenario is not None:
+            data["scenario"] = self.scenario
         data["skills_seen"] = self._normalize_skill_map(payload.get("skills_seen"))
         data["skills_bought"] = self._normalize_skill_map(payload.get("skills_bought"))
         return data

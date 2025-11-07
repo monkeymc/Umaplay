@@ -1,4 +1,4 @@
-# core/agent.py
+# core/agent_ura.py
 from __future__ import annotations
 
 from time import sleep
@@ -6,10 +6,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from core.actions.claw import ClawGame
 from core.actions.events import EventFlow
-from core.actions.lobby import LobbyFlow
+from core.actions.ura.lobby import LobbyFlow
 from core.actions.race import RaceFlow
 from core.actions.skills import SkillsFlow
-from core.actions.training_policy import (
+from core.actions.ura.training_policy import (
     TrainAction,
     click_training_tile,
     check_training,
@@ -73,6 +73,9 @@ class Player:
         self._skip_training_race_once = False
         self.plan_races = dict(plan_races or {})
 
+        self.scenario = Settings.ACTIVE_SCENARIO
+        self.skill_memory_path = Settings.resolve_skill_memory_path(self.scenario)
+
         # Vision params used by Waiter & flows
         self.skill_list = skill_list or []
 
@@ -94,7 +97,9 @@ class Player:
         self.agent_name = waiter_config.agent
 
         # Flows
-        self.skill_memory = SkillMemoryManager(Settings.RUNTIME_SKILL_MEMORY_PATH)
+        self.skill_memory = SkillMemoryManager(
+            self.skill_memory_path, scenario=self.scenario
+        )
         self.race = RaceFlow(self.ctrl, self.ocr, self.yolo_engine, self.waiter)
         self.lobby = LobbyFlow(
             self.ctrl,
@@ -198,7 +203,10 @@ class Player:
         date_idx = self._state_date_index()
 
         if not self.skill_memory.is_compatible_run(
-            preset_id=preset_id, date_key=date_key, date_index=date_idx
+            preset_id=preset_id,
+            date_key=date_key,
+            date_index=date_idx,
+            scenario=self.scenario,
         ):
             logger_uma.info("[skill_memory] incompatible run detected → reset")
             self.skill_memory.reset()
@@ -207,6 +215,7 @@ class Player:
             preset_id=preset_id,
             date_key=date_key,
             date_index=date_idx,
+            scenario=self.scenario,
             commit=True,
         )
 

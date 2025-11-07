@@ -159,6 +159,7 @@ class Settings:
     ACTIVE_SCENARIO: str = "ura"
     ACTIVE_AGENT_NAME: str = AGENT_NAME_URA
     ACTIVE_YOLO_WEIGHTS: Path = YOLO_WEIGHTS_URA
+    ACTIVE_SKILL_MEMORY_PATH: Path = RUNTIME_SKILL_MEMORY_PATH
 
     SUPPORT_PRIORITIES_HAVE_CUSTOMIZATION: bool = False
     SUPPORT_CUSTOM_PRIORITY_KEYS: Set[Tuple[str, str, str]] = set()
@@ -216,13 +217,10 @@ class Settings:
             g.get("acceptConsecutiveRace", cls.ACCEPT_CONSECUTIVE_RACE)
         )
         scenario_raw = str(g.get("activeScenario", cls.ACTIVE_SCENARIO)).strip().lower()
-        if scenario_raw == "aoharu":
-            scenario_raw = "unity_cup"
-        cls.ACTIVE_SCENARIO = scenario_raw if scenario_raw else "ura"
-        if cls.ACTIVE_SCENARIO not in {"ura", "unity_cup"}:
-            cls.ACTIVE_SCENARIO = "ura"
+        cls.ACTIVE_SCENARIO = cls.normalize_scenario(scenario_raw)
         cls.ACTIVE_AGENT_NAME = cls.resolve_agent_name(cls.ACTIVE_SCENARIO)
         cls.ACTIVE_YOLO_WEIGHTS = cls.resolve_yolo_weights_path(cls.ACTIVE_SCENARIO)
+        cls.ACTIVE_SKILL_MEMORY_PATH = cls.resolve_skill_memory_path(cls.ACTIVE_SCENARIO)
 
         presets: List[dict] = []
         active_id: Optional[str] = None
@@ -431,18 +429,37 @@ class Settings:
         return max(1, min(3, preferred))
 
     @classmethod
+    def normalize_scenario(cls, scenario: str | None) -> str:
+        key = str(scenario or "ura").strip().lower()
+        if key == "aoharu":
+            key = "unity_cup"
+        if key not in {"ura", "unity_cup"}:
+            return "ura"
+        return key
+
+    @classmethod
     def resolve_agent_name(cls, scenario: str | None = None) -> str:
-        key = str(scenario or cls.ACTIVE_SCENARIO or "ura").lower()
-        if key in {"unity_cup", "aoharu"}:
+        key = cls.normalize_scenario(scenario or cls.ACTIVE_SCENARIO)
+        if key == "unity_cup":
             return cls.AGENT_NAME_UNITY_CUP
         return cls.AGENT_NAME_URA
 
     @classmethod
     def resolve_yolo_weights_path(cls, scenario: str | None = None) -> Path:
-        key = str(scenario or cls.ACTIVE_SCENARIO or "ura").lower()
-        if key in {"unity_cup", "aoharu"}:
+        key = cls.normalize_scenario(scenario or cls.ACTIVE_SCENARIO)
+        if key == "unity_cup":
             return cls.YOLO_WEIGHTS_UNITY_CUP
         return cls.YOLO_WEIGHTS_URA
+
+    @classmethod
+    def resolve_skill_memory_path(cls, scenario: str | None = None) -> Path:
+        scenario_key = cls.normalize_scenario(scenario or cls.ACTIVE_SCENARIO)
+        base = cls.RUNTIME_SKILL_MEMORY_PATH
+        suffix = base.suffix
+        if suffix:
+            stem = base.stem
+            return base.with_name(f"{stem}.{scenario_key}{suffix}")
+        return base / f"runtime_skill_memory.{scenario_key}.json"
 
     @classmethod
     def extract_runtime_preset(cls, cfg: dict) -> dict:
