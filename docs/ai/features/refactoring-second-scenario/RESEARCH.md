@@ -10,20 +10,20 @@ status: research_complete
 Prepare the codebase to support multiple career scenarios (URA + Aoharu) without breaking existing URA behavior, with a clear UX to pick a scenario (e.g., F2 popup) and clean separations so scenario-specific policies plug into the capture → perceive → decide → act loop.
 
 ## Summary (≤ 10 bullets)
-- Hotkey F2 toggles the main bot in `main.py`; ideal insertion point to prompt scenario selection before `BotState.start()`.
+- Hotkey F2 toggles the main bot in `main.py`; a Tkinter chooser now intercepts the start flow and respects persisted `scenarioConfirmed` state before calling `BotState.start()`.
 - Runtime constructs Player with a single Waiter tagged `Settings.AGENT_NAME_URA`; introduce per-scenario agent tags and YOLO weights selection.
 - URA-specific logic exists inside `training_policy.py` (e.g., “URA Finale branch”); create a scenario policy interface and move URA policy under `/core/scenarios/ura/` with an Aoharu stub.
-- Web UI config already carries a `preset.event_setup.scenario` object; add an explicit runtime `general.activeScenario` for clarity and default selection.
-- Persist per-scenario skill memory to avoid cross-scenario contamination; include scenario in `RUNTIME_SKILL_MEMORY_PATH`.
+- Web UI config already carries a `preset.event_setup.scenario` object; `general.activeScenario` and `scenarioConfirmed` now exist for runtime clarity with migrations guarding legacy configs.
+- Persist per-scenario skill memory to avoid cross-scenario contamination; runtime now suffixes `RUNTIME_SKILL_MEMORY_PATH` and stores scenario metadata.
 - Keep RaceFlow/Events largely scenario-agnostic; later, add an Aoharu “team race” scheduler hook keyed by date without consuming a turn.
-- Model selection: keep `YOLO_WEIGHTS_URA`, add `YOLO_WEIGHTS_AOHARU`; switch by active scenario when constructing detectors.
+- Model selection: keep `YOLO_WEIGHTS_URA`, add `YOLO_WEIGHTS_AOHARU`; switching logic is in place via `Settings.normalize_scenario` though non-URA weights remain placeholders until trained.
 - UX: F2 opens a lightweight popup or selection overlay to choose scenario (URA/Aoharu) then starts; default to last used scenario from config.
-- Testing: add regression tests to ensure URA baseline remains identical post-refactor (policy decisions, race flow entry, skill-buy gates).
+- Testing: add regression tests to ensure URA baseline remains identical post-refactor (policy decisions, race flow entry, skill-buy gates); still pending per PLAN step 7.
 - Minimal surface changes: `main.py`, `core/settings.py`, `core/agent.py` (Waiter/agent tag), new `core/scenarios/*`, and Web UI schema/store for `activeScenario`.
 
 ## Detailed Findings (by area)
 ### Area: Runtime toggles & entry
-- **Why relevant:** F2 hotkey is where we can request scenario and initialize per-scenario engines before Player runs.
+- **Why relevant:** F2 hotkey now requests scenario selection and initializes per-scenario engines before Player runs, skipping the prompt when `scenarioConfirmed` is true.
 - **Files & anchors (path:line_start–line_end):**
   - `main.py:195–328` — `BotState.start()` builds controller, OCR/YOLO, extracts preset, and instantiates `Player`.
   - `main.py:443–642` — `hotkey_loop()` binds F2 (and configured `Settings.HOTKEY`), calls `bot_state.toggle()`.
@@ -61,7 +61,7 @@ Prepare the codebase to support multiple career scenarios (URA + Aoharu) without
 - **Cross-links:** `main.py` model factory (`make_ocr_yolo_from_settings`), `server/utils`.
 
 ### Area: Web UI config & UX
-- **Why relevant:** Need clear scenario selection and per-scenario preset handling; avoid mixing URA/Aoharu.
+- **Why relevant:** Scenario selection and per-scenario preset handling now exist; remaining work is validating broader UX once additional scenarios ship.
 - **Files & anchors:**
   - `web/src/models/config.schema.ts:16–44` — general/advanced schema (place to add `activeScenario`).
   - `web/src/models/config.schema.ts:86–96, 112–136` — `preset.event_setup.scenario` structure already present (name, rewardPriority, avoidEnergyOverflow).
@@ -99,14 +99,13 @@ Prepare the codebase to support multiple career scenarios (URA + Aoharu) without
   - `core/scenarios/*` → `core/actions/training_check.py`-like scan + policy; `core/utils/date_uma.py`.
   - `web/src/models/config.schema.ts` → `web/src/store/configStore.ts` → FastAPI `/config` API.
 
-## Open Questions / Ambiguities
-- Scenario source of truth — use `general.activeScenario` vs deriving from `preset.event_setup.scenario.name`? Suggested: `general.activeScenario` is the runtime switch; `preset.event_setup.scenario` remains for event preferences.
+- Scenario source of truth — resolved: `general.activeScenario` + `scenarioConfirmed` drive runtime; preset event scenarios remain for event preferences.
 - F2 popup implementation — use a minimal Tkinter dialog vs. an overlay + arrow keys? Tkinter is simplest to ship; overlay-only requires keyboard handling.
 - Default behavior — when no popup (e.g., remote/headless), should we auto-use the last saved `general.activeScenario`? Suggested: yes.
-- Skill memory — separate file per scenario or one file with scenario keying? Suggested: suffix path by scenario (e.g., `runtime_skill_memory.ura.json`, `runtime_skill_memory.aoharu.json`).
+- Skill memory — implemented via per-scenario file metadata and path suffix.
 - YOLO labels — do we ship a single universal model or per-scenario weights? Suggested: keep `uma_ura.pt` and add `uma_aoharu.pt` initially.
 - Team race scheduler — lives in Lobby vs. Race flow? Suggested: Lobby schedules special team races by date (every six months) and signals RaceFlow; does not consume a turn.
-- Web UI tabs — will Aoharu presets be separate from URA? Suggested: keep presets universal but add display chips (scenario) and filters later; initial change only adds the runtime scenario toggle.
+- Web UI tabs — presets remain universal; scenario toggle + confirmation guardrails are active. Consider preset filtering when a third scenario arrives.
 
 ## Suggested Next Step
 - Draft `PLAN.md` with per-file changes, exact function signatures for `core/scenarios/registry.py`, hotkey popup behavior, Settings additions, and a targeted test plan:

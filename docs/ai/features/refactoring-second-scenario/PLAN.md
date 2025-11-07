@@ -25,6 +25,7 @@ status: plan_ready
 - `pytest tests/core/actions` passes and fails if training policy decisions change unexpectedly.
 
 ### Step 1 — Introduce scenario state (config + Settings)
+**Status:** ✅ Completed 2025-11-07 — `general.activeScenario` & `scenarioConfirmed` now persist, with migrations/defaults in `server/utils.load_config()` and `configStore.migrateConfig()`.
 **Goal:** Establish the concept of an active scenario without changing behavior (default URA).
 **Actions (high level):**
 - Extend configuration schema with `general.activeScenario: 'ura' | 'unity_cup'` (default `ura`, accept legacy aliases).
@@ -40,6 +41,7 @@ status: plan_ready
 - `pytest tests/web/test_config_schema.py tests/core/test_settings.py` passes.
 
 ### Step 2 — F2 hotkey scenario chooser (UX)
+**Status:** ✅ Completed 2025-11-07 — Tk-based chooser plus hotkey skip when `scenarioConfirmed` is true, with emerald overlay toast.
 **Goal:** Let users pick a scenario at start/stop time without Web UI friction.
 **Actions (high level):**
 - On F2, show a small modal/popup to select `URA` or `Unity Cup` (default to last saved `activeScenario`).
@@ -52,6 +54,7 @@ status: plan_ready
   - Re-press F2 stops; on next start chooser defaults to last pick.
 
 ### Step 3 — Scenario-aware runtime plumbing
+**Status:** ✅ Completed — scenario aliases resolve via `Settings.normalize_scenario`, Waiter/runtime tags respect `ACTIVE_SCENARIO`, skill memory metadata carries scenario key.
 **Goal:** Parameterize agent tag and model selection by scenario (URA preserved by default).
 **Actions (high level):**
 - Add canonical scenario resolution so legacy values like `aoharu` map to `unity_cup`.
@@ -63,6 +66,7 @@ status: plan_ready
   - Logs show `agent=unity_cup` when Unity Cup is selected; runs proceed normally under URA behavior.
 
 ### Step 4 — Extract training policy into scenario modules (no behavior change)
+**Status:** ✅ Completed — `core/scenarios/{ura,unity_cup}.py` registered via `ScenarioPolicyRegistry`, Unity Cup currently proxies URA policy.
 **Goal:** Create a clean seam for policies; move URA code as-is and provide a Unity Cup stub.
 **Actions (high level):**
 - Create `core/scenarios/` with `ura/` and `unity_cup/` packages.
@@ -76,6 +80,7 @@ status: plan_ready
   - Selecting Unity Cup still runs (functionally identical to URA for now).
 
 ### Step 5 — Separate skill memory per scenario
+**Status:** ✅ Completed — `SkillMemoryManager` stores scenario metadata and paths under `prefs/runtime_skill_memory.<scenario>.json`.
 **Goal:** Avoid cross-scenario contamination in skills_seen/bought.
 **Actions (high level):**
 - Include scenario in run metadata and derive a scenario-specific memory file (e.g., `runtime_skill_memory.ura.json` / `...unity_cup.json`).
@@ -86,6 +91,7 @@ status: plan_ready
 - After switching from URA to Unity Cup, a different runtime_skill_memory file is used.
 
 ### Step 6 — Web UI polish for scenario clarity
+**Status:** ✅ Completed — General tab toggle highlights active scenario, displays confirmation copy, and UI stores `scenarioConfirmed` with overwrite guardrails in `saveLocal()`.
 **Goal:** Make the scenario toggle discoverable and avoid confusion with event scenario preferences.
 **Actions (high level):**
 - Add a simple “Active Scenario” control in the Scenario tab; clarify copy that event `preset.event_setup.scenario` is for event prefs.
@@ -96,6 +102,7 @@ status: plan_ready
 - Toggle visible and persisted; exporting config shows both `general.activeScenario` and preset event prefs intact.
 
 ### Step 7 — Regression tests and guardrails
+**Status:** 🚧 Pending — add parity/unit coverage for scenario skip logic and preset safeguards.
 **Goal:** Prove URA parity and basic scenario selection correctness.
 **Actions (high level):**
 - Add unit tests for URA training decisions on fixed SV inputs; confirm unchanged.
