@@ -15,7 +15,7 @@ import queue
 
 from core.utils.logger import logger_uma, setup_uma_logging
 from core.settings import Settings
-from core.agent_ura import Player
+from core.agent_ura import AgentURA
 from core.agent_nav import AgentNav
 
 from server.main import app
@@ -210,7 +210,7 @@ def cleanup_debug_training_if_needed():
 class BotState:
     def __init__(self):
         self.thread: threading.Thread | None = None
-        self.player: Player | None = None
+        self.player: AgentURA | None = None
         self.running: bool = False
         self._lock = threading.Lock()
 
@@ -267,7 +267,7 @@ class BotState:
             event_prefs = UserPrefs.from_config(cfg or {})
 
             # 6) Instantiate Player with runtime knobs from Settings + presets + event prefs
-            self.player = Player(
+            self.player = AgentURA(
                 ctrl=ctrl,
                 ocr=ocr,
                 yolo_engine=yolo_engine,

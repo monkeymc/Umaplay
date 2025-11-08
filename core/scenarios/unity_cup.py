@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+from core.actions.unity_cup.training_check import compute_support_values
+from core.actions.unity_cup.training_policy import decide_action_training
 from .registry import registry
-from .ura import get_policy as get_ura_policy
+
+COMPUTE_VALUES_FN = compute_support_values
+DECIDE_FN = decide_action_training
 
 
 def get_policy():
-    return get_ura_policy()
+    return COMPUTE_VALUES_FN, DECIDE_FN
 
 
-registry.register("unity_cup", *get_policy())
+registry.set_default(COMPUTE_VALUES_FN, DECIDE_FN)
+registry.register("unity_cup", COMPUTE_VALUES_FN, DECIDE_FN)

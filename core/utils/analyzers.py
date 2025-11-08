@@ -88,14 +88,20 @@ def analyze_support_crop(
     try:
         if piece_bar_bgr is not None:
             fb = fba.analyze_strip(piece_bar_bgr)
+            out["friendship_bar"] = {
+                "color": fb["color"],
+                "progress_pct": int(fb["progress_pct"]),
+                "fill_ratio": float(fb["fill_ratio"]),
+                "is_max": bool(fb["is_max"]),
+            }
         else:
-            fb = fba.analyze(bgr)
-        out["friendship_bar"] = {
-            "color": fb["color"],
-            "progress_pct": int(fb["progress_pct"]),
-            "fill_ratio": float(fb["fill_ratio"]),
-            "is_max": bool(fb["is_max"]),
-        }
+            out["friendship_bar"] = {
+                "color": "unknown",
+                "progress_pct": 0,
+                "fill_ratio": 0.0,
+                "is_max": False,
+            }
+        
     except Exception as e:
         logger_uma.debug("friendship_bar analyze error: %s", e)
 

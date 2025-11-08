@@ -37,6 +37,7 @@ debug
 runs
 
 datasets/coco8/**
+datasets/classifiers/**
 datasets/uma_nav/*
 models/base/*
 datasets/uma/*

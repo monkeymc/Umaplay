@@ -93,7 +93,7 @@ class Settings:
     _YOLO_WEIGHTS_URA_ENV = _env("YOLO_WEIGHTS_URA") or _env("YOLO_WEIGHTS")
     YOLO_WEIGHTS_URA: Path = Path(_YOLO_WEIGHTS_URA_ENV or (MODELS_DIR / "uma_ura.pt"))
     YOLO_WEIGHTS_UNITY_CUP: Path = Path(
-        _env("YOLO_WEIGHTS_UNITY_CUP") or _YOLO_WEIGHTS_URA_ENV or (MODELS_DIR / "uma_ura.pt")
+        _env("YOLO_WEIGHTS_UNITY_CUP") or (MODELS_DIR / "uma_unity_cup.pt")
     )
 
     YOLO_WEIGHTS_NAV: Path = Path(
@@ -101,6 +101,10 @@ class Settings:
     )
     IS_BUTTON_ACTIVE_CLF_PATH: Path = Path(
         _env("IS_BUTTON_ACTIVE_CLF_PATH") or (MODELS_DIR / "active_button_clf.joblib")
+    )
+
+    UNITY_CUP_SPIRIT_COLOR_CLASS_PATH: Path = Path(
+        _env("UNITY_CUP_SPIRIT_COLOR_CLASS_PATH") or (MODELS_DIR / "unity_spirit_cnn.pt")
     )
 
     MODE: str = _env("MODE", "steam") or "steam"
@@ -114,7 +118,7 @@ class Settings:
     LOG_LEVEL: str = _env("LOG_LEVEL", "DEBUG" if DEBUG else "INFO") or (
         "DEBUG" if DEBUG else "INFO"
     )
-    FAST_MODE = True
+    FAST_MODE = False
     USE_FAST_OCR = True
     USE_GPU = True
     HINT_IS_IMPORTANT = False
