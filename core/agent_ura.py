@@ -167,16 +167,9 @@ class Player:
 
     def _active_preset_id(self) -> Optional[str]:
         cfg = Settings._last_config or {}
-        active = cfg.get("activePresetId")
-        if isinstance(active, str) and active.strip():
-            return active.strip()
-        presets = cfg.get("presets")
-        if isinstance(presets, list):
-            for entry in presets:
-                if isinstance(entry, dict):
-                    pid = entry.get("id")
-                    if isinstance(pid, str) and pid.strip():
-                        return pid.strip()
+        _, active_id, _ = Settings._get_active_preset_from_config(cfg)
+        if isinstance(active_id, str) and active_id.strip():
+            return active_id.strip()
         return None
 
     def _state_date_key(self) -> Optional[str]:

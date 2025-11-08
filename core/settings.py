@@ -167,7 +167,7 @@ class Settings:
     # Union of skills to re-check immediately after taking a configured hint
     RECHECK_AFTER_HINT_SKILLS: List[str] = []
     SHOW_PRESET_OVERLAY: bool = _env_bool("SHOW_PRESET_OVERLAY", True)
-    PRESET_OVERLAY_DURATION: float = _env_float("PRESET_OVERLAY_DURATION", 5.0)
+    PRESET_OVERLAY_DURATION: float = _env_float("PRESET_OVERLAY_DURATION", 4)
     NAV_PREFS: Dict[str, Dict[str, Any]] = {
         "shop": dict(_DEFAULT_NAV_PREFS["shop"]),
         "team_trials": dict(_DEFAULT_NAV_PREFS["team_trials"]),
@@ -398,12 +398,7 @@ class Settings:
     @classmethod
     def get_active_preset_snapshot(cls) -> tuple[Optional[str], Optional[dict], dict]:
         cfg = cls._last_config or {}
-        presets = (cfg.get("presets") or [])
-        active_id = cfg.get("activePresetId")
-        preset = next((p for p in presets if p.get("id") == active_id), None)
-        if not preset and presets:
-            preset = presets[0]
-            active_id = preset.get("id")
+        _, active_id, preset = cls._get_active_preset_from_config(cfg)
         return active_id, preset, cfg
 
     @classmethod
@@ -463,16 +458,44 @@ class Settings:
         return base / f"runtime_skill_memory.{scenario_key}.json"
 
     @classmethod
+    def _get_active_preset_from_config(cls, cfg: dict) -> tuple[list, str | None, dict | None]:
+        """
+        Extract (presets, active_id, active_preset) from config, handling both:
+        - New scenario-based structure: cfg.scenarios[activeScenario].presets
+        - Legacy structure: cfg.presets (migration fallback)
+        
+        Returns: (presets_list, active_id, active_preset_dict)
+        """
+        cfg = cfg or {}
+        
+        # Try new scenario-based structure first
+        general = cfg.get("general") or {}
+        active_scenario = general.get("activeScenario") or "ura"
+        scenarios = cfg.get("scenarios") or {}
+        scenario_branch = scenarios.get(active_scenario) or {}
+        
+        presets = scenario_branch.get("presets")
+        active_id = scenario_branch.get("activePresetId")
+        
+        # Fallback to legacy top-level structure if scenario branch is empty
+        if not presets:
+            presets = cfg.get("presets") or []
+            active_id = cfg.get("activePresetId")
+        
+        # Find the active preset
+        preset = next((p for p in presets if p.get("id") == active_id), None) or (
+            presets[0] if presets else None
+        )
+        
+        return presets, active_id, preset
+
+    @classmethod
     def extract_runtime_preset(cls, cfg: dict) -> dict:
         """
         Pick the active preset (or first), and return a slim dict with things
         the Python runtime cares about: plan_races, select_style, skill_list, and other settings.
         """
-        presets = (cfg or {}).get("presets") or []
-        active_id = (cfg or {}).get("activePresetId")
-        preset = next((p for p in presets if p.get("id") == active_id), None) or (
-            presets[0] if presets else None
-        )
+        _, _, preset = cls._get_active_preset_from_config(cfg)
         if not preset:
             return {
                 "plan_races": {},

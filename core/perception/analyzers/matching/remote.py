@@ -151,7 +151,7 @@ class RemoteTemplateMatcherBase:
 
         payload = {
             "mode": self.mode,
-            "agent": Settings.AGENT_NAME_NAV,
+            "agent": Settings.ACTIVE_AGENT_NAME,
             "region": {
                 "img": _encode_bgr_to_base64_png(region_bgr),
                 "meta": {"shape": list(region_bgr.shape[:2])},

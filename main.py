@@ -506,6 +506,8 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
             show_preset_overlay(
                 f"Scenario: {scenario_label}\nActive preset: {name}",
                 duration=max(1.0, float(duration or 0.0)),
+                x=32,
+                y="center",
             )
         except Exception as exc:
             logger_uma.debug("[HOTKEY] Failed to display preset overlay: %s", exc)

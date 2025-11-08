@@ -19,11 +19,15 @@ def show_preset_overlay(
     *,
     duration: float = 5.0,
     x: int = 32,
-    y: int = 32,
+    y: int | str = 32,
     background: str = "#10B981",  # Modern emerald green
     foreground: str = "#FFFFFF",
 ) -> None:
-    """Render a toast overlay safely on the shared Tk UI thread."""
+    """Render a toast overlay safely on the shared Tk UI thread.
+    
+    Args:
+        y: Vertical position. Can be an int for absolute position, or 'center' to center vertically.
+    """
 
     if not message:
         return
@@ -87,7 +91,15 @@ def show_preset_overlay(
         toast.update_idletasks()
         width = toast.winfo_width()
         height = toast.winfo_height()
-        geom = f"{width}x{height}+{max(0, x)}+{max(0, y)}"
+        
+        # Calculate y position
+        if y == "center":
+            screen_height = toast.winfo_screenheight()
+            y_pos = max(0, (screen_height - height) // 2)
+        else:
+            y_pos = max(0, int(y))
+        
+        geom = f"{width}x{height}+{max(0, x)}+{y_pos}"
         toast.geometry(geom)
 
         shadow = None
@@ -95,7 +107,7 @@ def show_preset_overlay(
             shadow = tk.Toplevel(root)
             shadow.overrideredirect(True)
             shadow.attributes("-topmost", True)
-            shadow.geometry(f"{width}x{height}+{max(0, x)+4}+{max(0, y)+6}")
+            shadow.geometry(f"{width}x{height}+{max(0, x)+4}+{y_pos+6}")
             shadow.configure(bg="#000000")
             shadow.attributes("-alpha", 0.15)
             shadow.lower(toast)

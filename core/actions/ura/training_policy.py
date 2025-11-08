@@ -237,7 +237,7 @@ def decide_action_training(
 
     if isinstance(career_date, str):
         di = parse_career_date(career_date)
-    else:
+    elif isinstance(career_date, DateInfo):
         di = career_date
 
     # Collect reasoning as we go

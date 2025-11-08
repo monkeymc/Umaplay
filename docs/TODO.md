@@ -10,6 +10,8 @@ This organizes the mixed notes into a clear, actionable backlog. Items are group
 
 General
 - Add minimal testing
+tag button pink (filter the race_after_next), we didn't have that before
+
 
 Aoharu Hai (beta):
 - Create Label Studio project for YOLO 'large' model, considerations:
@@ -26,6 +28,7 @@ new classes:
 5. clock
 6. Inspiration button change by: 'button_golden' to be able to support the riko confrontation
 """
+
 
 - Aoharu Strategy:
 """
@@ -87,6 +90,21 @@ General Strategy / Policy:
 QoL:
 - Show in toast if selected scenario is ura or Aoharu, too along to the preset name
 
+Only
+
+ — 9:09
+this is what my script are able to parse right now just need to make constant of trainee shared event such as Special Events / After a Race manually and and use this data { "nyear": "in", "dance": [ "sp", "st" ] } to adjust New Year's Resolutions and Dance Lesson accordingly then we are done. you can check the progress here https://github.com/preampinbut/Umaplay. 
+e.g.
+https://gametora.com/umamusume/supports/30027-mejiro-palmer
+https://gametora.com/umamusume/characters/105602-matikanefukukitaru
+
+
+PhantomDice —> Thanks for supporting project
+
+if race_after_next is disabled click pink?
+
+Weir error check thread, air grove: @
+
 ### 0.4.1
 
 annotated for 0.4.1, thanks for suggestions as always Rosetta
@@ -126,6 +144,10 @@ and the minimum energy to trigger race, I think right now I check if we have >= 
 
 Quality Assurance:
 - Color unit testing: detected as yellow the 'green' one "yellow: +0.00"
+
+
+
+PhantomDice —> Thanks for supporting project
 
 ## 0.5
 
