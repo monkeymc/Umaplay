@@ -126,7 +126,11 @@ export default function GeneralForm() {
                 },
               }}
             >
-              <ToggleButton value="ura" aria-label="URA scenario">
+              <ToggleButton
+                value="ura"
+                aria-label="URA scenario"
+                onClick={() => setScenario('ura')}
+              >
                 <Box
                   component="img"
                   src="/scenarios/ura_icon.png"
@@ -135,7 +139,11 @@ export default function GeneralForm() {
                 />
                 <span>URA</span>
               </ToggleButton>
-              <ToggleButton value="unity_cup" aria-label="Unity Cup scenario">
+              <ToggleButton
+                value="unity_cup"
+                aria-label="Unity Cup scenario"
+                onClick={() => setScenario('unity_cup')}
+              >
                 <Box
                   component="img"
                   src="/scenarios/unity_cup_icon.png"
@@ -154,6 +162,7 @@ export default function GeneralForm() {
             {`Active scenario: ${g.activeScenario === 'unity_cup' ? 'Unity Cup' : 'URA'}${g.scenarioConfirmed ? ' (saved – hotkey will skip the prompt)' : ' (will ask once when starting via hotkey)'}`}
           </Typography>
         </Box>
+
 
         <FieldRow
           label="Mode"

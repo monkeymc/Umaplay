@@ -8,6 +8,7 @@ import { useState } from 'react'
 export default function SaveLoadBar() {
   const commitSelectedPreset = useConfigStore((s) => s.commitSelectedPreset)
   const getActivePreset = useConfigStore((s) => s.getActivePreset)
+  const setGeneral = useConfigStore((s) => s.setGeneral)
   const navPrefs = useNavPrefsStore((s) => s.prefs)
   const refreshNavPrefs = useNavPrefsStore((s) => s.load)
   const [saving, setSaving] = useState(false)
@@ -26,6 +27,9 @@ export default function SaveLoadBar() {
               setSaving(true)
               // 1) Commit selected preset as active
               commitSelectedPreset()
+
+              // 1a) Mark scenario as confirmed from Web UI before snapshotting
+              setGeneral({ scenarioConfirmed: true })
               
               // 2) snapshot current Event Setup from its store
               const setup = useEventsSetupStore.getState().getSetup()

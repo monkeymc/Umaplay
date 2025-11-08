@@ -273,7 +273,7 @@ def handle_shop_exchange(
             texts=("SHOP",),
             prefer_bottom=False,
             allow_greedy_click=False,
-            timeout_s=3.0,
+            timeout_s=4.0,
             clicks=2,
             tag=f"{tag_prefix}_enter",
         )
