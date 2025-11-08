@@ -530,7 +530,8 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
         if last not in {"ura", "unity_cup"}:
             last = "ura"
 
-        if bool(general.get("scenarioConfirmed")):
+        scenario_confirmed = bool(general.get("scenarioConfirmed"))
+        if scenario_confirmed:
             general["activeScenario"] = last
             general["scenarioConfirmed"] = True
             try:
@@ -557,7 +558,8 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
             choice = "ura"
 
         general["activeScenario"] = choice
-        general["scenarioConfirmed"] = True
+        # Do not mark as confirmed when chosen via prompt; only Web UI sets this flag.
+        general["scenarioConfirmed"] = scenario_confirmed
 
         try:
             Settings._last_config = dict(cfg)
