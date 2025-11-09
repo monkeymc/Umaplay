@@ -306,7 +306,8 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
         # Blue combo: if ≥2 blue 'to explode' (i.e., filling), +1 for each beyond the first
         blue_combo = 0.0
         if n_blue_fill > 1:
-            blue_combo = 1.0 * (n_blue_fill - 1)
+            # Blue is ADDITIVE, so combo is not as strong as white
+            blue_combo = 0.25 * (n_blue_fill - 1)
             sv_total += blue_combo
             sv_by_type["spirit_combo_blue"] = sv_by_type.get("spirit_combo_blue", 0.0) + blue_combo
             notes.append(f"Blue spirit combo: +{blue_combo:.2f} (filling={n_blue_fill})")
