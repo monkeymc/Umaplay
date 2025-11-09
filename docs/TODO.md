@@ -58,9 +58,6 @@ General Strategy / Policy:
   - Capture in lobby stats 'Recreation PAL' for later trainig decisions
     -> When energy needed, and tazuna available, prefer tazuna (keep the chain counting to not select one with no good energy recovery)
 
-QoL:
-- Show in toast if selected scenario is ura or Aoharu, too along to the preset name
-
 Only
 
  — 9:09
@@ -77,7 +74,6 @@ if race_after_next is disabled click pink?
 Weir error check thread, air grove: @
 
 
-on tutorial, press the second option, set the events for this cup
 
 
 scikit-image==0.25.2 -> new library, try to handle autoinstall
@@ -197,6 +193,10 @@ Bug:
 
 - for trainee matcher, train a classifier, for now keep template matching. With label studio train the classifier
 - 'pre-process' based on the preset, and use the preprocess to speed up the progress
+
+### 0.5.1
+vestovia — Yesterday at 7:37
+hi! thank you for the umaplay bot, i understand you avoid emulators due to the inherent risk, but just wondering if adb support or support for other emulators is in the plans? im currently using mumuplayer for the 60fps+ as sometimes i play manually and i think it also might allow it to run in the background like uat? though i think i can use rdp for the meantime but it would be nice. thank you again!
 
 ## 0.6
 
