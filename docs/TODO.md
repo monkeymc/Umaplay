@@ -74,6 +74,11 @@ if race_after_next is disabled click pink?
 Weir error check thread, air grove: @
 
 
+Chat Ja
+
+ — 11:20
+sorry to dm. my english not good. i found problem on dev branch. could you increase margin top and decrease margin bot ? thank you !
+
 
 
 scikit-image==0.25.2 -> new library, try to handle autoinstall
@@ -92,6 +97,14 @@ Speaking of minimum mood, if it's great you often see the bot recreate for the f
 
 General:
 - Create discord roles
+
+BUG:
+Rosetta — 8:40
+
+After the bot checks for skills after a hint, it doesn't seem to be able to detect any info on the screen and will always rest regardless of energy value
+
+
+Speaking of presets, if it's not too hard could we please have a way of sorting them into tabs/groups or at least be able to change the order in which they are on the list? When you have a lot like I do having to keep pressing the arrows while looking through them all is quite the tedious task
 
 ### Bugfixes
 - For initial stuff
@@ -124,6 +137,7 @@ Quality Assurance:
 
 
 PhantomDice —> Thanks for supporting project
+
 
 ## 0.5
 

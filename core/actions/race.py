@@ -76,6 +76,9 @@ class RaceFlow:
             pass
         if reason:
             logger_uma.debug(f"Looking for race buttons: {reason}")
+        if Settings.ACTIVE_SCENARIO == "unity_cup":
+            # Little delay before pressing race
+            time.sleep(1.5)
         # Try to enter race screen from lobby (idempotent)
         clicked = self.waiter.click_when(
             classes=("lobby_races", "race_race_day"),
