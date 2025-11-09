@@ -114,8 +114,8 @@ export default function Home() {
               gap: 3,
               gridTemplateColumns: {
                 xs: '1fr',
-                md: collapsed ? '1fr' : 'minmax(320px, 1fr) minmax(0, 2fr)',
-                lg: collapsed ? '1fr' : 'minmax(360px, 1fr) minmax(0, 2fr)',
+                md: collapsed ? '1fr' : 'minmax(360px, 480px) minmax(0, 1fr)',
+                lg: collapsed ? '1fr' : 'minmax(400px, 520px) minmax(0, 1fr)',
               },
               alignItems: 'start',
               '& > .col': { minWidth: 0, width: '100%' },

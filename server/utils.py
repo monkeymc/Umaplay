@@ -179,8 +179,75 @@ def load_event_setup_defaults(raw: Any) -> Dict[str, Any]:
 def load_config() -> dict:
     if CONFIG_PATH.exists():
         with open(CONFIG_PATH, "r") as f:
-            return json.load(f)
-    return {}
+            data = json.load(f)
+    else:
+        data = {}
+
+    if not isinstance(data, dict):
+        data = {}
+
+    general = data.get("general")
+    if not isinstance(general, dict):
+        general = {}
+        data["general"] = general
+    general.setdefault("activeScenario", "ura")
+    general.setdefault("scenarioConfirmed", False)
+    general["scenarioConfirmed"] = bool(general.get("scenarioConfirmed"))
+
+    scenarios_raw = data.get("scenarios")
+    scenarios = dict(scenarios_raw) if isinstance(scenarios_raw, dict) else {}
+    # Migrate legacy top-level presets structure into URA branch
+    legacy_presets = data.pop("presets", None)
+    legacy_active = data.pop("activePresetId", None)
+    if isinstance(legacy_presets, list):
+        existing_branch = scenarios.get("ura")
+        if not isinstance(existing_branch, dict):
+            existing_branch = {}
+        branch_presets_raw = existing_branch.get("presets")
+        branch_presets = branch_presets_raw if isinstance(branch_presets_raw, list) else []
+        merged_presets: List[dict] = [p for p in branch_presets if isinstance(p, dict)]
+        merged_presets.extend(p for p in legacy_presets if isinstance(p, dict))
+        branch_active = (
+            existing_branch.get("activePresetId")
+            if isinstance(existing_branch.get("activePresetId"), str)
+            else None
+        )
+        if isinstance(legacy_active, str):
+            branch_active = legacy_active
+        elif branch_active is None and merged_presets:
+            first_id = merged_presets[0].get("id")
+            if isinstance(first_id, str):
+                branch_active = first_id
+        scenarios["ura"] = {
+            "presets": merged_presets,
+            "activePresetId": branch_active,
+        }
+
+    normalized_scenarios: dict[str, dict] = {}
+    for key, branch_raw in scenarios.items():
+        branch = branch_raw if isinstance(branch_raw, dict) else {}
+        presets_raw = branch.get("presets")
+        presets = [p for p in presets_raw if isinstance(p, dict)] if isinstance(presets_raw, list) else []
+        active_id_raw = branch.get("activePresetId")
+        active_id = active_id_raw if isinstance(active_id_raw, str) else None
+        normalized_scenarios[key] = {"presets": presets, "activePresetId": active_id}
+
+    if "ura" not in normalized_scenarios:
+        normalized_scenarios["ura"] = {"presets": [], "activePresetId": None}
+    if "unity_cup" not in normalized_scenarios:
+        normalized_scenarios["unity_cup"] = {"presets": [], "activePresetId": None}
+
+    # Ensure active scenario branch has an active preset when possible
+    active_key = general.get("activeScenario", "ura")
+    branch = normalized_scenarios.get(active_key) or normalized_scenarios.get("ura")
+    if branch and not branch.get("activePresetId") and branch.get("presets"):
+        first = branch["presets"][0]
+        first_id = first.get("id") if isinstance(first, dict) else None
+        if isinstance(first_id, str):
+            branch["activePresetId"] = first_id
+    data["scenarios"] = normalized_scenarios
+
+    return data
 
 
 def save_config(data: dict):

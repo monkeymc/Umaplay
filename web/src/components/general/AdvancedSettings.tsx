@@ -1,7 +1,7 @@
 import {
   Box, Collapse, Divider, FormControlLabel, MenuItem, Select, Slider, Stack, Switch, TextField, Typography,
 } from '@mui/material'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import FieldRow from '@/components/common/FieldRow'
 import { useConfigStore } from '@/store/configStore'
 
@@ -9,6 +9,94 @@ export default function AdvancedSettings() {
   const { config, setGeneral } = useConfigStore()
   const [open, setOpen] = useState(false)
   const a = config.general.advanced
+
+  const [autoRest, setAutoRest] = useState(a.autoRestMinimum)
+  const [skillInterval, setSkillInterval] = useState(a.skillCheckInterval)
+  const [skillDelta, setSkillDelta] = useState(a.skillPtsDelta)
+  const [undertrain, setUndertrain] = useState(a.undertrainThreshold)
+  const [topStats, setTopStats] = useState(a.topStatsFocus)
+
+  const autoRestMarks = useMemo(() => {
+    const marks = [{ value: 1 }]
+    for (let v = 5; v <= 70; v += 5) {
+      marks.push({ value: v })
+    }
+    return marks
+  }, [])
+
+  const toNumber = (val: number | number[]) => (Array.isArray(val) ? val[0] : val)
+
+  useEffect(() => {
+    setAutoRest(a.autoRestMinimum)
+    setSkillInterval(a.skillCheckInterval)
+    setSkillDelta(a.skillPtsDelta)
+    setUndertrain(a.undertrainThreshold)
+    setTopStats(a.topStatsFocus)
+  }, [
+    a.autoRestMinimum,
+    a.skillCheckInterval,
+    a.skillPtsDelta,
+    a.undertrainThreshold,
+    a.topStatsFocus,
+  ])
+
+  const commitAdvanced = <K extends keyof typeof a>(key: K, value: (typeof a)[K]) => {
+    setGeneral({
+      advanced: {
+        ...a,
+        [key]: value,
+      },
+    })
+  }
+  const sliderSx = {
+    width: '100%',
+    '.MuiSlider-thumb': {
+      width: 12,
+      height: 12,
+      boxShadow: 'none',
+    },
+    '.MuiSlider-thumb::before': {
+      boxShadow: 'none',
+    },
+    '.MuiSlider-rail': {
+      height: 4,
+      borderRadius: 2,
+    },
+    '.MuiSlider-track': {
+      height: 4,
+      borderRadius: 2,
+    },
+    '.MuiSlider-valueLabel': {
+      background: 'transparent',
+      color: 'inherit',
+      padding: 0,
+      borderRadius: 0,
+      fontSize: 16,
+      fontWeight: 800,
+      transform: 'translate(0%, 30px) scale(1)',
+      '&:before': { display: 'none' },
+    },
+  } as const
+  const controlWrapSx = (theme: any) => ({
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 1,
+    px: 1.5,
+    pt: 1.5,
+    pb: 3.5,
+    border: `1px solid ${theme.palette.divider}`,
+    borderRadius: 1.5,
+    backgroundColor:
+      theme.palette.mode === 'dark'
+        ? theme.palette.background.default
+        : theme.palette.grey[50],
+    boxShadow: theme.palette.mode === 'dark'
+      ? 'inset 0 0 0 1px rgba(255,255,255,0.05)'
+      : '0 1px 2px rgba(15, 23, 42, 0.08)',
+    maxWidth: 240,
+    width: '100%',
+  })
 
   return (
     <Stack spacing={1.5}>
@@ -92,165 +180,142 @@ export default function AdvancedSettings() {
           label="Auto rest minimum"
           info="Below this energy% the bot will rest automatically."
           control={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={controlWrapSx}>
               <Slider
-                value={a.autoRestMinimum}
-                onChange={(_, v) => setGeneral({ advanced: { ...a, autoRestMinimum: Number(v) } })}
-                min={0}
-                max={100}
-                sx={{ flex: 1 }}
-                valueLabelDisplay="auto"
+                value={autoRest}
+                onChange={(_, v) => {
+                  const raw = toNumber(v)
+                  const next = raw <= 1 ? 1 : Math.max(5, Math.min(70, Math.round(raw / 5) * 5))
+                  setAutoRest(next)
+                }}
+                onChangeCommitted={(_, v) => {
+                  const raw = toNumber(v)
+                  const next = raw <= 1 ? 1 : Math.max(5, Math.min(70, Math.round(raw / 5) * 5))
+                  setAutoRest(next)
+                  commitAdvanced('autoRestMinimum', next)
+                }}
+                min={1}
+                max={70}
+                step={1}
+                marks={autoRestMarks}
+                sx={sliderSx}
+                valueLabelDisplay="on"
                 valueLabelFormat={(v) => `${v}%`}
-              />
-              <TextField
-                size="small"
-                type="number"
-                value={a.autoRestMinimum}
-                onChange={(e) =>
-                  setGeneral({
-                    advanced: {
-                      ...a,
-                      autoRestMinimum: Math.min(100, Math.max(0, Number(e.target.value))),
-                    },
-                  })
-                }
-                inputProps={{ min: 0, max: 100, step: 1 }}
-                sx={{ width: 80 }}
               />
             </Box>
           }
+          sx={{ mt: 2 }}
         />
 
         <FieldRow
           label="Skills: check interval"
-          info="Only open Skills every N turns on Raceday (1 = every turn)."
+          info="How often to reopen the Skills shop during races — 1 checks every turn, 3 checks every third turn."
           control={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={controlWrapSx}>
               <Slider
-                value={a.skillCheckInterval}
-                onChange={(_, v) =>
-                  setGeneral({ advanced: { ...a, skillCheckInterval: Number(v) } })
-                }
+                value={skillInterval}
+                onChange={(_, v) => {
+                  const next = Math.max(1, Math.min(5, Math.round(toNumber(v))))
+                  setSkillInterval(next)
+                }}
+                onChangeCommitted={(_, v) => {
+                  const next = Math.max(1, Math.min(5, Math.round(toNumber(v))))
+                  setSkillInterval(next)
+                  commitAdvanced('skillCheckInterval', next)
+                }}
                 min={1}
-                max={12}
-                sx={{ flex: 1 }}
-                valueLabelDisplay="auto"
-              />
-              <TextField
-                size="small"
-                type="number"
-                value={a.skillCheckInterval}
-                onChange={(e) =>
-                  setGeneral({
-                    advanced: {
-                      ...a,
-                      skillCheckInterval: Math.min(12, Math.max(1, Number(e.target.value))),
-                    },
-                  })
-                }
-                inputProps={{ min: 1, max: 12, step: 1 }}
-                sx={{ width: 80 }}
+                max={5}
+                step={1}
+                sx={sliderSx}
+                valueLabelDisplay="on"
               />
             </Box>
           }
+          sx={{ mt: 2 }}
         />
 
         <FieldRow
           label="Skills: points delta"
-          info="Open Skills only if points increased by at least this amount since last check."
+          info="Reopen the Skills shop only after earning at least this many points (e.g. 60 waits until you gain 60 more points)."
           control={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={controlWrapSx}>
               <Slider
-                value={a.skillPtsDelta}
-                onChange={(_, v) => setGeneral({ advanced: { ...a, skillPtsDelta: Number(v) } })}
-                min={0}
-                max={1000}
-                sx={{ flex: 1 }}
-                valueLabelDisplay="auto"
-              />
-              <TextField
-                size="small"
-                type="number"
-                value={a.skillPtsDelta}
-                onChange={(e) =>
-                  setGeneral({
-                    advanced: {
-                      ...a,
-                      skillPtsDelta: Math.min(1000, Math.max(0, Number(e.target.value))),
-                    },
-                  })
-                }
-                inputProps={{ min: 0, max: 1000, step: 10 }}
-                sx={{ width: 100 }}
+                value={skillDelta}
+                onChange={(_, v) => {
+                  const raw = toNumber(v)
+                  const next = Math.max(60, Math.min(200, Math.round(raw / 10) * 10))
+                  setSkillDelta(next)
+                }}
+                onChangeCommitted={(_, v) => {
+                  const raw = toNumber(v)
+                  const next = Math.max(60, Math.min(200, Math.round(raw / 10) * 10))
+                  setSkillDelta(next)
+                  commitAdvanced('skillPtsDelta', next)
+                }}
+                min={60}
+                max={200}
+                step={10}
+                sx={sliderSx}
+                valueLabelDisplay="on"
               />
             </Box>
           }
+          sx={{ mt: 2 }}
         />
 
         <FieldRow
           label="Undertrain threshold"
-          info="Stats below this percentage of their target will be prioritized during training."
+          info="Lower values make detection stricter, higher values more forgiving. The system looks at how much each stat contributes to your total stats and compares it with how much it should contribute based on the ideal balance. Think of it as checking if any stat is falling behind or getting too far ahead. For example, if your total stats add up to 1640 and SPD is 375, that means SPD makes up about 23% of your total. But according to the ideal setup, SPD should represent 32% — which would be around 525 points. That means SPD is about 9% lower than where it should be, so it’s undertrained. However, if your undertraining threshold is 10%, the bot won’t force SPD training yet because the difference isn’t big enough. On the other hand, PWR is 512, which is 31% of the total, while its ideal ratio is 25%, so it’s 7% higher than expected — meaning PWR is overtrained and should be paused until the others catch up."
           control={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={controlWrapSx}>
               <Slider
-                value={a.undertrainThreshold}
-                onChange={(_, v) => setGeneral({ advanced: { ...a, undertrainThreshold: Number(v) } })}
-                min={0}
+                value={undertrain}
+                onChange={(_, v) => {
+                  const next = Math.max(1, Math.min(20, Math.round(toNumber(v))))
+                  setUndertrain(next)
+                }}
+                onChangeCommitted={(_, v) => {
+                  const next = Math.max(1, Math.min(20, Math.round(toNumber(v))))
+                  setUndertrain(next)
+                  commitAdvanced('undertrainThreshold', next)
+                }}
+                min={1}
                 max={20}
-                sx={{ flex: 1 }}
-                valueLabelDisplay="auto"
+                step={1}
+                sx={sliderSx}
+                valueLabelDisplay="on"
                 valueLabelFormat={(v) => `${v}%`}
-              />
-              <TextField
-                size="small"
-                type="number"
-                value={a.undertrainThreshold}
-                onChange={(e) =>
-                  setGeneral({
-                    advanced: {
-                      ...a,
-                      undertrainThreshold: Math.min(20, Math.max(0, Number(e.target.value))),
-                    },
-                  })
-                }
-                inputProps={{ min: 0, max: 20, step: 1 }}
-                sx={{ width: 80 }}
               />
             </Box>
           }
+          sx={{ mt: 2 }}
         />
 
         <FieldRow
           label="Top stats focus"
-          info="Number of top stats to prioritize when considering undertraining."
+          info="Used to re-prioritize stats when training and also if bot finds a low SV value in priority stat compared with maximum SV value in another tile. If difference is not more than 0.75 we skip the 'best' option and get the second best option only if it is in these first top stats"
           control={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={controlWrapSx}>
               <Slider
-                value={a.topStatsFocus}
-                onChange={(_, v) => setGeneral({ advanced: { ...a, topStatsFocus: Number(v) } })}
+                value={topStats}
+                onChange={(_, v) => {
+                  const next = Math.max(1, Math.min(5, Math.round(toNumber(v))))
+                  setTopStats(next)
+                }}
+                onChangeCommitted={(_, v) => {
+                  const next = Math.max(1, Math.min(5, Math.round(toNumber(v))))
+                  setTopStats(next)
+                  commitAdvanced('topStatsFocus', next)
+                }}
                 min={1}
                 max={5}
-                sx={{ flex: 1 }}
-                valueLabelDisplay="auto"
+                sx={sliderSx}
+                valueLabelDisplay="on"
                 marks
-              />
-              <TextField
-                size="small"
-                type="number"
-                value={a.topStatsFocus}
-                onChange={(e) =>
-                  setGeneral({
-                    advanced: {
-                      ...a,
-                      topStatsFocus: Math.min(5, Math.max(1, Number(e.target.value))),
-                    },
-                  })
-                }
-                inputProps={{ min: 1, max: 5, step: 1 }}
-                sx={{ width: 80 }}
               />
             </Box>
           }
+          sx={{ mt: 2 }}
         />
       </Collapse>
     </Stack>

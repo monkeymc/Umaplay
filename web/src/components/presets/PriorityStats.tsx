@@ -31,7 +31,7 @@ function SortableChip({ id, label }: { id: StatKey; label: string }) {
 }
 
 export default function PriorityStats({ presetId }: { presetId: string }) {
-  const preset = useConfigStore((s) => s.config.presets.find((p) => p.id === presetId))
+  const preset = useConfigStore((s) => s.getSelectedPreset().preset)
   const patchPreset = useConfigStore((s) => s.patchPreset)
   const sensors = useSensors(useSensor(PointerSensor))
 

@@ -174,6 +174,26 @@ def api_events():
 # -----------------------------
 # Event setup per preset (focused endpoints)
 # -----------------------------
+def _find_preset_in_config(cfg: dict, preset_id: str) -> tuple[dict | None, str | None]:
+    """
+    Search for preset by ID across all scenario branches.
+    Returns (preset_dict, scenario_key) or (None, None) if not found.
+    """
+    scenarios = cfg.get("scenarios") or {}
+    for scenario_key, branch in scenarios.items():
+        if not isinstance(branch, dict):
+            continue
+        presets = branch.get("presets") or []
+        for p in presets:
+            if p.get("id") == preset_id:
+                return p, scenario_key
+    # Fallback: check legacy top-level presets (shouldn't exist after migration but be safe)
+    legacy_presets = cfg.get("presets") or []
+    for p in legacy_presets:
+        if p.get("id") == preset_id:
+            return p, None
+    return None, None
+
 @app.get("/api/presets/{preset_id}/event_setup")
 def get_preset_event_setup(preset_id: str) -> Dict[str, Any]:
     """
@@ -181,11 +201,10 @@ def get_preset_event_setup(preset_id: str) -> Dict[str, Any]:
     If not present, return schema-backed defaults.
     """
     cfg = load_config() or {}
-    presets = cfg.get("presets", [])
-    for p in presets:
-        if p.get("id") == preset_id:
-            setup = p.get("event_setup")
-            return load_event_setup_defaults(setup)
+    preset, _ = _find_preset_in_config(cfg, preset_id)
+    if preset:
+        setup = preset.get("event_setup")
+        return load_event_setup_defaults(setup)
     raise HTTPException(status_code=404, detail="Preset not found")
 
 
@@ -196,13 +215,12 @@ def put_preset_event_setup(preset_id: str, payload: Dict[str, Any]):
     normalizing via schema defaults without touching the rest of the config.
     """
     cfg = load_config() or {}
-    presets = cfg.get("presets", [])
-    for p in presets:
-        if p.get("id") == preset_id:
-            normalized = load_event_setup_defaults(payload)
-            p["event_setup"] = normalized
-            save_config(cfg)
-            return {"status": "ok", "preset_id": preset_id}
+    preset, _ = _find_preset_in_config(cfg, preset_id)
+    if preset:
+        normalized = load_event_setup_defaults(payload)
+        preset["event_setup"] = normalized
+        save_config(cfg)
+        return {"status": "ok", "preset_id": preset_id}
     raise HTTPException(status_code=404, detail="Preset not found")
 
 

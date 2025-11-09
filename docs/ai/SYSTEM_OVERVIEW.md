@@ -60,6 +60,7 @@ The runtime supports Steam on Windows and Android mirrored via scrcpy, with expe
 - `docs/ai/SOPs/sop-config-back-front.md` (Reference of web folder and web UI)
 - `docs/ai/SOPs/waiter-usage-and-integration.md` (Important)
 - `docs/ai/SOPs/towards-custom-training-policy-graph.md` (Notes on evolving training-policy automation graph)
+- `docs/ai/SOPs/adding-new-scenario.md` (How to onboard a new training scenario end-to-end)
 
 ## Runtime Topology (diagram as text)
 ```
@@ -81,7 +82,7 @@ The runtime supports Steam on Windows and Android mirrored via scrcpy, with expe
 ```
 
 ## Runtime Core Loop
-- **Entrypoint (`main.py`)** loads configuration (`server/utils.py`), applies runtime settings, builds controllers/OCR/YOLO engines, and starts the bot loop plus the FastAPI server when enabled.
+- **Entrypoint (`main.py`)** loads configuration (`server/utils.py`), applies runtime settings, builds controllers/OCR/YOLO engines, and starts the bot loop plus the FastAPI server when enabled. The hotkey bootstrap respects the persisted `scenarioConfirmed` flag so TechEye prompting is skipped when the user selected a scenario from the Web UI.
 - **Agent loop (`core/agent.py`)** coordinates perception→decision→action for training careers, integrating race scheduling, skill buys, events, and the claw mini-game. Deferred post-hint skill rechecks now persist intent (`_pending_hint_recheck`) until the loop returns to a stable screen (Lobby/Raceday) before reopening the Skills view and retrying purchases with guardrails against forced navigation. Event handling (
   `core/actions/events.EventFlow`) fuses YOLO+OCR hints with template matching scores that blend multi-scale TM, perceptual hash, and HSV hair histograms (with gray-world balancing/masks) so lookalike trainees (e.g., seasonal alts) stay separable. When presets specify a trainee in
   `config.json`, the retriever promotes that card even if it scores slightly lower and, if that name is missing, falls back to the "trainee/general/None/None" catalog entry to avoid dead ends when seasonal data is absent. The same flow remembers two-phase prompts (e.g., Acupuncturist) and auto-confirms the follow-up dialog when only the accept/reconsider buttons are present.
@@ -165,7 +166,7 @@ This design allows the core loop to evolve independently of perception implement
 
 ## Operational Notes
 - **Execution modes**: `python main.py` starts the bot and the config server; `run_inference_server.bat` launches remote perception; `uvicorn server.main_inference:app --host 0.0.0.0 --port 8001` runs standalone inference.
-- **Hotkeys & toggles**: `BotState` binds F2 for start/stop (and shows the active preset overlay via `core/utils/preset_overlay.py` when enabled); `AgentNav` exposes one-shot flows for Team Trials (F7), Daily Races (F8), and Roulette (F9). Roulette relies on `core/actions/roulette.py` to spin Prize Derby wheels, respects `NavState.stop()` for early exit, and reuses nav YOLO weights in `core/agent_nav.py`.
+- **Hotkeys & toggles**: `BotState` binds F2 for start/stop (and shows the active preset overlay via `core/utils/preset_overlay.py` when enabled); `AgentNav` exposes one-shot flows for Team Trials (F7), Daily Races (F8), and Roulette (F9). The overlay now ships with a high-contrast border/emerald background so the toast remains visible even on busy desktops. Roulette relies on `core/actions/roulette.py` to spin Prize Derby wheels, respects `NavState.stop()` for early exit, and reuses nav YOLO weights in `core/agent_nav.py`.
 - **Logging & observability**: `core/utils/logger.py` sets structured logs; `debug/` collects screenshots and overlays; cleanup logic in `main.py.cleanup_debug_training_if_needed()` prunes large training captures.
 - **Performance levers**: `core/settings.py` exposes YOLO image size, confidence, OCR mode (fast/server), remote processor URLs, and preset overlay toggles/duration (`SHOW_PRESET_OVERLAY`, `PRESET_OVERLAY_DURATION`). Nav-specific weights configured via `Settings.YOLO_WEIGHTS_NAV`.
 - **Reliability guards**: `core/utils/abort.py` enforces safe shutdown; `core/utils/waiter.py` throttles retries; `core/actions/race.ConsecutiveRaceRefused` handles stale states.
@@ -195,9 +196,10 @@ This design allows the core loop to evolve independently of perception implement
 
 ## Frontend Architecture
 - **Routing**: Single-page app anchored at `/` with internal layout and tabs for General vs Preset settings (`web/src/pages/Home.tsx`).
-- **State management**: Zustand store in `web/src/store/configStore.ts` manages config, exposes actions (`setGeneral`, `patchPreset`, `importJson`). Per-preset `skillPtsCheck` thresholds are mirrored into legacy general config on save/load for backwards compatibility. `useEventsSetupStore` tracks per-support/scenario/trainee energy overflow switches and reward priority stacks, syncing them with per-entity config payloads while maintaining a global fallback order.
+- **State management**: Zustand store in `web/src/store/configStore.ts` manages config, exposes actions (`setGeneral`, `patchPreset`, `importJson`). Per-preset `skillPtsCheck` thresholds are mirrored into legacy general config on save/load for backwards compatibility. The general scenario toggle now raises `scenarioConfirmed` so hotkey runs skip redundant prompts, and the store blocks overwriting previously saved presets when a transient empty payload is produced. `useEventsSetupStore` tracks per-support/scenario/trainee energy overflow switches and reward priority stacks, syncing them with per-entity config payloads while maintaining a global fallback order.
+- **Scenario-aware UI**: The Bot Strategy/Policy section follows a registry pattern in `web/src/components/presets/strategy/`, mapping scenario keys to dedicated components (`UraStrategy.tsx`, `UnityCupStrategy.tsx`). Adding new scenarios requires creating a component implementing `StrategyComponentProps` and registering it in the loader—no conditional logic in parent components.
 - **Schema validation**: `web/src/models/config.schema.ts` ensures inbound configs are normalized and defaulted; migrations keep legacy fields compatible.
-- **Components**: Modular folders (`web/src/components/general/`, `web/src/components/presets/`, `web/src/components/events/`) encapsulate forms, race planners, and event editors.
+- **Components**: Modular folders (`web/src/components/general/`, `web/src/components/presets/`, `web/src/components/events/`) encapsulate forms, race planners, and event editors. Strategy components under `presets/strategy/` use a registry pattern for scenario-specific customization without parent sprawl.
 - **Skills picker**: `web/src/components/presets/SkillsPicker.tsx` now provides a dialog with search, rarity/category filters, pagination, and inline toggles for adding/removing skills, surfacing rarity-aware styling (e.g., gradient badges for unique skills) synced with preset `skillsToBuy` arrays.
 - **Daily Races tab**: `web/src/pages/Home.tsx` keeps both tabs mounted for instant switching; `web/src/components/nav/DailyRacePrefs.tsx` writes to `useNavPrefsStore`, which persists `/nav` preferences (alarm clock, star pieces, parfait) via FastAPI without re-fetching when users toggle between tabs.
 - **Styling**: MUI theme toggles via `uiTheme` state; `web/src/App.tsx` consumes design tokens.

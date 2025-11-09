@@ -24,17 +24,17 @@ export default function FieldRow({
   const hideInfo = useMediaQuery(theme.breakpoints.down(infoBreakpoint))
   // 3 columns >= stackAt:
   const stackCols = {
-    xs: '1fr',
-    // Let label/control shrink to 0 if needed; keep info at a firm 3rem.
-    [stackAt]: 'minmax(0,220px) minmax(0,1fr) 2rem',
-  }
+    xs: 'minmax(0,1fr)',
+    sm: 'minmax(0,1fr)',
+    [stackAt]: 'minmax(0,200px) minmax(0,1fr) 2rem',
+  } as const
   const responsiveCol = { xs: '1 / -1', [stackAt]: 'auto' } as const
   return (
     <Box
       sx={{
         display: 'grid',
         gridTemplateColumns: stackCols,
-        columnGap: 1,
+        columnGap: { xs: 1.25, sm: 2 },
         rowGap: 1,
         alignItems: 'center',
         minWidth: 0,       // allow this grid to shrink within its card
@@ -44,17 +44,23 @@ export default function FieldRow({
       <Typography
         variant="body2"
         color="text.secondary"
-        sx={{ gridColumn: responsiveCol }}
+        sx={{
+          gridColumn: responsiveCol,
+          fontWeight: 500,
+          pr: { xs: 0, sm: 1 },
+          alignSelf: 'flex-start',
+        }}
       >
         {label}
       </Typography>
       {/* Control: keep a sane min width and allow overflow to be clipped */}
       <Box
         sx={{
-          minWidth: "6rem",           // allow grid to pass available width
+          minWidth: { xs: '100%', sm: '6rem' },
           overflow: 'hidden',    // prevent slider tracks from overflowing
           contain: 'paint',
           gridColumn: responsiveCol,
+          pr: { xs: 1, sm: 1.5 },
         }}
       >
         {control}

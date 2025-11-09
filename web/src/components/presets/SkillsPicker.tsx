@@ -184,7 +184,7 @@ function rarityChip(_rarity: SkillRarity | undefined): React.ReactNode {
 const rarityOptions: SkillRarity[] = ['normal', 'gold', 'unique']
 
 export default function SkillsPicker({ presetId }: { presetId: string }) {
-  const preset = useConfigStore((s) => s.config.presets.find((p) => p.id === presetId))
+  const preset = useConfigStore((s) => s.getSelectedPreset().preset)
   const patchPreset = useConfigStore((s) => s.patchPreset)
   const [open, setOpen] = useState(false)
   const [q, setQ] = useState('')

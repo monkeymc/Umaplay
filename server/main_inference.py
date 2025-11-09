@@ -136,8 +136,9 @@ def ocr(req: OCRRequest) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"OCR failure: {e}")
 
 
-# Instantiate one YOLO engine for the service (no controller needed here)
-yolo_engine = LocalYOLOEngine(ctrl=None)
+# Instantiate YOLO engines for each scenario/mode (no controller needed here)
+yolo_engine_ura = LocalYOLOEngine(ctrl=None, weights=Settings.YOLO_WEIGHTS_URA)
+yolo_engine_unity_cup = LocalYOLOEngine(ctrl=None, weights=Settings.YOLO_WEIGHTS_UNITY_CUP)
 yolo_engine_nav = LocalYOLOEngine(ctrl=None, weights=Settings.YOLO_WEIGHTS_NAV)
 
 
@@ -154,22 +155,40 @@ class YoloRequest(BaseModel):
 @app.post("/yolo")
 def yolo_detect(req: YoloRequest):
     try:
-        # Normalize incoming weights selection (string) and compare against server's NAV path
+        # Normalize incoming weights selection (string) and match against server's engines
         w_in = req.weights_path or ""
         try:
             w_str = str(w_in)
         except Exception:
             w_str = ""
+        
+        # Check which engine matches the requested weights
+        yolo_engine_req = yolo_engine_ura  # default fallback
+        default_agent = Settings.AGENT_NAME_URA
+        
         try:
             nav_str = str(Settings.YOLO_WEIGHTS_NAV)
-            nav_match = (w_str == nav_str) or (Path(w_str).name == Path(nav_str).name)
+            if (w_str == nav_str) or (Path(w_str).name == Path(nav_str).name):
+                yolo_engine_req = yolo_engine_nav
+                default_agent = Settings.AGENT_NAME_NAV
         except Exception:
-            nav_match = False
-
-        yolo_engine_req = yolo_engine_nav if nav_match else yolo_engine
-        default_agent = (
-            Settings.AGENT_NAME_NAV if nav_match else Settings.AGENT_NAME_URA
-        )
+            pass
+        
+        try:
+            unity_cup_str = str(Settings.YOLO_WEIGHTS_UNITY_CUP)
+            if (w_str == unity_cup_str) or (Path(w_str).name == Path(unity_cup_str).name):
+                yolo_engine_req = yolo_engine_unity_cup
+                default_agent = Settings.AGENT_NAME_UNITY_CUP
+        except Exception:
+            pass
+        
+        try:
+            ura_str = str(Settings.YOLO_WEIGHTS_URA)
+            if (w_str == ura_str) or (Path(w_str).name == Path(ura_str).name):
+                yolo_engine_req = yolo_engine_ura
+                default_agent = Settings.AGENT_NAME_URA
+        except Exception:
+            pass
         agent_name = (req.agent or default_agent or "").strip()
         default_tag = "yolo_endpoint"
         tag_name = (req.tag or default_tag or "").strip() or default_tag

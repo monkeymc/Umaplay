@@ -375,9 +375,9 @@ function EventOptionsDialog({
             const defaultPick = pickFor(prefs, it.keyStep, it.key, it.defaultPref, type)
             return (
               <Card variant="outlined" key={it.keyStep}>
-                <CardContent sx={{ p: 1.25 }}>
+                <CardContent sx={{ px: 2, py: 1.75 }}>
                   {/* Header */}
-                  <Stack direction="row" alignItems="center" spacing={1}>
+                  <Stack direction="row" alignItems="center" spacing={1.25}>
                     <Box sx={{ px: 0.75, py: 0.25, borderRadius: 1, bgcolor: 'secondary.light', color: 'secondary.contrastText', fontSize: 11 }}>
                       Chain step: {it.chainStep}
                     </Box>
@@ -391,7 +391,7 @@ function EventOptionsDialog({
                     </Typography>
                   </Stack>
                   {/* Options */}
-                  <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap' }}>
+                  <Stack direction="row" spacing={1.25} sx={{ mt: 1.5, flexWrap: 'wrap', rowGap: 1.25 }}>
                     {it.options.map((opt) => {
                       const active = defaultPick === opt.num
                       const isRandom = Array.isArray(opt.outcomes) && opt.outcomes.length > 1
@@ -404,15 +404,22 @@ function EventOptionsDialog({
                             borderRadius: 1,
                             border: '1px solid',
                             borderColor: active ? 'primary.main' : 'divider',
-                            px: 1, py: 0.75,
+                            px: 1.5,
+                            py: 1.1,
                             fontSize: 12,
                             cursor: 'pointer',
                             userSelect: 'none',
-                            minWidth: 140,
+                            minWidth: 165,
                             bgcolor: active ? 'primary.lerp?0.95' as any : 'background.paper',
+                            boxShadow: active ? '0 0 0 2px rgba(25, 118, 210, 0.12)' : '0 1px 3px rgba(15, 23, 42, 0.08)',
+                            transition: 'transform 0.16s ease, box-shadow 0.16s ease',
+                            '&:hover': {
+                              transform: 'translateY(-2px)',
+                              boxShadow: '0 6px 14px rgba(15, 23, 42, 0.15)',
+                            },
                           }}
                         >
-                         <Stack spacing={0.5}>
+                         <Stack spacing={0.75}>
                             <Typography variant="caption" sx={{ fontWeight: 700 }}>
                               {opt.num}. {opt.label}{isRandom ? ' (random, either A or B)' : ''}
                             </Typography>
@@ -579,11 +586,23 @@ export default function EventSetupSection({ index }: Props) {
       chainStep: ev.chain_step ?? 1,
       defaultPref: ev.default_preference,
       options: (Object.entries(ev.options || {}) as [string, EventOptionEffect[]][])
-        .map(([k, arr]) => ({
-        label: `Option ${k}`,
-        num: Number(k),
-        outcomes: Array.isArray(arr) ? arr : [],
-      })),
+        .map(([k, arr]) => {
+        const outcomes = Array.isArray(arr) ? arr : []
+        let label = `Option ${k}`
+
+        if (set.name === 'Unity Cup' && ev.name === 'A Team at Last') {
+          const team = outcomes[0]?.team
+          if (typeof team === 'string' && team.trim()) {
+            label = team.trim()
+          }
+        }
+
+        return {
+          label,
+          num: Number(k),
+          outcomes,
+        }
+      }),
     }))
 
     const currentToggle = sel.avoidEnergyOverflow ?? true
@@ -623,11 +642,23 @@ export default function EventSetupSection({ index }: Props) {
       chainStep: ev.chain_step ?? 1,
       defaultPref: ev.default_preference,
       options: (Object.entries(ev.options || {}) as [string, EventOptionEffect[]][])
-        .map(([k, arr]) => ({
-        label: `Option ${k}`,
-        num: Number(k),
-        outcomes: Array.isArray(arr) ? arr : [],
-      })),
+        .map(([k, arr]) => {
+        const outcomes = Array.isArray(arr) ? arr : []
+        let label = `Option ${k}`
+
+        if (set.name === 'Unity Cup' && ev.name === 'A Team at Last') {
+          const team = outcomes[0]?.team
+          if (typeof team === 'string' && team.trim()) {
+            label = team.trim()
+          }
+        }
+
+        return {
+          label,
+          num: Number(k),
+          outcomes,
+        }
+      }),
     }))
     const currentToggle = scenario.avoidEnergyOverflow ?? true
     setOptionsFor({

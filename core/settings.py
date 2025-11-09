@@ -92,11 +92,19 @@ class Settings:
     # Models & weights
     _YOLO_WEIGHTS_URA_ENV = _env("YOLO_WEIGHTS_URA") or _env("YOLO_WEIGHTS")
     YOLO_WEIGHTS_URA: Path = Path(_YOLO_WEIGHTS_URA_ENV or (MODELS_DIR / "uma_ura.pt"))
+    YOLO_WEIGHTS_UNITY_CUP: Path = Path(
+        _env("YOLO_WEIGHTS_UNITY_CUP") or (MODELS_DIR / "uma_unity_cup.pt")
+    )
+
     YOLO_WEIGHTS_NAV: Path = Path(
         _env("YOLO_WEIGHTS_NAV") or (MODELS_DIR / "uma_nav.pt")
     )
     IS_BUTTON_ACTIVE_CLF_PATH: Path = Path(
         _env("IS_BUTTON_ACTIVE_CLF_PATH") or (MODELS_DIR / "active_button_clf.joblib")
+    )
+
+    UNITY_CUP_SPIRIT_COLOR_CLASS_PATH: Path = Path(
+        _env("UNITY_CUP_SPIRIT_COLOR_CLASS_PATH") or (MODELS_DIR / "unity_spirit_cnn.pt")
     )
 
     MODE: str = _env("MODE", "steam") or "steam"
@@ -110,7 +118,7 @@ class Settings:
     LOG_LEVEL: str = _env("LOG_LEVEL", "DEBUG" if DEBUG else "INFO") or (
         "DEBUG" if DEBUG else "INFO"
     )
-    FAST_MODE = True
+    FAST_MODE = False
     USE_FAST_OCR = True
     USE_GPU = True
     HINT_IS_IMPORTANT = False
@@ -123,6 +131,8 @@ class Settings:
     WINDOW_TITLE = "Umamusume"
 
     AGENT_NAME_URA: str = "ura"
+    AGENT_NAME_UNITY_CUP: str = "unity_cup"
+
     AGENT_NAME_NAV: str = "agent_nav"
     USE_EXTERNAL_PROCESSOR = False
     EXTERNAL_PROCESSOR_URL = "http://127.0.0.1:8001"
@@ -150,13 +160,18 @@ class Settings:
 
     MINIMAL_MOOD = "normal"
 
+    ACTIVE_SCENARIO: str = "ura"
+    ACTIVE_AGENT_NAME: str = AGENT_NAME_URA
+    ACTIVE_YOLO_WEIGHTS: Path = YOLO_WEIGHTS_URA
+    ACTIVE_SKILL_MEMORY_PATH: Path = RUNTIME_SKILL_MEMORY_PATH
+
     SUPPORT_PRIORITIES_HAVE_CUSTOMIZATION: bool = False
     SUPPORT_CUSTOM_PRIORITY_KEYS: Set[Tuple[str, str, str]] = set()
     SUPPORT_AVOID_ENERGY: Dict[Tuple[str, str, str], bool] = {}
     # Union of skills to re-check immediately after taking a configured hint
     RECHECK_AFTER_HINT_SKILLS: List[str] = []
     SHOW_PRESET_OVERLAY: bool = _env_bool("SHOW_PRESET_OVERLAY", True)
-    PRESET_OVERLAY_DURATION: float = _env_float("PRESET_OVERLAY_DURATION", 5.0)
+    PRESET_OVERLAY_DURATION: float = _env_float("PRESET_OVERLAY_DURATION", 4)
     NAV_PREFS: Dict[str, Dict[str, Any]] = {
         "shop": dict(_DEFAULT_NAV_PREFS["shop"]),
         "team_trials": dict(_DEFAULT_NAV_PREFS["team_trials"]),
@@ -205,12 +220,51 @@ class Settings:
         cls.ACCEPT_CONSECUTIVE_RACE = bool(
             g.get("acceptConsecutiveRace", cls.ACCEPT_CONSECUTIVE_RACE)
         )
+        scenario_raw = str(g.get("activeScenario", cls.ACTIVE_SCENARIO)).strip().lower()
+        cls.ACTIVE_SCENARIO = cls.normalize_scenario(scenario_raw)
+        cls.SCENARIO_CONFIRMED = bool(g.get("scenarioConfirmed", getattr(cls, "SCENARIO_CONFIRMED", False)))
+        cls.ACTIVE_AGENT_NAME = cls.resolve_agent_name(cls.ACTIVE_SCENARIO)
+        cls.ACTIVE_YOLO_WEIGHTS = cls.resolve_yolo_weights_path(cls.ACTIVE_SCENARIO)
+        cls.ACTIVE_SKILL_MEMORY_PATH = cls.resolve_skill_memory_path(cls.ACTIVE_SCENARIO)
 
-        presets = (cfg or {}).get("presets") or []
-        active_id = (cfg or {}).get("activePresetId")
-        preset = next((p for p in presets if p.get("id") == active_id), None) or (
-            presets[0] if presets else None
+        presets: List[dict] = []
+        active_id: Optional[str] = None
+        scenarios_raw = cfg.get("scenarios") if isinstance(cfg, dict) else None
+
+        def _read_branch(raw_branch: Any) -> tuple[List[dict], Optional[str]]:
+            if not isinstance(raw_branch, dict):
+                return [], None
+            branch_presets = raw_branch.get("presets")
+            if not isinstance(branch_presets, list):
+                branch_presets = []
+            active = raw_branch.get("activePresetId")
+            if not isinstance(active, str):
+                active = None
+            return branch_presets, active
+
+        if isinstance(scenarios_raw, dict):
+            presets, active_id = _read_branch(scenarios_raw.get(cls.ACTIVE_SCENARIO))
+            if not presets:
+                # Fallback to URA branch when the selected scenario is missing
+                presets, active_id = _read_branch(scenarios_raw.get("ura"))
+
+        if not presets:
+            presets = (cfg or {}).get("presets") or []
+            active_id = (cfg or {}).get("activePresetId")
+
+        preset = next(
+            (
+                p
+                for p in presets
+                if isinstance(p, dict) and p.get("id") == active_id
+            ),
+            None,
         )
+        if not preset and presets:
+            first = presets[0]
+            preset = first if isinstance(first, dict) else None
+            if isinstance(preset, dict):
+                active_id = str(preset.get("id") or "") or active_id
 
         preset_data = preset or {}
 
@@ -348,12 +402,7 @@ class Settings:
     @classmethod
     def get_active_preset_snapshot(cls) -> tuple[Optional[str], Optional[dict], dict]:
         cfg = cls._last_config or {}
-        presets = (cfg.get("presets") or [])
-        active_id = cfg.get("activePresetId")
-        preset = next((p for p in presets if p.get("id") == active_id), None)
-        if not preset and presets:
-            preset = presets[0]
-            active_id = preset.get("id")
+        _, active_id, preset = cls._get_active_preset_from_config(cfg)
         return active_id, preset, cfg
 
     @classmethod
@@ -380,16 +429,77 @@ class Settings:
         return max(1, min(3, preferred))
 
     @classmethod
+    def normalize_scenario(cls, scenario: str | None) -> str:
+        key = str(scenario or "ura").strip().lower()
+        if key == "aoharu":
+            key = "unity_cup"
+        if key not in {"ura", "unity_cup"}:
+            return "ura"
+        return key
+
+    @classmethod
+    def resolve_agent_name(cls, scenario: str | None = None) -> str:
+        key = cls.normalize_scenario(scenario or cls.ACTIVE_SCENARIO)
+        if key == "unity_cup":
+            return cls.AGENT_NAME_UNITY_CUP
+        return cls.AGENT_NAME_URA
+
+    @classmethod
+    def resolve_yolo_weights_path(cls, scenario: str | None = None) -> Path:
+        key = cls.normalize_scenario(scenario or cls.ACTIVE_SCENARIO)
+        if key == "unity_cup":
+            return cls.YOLO_WEIGHTS_UNITY_CUP
+        return cls.YOLO_WEIGHTS_URA
+
+    @classmethod
+    def resolve_skill_memory_path(cls, scenario: str | None = None) -> Path:
+        scenario_key = cls.normalize_scenario(scenario or cls.ACTIVE_SCENARIO)
+        base = cls.RUNTIME_SKILL_MEMORY_PATH
+        suffix = base.suffix
+        if suffix:
+            stem = base.stem
+            return base.with_name(f"{stem}.{scenario_key}{suffix}")
+        return base / f"runtime_skill_memory.{scenario_key}.json"
+
+    @classmethod
+    def _get_active_preset_from_config(cls, cfg: dict) -> tuple[list, str | None, dict | None]:
+        """
+        Extract (presets, active_id, active_preset) from config, handling both:
+        - New scenario-based structure: cfg.scenarios[activeScenario].presets
+        - Legacy structure: cfg.presets (migration fallback)
+        
+        Returns: (presets_list, active_id, active_preset_dict)
+        """
+        cfg = cfg or {}
+        
+        # Try new scenario-based structure first
+        general = cfg.get("general") or {}
+        active_scenario = general.get("activeScenario") or "ura"
+        scenarios = cfg.get("scenarios") or {}
+        scenario_branch = scenarios.get(active_scenario) or {}
+        
+        presets = scenario_branch.get("presets")
+        active_id = scenario_branch.get("activePresetId")
+        
+        # Fallback to legacy top-level structure if scenario branch is empty
+        if not presets:
+            presets = cfg.get("presets") or []
+            active_id = cfg.get("activePresetId")
+        
+        # Find the active preset
+        preset = next((p for p in presets if p.get("id") == active_id), None) or (
+            presets[0] if presets else None
+        )
+        
+        return presets, active_id, preset
+
+    @classmethod
     def extract_runtime_preset(cls, cfg: dict) -> dict:
         """
         Pick the active preset (or first), and return a slim dict with things
         the Python runtime cares about: plan_races, select_style, skill_list, and other settings.
         """
-        presets = (cfg or {}).get("presets") or []
-        active_id = (cfg or {}).get("activePresetId")
-        preset = next((p for p in presets if p.get("id") == active_id), None) or (
-            presets[0] if presets else None
-        )
+        _, _, preset = cls._get_active_preset_from_config(cfg)
         if not preset:
             return {
                 "plan_races": {},

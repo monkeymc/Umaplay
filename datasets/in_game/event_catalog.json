@@ -418,6 +418,94 @@
     ]
   },
   {
+    "key": "scenario/Unity Cup/None/None/Tutorial",
+    "key_step": "scenario/Unity Cup/None/None/Tutorial#s1",
+    "type": "scenario",
+    "name": "Unity Cup",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Tutorial",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "bond": 0
+        }
+      ],
+      "2": [
+        {
+          "bond": 0
+        }
+      ]
+    },
+    "title_norm": "tutorial",
+    "image_path": "web\\public\\events\\scenario\\Unity Cup.png",
+    "phash64": 9623398841818468594,
+    "image_variants": [
+      "web\\public\\events\\scenario\\Unity Cup.png"
+    ]
+  },
+  {
+    "key": "scenario/Unity Cup/None/None/A Team at Last",
+    "key_step": "scenario/Unity Cup/None/None/A Team at Last#s1",
+    "type": "scenario",
+    "name": "Unity Cup",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "A Team at Last",
+    "chain_step": 1,
+    "default_preference": 5,
+    "options": {
+      "1": [
+        {
+          "team": "Happy Hoppers, like Taiki suggested",
+          "hints": [
+            "Mile Maven"
+          ]
+        }
+      ],
+      "2": [
+        {
+          "team": "Sunny Runners, like Fukukitaru suggested",
+          "hints": [
+            "Clairvoyance"
+          ]
+        }
+      ],
+      "3": [
+        {
+          "team": "Carrot Pudding, like Haru suggested",
+          "hints": [
+            "Indomitable"
+          ]
+        }
+      ],
+      "4": [
+        {
+          "team": "Blue Bloom, like Rice suggested",
+          "hints": [
+            "Cooldown"
+          ]
+        }
+      ],
+      "5": [
+        {
+          "team": "Team Carrot",
+          "hints": [
+            "No Stopping Me!"
+          ]
+        }
+      ]
+    },
+    "title_norm": "a team at last",
+    "image_path": "web\\public\\events\\scenario\\Unity Cup.png",
+    "phash64": 9623398841818468594,
+    "image_variants": [
+      "web\\public\\events\\scenario\\Unity Cup.png"
+    ]
+  },
+  {
     "key": "trainee/general/None/None/Failed training (Get Well Soon!)",
     "key_step": "trainee/general/None/None/Failed training (Get Well Soon!)#s1",
     "type": "trainee",

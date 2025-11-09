@@ -1,7 +1,6 @@
 import Section from '@/components/common/Section'
 import { useConfigStore } from '@/store/configStore'
-import { Stack, TextField, FormControlLabel, Switch, IconButton, Tooltip, Typography } from '@mui/material'
-import { Info as InfoIcon } from '@mui/icons-material'
+import { Stack, TextField } from '@mui/material'
 import PriorityStats from './PriorityStats'
 import TargetStats from './TargetStats'
 import MoodSelector from './MoodSelector'
@@ -11,12 +10,40 @@ import RaceScheduler from './RaceScheduler'
 import { useEventsData } from '@/hooks/useEventsData'
 import EventSetupSection from '../events/EventSetupSection'
 import { useEventsSetupStore } from '@/store/eventsSetupStore'
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import FieldRow from '@/components/common/FieldRow'
+import type { Preset, ScenarioConfig } from '@/models/types'
+import { getStrategyComponent } from './strategy'
+
+const normalizeScenario = (value?: string | null): 'ura' | 'unity_cup' =>
+  value === 'unity_cup' ? 'unity_cup' : 'ura'
 
 export default function PresetPanel({ compact = false }: { compact?: boolean }) {
-  const selectedId = useConfigStore((s) => s.uiSelectedPresetId ?? s.config.activePresetId ?? s.config.presets[0]?.id)
-  const selected = useConfigStore((s) => selectedId ? s.config.presets.find((p) => p.id === selectedId) : undefined)
+  const uiScenarioKey = useConfigStore((s) => s.uiScenarioKey)
+  const uiSelectedPresetId = useConfigStore((s) => s.uiSelectedPresetId)
+  const generalActiveScenario = useConfigStore((s) => s.config.general?.activeScenario)
+  const scenarios = useConfigStore((s) => s.config.scenarios)
+
+  const scenarioKey = normalizeScenario(uiScenarioKey ?? generalActiveScenario)
+  const branch = useMemo(() => {
+    const map = (scenarios ?? {}) as Record<string, ScenarioConfig>
+    const raw = map[scenarioKey] ?? { presets: [], activePresetId: undefined }
+    const presets: Preset[] = Array.isArray(raw.presets) ? (raw.presets as Preset[]) : []
+    const activePresetId = raw.activePresetId && presets.some((p) => p.id === raw.activePresetId)
+      ? raw.activePresetId
+      : presets[0]?.id
+    return { presets, activePresetId }
+  }, [scenarios, scenarioKey])
+
+  const presets = branch.presets
+  const selectedId = useMemo(() => {
+    if (uiSelectedPresetId && presets.some((p) => p.id === uiSelectedPresetId)) {
+      return uiSelectedPresetId
+    }
+    return branch.activePresetId ?? presets[0]?.id
+  }, [uiSelectedPresetId, branch.activePresetId, presets])
+
+  const selected = useMemo(() => (selectedId ? presets.find((p) => p.id === selectedId) : undefined), [presets, selectedId])
   const renamePreset = useConfigStore((s) => s.renamePreset)
   const patchPreset = useConfigStore((s) => s.patchPreset)
   const eventsIndex = useEventsData()
@@ -46,8 +73,8 @@ export default function PresetPanel({ compact = false }: { compact?: boolean }) 
   if (!selected) return null
 
   return (
-    <Section title="Preset">
-      <Stack spacing={2}>
+    <Section title="Preset" sx={{ width: '100%', maxWidth: 'none' }}>
+      <Stack spacing={2} sx={{ width: '100%' }}>
         <TextField
           label="Preset name"
           size="small"
@@ -80,47 +107,10 @@ export default function PresetPanel({ compact = false }: { compact?: boolean }) 
           }
         />
         <SkillsPicker presetId={selected.id} />
-        <Section title="Bot Strategy / Policy">
-          <Stack spacing={1}>
-
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={!!selected.raceIfNoGoodValue}
-                  onChange={(e) => patchPreset(selected.id!, 'raceIfNoGoodValue', e.target.checked)}
-                />
-              }
-              label={
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <Typography variant="body1">Allow Racing over low training</Typography>
-                  <Tooltip title="If for example our best option is SV <= 1 (e.g. 1 rainbow, 1 friend training, etc). If this option is enabled, bot will prefer to look for race (hopefully G2 or G1) to farm skill pts and stats.">
-                    <IconButton size="small" color="info">
-                      <InfoIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-              }
-            />
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={!!selected.prioritizeHint}
-                  onChange={(e) => patchPreset(selected.id!, 'prioritizeHint', e.target.checked)}
-                />
-              }
-              label={
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <Typography variant="body1">Prioritize hint tiles</Typography>
-                  <Tooltip title="Give priority to hint tiles during training, value of hint is increased from 0.75 to 2.25. Nevertheless, If for some reason you have hint in guts and the best SV is 3.5 (triple rainbow) in another tile -> Even if hint priority is enabled, bot will prefer that amazing SV.">
-                    <IconButton size="small" color="info">
-                      <InfoIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-              }
-            />
-          </Stack>
-        </Section>
+        {(() => {
+          const StrategyComponent = getStrategyComponent(scenarioKey)
+          return <StrategyComponent preset={selected} />
+        })()}
         {eventsIndex && <EventSetupSection index={eventsIndex} />}
         <RaceScheduler presetId={selected.id} compact={compact} />
       </Stack>

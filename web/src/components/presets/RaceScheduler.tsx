@@ -14,7 +14,7 @@ import { BADGE_ICON, DEFAULT_RACE_BANNER } from '@/constants/ui'
 type RaceRow = { raceName: string; instance: RaceInstance; dateKey: string }
 
 export default function RaceScheduler({ presetId }: { presetId: string; compact?: boolean }) {
-  const preset = useConfigStore((s) => s.config.presets.find((p) => p.id === presetId))
+  const preset = useConfigStore((s) => s.getSelectedPreset().preset)
   const patchPreset = useConfigStore((s) => s.patchPreset)
   const { data: races = {} as RacesMap } = useQuery({ queryKey: ['races'], queryFn: fetchRaces })
 

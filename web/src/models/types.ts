@@ -13,6 +13,8 @@ export interface GeneralConfig {
   tryAgainOnFailedGoal: boolean
   maxFailure: number
   acceptConsecutiveRace: boolean
+  activeScenario: 'ura' | 'unity_cup'
+  scenarioConfirmed: boolean
   advanced: {
     hotkey: Hotkey
     debugMode: boolean
@@ -42,9 +44,13 @@ export interface Preset {
   prioritizeHint?: boolean // Moved from general to per-preset
 }
 
+export interface ScenarioConfig {
+  presets: Preset[]
+  activePresetId?: string
+}
+
 export interface AppConfig {
   version: number
   general: GeneralConfig
-  presets: Preset[]
-  activePresetId?: string
+  scenarios: Record<'ura' | 'unity_cup' | string, ScenarioConfig>
 }

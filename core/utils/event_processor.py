@@ -1024,15 +1024,12 @@ class UserPrefs:
     @staticmethod
     def from_config(cfg: dict | None) -> "UserPrefs":
         """
-        Pull event prefs from config['presets'][active]['event_setup']['prefs'].
+        Pull event prefs from config['scenarios'][active]['presets'][active]['event_setup']['prefs'].
+        Falls back to legacy config['presets'] structure for backwards compatibility.
         If anything is missing or malformed, we return sensible defaults.
         """
         cfg = cfg or {}
-        presets = cfg.get("presets") or []
-        active_id = cfg.get("activePresetId")
-        preset = next((p for p in presets if p.get("id") == active_id), None) or (
-            presets[0] if presets else None
-        )
+        _, _, preset = Settings._get_active_preset_from_config(cfg)
         if not preset:
             # no presets at all
             return UserPrefs(

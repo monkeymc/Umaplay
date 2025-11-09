@@ -1,7 +1,7 @@
 import {
   Accordion, AccordionDetails, AccordionSummary,
   FormControlLabel, MenuItem, Select, Slider, Box, Stack, Switch, TextField, Typography, Button, Snackbar, Alert,
-  Tooltip, IconButton, Avatar,
+  Tooltip, IconButton, Avatar, ToggleButton, ToggleButtonGroup,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -21,6 +21,7 @@ export default function GeneralForm() {
   const { config, setGeneral } = useConfigStore()
   const uiTheme = useConfigStore((s) => s.uiTheme)
   const setUiTheme = useConfigStore((s) => s.setUiTheme)
+  const setScenario = useConfigStore((s) => s.setScenario)
   const g = config.general
   const collapsed = useConfigStore((s) => s.uiGeneralCollapsed)
   const setCollapsed = useConfigStore((s) => s.setGeneralCollapsed)
@@ -47,7 +48,7 @@ export default function GeneralForm() {
   }
 
   return (
-    <Section title="">
+    <Section title="" sx={{ maxWidth: 820, width: '100%' }}>
       {update && update.is_update_available && (
         <Alert severity="info" sx={{ mt: 1 }}>
           New version available: {update.latest}{' '}
@@ -96,6 +97,73 @@ export default function GeneralForm() {
           }
           info="Toggle dark/light mode for this configuration UI. (Does not affect in-game visuals.)"
         />
+        <FieldRow
+          label="Active scenario"
+          control={
+            <ToggleButtonGroup
+              size="small"
+              exclusive
+              value={g.activeScenario}
+              onChange={(_, value) => value && setScenario(value)}
+              sx={{
+                '& .MuiToggleButton-root': {
+                  px: 1.5,
+                  py: 0.75,
+                  textTransform: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  borderRadius: 1,
+                  borderColor: 'transparent',
+                },
+                '& .MuiToggleButton-root.Mui-selected': {
+                  backgroundColor: 'primary.main',
+                  color: 'primary.contrastText',
+                  borderColor: 'primary.main',
+                },
+                '& .MuiToggleButton-root.Mui-selected:hover': {
+                  backgroundColor: 'primary.main',
+                },
+              }}
+            >
+              <ToggleButton
+                value="ura"
+                aria-label="URA scenario"
+                onClick={() => setScenario('ura')}
+              >
+                <Box
+                  component="img"
+                  src="/scenarios/ura_icon.png"
+                  alt="URA"
+                  sx={{ width: 20, height: 20, borderRadius: 1 }}
+                />
+                <span>URA</span>
+              </ToggleButton>
+              <ToggleButton
+                value="unity_cup"
+                aria-label="Unity Cup scenario"
+                onClick={() => setScenario('unity_cup')}
+              >
+                <Box
+                  component="img"
+                  src="/scenarios/unity_cup_icon.png"
+                  alt="Unity Cup"
+                  sx={{ width: 20, height: 20, borderRadius: 1 }}
+                />
+                <span>Unity Cup</span>
+              </ToggleButton>
+            </ToggleButtonGroup>
+          }
+          info="Select which training scenario the runtime will execute. Event presets still manage their own scenario preferences in the Presets → Events section."
+        />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: { xs: 0, sm: '72px' } }}>
+          <Box sx={{ width: 10, height: 10, borderRadius: 0.5, bgcolor: 'primary.main' }} />
+          <Typography variant="caption" color="text.secondary">
+            {`Active scenario: ${g.activeScenario === 'unity_cup' ? 'Unity Cup' : 'URA'}${g.scenarioConfirmed ? ' (saved – hotkey will skip the prompt)' : ' (will ask once when starting via hotkey)'}`}
+          </Typography>
+        </Box>
+
+
         <FieldRow
           label="Mode"
           control={

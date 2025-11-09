@@ -14,7 +14,7 @@ const moodImgs: Partial<Record<MoodName, string>> = {
 const MOODS: MoodName[] = ['AWFUL', 'BAD', 'NORMAL', 'GOOD', 'GREAT']
 
 export default function MoodSelector({ presetId }: { presetId: string }) {
-  const preset = useConfigStore((s) => s.config.presets.find((p) => p.id === presetId))
+  const preset = useConfigStore((s) => s.getSelectedPreset().preset)
   const patchPreset = useConfigStore((s) => s.patchPreset)
   if (!preset) return null
 

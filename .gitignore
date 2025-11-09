@@ -37,12 +37,17 @@ debug
 runs
 
 datasets/coco8/**
+datasets/classifiers/**
 datasets/uma_nav/*
 models/base/*
 datasets/uma/*
 !datasets/uma/raw
 datasets/uma/raw/*
 !datasets/uma/raw/gitkeep.txt
+datasets/uma_unity_cup/*
+!datasets/uma_unity_cup/raw
+datasets/uma_unity_cup/raw/*
+!datasets/uma_unity_cup/raw/gitkeep.txt
 
 README.ai.md
 README.train.md
@@ -50,6 +55,8 @@ README.train.md
 prefs/config.json
 prefs/nav.json
 prefs/runtime_skill_memory.json
+prefs/runtime_skill_memory.unity_cup.json
+prefs/runtime_skill_memory.ura.json
 build
 /dist/
 tests/outputs/*

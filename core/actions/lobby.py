@@ -1,23 +1,15 @@
 # core/actions/lobby.py
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from collections import deque
 import statistics
 import time
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Literal, Optional, Tuple
 
 from core.controllers.base import IController
-from core.perception.extractors.state import (
-    extract_career_date,
-    extract_mood,
-    extract_infirmary_on,
-    extract_skill_points,
-    extract_goal_text,
-    extract_energy_pct,
-    extract_stats,
-    extract_turns,
-)
+from core.perception.extractors.state import extract_career_date, extract_goal_text, extract_stats
 from core.perception.is_button_active import ActiveButtonClassifier
 from core.perception.yolo.interface import IDetector
 from core.settings import Settings
@@ -26,6 +18,7 @@ from core.utils.race_index import RaceIndex, date_key_from_dateinfo
 from core.utils.text import fuzzy_contains
 from core.utils.waiter import Waiter
 from core.utils.yolo_objects import collect
+from core.constants import CLASS_UI_TURNS, CLASS_UI_GOAL
 
 from core.utils.date_uma import (
     DateInfo,
@@ -40,6 +33,7 @@ from core.utils.date_uma import (
     parse_career_date,
     date_is_confident,
 )
+
 @dataclass
 class LobbyState:
     goal: Optional[str] = None
@@ -47,6 +41,7 @@ class LobbyState:
     skill_pts: int = 0
     infirmary_on: Optional[bool] = None
     turn: int = -1
+    turns_special: int = -1
     career_date_raw: Optional[str] = None
     date_info: Optional[DateInfo] = None
     is_summer: Optional[bool] = None
@@ -54,7 +49,6 @@ class LobbyState:
     stats = {"SPD": -1, "STA": -1, "PWR": -1, "GUTS": -1, "WIT": -1}
     planned_race_name: Optional[str] = None
     planned_race_canonical: Optional[str] = None
-
 
 
 @dataclass
@@ -66,7 +60,7 @@ class LobbyConfig:
     default_timeout_s: float = 4.0
 
 
-class LobbyFlow:
+class LobbyFlow(ABC):
     """
     Encapsulates all Lobby decisions & navigation.
     Composes RaceFlow and centralizes waits via a single Waiter.
@@ -86,6 +80,9 @@ class LobbyFlow:
         interval_stats_refresh=1,
         max_critical_turn=8,
         plan_races={},
+        date_layout: Literal["above", "right"] = "above",
+        date_turns_class: str = CLASS_UI_TURNS,
+        date_goal_class: str = CLASS_UI_GOAL,
     ) -> None:
         self.ctrl = ctrl
         self.ocr = ocr
@@ -105,28 +102,20 @@ class LobbyFlow:
         self.last_turns_left_prediction = None
         self._last_date_key: Optional[str] = None
         self.plan_races = plan_races
-        self._date_stable_count: int = (
-            0  # how long current accepted date has been stable
-        )
-        self._date_artificial: bool = (
-            False  # last accepted date was auto-advanced (imputed)
-        )
-        self._pending_date_jump = (
-            None  # keep forward pending (exists already in codepath)
-        )
-        self._pending_date_back = None  # pending backward correction candidate
+        self._date_stable_count: int = 0
+        self._date_artificial: bool = False
+        self._pending_date_jump = None
+        self._pending_date_back = None
         self._pending_date_back_count: int = 0
-        self._last_turn_at_date_update: Optional[int] = (
-            None  # turns value when we last updated date
-        )
-        self._raced_keys_recent: set[str] = (
-            set()
-        )  # keys we already raced on (avoid double-race if OCR didn’t tick)
-        self._skip_guard_key: Optional[str] = None  # date key that armed skip guard
+        self._last_turn_at_date_update: Optional[int] = None
+        self._raced_keys_recent: set[str] = set()
+        self._skip_guard_key: Optional[str] = None
 
-    # --------------------------
-    # Public entry point
-    # --------------------------
+        self.date_layout = date_layout
+        self.date_turns_class = date_turns_class
+        self.date_goal_class = date_goal_class
+
+    @abstractmethod
     def process_turn(self):
         """
         Evaluate the Lobby and take the next action.
@@ -136,150 +125,11 @@ class LobbyFlow:
           - "RESTED"         → we chose rest/recreation
           - "TO_TRAINING"    → we navigated to the training screen
           - "CONTINUE"       → we did a minor click or nothing
+          - "ETC"
 
         optional extra message
         """
-        img, dets = collect(
-            self.yolo_engine,
-            imgsz=self.waiter.cfg.imgsz,
-            conf=self.waiter.cfg.conf,
-            iou=self.waiter.cfg.iou,
-            tag="lobby_state",
-        )
-
-        if not self.process_on_demand:
-            self._update_state(
-                img, dets
-            )  # -> Very expensive, calculate as you need better
-
-        # --- Critical goal logic & early racing opportunities ---
-
-        if self.process_on_demand:
-            self._process_date_info(img, dets)
-            logger_uma.info(
-                f"Date: {self.state.date_info} | raw: {self.state.career_date_raw}"
-            )
-
-        if self.process_on_demand:
-            self.state.energy = extract_energy_pct(img, dets)
-
-        # --- Race planning (explicit list takes precedence; else G1 if available) ---
-        self._plan_race_today()
-
-        current_date_key = (
-            date_key_from_dateinfo(self.state.date_info)
-            if self.state and getattr(self.state, "date_info", None)
-            else None
-        )
-        if (
-            self._skip_race_once
-            and self._skip_guard_key
-            and current_date_key
-            and current_date_key != self._skip_guard_key
-        ):
-            logger_uma.info(
-                "[planned_race] skip guard released: %s -> %s",
-                self._skip_guard_key,
-                current_date_key,
-            )
-            self._skip_race_once = False
-            self._skip_guard_key = None
-
-        # If we have a planned race today, go race (subject to early-guard rules)
-        if self.state.planned_race_name:
-            # First-Junior-Day guard (no races available there)
-            is_first_junior_date = (
-                bool(self.state.date_info)
-                and date_is_confident(self.state.date_info)
-                and self.state.date_info.year_code == 1
-                and self.state.date_info.month == 7
-                and self.state.date_info.half == 1
-            )
-            guard_extra = {
-                "first_junior": is_first_junior_date,
-                "skip_guard": self._skip_race_once,
-            }
-            self._log_planned_race_decision(
-                action="guard_evaluate",
-                plan_name=self.state.planned_race_name,
-                extra=guard_extra,
-            )
-            if not is_first_junior_date and not self._skip_race_once:
-                reason = f"Planned race: {self.state.planned_race_name}"
-                self._log_planned_race_decision(
-                    action="enter_race",
-                    plan_name=self.state.planned_race_name,
-                    reason="guard_passed",
-                    extra=guard_extra,
-                )
-                self._skip_race_once = False
-                return "TO_RACE", reason
-            else:
-                suppression_reasons = []
-                if is_first_junior_date:
-                    suppression_reasons.append("first_junior_date")
-                if self._skip_race_once:
-                    suppression_reasons.append("skip_guard")
-                self._log_planned_race_decision(
-                    action="guard_suppressed",
-                    plan_name=self.state.planned_race_name,
-                    reason=",".join(suppression_reasons) or "unknown",
-                    extra=guard_extra,
-                )
-                logger_uma.debug(
-                    "[lobby] Planned race suppressed by first-junior-day/skip flag."
-                )
-            self._skip_race_once = False
-            self._skip_guard_key = None
-
-        if self.process_on_demand:
-            self._process_turns_left(img, dets)
-
-        if self.state.turn <= self.max_critical_turn:
-            if not self._skip_race_once and self.state.energy is not None and self.state.energy > 2:
-                # [Optimization] 10 steps for goal, or unknown turns or -1 turns, check goal
-                outcome_bool, reason = self._maybe_do_goal_race(img, dets)
-                if outcome_bool:
-                    return "TO_RACE", reason
-
-        # After special-case goal racing, clear the one-shot skip guard.
-        self._skip_race_once = False
-
-        if self.process_on_demand:
-            self.state.infirmary_on = extract_infirmary_on(img, dets, threshold=0.60)
-
-        # --- Infirmary handling (only outside summer) ---
-        if self.state.infirmary_on and (self.state.is_summer is False):
-            if self._go_infirmary():
-                return "INFIRMARY", "Infirmary to remove blue condition"
-
-        # --- Energy management (rest) ---
-        if self.state.energy is not None:
-            if self.state.energy <= self.auto_rest_minimum:
-                reason = f"Energy too low, resting: auto_rest_minimum={self.auto_rest_minimum}"
-                if self._go_rest(reason=reason):
-                    return "RESTED", reason
-            elif (
-                self.state.energy <= 50
-                and self.state.date_info
-                and is_summer_in_two_or_less_turns(self.state.date_info)
-            ):
-                reason = "Resting to prepare for summer"
-                if self._go_rest(reason=reason):
-                    return "RESTED", reason
-
-        if self.process_on_demand:
-            self.state.mood = extract_mood(self.ocr, img, dets, conf_min=0.3)
-
-        if self.state.mood[-1] < 0:
-            logger_uma.warning("UNKNOWN mood!")
-        # --- Mood (for training policy)---
-        # Navigate to Training if nothing else
-
-        if self._go_training_screen_from_lobby(img, dets):
-            return "TO_TRAINING", "No critical stuff going to train"
-
-        return "CONTINUE", "Unknown"
+        raise NotImplementedError
 
     def _update_stats(self, img, dets) -> None:
         """
@@ -317,10 +167,9 @@ class LobbyFlow:
 
         # lazy init of helper state
         if not hasattr(self, "_stats_last_pred"):
-            self._stats_last_pred = {k: -1 for k in KEYS}  # last raw OCR per key
-        if not hasattr(self, "_stats_pending"):  # pending large jump candidates
+            self._stats_last_pred = {k: -1 for k in KEYS}
+        if not hasattr(self, "_stats_pending"):
             self._stats_pending = {k: None for k in KEYS}
-        # pending big downward corrections
         if not hasattr(self, "_stats_pending_down"):
             self._stats_pending_down = {k: None for k in KEYS}
         if not hasattr(self, "_stats_pending_down_count"):
@@ -328,12 +177,9 @@ class LobbyFlow:
         if not hasattr(self, "_stats_pending_count"):
             self._stats_pending_count = {k: 0 for k in KEYS}
         if not hasattr(self, "_stats_stable_count"):
-            # how long the currently accepted value has been kept
             self._stats_stable_count = {k: 0 for k in KEYS}
         if not hasattr(self, "_stats_artificial"):
-            # keys whose current value was imputed (avg). Real reads must overwrite immediately.
             self._stats_artificial = set()
-        # track "suspect" state after accepting a big upward jump
         if not hasattr(self, "_stats_suspect_until"):
             self._stats_suspect_until = {k: 0 for k in KEYS}
         if not hasattr(self, "_stats_prejump_value"):
@@ -573,19 +419,9 @@ class LobbyFlow:
         # advance counter
         self._stats_refresh_counter += 1
 
+    @abstractmethod
     def _update_state(self, img, dets) -> None:
-        # Skill points, goal & energy
-        self.state.skill_pts = extract_skill_points(self.ocr, img, dets)
-        self.state.goal = extract_goal_text(self.ocr, img, dets)
-        self.state.energy = extract_energy_pct(img, dets)
-
-        self._update_stats(img, dets)
-        # Turns & career date parsing
-        self._process_turns_left(img, dets)
-        self._process_date_info(img, dets)
-        # Infirmary & mood
-        self.state.infirmary_on = extract_infirmary_on(img, dets, threshold=0.60)
-        self.state.mood = extract_mood(self.ocr, img, dets, conf_min=0.3)
+        raise NotImplementedError
 
     def _process_date_info(self, img, dets) -> None:
         """
@@ -596,8 +432,15 @@ class LobbyFlow:
         """
         WARMUP_FRAMES = 2
         PERSIST_FRAMES = 2
-        MAX_SUSP_JUMP_HALVES = 6  # same spirit as forward jump guard
-        raw = extract_career_date(self.ocr, img, dets)
+        MAX_SUSP_JUMP_HALVES = 6
+        raw = extract_career_date(
+            self.ocr,
+            img,
+            dets,
+            layout=self.date_layout,
+            turns_class=self.date_turns_class,
+            goal_class=self.date_goal_class,
+        )
         cand = parse_career_date(raw) if raw else None
 
         prev: Optional[DateInfo] = getattr(self.state, "date_info", None)
@@ -967,26 +810,9 @@ class LobbyFlow:
         self._skip_race_once = True
         self._skip_guard_key = date_key
 
+    @abstractmethod
     def _process_turns_left(self, img, dets):
-        new_turn = extract_turns(self.ocr, img, dets)
-        if new_turn != -1:
-            ref_turn = self.last_turns_left_prediction or self.state.turn or -1
-            diff = abs(ref_turn - new_turn)
-            if diff < 5 or ref_turn == -1 or self.state.turn <= 2:
-                # accept only if new change is not to big, or if last detected turn was near to finish turns left
-                self.state.turn = new_turn
-            elif self.state.turn > 1:
-                logger_uma.debug(
-                    f"Naive prediction. Last turn was: {self.state.turn}, so now it should be at most {self.state.turn - 1}"
-                )
-                self.state.turn -= 1
-        elif self.state.turn > 0:
-            # Naive prediction
-            logger_uma.debug(
-                f"Naive prediction. Last turn was: {self.state.turn}, so now it should be at most {self.state.turn - 1}"
-            )
-            self.state.turn -= 1
-        self.last_turns_left_prediction = new_turn
+        raise NotImplementedError
 
     def _maybe_do_goal_race(self, img, dets) -> Tuple[bool, str]:
         """Implements the critical-goal race logic from your old Lobby branch."""
@@ -997,7 +823,15 @@ class LobbyFlow:
         goal = (self.state.goal or "").lower()
 
         there_is_progress_text = fuzzy_contains(goal, "progress", threshold=0.58)
-        critical_goal_fans = there_is_progress_text or (
+        
+        # Detect "Win Maiden race" or similar race-winning goals
+        critical_goal_win_race = (
+            fuzzy_contains(goal, "win", 0.58)
+            and fuzzy_contains(goal, "maiden", 0.58)
+            and fuzzy_contains(goal, "race", 0.58)
+        )
+        
+        critical_goal_fans = there_is_progress_text or critical_goal_win_race or (
             fuzzy_contains(goal, "go", 0.58)
             and fuzzy_contains(goal, "fan", 0.58)
             and not fuzzy_contains(goal, "achieve", 0.58)
@@ -1029,7 +863,7 @@ class LobbyFlow:
                 return True, f"[lobby] Critical goal G1 | turn={self.state.turn}"
             # Critical Fans
             elif critical_goal_fans:
-                return True, f"[lobby] Critical goal FANS | turn={self.state.turn}"
+                return True, f"[lobby] Critical goal FANS/MAIDEN | turn={self.state.turn}"
 
         return False, "Unknown"
 

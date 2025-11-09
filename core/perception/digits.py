@@ -9,7 +9,7 @@ RESAMPLE_BILINEAR = getattr(getattr(Image, "Resampling", Image), "BILINEAR")
 
 import torch
 import torch.nn.functional as F
-from pytorchcv.model_provider import get_model as ptcv_get_model
+# from pytorchcv.model_provider import get_model as ptcv_get_model
 
 
 def _patch_pytorchcv_utf8() -> None:
@@ -20,7 +20,7 @@ def _patch_pytorchcv_utf8() -> None:
     """
     try:
         import csv
-        from pytorchcv.models.common import model_store as _ms
+        # from pytorchcv.models.common import model_store as _ms
 
         def _load_csv_utf8(path: str):
             with open(path, "r", encoding="utf-8", newline="") as f:
@@ -177,12 +177,12 @@ class TorchClassifier:
         return val, conf
 
 
-def load_svhn_resnet20() -> TorchClassifier:
-    _patch_pytorchcv_utf8()
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    net = ptcv_get_model("resnet20_svhn", pretrained=True)
-    net.eval().to(device)
-    return TorchClassifier("resnet20_svhn", net, device)
+# def load_svhn_resnet20() -> TorchClassifier:
+#     _patch_pytorchcv_utf8()
+#     device = "cuda" if torch.cuda.is_available() else "cpu"
+#     net = ptcv_get_model("resnet20_svhn", pretrained=True)
+#     net.eval().to(device)
+#     return TorchClassifier("resnet20_svhn", net, device)
 
 
-resnet20 = load_svhn_resnet20()
+# resnet20 = load_svhn_resnet20()
