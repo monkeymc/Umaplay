@@ -17,7 +17,6 @@ from core.perception.ocr.interface import OCRInterface
 from core.perception.yolo.interface import IDetector
 from core.agent_scenario import AgentScenario
 from core.settings import Settings
-from core.types import TrainAction
 from core.utils.logger import logger_uma
 from core.utils.text import fuzzy_contains
 from core.utils.training_policy_utils import click_training_tile
@@ -30,6 +29,7 @@ from core.utils.geometry import crop_pil
 from core.perception.is_button_active import ActiveButtonClassifier
 import time
 import random
+from core.types import TrainAction
 
 class AgentUnityCup(AgentScenario):
     def __init__(
@@ -272,12 +272,26 @@ class AgentUnityCup(AgentScenario):
                 )
                 continue
 
-            if screen == "EventGolden":
+            if screen == "Inspiration":
                 self.patience = 0
                 self.claw_turn = 0
                 button_golden = find_best(dets, "button_golden", conf_min=0.4)
+                
+                
                 if button_golden:
                     self.ctrl.click_xyxy_center(button_golden["xyxy"], clicks=1)
+                continue
+
+            if screen == "KashimotoTeam":
+                self.patience = 0
+                self.claw_turn = 0
+                button_golden = find_best(dets, "button_golden", conf_min=0.4)
+                
+                
+                if button_golden:
+                    self.ctrl.click_xyxy_center(button_golden["xyxy"], clicks=1)
+                    sleep(1.5)
+                    self.begin_showdown(img, dets)
                 continue
 
             if screen == "Raceday":
@@ -421,93 +435,8 @@ class AgentUnityCup(AgentScenario):
                             tag="unity_cup_click_button_green",
                         ):
                             logger_uma.info("[UnityCup] Clicked button_green")
-                            sleep(2)
-                            if self.waiter.click_when(
-                                classes=("button_green",),
-                                texts=("BEGIN", "SHOWDOWN", "SHOWDOWN!"),
-                                allow_greedy_click=False,
-                                tag="unity_cup_click_showdown",
-                            ):
-                                logger_uma.info("[UnityCup] Clicked begin showdown")
-                                sleep(5)
-                                # Wait up to 10 seconds for race_after_next to appear
-                                t0 = time.time()
-                                race_after_next_found = False
-                                
-                                while (time.time() - t0) < 10.0:
-                                    if self.waiter.seen(
-                                        classes=("race_after_next",),
-                                        tag="unity_cup_check_race_after_next"
-                                    ):
-                                        race_after_next_found = True
-                                        break
-                                    time.sleep(0.5)
-                                
-                                if race_after_next_found:
-                                    # Now check if it's active
-                                    img, _, dets = self.yolo_engine.recognize(
-                                        imgsz=self.imgsz,
-                                        conf=self.conf,
-                                        iou=self.iou,
-                                        agent=self.agent_name,
-                                        tag="unity_cup_banners",
-                                    )
-                                    race_after_next_det = next((d for d in dets if d.get("name") == "race_after_next"), None)
-                                    
-                                    if race_after_next_det:
-                                        clf = ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH)
-                                        crop = crop_pil(img, race_after_next_det["xyxy"])
-                                        try:
-                                            p = float(clf.predict_proba(crop))
-                                            is_active = p >= 0.51
-                                            logger_uma.debug("[unity_cup] race_after_next active probability: %.3f", p)
-                                        except Exception:
-                                            is_active = False
-                                            logger_uma.debug("[unity_cup] race_after_next inactive")
-                                        
-                                        if is_active:
-                                            self.ctrl.click_xyxy_center(race_after_next_det["xyxy"], clicks=1)
-                                            logger_uma.debug("[unity_cup] Clicked race after next first")
-                                        else:
-                                            button_pink = next((d for d in dets if d.get("name") == "button_pink"), None)
-                                            if button_pink:
-                                                self.ctrl.click_xyxy_center(button_pink["xyxy"], clicks=1)
-                                                logger_uma.debug("[unity_cup] clicked Watch Main Race because other button was disabled")
-                                        sleep(3)
-                                        # Skip button loop (same pattern as race.py)
-                                        skip_clicks = 0
-                                        t0 = time.time()
-                                        while (time.time() - t0) < 5.0 and skip_clicks < 1:  # Max 12s of skip attempts
-                                            if self.waiter.click_when(
-                                                classes=("button_skip",),
-                                                prefer_bottom=True,
-                                                timeout_s=2.0,
-                                                clicks=random.randint(3, 5),  # 3-5 clicks per detection
-                                                tag="unity_cup_skip"
-                                            ):
-                                                skip_clicks += 1
-                                            time.sleep(0.12)  # Brief pause between attempts
-                                        sleep(2)
-                                        if skip_clicks > 0:
-                                            logger_uma.debug(f"[unity_cup] Completed skip sequence (clicks={skip_clicks})")
-                                            if self.waiter.click_when(
-                                                classes=("button_green",),
-                                                texts=("NEXT", ),
-                                                allow_greedy_click=True,
-                                                timeout_s=2.0,
-                                                tag="unity_cup_next"
-                                            ):
-                                                sleep(5)
-                                                if self.waiter.click_when(
-                                                    classes=("race_after_next",),
-                                                    allow_greedy_click=True,
-                                                    tag="unity_cup_race_after_next",
-                                                ):
-                                                    logger_uma.debug("[unity_cup] Clicked race_after_next")
-                                                    sleep(3)
-                                    else:
-                                        logger_uma.debug(f"[unity_cup] No race after next found")
-
+                            sleep(1.5)
+                            self.begin_showdown(img, dets)
                         else:
                             logger_uma.warning("[UnityCup] button_green not found")
                     else:
@@ -647,14 +576,7 @@ class AgentUnityCup(AgentScenario):
                     bought = self.skills_flow.buy(self.skill_list)
                     self._last_skill_buy_succeeded = bool(bought)
                     logger_uma.info(f"[agent] Skills bought: {bought}")
-                    self.is_running = False  # end of career
-                    logger_uma.info("Detected end of career")
-                    try:
-                        self.skill_memory.reset(persist=True)
-                        logger_uma.info("[skill_memory] Reset after career completion")
-                    except Exception as exc:
-                        logger_uma.error("[skill_memory] reset failed: %s", exc)
-
+                    
                     # pick = det_filter(dets, ["lobby_skills"])[-1]
                     # x1 = pick["xyxy"][0]
                     # y1 = pick["xyxy"][1]
@@ -665,7 +587,14 @@ class AgentUnityCup(AgentScenario):
                     # x1 += btn_width + btn_width // 10
                     # x2 += btn_width + btn_width // 10
                     # self.ctrl.click_xyxy_center((x1, y1, x2, y2), clicks=1, jitter=1)
-                    continue
+                self.is_running = False  # end of career
+                logger_uma.info("Detected end of career")
+                try:
+                    self.skill_memory.reset(persist=True)
+                    logger_uma.info("[skill_memory] Reset after career completion")
+                except Exception as exc:
+                    logger_uma.error("[skill_memory] reset failed: %s", exc)
+                continue
 
             if screen == "ClawMachine":
                 self.claw_turn += 1
@@ -844,3 +773,223 @@ class AgentUnityCup(AgentScenario):
 
         # Fallback: nothing to do
         logger_uma.debug("[training] No actionable decision.")
+
+    def begin_showdown(self, img, dets):
+        if self.waiter.click_when(
+            classes=("button_green",),
+            texts=("BEGIN", "SHOWDOWN", "SHOWDOWN!"),
+            allow_greedy_click=False,
+            tag="unity_cup_click_showdown",
+        ):
+            logger_uma.info("[UnityCup] Clicked begin showdown")
+            sleep(5)
+            # Wait up to 10 seconds for race_after_next to appear
+            t0 = time.time()
+            race_after_next_found = False
+            
+            while (time.time() - t0) < 10.0:
+                if self.waiter.seen(
+                    classes=("race_after_next",),
+                    tag="unity_cup_check_race_after_next"
+                ):
+                    race_after_next_found = True
+                    break
+                time.sleep(0.5)
+            
+            if race_after_next_found:
+                # Now check if it's active
+                img, _, dets = self.yolo_engine.recognize(
+                    imgsz=self.imgsz,
+                    conf=self.conf,
+                    iou=self.iou,
+                    agent=self.agent_name,
+                    tag="unity_cup_banners",
+                )
+                race_after_next_det = next((d for d in dets if d.get("name") == "race_after_next"), None)
+                
+                if race_after_next_det:
+                    clf = ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH)
+                    crop = crop_pil(img, race_after_next_det["xyxy"])
+                    try:
+                        p = float(clf.predict_proba(crop))
+                        is_active = p >= 0.51
+                        logger_uma.debug("[unity_cup] race_after_next active probability: %.3f", p)
+                    except Exception:
+                        is_active = False
+                        logger_uma.debug("[unity_cup] race_after_next inactive")
+                    
+                    if is_active:
+                        self.ctrl.click_xyxy_center(race_after_next_det["xyxy"], clicks=1)
+                        logger_uma.debug("[unity_cup] Clicked race after next first")
+                        sleep(3)
+                        # Skip button loop (same pattern as race.py)
+                        skip_clicks = 0
+                        t0 = time.time()
+                        while (time.time() - t0) < 5.0 and skip_clicks < 1:  # Max 12s of skip attempts
+                            if self.waiter.click_when(
+                                classes=("button_skip",),
+                                prefer_bottom=True,
+                                timeout_s=2.0,
+                                clicks=random.randint(3, 5),  # 3-5 clicks per detection
+                                tag="unity_cup_skip"
+                            ):
+                                skip_clicks += 1
+                            time.sleep(0.12)  # Brief pause between attempts
+                        sleep(2)
+                        if skip_clicks > 0:
+                            logger_uma.debug(f"[unity_cup] Completed skip sequence (clicks={skip_clicks})")
+                            if self.waiter.click_when(
+                                classes=("button_green",),
+                                texts=("NEXT", ),
+                                allow_greedy_click=True,
+                                timeout_s=2.0,
+                                tag="unity_cup_next"
+                            ):
+                                sleep(5)
+                                if self.waiter.click_when(
+                                    classes=("race_after_next",),
+                                    allow_greedy_click=True,
+                                    tag="unity_cup_race_after_next",
+                                ):
+                                    logger_uma.debug("[unity_cup] Clicked race_after_next")
+                                    sleep(3)
+                    else:
+                        button_pink = next((d for d in dets if d.get("name") == "button_pink"), None)
+                        if button_pink:
+                            self.ctrl.click_xyxy_center(button_pink["xyxy"], clicks=1)
+                            logger_uma.debug("[unity_cup] clicked Watch Main Race because other button was disabled")
+                            sleep(5)
+                            if self.waiter.click_when(
+                                classes=("button_green",),
+                                texts=("RACE", ),
+                                allow_greedy_click=True,
+                                timeout_s=2.0,
+                                tag="unity_cup_kashimoto_next"
+                            ):
+                                sleep(5)
+                                if self.waiter.click_when(
+                                    classes=("button_green",),
+                                    texts=("RACE", ),
+                                    allow_greedy_click=True,
+                                    timeout_s=5.0,
+                                    tag="unity_cup_kashimoto_next_race_2"
+                                ):
+                                    sleep(2)
+                                    # Reactive second confirmation. Click as soon as popup appears,
+                                    # or bail early if the pre-race lobby appears or skip buttons show up.
+                                    t0 = time.time()
+                                    seen_skip = False
+                                    while (time.time() - t0) < 12.0:
+                                        # If the confirmation 'RACE' appears, click it immediately.
+                                        if self.waiter.click_when(
+                                            classes=("button_green",),
+                                            texts=("RACE", "NEXT"),
+                                            prefer_bottom=True,
+                                            timeout_s=0.3,
+                                            tag="race_lobby_race_confirm_try",
+                                        ):
+                                            logger_uma.debug("[race] Clicked RACE confirmation")
+                                            time.sleep(0.5)
+                                        # If we already transitioned into race (skip buttons), stop waiting.
+                                        if self.waiter.seen(
+                                            classes=("button_skip",), tag="race_lobby_seen_skip"
+                                        ):
+                                            seen_skip = True
+                                            logger_uma.debug("[race] Seen skip buttons, breaking to click them")
+                                            break
+                                        time.sleep(0.5)
+                                    logger_uma.debug(f"[race] Seen skip buttons: {seen_skip}")
+                                    if not seen_skip:
+                                        # search again for green 'Next' or 'RACE' button
+                                        if not self.waiter.click_when(
+                                            classes=("button_green",),
+                                            texts=("RACE", "NEXT"),
+                                            prefer_bottom=True,
+                                            timeout_s=6,
+                                            tag="race_lobby_race_click_retry",
+                                        ):
+                                            logger_uma.error("[race] Race button not found after ~6s of retries. "
+                                            "Cannot determine lobby state. Aborting race operation.")
+                                            
+                                    time.sleep(4)
+                                    logger_uma.debug("[race] Starting skip loop")
+                                    # Greedy skip: keep pressing while present; stop as soon as 'CLOSE' or 'NEXT' shows.
+                                    closed_early = False
+                                    skip_clicks = 0
+                                    t0 = time.time()
+                                    total_time = 12.0
+                                    while (time.time() - t0) < total_time:
+                                        #  - next visible → stop skipping; later logic will handle NEXT
+                                        if self.waiter.seen(
+                                            classes=("button_green",), tag="race_skip_probe_next",
+                                            conf_min=0.65,
+                                        ) and skip_clicks > 2:
+                                            logger_uma.debug("[race] Seen next button while looking for skip, breaking to click it")
+                                            break
+
+                                        # Otherwise try to click a skip on this frame.
+                                        if self.waiter.click_when(
+                                            classes=("button_skip",),
+                                            prefer_bottom=True,
+                                            timeout_s=1,
+                                            clicks=random.randint(3, 5),
+                                            tag="race_skip_try",
+                                        ):
+                                            logger_uma.debug("[race] Clicked skip button")
+                                            skip_clicks += 1
+                                            total_time += 2
+                                            continue
+                                        time.sleep(0.12)
+                                    logger_uma.debug(
+                                        "[race kashimoto] Looking for button_green 'Next' button. Shown after race."
+                                    )
+                                    self.waiter.click_when(
+                                        classes=("button_green",),
+                                        texts=("NEXT",),
+                                        prefer_bottom=True,
+                                        timeout_s=4.6,
+                                        clicks=3,
+                                        tag="race_kashimoto_after_flow_next",
+                                    )
+                                    sleep(1.5)
+                                    logger_uma.debug(
+                                        "[race kashimoto] Looking for button_green 'Next' button 2. Shown after race."
+                                    )
+                                    self.waiter.click_when(
+                                        classes=("button_green",),
+                                        texts=("NEXT",),
+                                        prefer_bottom=True,
+                                        timeout_s=3,
+                                        clicks=3,
+                                        tag="race_kashimoto_after_flow_next_2",
+                                    )
+                                    # song...
+                                    sleep(80)
+                                    logger_uma.debug("[race kashimoto] Looking for CLOSE button.")
+                                    self.waiter.click_when(
+                                        classes=("button_white",),
+                                        texts=("CLOSE",),
+                                        prefer_bottom=False,
+                                        allow_greedy_click=False,
+                                        timeout_s=3,
+                                        tag="race_trophy",
+                                    )
+                                    sleep(1.5)
+                                    # 'Next' special
+                                    logger_uma.debug(
+                                        "[race kashimoto] Looking for race_after_next special button. When Pyramid"
+                                    )
+
+                                    self.waiter.click_when(
+                                        classes=("race_after_next",),
+                                        texts=("NEXT",),
+                                        prefer_bottom=True,
+                                        timeout_s=8.0,
+                                        clicks=random.randint(2, 4),
+                                        tag="race_after",
+                                    )
+
+                            
+                    
+                else:
+                    logger_uma.debug(f"[unity_cup] No race after next found")

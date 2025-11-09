@@ -318,6 +318,80 @@
 		]
 	},
 	{
+		"type": "scenario",
+		"name": "Unity Cup",
+		"rarity": "None",
+		"attribute": "None",
+		"choice_events": [
+			{
+				"type": "special",
+				"chain_step": 1,
+				"name": "Tutorial",
+				"options": {
+					"1": [
+						{
+							"bond": 0
+						}
+					],
+					"2": [
+						{
+							"bond": 0
+						}
+					]
+				},
+				"default_preference": 2
+			},
+			{
+				"type": "special",
+				"chain_step": 1,
+				"name": "A Team at Last",
+				"options": {
+					"1": [
+						{
+							"team": "Happy Hoppers, like Taiki suggested",
+							"hints": [
+								"Mile Maven"
+							]
+						}
+					],
+					"2": [
+						{
+							"team": "Sunny Runners, like Fukukitaru suggested",
+							"hints": [
+								"Clairvoyance"
+							]
+						}
+					],
+					"3": [
+						{
+							"team": "Carrot Pudding, like Haru suggested",
+							"hints": [
+								"Indomitable"
+							]
+						}
+					],
+					"4": [
+						{
+							"team": "Blue Bloom, like Rice suggested",
+							"hints": [
+								"Cooldown"
+							]
+						}
+					],
+					"5": [
+						{
+							"team": "Team Carrot",
+							"hints": [
+								"No Stopping Me!"
+							]
+						}
+					]
+				},
+				"default_preference": 5
+			}
+		]
+	},
+	{
 		"type": "trainee",
 		"name": "general",
 		"rarity": "None",

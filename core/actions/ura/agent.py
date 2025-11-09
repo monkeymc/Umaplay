@@ -518,14 +518,7 @@ class AgentURA(AgentScenario):
                     bought = self.skills_flow.buy(self.skill_list)
                     self._last_skill_buy_succeeded = bool(bought)
                     logger_uma.info(f"[agent] Skills bought: {bought}")
-                    self.is_running = False  # end of career
-                    logger_uma.info("Detected end of career")
-                    try:
-                        self.skill_memory.reset(persist=True)
-                        logger_uma.info("[skill_memory] Reset after career completion")
-                    except Exception as exc:
-                        logger_uma.error("[skill_memory] reset failed: %s", exc)
-
+                    
                     # pick = det_filter(dets, ["lobby_skills"])[-1]
                     # x1 = pick["xyxy"][0]
                     # y1 = pick["xyxy"][1]
@@ -536,7 +529,15 @@ class AgentURA(AgentScenario):
                     # x1 += btn_width + btn_width // 10
                     # x2 += btn_width + btn_width // 10
                     # self.ctrl.click_xyxy_center((x1, y1, x2, y2), clicks=1, jitter=1)
-                    continue
+                self.is_running = False  # end of career
+                logger_uma.info("Detected end of career")
+                try:
+                    self.skill_memory.reset(persist=True)
+                    logger_uma.info("[skill_memory] Reset after career completion")
+                except Exception as exc:
+                    logger_uma.error("[skill_memory] reset failed: %s", exc)
+                continue
+
 
             if screen == "ClawMachine":
                 self.claw_turn += 1

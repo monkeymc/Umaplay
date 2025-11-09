@@ -41,7 +41,8 @@ ScreenName = Literal[
     "EventStale",
     "Unknown",
     "UnityCupRaceday",
-    "EventGolden"
+    "EventGolden",
+    "KashimotoTeam",
 ]
 
 
@@ -71,6 +72,7 @@ class ScreenInfo(TypedDict, total=False):
     has_button_claw_action: bool
     has_claw: bool
     counts: Dict[str, int]
+    has_button_white: bool
 
 
 # ---------- Training scan structures ----------

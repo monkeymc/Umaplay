@@ -170,6 +170,7 @@ def classify_screen_unity_cup(
       - 'LobbySummer' → has 'lobby_tazuna' AND 'lobby_rest_summer'
                          AND NOT 'lobby_rest' AND NOT 'lobby_recreation'
       - 'Lobby'       → has 'lobby_tazuna' AND (has 'lobby_infirmary' or not require_infirmary)
+      - 'KashimotoTeam' → has 'button_golden' AND 'button_white'
       - else 'Unknown'
     """
     names_map = names_map or {
@@ -186,7 +187,9 @@ def classify_screen_unity_cup(
         "lobby_skills": "lobby_skills",
         "button_claw_action": "button_claw_action",
         "claw": "claw",
-
+        "button_white": "button_white",
+        "button_green": "button_green",
+        "button_pink": "button_pink",
     }
 
     counts = Counter(d["name"] for d in dets)
@@ -235,13 +238,25 @@ def classify_screen_unity_cup(
     has_claw = any(
         d["name"] == names_map["claw"] and d["conf"] >= lobby_conf for d in dets
     )
-
+    has_button_white = any(
+        d["name"] == names_map["button_white"] and d["conf"] >= lobby_conf for d in dets
+    )
+    has_button_green = any(
+        d["name"] == names_map["button_green"] and d["conf"] >= lobby_conf for d in dets
+    )
+    has_button_pink = any(
+        d["name"] == names_map["button_pink"] and d["conf"] >= lobby_conf for d in dets
+    )
+    
+    
     # 1) Event
     if n_event_choices >= 2:
         return "Event", {"event_choices": n_event_choices}
 
     if has_golden:
-        return "EventGolden", {"has_golden": has_golden}
+        if has_button_white:
+            return "KashimotoTeam", {"has_golden": has_golden, "has_button_white": has_button_white}
+        return "Inspiration", {"has_golden": has_golden}
 
     if has_race_day:
         if has_tazuna:
@@ -269,8 +284,8 @@ def classify_screen_unity_cup(
             "has_lobby_skills": has_lobby_skills,
         }
 
-    if (len(dets) == 2 and has_lobby_skills and race_after_next) or (
-        len(dets) <= 2 and has_lobby_skills
+    if (
+        len(dets) <= 3 and has_lobby_skills and has_button_pink
     ):
         return "FinalScreen", {
             "has_lobby_skills": has_lobby_skills,
