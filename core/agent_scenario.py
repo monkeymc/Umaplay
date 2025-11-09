@@ -1,4 +1,4 @@
-# core/agent_ura.py
+# core/agent.py
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -8,32 +8,17 @@ from typing import Any, Dict, List, Optional, Tuple
 from core.actions.claw import ClawGame
 from core.actions.events import EventFlow
 from core.actions.lobby import LobbyFlow
-from core.actions.ura.lobby import LobbyFlowURA
 from core.actions.race import RaceFlow
 from core.actions.skills import SkillsFlow
-from core.actions.ura.training_policy import (
-    TrainAction,
-    click_training_tile,
-    check_training,
-)
+
 from core.controllers.base import IController
-from core.perception.analyzers.screen import classify_screen
-from core.perception.extractors.state import (
-    extract_energy_pct,
-    extract_goal_text,
-    extract_skill_points,
-    find_best,
-)
 from core.perception.ocr.interface import OCRInterface
 from core.perception.yolo.interface import IDetector
 from core.settings import Settings
 from core.utils.logger import logger_uma
-from core.utils.text import fuzzy_contains
 from core.utils.skill_memory import SkillMemoryManager
 from core.utils.date_uma import date_index as uma_date_index
 from core.utils.waiter import PollConfig, Waiter
-from core.actions.race import ConsecutiveRaceRefused
-from core.utils.abort import abort_requested
 from core.utils.event_processor import CATALOG_JSON, Catalog, UserPrefs
 from core.utils.race_index import RaceIndex
 

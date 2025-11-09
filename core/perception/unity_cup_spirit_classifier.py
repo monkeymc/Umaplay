@@ -74,7 +74,7 @@ def _build_val_tfms(size_wh: Tuple[int, int]):
     """Resize + ToTensor (must match training VAL transforms)."""
     w, h = size_wh
     return transforms.Compose([
-        transforms.Resize((h, w), interpolation=Image.BICUBIC),
+        transforms.Resize((h, w), interpolation=Image.Resampling.BICUBIC),
         transforms.ToTensor(),  # -> float32 [0,1], CHW
     ])
 

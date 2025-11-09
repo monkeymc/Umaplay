@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Iterable, Iterator, Tuple
 
-from core.actions.training_policy import TrainAction
+from core.types import TrainAction
 from core.utils.date_uma import DateInfo, parse_career_date
 
 

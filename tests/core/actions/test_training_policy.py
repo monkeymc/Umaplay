@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 
-from core.actions.training_policy import TrainAction, decide_action_training
+from core.actions.ura.training_policy import decide_action_training
 from tests.fixtures.training_policy import iter_policy_scenarios
 
 

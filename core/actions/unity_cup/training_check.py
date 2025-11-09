@@ -1,22 +1,11 @@
 
 from __future__ import annotations
 
-import time
-from typing import Dict, List, Optional, Tuple, Union
-import random
-
-import numpy as np
-from PIL import Image
-
-
-from core.actions.training_check import BLUE_GREEN, ORANGE_MAX, TileSV
-from core.perception.yolo.interface import IDetector
+from typing import Dict, List, Optional, Tuple
 from core.settings import Settings
-from core.types import DetectionDict
-from core.utils.geometry import calculate_jitter
-from core.utils.logger import logger_uma
 from core.utils.skill_memory import SkillMemoryManager
 from typing import Any
+from core.types import BLUE_GREEN, ORANGE_MAX, TileSV
 
 
 # ---- knobs you may want to tweak later (kept here for clarity) ----
@@ -176,7 +165,7 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
 
             if sname == "support_tazuna":
                 # PAL rules
-                if color in ("blue",):       score = 0.5
+                if color in ("blue",):       score = 1.5
                 elif color in ("green",):       score = 0.25
                 elif color in ("orange",):          score = 0.15
                 elif color in ("yellow",) or is_max: score = 0.10
@@ -189,10 +178,10 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
             if sname == "support_kashimoto":
                 # If she shows any support_type → treat as PAL; else as Director
                 if stype in KNOWN_TYPES and stype != "":
-                    if color in ("blue",):       score = 0.5
+                    if color in ("blue",):       score = 1.5
                     elif color in ("green",):       score = 0.25
                     elif color in ("orange",):          score = 0.15
-                    elif color in ("yellow",) or is_max: score = 0.10
+                    elif color in ("yellow", "max") or is_max: score = 0.10
                     else:                                 score = 0.0
                     sv_total += score
                     sv_by_type["special_kashimoto_pal"] = sv_by_type.get("special_kashimoto_pal", 0.0) + score
@@ -299,7 +288,7 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
         # White combo (only for not-exploded/flame filling) + tiny weight for exploded inside combo
         white_combo = 0.0
         if n_white_fill >= 2:
-            white_combo += 0.25 * (2.0 * n_white_fill - 1.0)  # 2→0.75, 3→1.25, ...
+            white_combo += 0.25 + 0.25 * n_white_fill  # 2→0.75, 3→1.0, ...
         if (n_white_fill + n_white_exploded) >= 2:
             white_combo += 0.01 * n_white_exploded
         if white_combo > 0:

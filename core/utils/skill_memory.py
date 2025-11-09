@@ -261,7 +261,8 @@ class SkillMemoryManager:
             if turn is not None:
                 entry["last_turn"] = self._safe_int(turn)
             if increment:
-                entry["count"] = self._safe_int(entry.get("count"), default=0) + 1
+                count_val = self._safe_int(entry.get("count"), default=0)
+                entry["count"] = (count_val if count_val is not None else 0) + 1
             entry["updated_at"] = now
         if commit:
             self.save()

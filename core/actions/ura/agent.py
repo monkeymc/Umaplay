@@ -1,21 +1,14 @@
-# core/agent_ura.py
+# core/ura/gent.py
 from __future__ import annotations
 
 from time import sleep
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
-from core.actions.claw import ClawGame
-from core.actions.events import EventFlow
+from core.actions.training_policy import check_training
+from core.types import TrainAction
 from core.actions.ura.lobby import LobbyFlowURA
-from core.actions.race import RaceFlow
-from core.actions.skills import SkillsFlow
-from core.actions.ura.training_policy import (
-    TrainAction,
-    click_training_tile,
-    check_training,
-)
 from core.controllers.base import IController
-from core.perception.analyzers.screen import classify_screen
+from core.perception.analyzers.screen import classify_screen_ura
 from core.perception.extractors.state import (
     extract_energy_pct,
     extract_goal_text,
@@ -24,12 +17,13 @@ from core.perception.extractors.state import (
 )
 from core.perception.ocr.interface import OCRInterface
 from core.perception.yolo.interface import IDetector
-from core.agent import AgentScenario
+from core.agent_scenario import AgentScenario
 from core.settings import Settings
 from core.utils.logger import logger_uma
 from core.utils.text import fuzzy_contains
 from core.utils.skill_memory import SkillMemoryManager
 from core.utils.date_uma import date_index as uma_date_index
+from core.utils.training_policy_utils import click_training_tile
 from core.utils.waiter import PollConfig, Waiter
 from core.actions.race import ConsecutiveRaceRefused
 from core.utils.abort import abort_requested
@@ -125,7 +119,7 @@ class AgentURA(AgentScenario):
                 agent=self.agent_name,
             )
 
-            screen, _ = classify_screen(
+            screen, _ = classify_screen_ura(
                 dets,
                 lobby_conf=0.5,
                 require_infirmary=True,

@@ -13,9 +13,11 @@ from pathlib import Path
 import shutil
 import queue
 
+from core.actions.ura.agent import AgentURA
+from core.actions.unity_cup.agent import AgentUnityCup
+from core.agent_scenario import AgentScenario
 from core.utils.logger import logger_uma, setup_uma_logging
 from core.settings import Settings
-from core.agent_ura import AgentURA
 from core.agent_nav import AgentNav
 
 from server.main import app
@@ -210,7 +212,7 @@ def cleanup_debug_training_if_needed():
 class BotState:
     def __init__(self):
         self.thread: threading.Thread | None = None
-        self.player: AgentURA | None = None
+        self.agent_scenario: AgentScenario | None = None
         self.running: bool = False
         self._lock = threading.Lock()
 
@@ -265,31 +267,50 @@ class BotState:
             #    UserPrefs.from_config() returns safe defaults and EventFlow will still
             #    pick the top option if a pick is invalid at runtime.
             event_prefs = UserPrefs.from_config(cfg or {})
+            
 
-            # 6) Instantiate Player with runtime knobs from Settings + presets + event prefs
-            self.player = AgentURA(
-                ctrl=ctrl,
-                ocr=ocr,
-                yolo_engine=yolo_engine,
-                interval_stats_refresh=1,
-                minimum_skill_pts=preset_opts.get("minimum_skill_pts", Settings.MINIMUM_SKILL_PTS),
-                prioritize_g1=False,
-                auto_rest_minimum=Settings.AUTO_REST_MINIMUM,
-                plan_races=preset_opts["plan_races"],
-                skill_list=preset_opts["skill_list"],
-                select_style=preset_opts[
-                    "select_style"
-                ],  # "end"|"late"|"pace"|"front"|None
-                event_prefs=event_prefs,
-            )
+            if Settings.ACTIVE_SCENARIO == "unity_cup":
+                # Instantiate Player with runtime knobs from Settings + presets + event prefs
+                self.agent_scenario = AgentUnityCup(
+                    ctrl=ctrl,
+                    ocr=ocr,
+                    yolo_engine=yolo_engine,
+                    interval_stats_refresh=1,
+                    minimum_skill_pts=preset_opts.get("minimum_skill_pts", Settings.MINIMUM_SKILL_PTS),
+                    prioritize_g1=False,
+                    auto_rest_minimum=Settings.AUTO_REST_MINIMUM,
+                    plan_races=preset_opts["plan_races"],
+                    skill_list=preset_opts["skill_list"],
+                    select_style=preset_opts[
+                        "select_style"
+                    ],  # "end"|"late"|"pace"|"front"|None
+                    event_prefs=event_prefs,
+                )
+            else:
+                # Instantiate Player with runtime knobs from Settings + presets + event prefs
+                self.agent_scenario = AgentURA(
+                    ctrl=ctrl,
+                    ocr=ocr,
+                    yolo_engine=yolo_engine,
+                    interval_stats_refresh=1,
+                    minimum_skill_pts=preset_opts.get("minimum_skill_pts", Settings.MINIMUM_SKILL_PTS),
+                    prioritize_g1=False,
+                    auto_rest_minimum=Settings.AUTO_REST_MINIMUM,
+                    plan_races=preset_opts["plan_races"],
+                    skill_list=preset_opts["skill_list"],
+                    select_style=preset_opts[
+                        "select_style"
+                    ],  # "end"|"late"|"pace"|"front"|None
+                    event_prefs=event_prefs,
+                )
 
             def _runner():
                 re_init = False
                 try:
                     logger_uma.info("[BOT] Started.")
                     # if not none
-                    if self.player:
-                        self.player.run(
+                    if self.agent_scenario:
+                        self.agent_scenario.run(
                             delay=getattr(Settings, "MAIN_LOOP_DELAY", 0.4),
                             max_iterations=getattr(Settings, "MAX_ITERATIONS", None),
                         )
@@ -299,8 +320,8 @@ class BotState:
                             "Trying to recover from bot crash, connection to host was lost"
                         )
                         time.sleep(2)
-                        if self.player:
-                            self.player.run(
+                        if self.agent_scenario:
+                            self.agent_scenario.run(
                                 delay=getattr(Settings, "MAIN_LOOP_DELAY", 0.4),
                                 max_iterations=getattr(Settings, "MAX_ITERATIONS", None),
                             )
@@ -320,14 +341,14 @@ class BotState:
 
     def stop(self):
         with self._lock:
-            if not self.running or not self.player:
+            if not self.running or not self.agent_scenario:
                 logger_uma.info("[BOT] Not running.")
                 return
             logger_uma.info("[BOT] Stopping… (signal loop to exit)")
             request_abort()
-            self.player.is_running = False
+            self.agent_scenario.is_running = False
             try:
-                self.player.emergency_stop()
+                self.agent_scenario.emergency_stop()
             except Exception:
                 pass
 

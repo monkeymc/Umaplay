@@ -27,45 +27,10 @@ from core.utils.training_check_helpers import (
 )
 from core.scenarios.registry import registry
 
-RISK_RELAX_FACTOR = 1.5  # e.g., 20% -> 30% when SV is high
-
-# Director scoring by bar color (latest rule you wrote)
-DIRECTOR_SCORE_BY_COLOR = {
-    "blue": 0.25,  # "blue or less"
-    "green": 0.15,
-    "orange": 0.10,
-    "yellow": 0.00,  # max (or treat is_max as yellow)
-    "max": 0.00,  # alias
-}
-
-# What counts as blue/green vs orange/max for the standard supports
-BLUE_GREEN = {"blue", "green"}
-ORANGE_MAX = {"orange", "yellow"}
-
-
 def get_compute_support_values():
     """Resolve the correct compute_support_values function based on active scenario."""
     compute_fn, _ = registry.resolve(Settings.ACTIVE_SCENARIO)
     return compute_fn
-
-
-@dataclass
-class TileSV:
-    tile_idx: int
-    failure_pct: int
-    risk_limit_pct: int
-    allowed_by_risk: bool
-    sv_total: float
-    sv_by_type: Dict[str, float]
-    greedy_hit: bool
-    notes: List[str]
-
-    def as_dict(self) -> Dict[str, Any]:
-        d = asdict(self)
-        # optional rounding/pretty-printing
-        d["sv_total"] = float(f"{d['sv_total']:.2f}")
-        d["sv_by_type"] = {k: float(f"{v:.2f}") for k, v in d["sv_by_type"].items()}
-        return d
 
 def scan_training_screen(
     ctrl,
