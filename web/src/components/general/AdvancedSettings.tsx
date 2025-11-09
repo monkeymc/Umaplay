@@ -1,7 +1,7 @@
 import {
   Box, Collapse, Divider, FormControlLabel, MenuItem, Select, Slider, Stack, Switch, TextField, Typography,
 } from '@mui/material'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type SyntheticEvent } from 'react'
 import FieldRow from '@/components/common/FieldRow'
 import { useConfigStore } from '@/store/configStore'
 
@@ -50,6 +50,9 @@ export default function AdvancedSettings() {
   }
   const sliderSx = {
     width: '100%',
+    mt: '-2px',
+    mb: '-4px',
+    py: 0.5,
     '.MuiSlider-thumb': {
       width: 12,
       height: 12,
@@ -66,25 +69,71 @@ export default function AdvancedSettings() {
       height: 4,
       borderRadius: 2,
     },
-    '.MuiSlider-valueLabel': {
-      background: 'transparent',
-      color: 'inherit',
-      padding: 0,
-      borderRadius: 0,
-      fontSize: 16,
-      fontWeight: 800,
-      transform: 'translate(0%, 30px) scale(1)',
-      '&:before': { display: 'none' },
-    },
   } as const
+  const renderSliderControl = ({
+    id,
+    value,
+    min,
+    max,
+    step,
+    marks,
+    format,
+    onChange,
+    onCommit,
+  }: {
+    id: string
+    value: number
+    min: number
+    max: number
+    step: number
+    marks?: typeof autoRestMarks
+    format?: (v: number) => string
+    onChange: (event: Event | SyntheticEvent<Element, Event>, value: number | number[]) => void
+    onCommit: (event: Event | SyntheticEvent<Element, Event>, value: number | number[]) => void
+  }) => {
+    const percent = max === min ? 0 : ((value - min) / (max - min)) * 100
+    const formatted = format ? format(value) : `${value}`
+    return (
+      <Box sx={controlWrapSx} data-advanced-slider={id}>
+        <Box sx={{ position: 'relative', width: '100%' }}>
+          <Typography
+            component="span"
+            sx={{
+              position: 'absolute',
+              top: -14,
+              left: `${Math.min(100, Math.max(0, percent))}%`,
+              transform: 'translateX(-50%)',
+              fontWeight: 800,
+              fontSize: 16,
+              lineHeight: 1,
+              color: '#1976d2',
+            }}
+            data-advanced-slider-label
+          >
+            {formatted}
+          </Typography>
+          <Slider
+            value={value}
+            onChange={onChange}
+            onChangeCommitted={onCommit}
+            min={min}
+            max={max}
+            step={step}
+            marks={marks}
+            sx={sliderSx}
+          />
+        </Box>
+      </Box>
+    )
+  }
   const controlWrapSx = (theme: any) => ({
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     gap: 1,
     px: 1.5,
-    pt: 1.5,
-    pb: 3.5,
+    pt: 3,
+    pb: 1.75,
     border: `1px solid ${theme.palette.divider}`,
     borderRadius: 1.5,
     backgroundColor:
@@ -97,6 +146,29 @@ export default function AdvancedSettings() {
     maxWidth: 240,
     width: '100%',
   })
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const logLabelOffsets = () => {
+      document.querySelectorAll<HTMLElement>('[data-advanced-slider]').forEach((container) => {
+        const id = container.getAttribute('data-advanced-slider') ?? 'unknown'
+        const thumb = container.querySelector<HTMLElement>('.MuiSlider-thumb')
+        const label = container.querySelector<HTMLElement>('[data-advanced-slider-label]')
+        const sliderRoot = container.querySelector<HTMLElement>('.MuiSlider-root')
+        if (!thumb || !label) return
+        const thumbRect = thumb.getBoundingClientRect()
+        const labelRect = label.getBoundingClientRect()
+        const topGap = Math.round(thumbRect.top - labelRect.bottom)
+        const paddingTop = sliderRoot ? window.getComputedStyle(sliderRoot).paddingTop : null
+        console.debug('[AdvancedSettings] slider spacing', {
+          id,
+          topGap,
+          paddingTop,
+        })
+      })
+    }
+    logLabelOffsets()
+  }, [])
 
   return (
     <Stack spacing={1.5}>
@@ -179,142 +251,117 @@ export default function AdvancedSettings() {
         <FieldRow
           label="Auto rest minimum"
           info="Below this energy% the bot will rest automatically."
-          control={
-            <Box sx={controlWrapSx}>
-              <Slider
-                value={autoRest}
-                onChange={(_, v) => {
-                  const raw = toNumber(v)
-                  const next = raw <= 1 ? 1 : Math.max(5, Math.min(70, Math.round(raw / 5) * 5))
-                  setAutoRest(next)
-                }}
-                onChangeCommitted={(_, v) => {
-                  const raw = toNumber(v)
-                  const next = raw <= 1 ? 1 : Math.max(5, Math.min(70, Math.round(raw / 5) * 5))
-                  setAutoRest(next)
-                  commitAdvanced('autoRestMinimum', next)
-                }}
-                min={1}
-                max={70}
-                step={1}
-                marks={autoRestMarks}
-                sx={sliderSx}
-                valueLabelDisplay="on"
-                valueLabelFormat={(v) => `${v}%`}
-              />
-            </Box>
-          }
+          control={renderSliderControl({
+            id: 'autoRestMinimum',
+            value: autoRest,
+            min: 1,
+            max: 70,
+            step: 1,
+            marks: autoRestMarks,
+            format: (v) => `${v}%`,
+            onChange: (_, v) => {
+              const raw = toNumber(v)
+              const next = raw <= 1 ? 1 : Math.max(5, Math.min(70, Math.round(raw / 5) * 5))
+              setAutoRest(next)
+            },
+            onCommit: (_, v) => {
+              const raw = toNumber(v)
+              const next = raw <= 1 ? 1 : Math.max(5, Math.min(70, Math.round(raw / 5) * 5))
+              setAutoRest(next)
+              commitAdvanced('autoRestMinimum', next)
+            },
+          })}
           sx={{ mt: 2 }}
         />
 
         <FieldRow
           label="Skills: check interval"
           info="How often to reopen the Skills shop during races — 1 checks every turn, 3 checks every third turn."
-          control={
-            <Box sx={controlWrapSx}>
-              <Slider
-                value={skillInterval}
-                onChange={(_, v) => {
-                  const next = Math.max(1, Math.min(5, Math.round(toNumber(v))))
-                  setSkillInterval(next)
-                }}
-                onChangeCommitted={(_, v) => {
-                  const next = Math.max(1, Math.min(5, Math.round(toNumber(v))))
-                  setSkillInterval(next)
-                  commitAdvanced('skillCheckInterval', next)
-                }}
-                min={1}
-                max={5}
-                step={1}
-                sx={sliderSx}
-                valueLabelDisplay="on"
-              />
-            </Box>
-          }
+          control={renderSliderControl({
+            id: 'skillCheckInterval',
+            value: skillInterval,
+            min: 1,
+            max: 5,
+            step: 1,
+            onChange: (_, v) => {
+              const next = Math.max(1, Math.min(5, Math.round(toNumber(v))))
+              setSkillInterval(next)
+            },
+            onCommit: (_, v) => {
+              const next = Math.max(1, Math.min(5, Math.round(toNumber(v))))
+              setSkillInterval(next)
+              commitAdvanced('skillCheckInterval', next)
+            },
+          })}
           sx={{ mt: 2 }}
         />
 
         <FieldRow
           label="Skills: points delta"
           info="Reopen the Skills shop only after earning at least this many points (e.g. 60 waits until you gain 60 more points)."
-          control={
-            <Box sx={controlWrapSx}>
-              <Slider
-                value={skillDelta}
-                onChange={(_, v) => {
-                  const raw = toNumber(v)
-                  const next = Math.max(60, Math.min(200, Math.round(raw / 10) * 10))
-                  setSkillDelta(next)
-                }}
-                onChangeCommitted={(_, v) => {
-                  const raw = toNumber(v)
-                  const next = Math.max(60, Math.min(200, Math.round(raw / 10) * 10))
-                  setSkillDelta(next)
-                  commitAdvanced('skillPtsDelta', next)
-                }}
-                min={60}
-                max={200}
-                step={10}
-                sx={sliderSx}
-                valueLabelDisplay="on"
-              />
-            </Box>
-          }
+          control={renderSliderControl({
+            id: 'skillPtsDelta',
+            value: skillDelta,
+            min: 60,
+            max: 200,
+            step: 10,
+            onChange: (_, v) => {
+              const raw = toNumber(v)
+              const next = Math.max(60, Math.min(200, Math.round(raw / 10) * 10))
+              setSkillDelta(next)
+            },
+            onCommit: (_, v) => {
+              const raw = toNumber(v)
+              const next = Math.max(60, Math.min(200, Math.round(raw / 10) * 10))
+              setSkillDelta(next)
+              commitAdvanced('skillPtsDelta', next)
+            },
+          })}
           sx={{ mt: 2 }}
         />
 
         <FieldRow
           label="Undertrain threshold"
-          info="Lower values make detection stricter, higher values more forgiving. The system looks at how much each stat contributes to your total stats and compares it with how much it should contribute based on the ideal balance. Think of it as checking if any stat is falling behind or getting too far ahead. For example, if your total stats add up to 1640 and SPD is 375, that means SPD makes up about 23% of your total. But according to the ideal setup, SPD should represent 32% — which would be around 525 points. That means SPD is about 9% lower than where it should be, so it’s undertrained. However, if your undertraining threshold is 10%, the bot won’t force SPD training yet because the difference isn’t big enough. On the other hand, PWR is 512, which is 31% of the total, while its ideal ratio is 25%, so it’s 7% higher than expected — meaning PWR is overtrained and should be paused until the others catch up."
-          control={
-            <Box sx={controlWrapSx}>
-              <Slider
-                value={undertrain}
-                onChange={(_, v) => {
-                  const next = Math.max(1, Math.min(20, Math.round(toNumber(v))))
-                  setUndertrain(next)
-                }}
-                onChangeCommitted={(_, v) => {
-                  const next = Math.max(1, Math.min(20, Math.round(toNumber(v))))
-                  setUndertrain(next)
-                  commitAdvanced('undertrainThreshold', next)
-                }}
-                min={1}
-                max={20}
-                step={1}
-                sx={sliderSx}
-                valueLabelDisplay="on"
-                valueLabelFormat={(v) => `${v}%`}
-              />
-            </Box>
-          }
+          info="Lower values make detection stricter, higher values more forgiving. The system looks at how much each stat contributes to your total stats and compares it with how much it should contribute based on the ideal balance. Think of it as checking if any stat is falling behind or getting too far ahead. For example, if your total stats add up to 1640 and SPD is 375, that means SPD makes up about 23% of your total. But according to the ideal setup (your stat caps), SPD should represent let's say 32% — which would be around 525 points. That means SPD is about 9% lower than where it should be, so it’s undertrained. However, if your undertraining threshold is 10%, the bot won’t force SPD training yet because the difference isn’t big enough. On the other hand, PWR is let's say 512, which is 31% of the total, while its ideal ratio in this hypothetical scenario is let's say 25%, so it’s 7% higher than expected — meaning PWR is overtrained and should be paused until the others catch up."
+          control={renderSliderControl({
+            id: 'undertrainThreshold',
+            value: undertrain,
+            min: 1,
+            max: 20,
+            step: 1,
+            format: (v) => `${v}%`,
+            onChange: (_, v) => {
+              const next = Math.max(1, Math.min(20, Math.round(toNumber(v))))
+              setUndertrain(next)
+            },
+            onCommit: (_, v) => {
+              const next = Math.max(1, Math.min(20, Math.round(toNumber(v))))
+              setUndertrain(next)
+              commitAdvanced('undertrainThreshold', next)
+            },
+          })}
           sx={{ mt: 2 }}
         />
 
         <FieldRow
           label="Top stats focus"
           info="Used to re-prioritize stats when training and also if bot finds a low SV value in priority stat compared with maximum SV value in another tile. If difference is not more than 0.75 we skip the 'best' option and get the second best option only if it is in these first top stats"
-          control={
-            <Box sx={controlWrapSx}>
-              <Slider
-                value={topStats}
-                onChange={(_, v) => {
-                  const next = Math.max(1, Math.min(5, Math.round(toNumber(v))))
-                  setTopStats(next)
-                }}
-                onChangeCommitted={(_, v) => {
-                  const next = Math.max(1, Math.min(5, Math.round(toNumber(v))))
-                  setTopStats(next)
-                  commitAdvanced('topStatsFocus', next)
-                }}
-                min={1}
-                max={5}
-                sx={sliderSx}
-                valueLabelDisplay="on"
-                marks
-              />
-            </Box>
-          }
+          control={renderSliderControl({
+            id: 'topStatsFocus',
+            value: topStats,
+            min: 1,
+            max: 5,
+            step: 1,
+            onChange: (_, v) => {
+              const next = Math.max(1, Math.min(5, Math.round(toNumber(v))))
+              setTopStats(next)
+            },
+            onCommit: (_, v) => {
+              const next = Math.max(1, Math.min(5, Math.round(toNumber(v))))
+              setTopStats(next)
+              commitAdvanced('topStatsFocus', next)
+            },
+          })}
           sx={{ mt: 2 }}
         />
       </Collapse>

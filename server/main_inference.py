@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import base64
 import io
+import threading
 from typing import Any, Dict, List, Literal, Optional, Tuple
 from pathlib import Path
 
@@ -26,6 +27,7 @@ from core.perception.analyzers.matching.base import (
     TemplateMatch,
     TemplateMatcherBase,
 )
+from core.perception.unity_cup_spirit_classifier import UnityCupSpiritClassifier
 
 app = FastAPI()
 engine = LocalOCREngine()  # load once; keeps models on CPU/GPU as configured
@@ -287,6 +289,30 @@ _TEMPLATE_CACHE_STATS: Dict[str, int] = {"hits": 0, "misses": 0}
 _TEMPLATE_CACHE_MAX = 256
 
 
+class SpiritClassifyRequest(BaseModel):
+    img: str = Field(..., description="Base64-encoded spirit icon (PNG/JPEG)")
+    threshold: float = Field(0.0, ge=0.0, le=1.0)
+
+
+_SPIRIT_CLF: Optional[UnityCupSpiritClassifier] = None
+_SPIRIT_CLF_LOCK = threading.Lock()
+
+
+def _get_spirit_classifier() -> UnityCupSpiritClassifier:
+    global _SPIRIT_CLF
+    if _SPIRIT_CLF is None:
+        with _SPIRIT_CLF_LOCK:
+            if _SPIRIT_CLF is None:
+                try:
+                    _SPIRIT_CLF = UnityCupSpiritClassifier.load_from_settings()
+                except Exception as e:
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"Failed to load spirit classifier: {e}",
+                    )
+    return _SPIRIT_CLF
+
+
 def _template_cache_key(mode: str, descriptor: TemplateDescriptor) -> str:
     parts = [mode or "", descriptor.id]
     if descriptor.path:
@@ -430,3 +456,39 @@ def template_match(req: TemplateMatchRequest) -> Dict[str, Any]:
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Template matching failure: {e}")
+
+
+@app.post("/classify/spirit")
+def classify_spirit(req: SpiritClassifyRequest) -> Dict[str, Any]:
+    try:
+        bgr, pil_img = _decode_b64_to_bgr(req.img)
+        clf = _get_spirit_classifier()
+        pred = clf.predict(pil_img)
+
+        pred_id = int(pred.get("pred_id", -1))
+        raw = pred.get("raw", [])
+        confidence = float(pred.get("confidence", 0.0))
+        pred_label = str(pred.get("pred_label", "unknown"))
+
+        if confidence < req.threshold:
+            pred_label = "unknown"
+
+        sha = hashlib.sha256(bgr.tobytes()).hexdigest()[:12]
+
+        return {
+            "pred_id": pred_id,
+            "pred_label": pred_label,
+            "confidence": confidence,
+            "raw": raw,
+            "classes": clf.classes_list(),
+            "img_size": clf.img_size,
+            "threshold": float(req.threshold),
+            "meta": {
+                "checksum": sha,
+                "backend": "unity_cup_spirit_cnn",
+            },
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Spirit classification failure: {e}")

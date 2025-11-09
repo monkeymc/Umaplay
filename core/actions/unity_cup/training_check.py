@@ -318,8 +318,10 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
             risk_mult = 2.0
         elif sv_total >= 5 and not (has_any_hint and Settings.HINT_IS_IMPORTANT):
             risk_mult = 2.0
-        elif sv_total >= 4.5 and not (has_any_hint and Settings.HINT_IS_IMPORTANT):
+        elif sv_total > 4.5 and not (has_any_hint and Settings.HINT_IS_IMPORTANT):
             risk_mult = 1.5
+        elif sv_total >= 4.25 and not (has_any_hint and Settings.HINT_IS_IMPORTANT):
+            risk_mult = 1.35
         elif sv_total >= 4:
             risk_mult = 1.25
         else:

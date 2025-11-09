@@ -86,6 +86,7 @@ The runtime supports Steam on Windows and Android mirrored via scrcpy, with expe
 - **Agent loop (`core/agent.py`)** coordinates perception→decision→action for training careers, integrating race scheduling, skill buys, events, and the claw mini-game. Deferred post-hint skill rechecks now persist intent (`_pending_hint_recheck`) until the loop returns to a stable screen (Lobby/Raceday) before reopening the Skills view and retrying purchases with guardrails against forced navigation. Event handling (
   `core/actions/events.EventFlow`) fuses YOLO+OCR hints with template matching scores that blend multi-scale TM, perceptual hash, and HSV hair histograms (with gray-world balancing/masks) so lookalike trainees (e.g., seasonal alts) stay separable. When presets specify a trainee in
   `config.json`, the retriever promotes that card even if it scores slightly lower and, if that name is missing, falls back to the "trainee/general/None/None" catalog entry to avoid dead ends when seasonal data is absent. The same flow remembers two-phase prompts (e.g., Acupuncturist) and auto-confirms the follow-up dialog when only the accept/reconsider buttons are present.
+- **Scenario routing**: `core/scenarios/registry.py` maps scenario keys (URA, Unity Cup/Aoharu aliases) to policy callables so `AgentScenario` instantiations fetch the correct training strategy without duplicating logic. This registry is populated during agent bootstrap.
 - **AgentNav (`core/agent_nav.py`)** provides hotkey-triggered navigation flows for Team Trials and Daily Races, reusing shared perception but with dedicated YOLO weights (`Settings.YOLO_WEIGHTS_NAV`).
 - **Action flows (`core/actions/`)** modularize behaviors: lobby management, training policy scoring, races, skills, events, Team Trials (`team_trials.py`), and Daily Races (`daily_race.py`). Skill purchasing respects per-preset `skillPtsCheck` thresholds, while event handling consults per-entity energy overflow toggles plus ranked reward priorities (skill pts → stats → hints by default) before rotating choices. `core/utils/event_processor.UserPrefs` now persists reward priority maps per support/scenario/trainee, and `EventFlow` falls back to the global order only when entity-specific lists are absent. When an event would overcap energy, `EventFlow.process_event_screen()` scores each option (via `max_positive_energy()` and `extract_reward_categories()`), builds the rotation order around the player-preferred pick, and only reorders if the chosen option violates the energy cap. Safe alternatives are then filtered by reward priority, preferring matches that satisfy the entity-specific ranking before defaulting to the first non-overflowing candidate, with adjustments surfaced through debug telemetry.
 - **Controllers (`core/controllers/`)** abstract capture/input for Steam, Scrcpy, and optional BlueStacks; `core/controllers/base.py` defines the contract.
@@ -102,7 +103,8 @@ The runtime supports Steam on Windows and Android mirrored via scrcpy, with expe
 This design allows the core loop to evolve independently of perception implementations or UI flows.
 
 ## Perception & Automation Stack
-- **Vision**: `core/perception/yolo/` wraps local (`yolo_local.py`) and remote (`yolo_remote.py`) detectors; `core/perception/ocr/` exposes PaddleOCR engines (`ocr_local.py`, `ocr_remote.py`).
+- **Perception**: `core/perception/yolo/` wraps local (`yolo_local.py`) and remote (`yolo_remote.py`) detectors; `core/perception/ocr/` exposes PaddleOCR engines (`ocr_local.py`, `ocr_remote.py`).
+- **Classifiers**: `core/perception/classifiers/` hosts lightweight HTTP clients (e.g., `spirit_remote.py`) that mirror local inference APIs when offloading to the remote server.
 - **Analyzers**: `core/perception/analyzers/` classifies screens, detects UI states, and supports navigation heuristics.
 - **Hint detection**: `core/perception/analyzers/hint.py` fuses HSV ROI checks with anchor-aware hint assignment so YOLO detections favor the card's top-right quadrant and penalize support_bar overlaps, preventing jump misassociation.
 - **Template matching**: `core/perception/analyzers/matching/` prepares histogram/hash caches, performs gray-world balancing, and extracts HSV hair-region fingerprints before combining them with multi-scale TM + perceptual hash scores. OpenCV usage is feature-gated so thin clients can route calls to the remote `/template-match` endpoint (`server/main_inference.py`) when local `cv2` is unavailable.
@@ -129,6 +131,7 @@ This design allows the core loop to evolve independently of perception implement
 - **Data/config locations**: `prefs/config.json`, `datasets/in_game/`.
 - **Observability**: `core/utils/logger.py`, debug artifacts under `debug/`.
 - **Testing**: `tests/` (e.g., `tests/test_turns.py`).
+- **Scenario implementations**: `core/actions/ura/` encapsulates URA campaign flows (lobby, training check, policy), while `core/actions/unity_cup/` contains Unity Cup-specific agent logic (seasonal lobby flow, training adaptations, showdown handling). The shared agent scaffolding delegates to these modules based on `Settings.ACTIVE_SCENARIO` via the registry noted above.
 
 ### FastAPI Configuration Server
 - **Purpose**: Serve web UI assets, manage configs, expose dataset APIs, and orchestrate updates.
@@ -142,7 +145,7 @@ This design allows the core loop to evolve independently of perception implement
 ### Remote Inference Service
 - **Purpose**: Offload OCR, YOLO detection, and OpenCV-heavy template matching to a stronger host.
 - **Entrypoints**: `server/main_inference.py`.
-- **Public interfaces**: `/ocr`, `/yolo`, `/template-match`, `/health`.
+- **Public interfaces**: `/ocr`, `/yolo`, `/template-match`, `/classify/spirit`, `/health`.
 - **Key internal dependencies**: `core/perception/ocr/ocr_local.py`, `core/perception/yolo/yolo_local.py`, template matcher helpers in `core/perception/analyzers/matching/`, Torch.
 - **Data/config locations**: `models/`, `datasets/uma_nav/` weights referenced by `Settings.YOLO_WEIGHTS_NAV`.
 - **Observability**: Response metadata includes checksums, model identifiers.

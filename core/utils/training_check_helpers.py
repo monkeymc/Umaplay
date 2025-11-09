@@ -6,7 +6,6 @@ from PIL import Image
 import cv2
 import time
 from core.perception.extractors.training_metrics import extract_failure_pct_for_tile
-from core.perception.unity_cup_spirit_classifier import UnityCupSpiritClassifier
 from core.settings import Settings
 
 from core.perception.analyzers.hint import (
@@ -133,12 +132,40 @@ _SPIRIT_CLF = None
 def _get_spirit_clf():
     """Lazy-load once; safe if the package is missing."""
     global _SPIRIT_CLF
-    if _SPIRIT_CLF is None and UnityCupSpiritClassifier is not None:
+    if _SPIRIT_CLF is not None:
+        return _SPIRIT_CLF
+
+    if Settings.USE_EXTERNAL_PROCESSOR:
         try:
-            _SPIRIT_CLF = UnityCupSpiritClassifier.load_from_settings()
+            from core.perception.classifiers.spirit_remote import (
+                RemoteUnityCupSpiritClassifier,
+            )
+
+            _SPIRIT_CLF = RemoteUnityCupSpiritClassifier(
+                Settings.EXTERNAL_PROCESSOR_URL
+            )
+            logger_uma.info(
+                "[spirit_clf] Using remote classifier at %s",
+                Settings.EXTERNAL_PROCESSOR_URL,
+            )
+            return _SPIRIT_CLF
         except Exception as e:
-            logger_uma.warning("UnityCupSpiritClassifier load failed: %s", e)
+            logger_uma.warning(
+                "Remote spirit classifier unavailable (%s). Falling back to local load.",
+                e,
+            )
             _SPIRIT_CLF = None
+
+    try:
+        from core.perception.unity_cup_spirit_classifier import (
+            UnityCupSpiritClassifier,
+        )
+
+        _SPIRIT_CLF = UnityCupSpiritClassifier.load_from_settings()
+        logger_uma.info("[spirit_clf] Loaded local TinyCNN classifier")
+    except Exception as e:
+        logger_uma.warning("UnityCupSpiritClassifier load failed: %s", e)
+        _SPIRIT_CLF = None
     return _SPIRIT_CLF
 
 def _classify_spirit_icon(frame_bgr, xyxy, *, threshold: float = 0.51):
