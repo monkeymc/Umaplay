@@ -76,6 +76,12 @@ def decide_action_training(
         di = parse_career_date(career_date)
     elif isinstance(career_date, DateInfo):
         di = career_date
+    else:
+        logger_uma.warning(
+            "decide_action_training: missing/invalid career_date %r; using fallback",
+            career_date,
+        )
+        di = DateInfo(raw=str(career_date or "Unknown"), year_code=0, month=None, half=None)
 
     # Collect reasoning as we go
     reasons: List[str] = []
