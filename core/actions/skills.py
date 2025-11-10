@@ -160,6 +160,7 @@ class SkillsFlow:
             conf=self.waiter.cfg.conf,
             iou=self.waiter.cfg.iou,
             tag=tag,
+            agent=self.waiter.cfg.agent,
         )
         return img, dets
 

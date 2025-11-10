@@ -407,8 +407,26 @@ class AgentUnityCup(AgentScenario):
                     allow_greedy_click=True,
                     tag="unity_cup_race_day_button",
                 ):
-                    sleep(3)
-                    _, _, dets = self.yolo_engine.recognize(
+                    sleep(2)
+                    t0 = time.time()
+                    banners_seen = False
+
+                    while (time.time() - t0) < 15.0:
+                        if self.waiter.seen(
+                            classes=("unity_opponent_banner",),
+                            tag="unity_cup_wait_banner",
+                        ):
+                            banners_seen = True
+                            break
+                        time.sleep(0.5)
+
+                    if not banners_seen:
+                        logger_uma.warning(
+                            "[UnityCup] Opponent banners not detected within timeout"
+                        )
+                        continue
+
+                    img, _, dets = self.yolo_engine.recognize(
                         imgsz=self.imgsz,
                         conf=self.conf,
                         iou=self.iou,

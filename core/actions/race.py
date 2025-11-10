@@ -146,6 +146,7 @@ class RaceFlow:
             conf=self.waiter.cfg.conf,
             iou=self.waiter.cfg.iou,
             tag=tag,
+            agent=self.waiter.cfg.agent,
         )
 
     def _deduplicate_stars(self, stars: List[DetectionDict]) -> List[DetectionDict]:

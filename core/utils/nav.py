@@ -10,9 +10,9 @@ from PIL import Image
 from core.controllers.base import IController
 from core.perception.yolo.interface import IDetector
 from core.settings import Settings
-from core.utils.pointer import smart_scroll_small
 from core.types import DetectionDict
 from core.utils.logger import logger_uma
+from core.utils.pointer import smart_scroll_small
 from core.utils.waiter import Waiter
 
 
@@ -24,6 +24,11 @@ def collect_snapshot(
     tag: str,
 ) -> Tuple[Image.Image, List[DetectionDict]]:
     active_agent = agent if agent is not None else getattr(waiter, "agent", None)
+    if active_agent is None:
+        logger_uma.warning(
+            "collect_snapshot called without agent; defaulting to generic debug folder",
+            extra={"collect_snapshot_tag": tag},
+        )
     img, _, dets = yolo_engine.recognize(
         imgsz=waiter.cfg.imgsz,
         conf=waiter.cfg.conf,

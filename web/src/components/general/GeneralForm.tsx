@@ -41,10 +41,11 @@ export default function GeneralForm() {
     return () => { mounted = false }
   }, [])
   // small helper map for mode icons (place PNGs under /public/icons/)
-  const MODE_ICON: Record<'steam' | 'scrcpy' | 'bluestack', string> = {
+  const MODE_ICON: Record<'steam' | 'scrcpy' | 'bluestack' | 'adb', string> = {
     steam: '/icons/mode_steam.png',
     scrcpy: '/icons/mode_scrcpy.png',
     bluestack: '/icons/mode_bluestack.png',
+    adb: '/icons/mode_adb.png',
   }
 
   return (
@@ -76,6 +77,7 @@ export default function GeneralForm() {
                 ) : (
                   <KeyboardDoubleArrowLeftIcon fontSize="small" />
                 )}
+
               </IconButton>
             </Tooltip>
           </Stack>
@@ -172,7 +174,7 @@ export default function GeneralForm() {
               value={g.mode}
               onChange={(e) => setGeneral({ mode: e.target.value as any })}
               renderValue={(val) => {
-                const m = val as 'steam' | 'scrcpy' | 'bluestack'
+                const m = val as 'steam' | 'scrcpy' | 'bluestack' | 'adb'
                 return (
                   <Stack direction="row" spacing={1} alignItems="center">
                     <Avatar
@@ -186,7 +188,7 @@ export default function GeneralForm() {
                 )
               }}
             >
-              {(['steam', 'scrcpy', 'bluestack'] as const).map((m) => (
+              {(['steam', 'scrcpy', 'bluestack', 'adb'] as const).map((m) => (
                 <MenuItem key={m} value={m}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <Avatar
@@ -217,6 +219,55 @@ export default function GeneralForm() {
             }
             info="Exact (or unique substring) of the SCRCPY window title to focus and capture."
           />
+        )}
+
+        {g.mode === 'adb' && (
+          <FieldRow
+            label="ADB device"
+            control={
+              <TextField
+                size="small"
+                value={g.adbDevice ?? 'localhost:5555'}
+                onChange={(e) => setGeneral({ adbDevice: e.target.value })}
+                placeholder="localhost:5555"
+              />
+            }
+            info="ADB device identifier (e.g., localhost:5555). The bot will auto-connect when starting."
+          />
+        )}
+
+        {g.mode === 'bluestack' && (
+          <>
+            <FieldRow
+              label="Use ADB (no mouse control)"
+              control={
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={g.useAdb ?? false}
+                      onChange={(e) => setGeneral({ useAdb: e.target.checked })}
+                    />
+                  }
+                  label={g.useAdb ? 'Enabled' : 'Disabled'}
+                />
+              }
+              info="Use ADB commands instead of mouse control. Requires ADB installed and BlueStacks ADB enabled."
+            />
+            {g.useAdb && (
+              <FieldRow
+                label="ADB device"
+                control={
+                  <TextField
+                    size="small"
+                    value={g.adbDevice ?? 'localhost:5555'}
+                    onChange={(e) => setGeneral({ adbDevice: e.target.value })}
+                    placeholder="localhost:5555"
+                  />
+                }
+                info="ADB device identifier (e.g., localhost:5555)."
+              />
+            )}
+          </>
         )}
 
         <FieldRow

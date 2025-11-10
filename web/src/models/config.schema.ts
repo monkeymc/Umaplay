@@ -14,8 +14,10 @@ export const defaultEventSetup = () => ({
 export const STAT_KEYS: StatKey[] = ['SPD', 'STA', 'PWR', 'GUTS', 'WIT']
 
 export const generalSchema = z.object({
-  mode: z.enum(['steam', 'scrcpy', 'bluestack']).default('steam'),
+  mode: z.enum(['steam', 'scrcpy', 'bluestack', 'adb']).default('steam'),
   windowTitle: z.string().default('Umamusume'),
+  useAdb: z.boolean().default(false),
+  adbDevice: z.string().default('localhost:5555'),
   fastMode: z.boolean().default(false),
   tryAgainOnFailedGoal: z.boolean().default(true),
   maxFailure: z.number().int().min(0).max(99).default(20),
@@ -46,6 +48,8 @@ export const generalSchema = z.object({
 }).default({
   mode: 'steam',
   windowTitle: 'Umamusume',
+  useAdb: false,
+  adbDevice: 'localhost:5555',
   fastMode: false,
   tryAgainOnFailedGoal: true,
   maxFailure: 20,

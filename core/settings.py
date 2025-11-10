@@ -108,6 +108,8 @@ class Settings:
     )
 
     MODE: str = _env("MODE", "steam") or "steam"
+    USE_ADB: bool = _env_bool("USE_ADB", False)
+    ADB_DEVICE: Optional[str] = _env("ADB_DEVICE", "localhost:5555")
 
     # --------- Detection (YOLO) ---------
     YOLO_IMGSZ: int = _env_int("YOLO_IMGSZ", default=832)
@@ -186,6 +188,8 @@ class Settings:
             return "Umamusume"
         elif mode == "bluestack":
             return "BlueStacks App Player"
+        elif mode == "adb":
+            return ""
         else:  # scrcpy
             return cls.ANDROID_WINDOW_TITLE
 
@@ -205,7 +209,21 @@ class Settings:
         adv = g.get("advanced", {}) or {}
 
         # General
-        cls.MODE = g.get("mode", cls.MODE)
+        raw_mode = str(g.get("mode", cls.MODE)).strip().lower()
+        if raw_mode not in {"steam", "scrcpy", "bluestack", "adb"}:
+            raw_mode = cls.MODE.lower()
+        cls.MODE = raw_mode
+
+        cls.USE_ADB = bool(g.get("useAdb", cls.USE_ADB))
+        adb_device = g.get("adbDevice")
+        if isinstance(adb_device, str) and adb_device.strip():
+            cls.ADB_DEVICE = adb_device.strip()
+
+        if cls.MODE == "adb":
+            cls.USE_ADB = True
+            cls.WINDOW_TITLE = cls.WINDOW_TITLE or "Umamusume"
+        elif cls.MODE != "bluestack":
+            cls.USE_ADB = False
         # One windowTitle for both Steam and scrcpy (Steam still uses it)
         wt = g.get("windowTitle")
         if wt:

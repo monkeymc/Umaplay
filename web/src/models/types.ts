@@ -1,6 +1,6 @@
 import type { EventSetup } from "@/types/events"
 
-export type Mode = 'steam' | 'scrcpy' | 'bluestack'
+export type Mode = 'steam' | 'scrcpy' | 'bluestack' | 'adb'
 export type Hotkey = 'F1' | 'F2' | 'F3' | 'F4'
 
 export type StatKey = 'SPD' | 'STA' | 'PWR' | 'GUTS' | 'WIT'
@@ -9,6 +9,8 @@ export type MoodName = 'AWFUL' | 'BAD' | 'NORMAL' | 'GOOD' | 'GREAT'
 export interface GeneralConfig {
   mode: Mode
   windowTitle: string
+  useAdb?: boolean
+  adbDevice?: string
   fastMode: boolean
   tryAgainOnFailedGoal: boolean
   maxFailure: number
