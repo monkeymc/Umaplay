@@ -814,6 +814,9 @@ def build_catalog() -> None:
     for parent in root:
         choice_events = parent.get("choice_events", []) or []
         for ev in choice_events:
+            # Skip events with only one outcome
+            if len(ev.get("options", {})) <= 1:
+                continue
             rec = EventRecord.from_json_item(parent, ev, set_data_to_file_and_phash)
             records.append(rec)
 
@@ -989,7 +992,7 @@ class UserPrefs:
         if isinstance(patt_src, dict):
             patterns = list(patt_src.items())
         else:
-            # expect list of {"pattern": "support/Kitasan*/SSR/*", "pick": 2}
+            # expect list of {"pattern": "...", "pick": 2}
             patterns = [(d.get("pattern", ""), int(d.get("pick", 1))) for d in patt_src]
         default_by_type = raw.get("defaults", {})
         if not default_by_type:
@@ -997,12 +1000,13 @@ class UserPrefs:
         alias_overrides = _build_alias_overrides(overrides)
 
         avoid_energy_overflow = _coerce_bool(
-            raw.get("avoid_energy_overflow", raw.get("avoidEnergyOverflow", True)),
+            raw.get("avoidEnergyOverflow")
+            or raw.get("avoid_energy_overflow", True),
             default=True,
         )
 
         reward_priority = normalize_reward_priority_list(
-            raw.get("rewardPriority", raw.get("reward_priority"))
+            raw.get("rewardPriority") or raw.get("reward_priority")
         )
 
         return UserPrefs(
