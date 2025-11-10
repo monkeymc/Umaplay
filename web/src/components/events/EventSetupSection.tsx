@@ -315,6 +315,7 @@ function EventOptionsDialog({
 }) {
   const prefs = useEventsSetupStore((s) => s.setup.prefs)
   const [q, setQ] = useState('')
+  const [showSingleOutcome, setShowSingleOutcome] = useState(false)
 
   // helpers to render compact effect chips
   const fmtSigned = (n: number) => (n > 0 ? `+${n}` : `${n}`)
@@ -339,10 +340,19 @@ function EventOptionsDialog({
   }
 
   const filtered = useMemo(
-    () => (q.trim()
-      ? items.filter(it => it.eventName.toLowerCase().includes(q.trim().toLowerCase()))
-      : items),
-    [items, q]
+    () => {
+      let result = q.trim()
+        ? items.filter(it => it.eventName.toLowerCase().includes(q.trim().toLowerCase()))
+        : items
+      
+      // Filter out single-outcome events unless toggle is on
+      if (!showSingleOutcome) {
+        result = result.filter(it => it.options.length > 1)
+      }
+      
+      return result
+    },
+    [items, q, showSingleOutcome]
   )
 
   const handlePriorityMove = (index: number, delta: -1 | 1) => {
@@ -368,6 +378,18 @@ function EventOptionsDialog({
           fullWidth size="small" placeholder="Search events…"
           value={q} onChange={e => setQ(e.target.value)}
           InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment> }}
+          sx={{ mb: 1 }}
+        />
+        {/* Toggle for single-outcome events */}
+        <FormControlLabel
+          control={
+            <Switch
+              size="small"
+              checked={showSingleOutcome}
+              onChange={(_, checked) => setShowSingleOutcome(checked)}
+            />
+          }
+          label="Show single-outcome events"
           sx={{ mb: 2 }}
         />
         <Stack spacing={1.25}>

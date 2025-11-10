@@ -35521,31 +35521,6 @@
     ]
   },
   {
-    "key": "trainee/Eishin Flash/None/None/Flash's Plan Put to the Test",
-    "key_step": "trainee/Eishin Flash/None/None/Flash's Plan Put to the Test#s1",
-    "type": "trainee",
-    "name": "Eishin Flash",
-    "rarity": "None",
-    "attribute": "None",
-    "event_name": "Flash's Plan Put to the Test",
-    "chain_step": 1,
-    "default_preference": 1,
-    "options": {
-      "1": [
-        {
-          "mood": 1
-        }
-      ]
-    },
-    "title_norm": "flash's plan put to the test",
-    "image_path": "web\\public\\events\\trainee_icon_event\\Eishin Flash\\Eishin Flash.png",
-    "phash64": 16911771769083379094,
-    "image_variants": [
-      "web\\public\\events\\trainee_icon_event\\Eishin Flash\\Eishin Flash.png",
-      "web\\public\\events\\trainee_icon_event\\Eishin Flash\\Eishin Flash_1.png"
-    ]
-  },
-  {
     "key": "trainee/Eishin Flash/None/None/Fried, Crispy, and Fresh!",
     "key_step": "trainee/Eishin Flash/None/None/Fried, Crispy, and Fresh!#s1",
     "type": "trainee",
@@ -38017,5 +37992,1541 @@
       "web\\public\\events\\trainee_icon_event\\Meisho Doto\\Meisho Doto.png",
       "web\\public\\events\\trainee_icon_event\\Meisho Doto\\Meisho Doto_1.png"
     ]
+  },
+  {
+    "key": "support/Silence Suzuka/STA/SSR/On and On",
+    "key_step": "support/Silence Suzuka/STA/SSR/On and On#s1",
+    "type": "support",
+    "name": "Silence Suzuka",
+    "rarity": "SSR",
+    "attribute": "STA",
+    "event_name": "On and On",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "speed": 10,
+          "stamina": 5,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "speed": 15,
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "on and on",
+    "image_path": "web\\public\\events\\support\\Silence Suzuka_STA_SSR.png",
+    "phash64": 9234368595607157811,
+    "image_variants": [
+      "web\\public\\events\\support\\Silence Suzuka_STA_SSR.png"
+    ]
+  },
+  {
+    "key": "support/Silence Suzuka/STA/SSR/What Should I Do?",
+    "key_step": "support/Silence Suzuka/STA/SSR/What Should I Do?#s1",
+    "type": "support",
+    "name": "Silence Suzuka",
+    "rarity": "SSR",
+    "attribute": "STA",
+    "event_name": "What Should I Do?",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "speed": 5,
+          "stamina": 5,
+          "wit": 5,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "hints": [
+            "Left-Handed ○ (+1)"
+          ],
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "what should i do?",
+    "image_path": "web\\public\\events\\support\\Silence Suzuka_STA_SSR.png",
+    "phash64": 9234368595607157811,
+    "image_variants": [
+      "web\\public\\events\\support\\Silence Suzuka_STA_SSR.png"
+    ]
+  },
+  {
+    "key": "support/Silence Suzuka/STA/SSR/A Winning Vocalist",
+    "key_step": "support/Silence Suzuka/STA/SSR/A Winning Vocalist#s1",
+    "type": "support",
+    "name": "Silence Suzuka",
+    "rarity": "SSR",
+    "attribute": "STA",
+    "event_name": "A Winning Vocalist",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 10,
+          "hints": [
+            "Hydrate (+1)"
+          ]
+        }
+      ],
+      "2": [
+        {
+          "speed": 10,
+          "hints": [
+            "Soft Step (+1)"
+          ]
+        }
+      ]
+    },
+    "title_norm": "a winning vocalist",
+    "image_path": "web\\public\\events\\support\\Silence Suzuka_STA_SSR.png",
+    "phash64": 9234368595607157811,
+    "image_variants": [
+      "web\\public\\events\\support\\Silence Suzuka_STA_SSR.png"
+    ]
+  },
+  {
+    "key": "support/Riko Kashimoto/PAL/SSR/The Kashimoto Art of Tidying Up",
+    "key_step": "support/Riko Kashimoto/PAL/SSR/The Kashimoto Art of Tidying Up#s1",
+    "type": "support",
+    "name": "Riko Kashimoto",
+    "rarity": "SSR",
+    "attribute": "PAL",
+    "event_name": "The Kashimoto Art of Tidying Up",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 20,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "guts": 20,
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "the kashimoto art of tidying up",
+    "image_path": "web\\public\\events\\support\\Riko Kashimoto_PAL_SSR.png",
+    "phash64": 14610212569929391148,
+    "image_variants": [
+      "web\\public\\events\\support\\Riko Kashimoto_PAL_SSR.png"
+    ]
+  },
+  {
+    "key": "support/Riko Kashimoto/PAL/SSR/Unexpected Side",
+    "key_step": "support/Riko Kashimoto/PAL/SSR/Unexpected Side#s1",
+    "type": "support",
+    "name": "Riko Kashimoto",
+    "rarity": "SSR",
+    "attribute": "PAL",
+    "event_name": "Unexpected Side",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": 19,
+          "mood": 1,
+          "stamina": 13,
+          "hints": [
+            "Ramp Up (+3)"
+          ],
+          "bond": 12
+        },
+        {
+          "hints": [
+            "Maverick ○ (+5)"
+          ],
+          "bond": -10
+        }
+      ],
+      "2": [
+        {
+          "mood": 1,
+          "guts": 20,
+          "bond": 5
+        }
+      ],
+      "3": [
+        {
+          "hints": [
+            "Lone Wolf (+3)"
+          ],
+          "bond": -10
+        }
+      ]
+    },
+    "title_norm": "unexpected side",
+    "image_path": "web\\public\\events\\support\\Riko Kashimoto_PAL_SSR.png",
+    "phash64": 14610212569929391148,
+    "image_variants": [
+      "web\\public\\events\\support\\Riko Kashimoto_PAL_SSR.png"
+    ]
+  },
+  {
+    "key": "support/Riko Kashimoto/PAL/SSR/Picture Their Joy",
+    "key_step": "support/Riko Kashimoto/PAL/SSR/Picture Their Joy#s3",
+    "type": "support",
+    "name": "Riko Kashimoto",
+    "rarity": "SSR",
+    "attribute": "PAL",
+    "event_name": "Picture Their Joy",
+    "chain_step": 3,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": 26,
+          "mood": 1,
+          "stamina": 13,
+          "guts": 6,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "skill_pts": 40,
+          "mood": 1,
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "picture their joy",
+    "image_path": "web\\public\\events\\support\\Riko Kashimoto_PAL_SSR.png",
+    "phash64": 14610212569929391148,
+    "image_variants": [
+      "web\\public\\events\\support\\Riko Kashimoto_PAL_SSR.png"
+    ]
+  },
+  {
+    "key": "support/Rice Shower/PWR/SSR/A Page of Flower Shop Assistance",
+    "key_step": "support/Rice Shower/PWR/SSR/A Page of Flower Shop Assistance#s1",
+    "type": "support",
+    "name": "Rice Shower",
+    "rarity": "SSR",
+    "attribute": "PWR",
+    "event_name": "A Page of Flower Shop Assistance",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "mood": 2,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "stamina": 10,
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "a page of flower shop assistance",
+    "image_path": "web\\public\\events\\support\\Rice Shower_PWR_SSR.png",
+    "phash64": 15032679946626284686,
+    "image_variants": [
+      "web\\public\\events\\support\\Rice Shower_PWR_SSR.png"
+    ]
+  },
+  {
+    "key": "support/Rice Shower/PWR/SSR/A Page About Cloudy Weather",
+    "key_step": "support/Rice Shower/PWR/SSR/A Page About Cloudy Weather#s1",
+    "type": "support",
+    "name": "Rice Shower",
+    "rarity": "SSR",
+    "attribute": "PWR",
+    "event_name": "A Page About Cloudy Weather",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "speed": 5,
+          "guts": 5,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "hints": [
+            "Firm Conditions ○ (+1)"
+          ],
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "a page about cloudy weather",
+    "image_path": "web\\public\\events\\support\\Rice Shower_PWR_SSR.png",
+    "phash64": 15032679946626284686,
+    "image_variants": [
+      "web\\public\\events\\support\\Rice Shower_PWR_SSR.png"
+    ]
+  },
+  {
+    "key": "support/Rice Shower/PWR/SSR/Rainy Day, Floating Flowers",
+    "key_step": "support/Rice Shower/PWR/SSR/Rainy Day, Floating Flowers#s1",
+    "type": "support",
+    "name": "Rice Shower",
+    "rarity": "SSR",
+    "attribute": "PWR",
+    "event_name": "Rainy Day, Floating Flowers",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "power": 10,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "skill_pts": 40,
+          "hints": [
+            "Passing Pro (+1)"
+          ]
+        }
+      ]
+    },
+    "title_norm": "rainy day, floating flowers",
+    "image_path": "web\\public\\events\\support\\Rice Shower_PWR_SSR.png",
+    "phash64": 15032679946626284686,
+    "image_variants": [
+      "web\\public\\events\\support\\Rice Shower_PWR_SSR.png"
+    ]
+  },
+  {
+    "key": "support/Rice Shower/PWR/SSR/Magical Flowers, Forever Fair",
+    "key_step": "support/Rice Shower/PWR/SSR/Magical Flowers, Forever Fair#s2",
+    "type": "support",
+    "name": "Rice Shower",
+    "rarity": "SSR",
+    "attribute": "PWR",
+    "event_name": "Magical Flowers, Forever Fair",
+    "chain_step": 2,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 5,
+          "power": 10,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "energy": 15,
+          "power": 5,
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "magical flowers, forever fair",
+    "image_path": "web\\public\\events\\support\\Rice Shower_PWR_SSR.png",
+    "phash64": 15032679946626284686,
+    "image_variants": [
+      "web\\public\\events\\support\\Rice Shower_PWR_SSR.png"
+    ]
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/I'll Protect You!",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/I'll Protect You!#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "I'll Protect You!",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 20
+        }
+      ],
+      "2": [
+        {
+          "status": "Obtain Lucky Seven"
+        }
+      ]
+    },
+    "title_norm": "i'll protect you!",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Now or Never! Sacred Sites",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Now or Never! Sacred Sites#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Now or Never! Sacred Sites",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 10,
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "wit": 20
+        }
+      ]
+    },
+    "title_norm": "now or never! sacred sites",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/When Fukukitaru Comes, Fortune Follows",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/When Fukukitaru Comes, Fortune Follows#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "When Fukukitaru Comes, Fortune Follows",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "speed": 20,
+          "status": "Hot Topic"
+        }
+      ],
+      "2": [
+        {
+          "speed": 7,
+          "stamina": 7,
+          "power": 7,
+          "status": "Hot Topic"
+        }
+      ]
+    },
+    "title_norm": "when fukukitaru comes, fortune follows",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Cursed Camera",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Cursed Camera#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Cursed Camera",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "wit": 10
+        }
+      ],
+      "2": [
+        {
+          "skill_pts": 30
+        }
+      ]
+    },
+    "title_norm": "cursed camera",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Manhattan's Dream",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Manhattan's Dream#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Manhattan's Dream",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "hints": [
+            "Hesitant Front Runners (+1)"
+          ]
+        }
+      ],
+      "2": [
+        {
+          "stamina": 10
+        }
+      ]
+    },
+    "title_norm": "manhattan's dream",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Pretty Gunslingers",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Pretty Gunslingers#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Pretty Gunslingers",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "skill_pts": 15,
+          "mood": 1
+        }
+      ],
+      "2": [
+        {
+          "power": 10
+        }
+      ]
+    },
+    "title_norm": "pretty gunslingers",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Seven Gods of Fortune Fine Food Tour",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Seven Gods of Fortune Fine Food Tour#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Seven Gods of Fortune Fine Food Tour",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": 10,
+          "skill_pts": 5
+        }
+      ],
+      "2": [
+        {
+          "energy": 30,
+          "skill_pts": 10
+        },
+        {
+          "energy": 30,
+          "skill_pts": 10,
+          "speed": -5,
+          "power": 5,
+          "status": "Slow Metabolism"
+        }
+      ]
+    },
+    "title_norm": "seven gods of fortune fine food tour",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Fukukitaru's Protection against Misfortune",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Fukukitaru's Protection against Misfortune#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Fukukitaru's Protection against Misfortune",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "guts": 10
+        }
+      ],
+      "2": [
+        {
+          "power": 10
+        }
+      ]
+    },
+    "title_norm": "fukukitaru's protection against misfortune",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Punch in a Pinch",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Punch in a Pinch#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Punch in a Pinch",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "speed": 10
+        }
+      ],
+      "2": [
+        {
+          "stamina": 5,
+          "wit": 5
+        }
+      ]
+    },
+    "title_norm": "punch in a pinch",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Fukukitaru's Unique Good-Luck Spell",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Fukukitaru's Unique Good-Luck Spell#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Fukukitaru's Unique Good-Luck Spell",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "speed": 5,
+          "guts": 5
+        }
+      ],
+      "2": [
+        {
+          "stamina": 5,
+          "power": 5
+        }
+      ],
+      "3": [
+        {
+          "wit": 10
+        }
+      ]
+    },
+    "title_norm": "fukukitaru's unique good-luck spell",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Taking the Plunge",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Taking the Plunge#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Taking the Plunge",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 10
+        }
+      ],
+      "2": [
+        {
+          "speed": 5,
+          "wit": 5
+        }
+      ]
+    },
+    "title_norm": "taking the plunge",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Shrine Visit",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Shrine Visit#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Shrine Visit",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "power": 5,
+          "guts": 5
+        }
+      ],
+      "2": [
+        {
+          "speed": 5,
+          "stamina": 5
+        }
+      ]
+    },
+    "title_norm": "shrine visit",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Failed training (Get Well Soon!)",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Failed training (Get Well Soon!)#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Failed training (Get Well Soon!)",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "mood": -1,
+          "status": "Practice Poor"
+        },
+        {
+          "mood": -1
+        }
+      ],
+      "2": [
+        {
+          "mood": -1,
+          "status": "Practice Poor"
+        },
+        {
+          "status": "Practice Perfect ○"
+        }
+      ]
+    },
+    "title_norm": "failed training (get well soon!)",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Failed training (Don't Overdo It!)",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Failed training (Don't Overdo It!)#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Failed training (Don't Overdo It!)",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": 10,
+          "mood": -2,
+          "status": "Practice Poor"
+        },
+        {
+          "energy": 10,
+          "mood": -2
+        }
+      ],
+      "2": [
+        {
+          "mood": -3,
+          "status": "Practice Poor"
+        },
+        {
+          "energy": 10,
+          "status": "Practice Perfect ○"
+        }
+      ]
+    },
+    "title_norm": "failed training (don't overdo it!)",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Extra Training",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Extra Training#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Extra Training",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": -5,
+          "status": "Heal a negative status effect",
+          "bond": 5,
+          "character": "yayoi"
+        },
+        {
+          "energy": -5,
+          "bond": 5,
+          "character": "yayoi"
+        }
+      ],
+      "2": [
+        {
+          "energy": 5
+        }
+      ]
+    },
+    "title_norm": "extra training",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/At Summer Camp (Year 2)",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/At Summer Camp (Year 2)#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "At Summer Camp (Year 2)",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "guts": 10
+        }
+      ]
+    },
+    "title_norm": "at summer camp (year 2)",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Dance Lesson",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Dance Lesson#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Dance Lesson",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "power": 10
+        }
+      ],
+      "2": [
+        {
+          "wit": 10
+        }
+      ]
+    },
+    "title_norm": "dance lesson",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/New Year's Resolutions",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/New Year's Resolutions#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "New Year's Resolutions",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "wit": 10
+        }
+      ],
+      "2": [
+        {
+          "energy": 20
+        }
+      ],
+      "3": [
+        {
+          "skill_pts": 20
+        }
+      ]
+    },
+    "title_norm": "new year's resolutions",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/New Year's Shrine Visit",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/New Year's Shrine Visit#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "New Year's Shrine Visit",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": 30
+        }
+      ],
+      "2": [
+        {
+          "stats": 5
+        }
+      ],
+      "3": [
+        {
+          "skill_pts": 35
+        }
+      ]
+    },
+    "title_norm": "new year's shrine visit",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Acupuncture (Just an Acupuncturist, No Worries! ☆)",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Acupuncture (Just an Acupuncturist, No Worries! ☆)#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Acupuncture (Just an Acupuncturist, No Worries! ☆)",
+    "chain_step": 1,
+    "default_preference": 5,
+    "options": {
+      "1": [
+        {
+          "random_chance": 30,
+          "stats": 20
+        },
+        {
+          "random_chance": 70,
+          "mood": -2,
+          "stats": -15,
+          "status": "Night Owl"
+        }
+      ],
+      "2": [
+        {
+          "random_chance": 45,
+          "stats": 20,
+          "hints": [
+            "Corner Recovery ○",
+            "Straightaway Recovery"
+          ]
+        },
+        {
+          "random_chance": 55,
+          "energy": -20,
+          "mood": -2
+        }
+      ],
+      "3": [
+        {
+          "random_chance": 70,
+          "energy_max": 12,
+          "energy": 40,
+          "status": "heal"
+        },
+        {
+          "random_chance": 30,
+          "mood": -2,
+          "energy": -20,
+          "status": "Practice Poor"
+        }
+      ],
+      "4": [
+        {
+          "random_chance": 85,
+          "mood": 1,
+          "energy": 20,
+          "status": "Charming"
+        },
+        {
+          "random_chance": 15,
+          "mood": -1,
+          "energy": -20,
+          "status": "Practice Poor"
+        }
+      ],
+      "5": [
+        {
+          "energy": 10
+        }
+      ]
+    },
+    "title_norm": "acupuncture (just an acupuncturist, no worries! *)",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Victory! (G1)",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Victory! (G1)#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Victory! (G1)",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": -15,
+          "stats": 10,
+          "skill_pts": 45,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        }
+      ],
+      "2": [
+        {
+          "energy": -5,
+          "stats": 10,
+          "skill_pts": 45,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        },
+        {
+          "energy": -20,
+          "stats": 10,
+          "skill_pts": 45,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        }
+      ]
+    },
+    "title_norm": "victory! (g1)",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Victory! (G2/G3)",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Victory! (G2/G3)#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Victory! (G2/G3)",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": -15,
+          "stats": 8,
+          "skill_pts": 35,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        }
+      ],
+      "2": [
+        {
+          "energy": -5,
+          "stats": 8,
+          "skill_pts": 35,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        },
+        {
+          "energy": -20,
+          "stats": 8,
+          "skill_pts": 35,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        }
+      ]
+    },
+    "title_norm": "victory! (g2/g3)",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Victory! (Pre/OP)",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Victory! (Pre/OP)#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Victory! (Pre/OP)",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": -15,
+          "stats": 5,
+          "skill_pts": 30,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        }
+      ],
+      "2": [
+        {
+          "energy": -5,
+          "stats": 5,
+          "skill_pts": 30,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        },
+        {
+          "energy": -20,
+          "stats": 5,
+          "skill_pts": 30,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        }
+      ]
+    },
+    "title_norm": "victory! (pre/op)",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Solid Showing (G1)",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Solid Showing (G1)#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Solid Showing (G1)",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": -20,
+          "stats": 8,
+          "skill_pts": 45,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        }
+      ],
+      "2": [
+        {
+          "energy": -10,
+          "stats": 8,
+          "skill_pts": 45,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        },
+        {
+          "energy": -30,
+          "stats": 8,
+          "skill_pts": 45,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        }
+      ]
+    },
+    "title_norm": "solid showing (g1)",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Solid Showing (G2/G3)",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Solid Showing (G2/G3)#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Solid Showing (G2/G3)",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": -20,
+          "stats": 5,
+          "skill_pts": 35,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        }
+      ],
+      "2": [
+        {
+          "energy": -10,
+          "stats": 5,
+          "skill_pts": 35,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        },
+        {
+          "energy": -30,
+          "stats": 5,
+          "skill_pts": 35,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        }
+      ]
+    },
+    "title_norm": "solid showing (g2/g3)",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Solid Showing (Pre/OP)",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Solid Showing (Pre/OP)#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Solid Showing (Pre/OP)",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": -20,
+          "stats": 3,
+          "skill_pts": 30,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        }
+      ],
+      "2": [
+        {
+          "energy": -10,
+          "stats": 3,
+          "skill_pts": 30,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        },
+        {
+          "energy": -30,
+          "stats": 3,
+          "skill_pts": 30,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        }
+      ]
+    },
+    "title_norm": "solid showing (pre/op)",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Defeat (G1)",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Defeat (G1)#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Defeat (G1)",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": -25,
+          "stats": 4,
+          "skill_pts": 25,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        }
+      ],
+      "2": [
+        {
+          "energy": -15,
+          "stats": 4,
+          "skill_pts": 25,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        },
+        {
+          "energy": -35,
+          "stats": 4,
+          "skill_pts": 25,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        }
+      ]
+    },
+    "title_norm": "defeat (g1)",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Defeat (G2/G3)",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Defeat (G2/G3)#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Defeat (G2/G3)",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": -25,
+          "stats": 3,
+          "skill_pts": 20,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        }
+      ],
+      "2": [
+        {
+          "energy": -15,
+          "stats": 3,
+          "skill_pts": 20,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        },
+        {
+          "energy": -35,
+          "stats": 3,
+          "skill_pts": 20,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        }
+      ]
+    },
+    "title_norm": "defeat (g2/g3)",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Defeat (Pre/OP)",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Defeat (Pre/OP)#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Defeat (Pre/OP)",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": -25,
+          "skill_pts": 10,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        }
+      ],
+      "2": [
+        {
+          "energy": -15,
+          "skill_pts": 10,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        },
+        {
+          "energy": -35,
+          "skill_pts": 10,
+          "hints": [
+            "Hint for a skill related to the race"
+          ]
+        }
+      ]
+    },
+    "title_norm": "defeat (pre/op)",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Etsuko's Exhaustive Coverage (G1)",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Etsuko's Exhaustive Coverage (G1)#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Etsuko's Exhaustive Coverage (G1)",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": -25,
+          "mood": -1,
+          "stats": 4,
+          "skill_pts": 25,
+          "bond": -10,
+          "character": "etsuko"
+        },
+        {
+          "energy": -15,
+          "mood": 1,
+          "stats": 4,
+          "skill_pts": 25,
+          "bond": 15,
+          "character": "etsuko"
+        }
+      ],
+      "2": [
+        {
+          "energy": -20,
+          "stats": 4,
+          "skill_pts": 25,
+          "bond": 10,
+          "character": "etsuko"
+        }
+      ]
+    },
+    "title_norm": "etsuko's exhaustive coverage (g1)",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Etsuko's Exhaustive Coverage (G2/G3)",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Etsuko's Exhaustive Coverage (G2/G3)#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Etsuko's Exhaustive Coverage (G2/G3)",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": -25,
+          "mood": -1,
+          "stats": 3,
+          "skill_pts": 20,
+          "bond": -10,
+          "character": "etsuko"
+        },
+        {
+          "energy": -15,
+          "mood": 1,
+          "stats": 3,
+          "skill_pts": 20,
+          "bond": 15,
+          "character": "etsuko"
+        }
+      ],
+      "2": [
+        {
+          "energy": -20,
+          "stats": 3,
+          "skill_pts": 20,
+          "bond": 10,
+          "character": "etsuko"
+        }
+      ]
+    },
+    "title_norm": "etsuko's exhaustive coverage (g2/g3)",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
+  },
+  {
+    "key": "trainee/Matikanefukukitaru (Full Armor)/None/None/Etsuko's Exhaustive Coverage (Pre/OP)",
+    "key_step": "trainee/Matikanefukukitaru (Full Armor)/None/None/Etsuko's Exhaustive Coverage (Pre/OP)#s1",
+    "type": "trainee",
+    "name": "Matikanefukukitaru (Full Armor)",
+    "rarity": "None",
+    "attribute": "None",
+    "event_name": "Etsuko's Exhaustive Coverage (Pre/OP)",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": -25,
+          "mood": -1,
+          "skill_pts": 10,
+          "bond": -10,
+          "character": "etsuko"
+        },
+        {
+          "energy": -15,
+          "mood": 1,
+          "skill_pts": 10,
+          "bond": 15,
+          "character": "etsuko"
+        }
+      ],
+      "2": [
+        {
+          "energy": -20,
+          "skill_pts": 10,
+          "bond": 10,
+          "character": "etsuko"
+        }
+      ]
+    },
+    "title_norm": "etsuko's exhaustive coverage (pre/op)",
+    "image_path": null,
+    "phash64": null,
+    "image_variants": []
   }
 ]
