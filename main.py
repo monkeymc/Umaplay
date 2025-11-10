@@ -39,6 +39,7 @@ from core.perception.ocr.interface import OCRInterface
 from core.perception.yolo.interface import IDetector
 from core.controllers.steam import SteamController
 from core.controllers.android import ScrcpyController
+from core.controllers.adb import ADBController
 from core.utils.tkthread import ensure_tk_loop
 
 try:
@@ -59,11 +60,24 @@ def make_controller_from_settings() -> IController:
     mode = Settings.MODE.lower().strip()
     window_title = Settings.resolve_window_title(mode)
 
+    logger_uma.debug(
+        f"[CTRL] Requested mode='{Settings.MODE}' normalized='{mode}' window_title='{window_title}'"
+    )
+
     if mode == "steam":
         logger_uma.info(f"[CTRL] Mode=steam, window_title='{window_title}'")
         return SteamController(window_title)
+    elif mode == "adb":
+        device = getattr(Settings, "ADB_DEVICE", None)
+        logger_uma.info(f"[CTRL] Mode=adb, device='{device}'")
+        return ADBController(device=device)
     elif mode == "bluestack":
-        # Use dedicated controller if available, else ScrcpyController as a windowed generic fallback
+        use_adb = getattr(Settings, "USE_ADB", False)
+        if use_adb:
+            device = getattr(Settings, "ADB_DEVICE", "localhost:5555")
+            logger_uma.info(f"[CTRL] Mode=bluestack (ADB), device='{device}'")
+            return ADBController(device=device, auto_connect=True)
+
         logger_uma.info(f"[CTRL] Mode=bluestack, window_title='{window_title}'")
         if HAS_BLUESTACKS_CTRL and BlueStacksController is not None:
             return BlueStacksController(window_title)  # type: ignore
@@ -248,14 +262,20 @@ class BotState:
             if not ctrl.focus():
                 # Helpful mode-aware error
                 mode = Settings.MODE.lower()
-                miss = (
-                    "Steam"
-                    if mode == "steam"
-                    else ("BlueStacks" if mode == "bluestack" else "SCRCPY")
-                )
-                logger_uma.error(
-                    f"[BOT] Could not find/focus the {miss} window (title='{Settings.resolve_window_title(mode)}')."
-                )
+                if mode == "adb" or (mode == "bluestack" and Settings.USE_ADB):
+                    logger_uma.error(
+                        f"[BOT] Could not connect to ADB device '{Settings.ADB_DEVICE}'. "
+                        "Ensure ADB is installed, the device is reachable (e.g. adb connect localhost:5555), and BlueStacks ADB is enabled."
+                    )
+                else:
+                    miss = (
+                        "Steam"
+                        if mode == "steam"
+                        else ("BlueStacks" if mode == "bluestack" else "SCRCPY")
+                    )
+                    logger_uma.error(
+                        f"[BOT] Could not find/focus the {miss} window (title='{Settings.resolve_window_title(mode)}')."
+                    )
                 return
 
             ocr, yolo_engine = make_ocr_yolo_from_settings(ctrl)
@@ -398,14 +418,20 @@ class NavState:
             ctrl = make_controller_from_settings()
             if not ctrl.focus():
                 mode = Settings.MODE.lower()
-                miss = (
-                    "Steam"
-                    if mode == "steam"
-                    else ("BlueStacks" if mode == "bluestack" else "SCRCPY")
-                )
-                logger_uma.error(
-                    f"[AgentNav] Could not find/focus the {miss} window (title='{Settings.resolve_window_title(mode)}')."
-                )
+                if mode == "adb" or (mode == "bluestack" and Settings.USE_ADB):
+                    logger_uma.error(
+                        f"[AgentNav] Could not connect to ADB device '{Settings.ADB_DEVICE}'. "
+                        "Ensure ADB is installed, the device is reachable, and BlueStacks ADB is enabled."
+                    )
+                else:
+                    miss = (
+                        "Steam"
+                        if mode == "steam"
+                        else ("BlueStacks" if mode == "bluestack" else "SCRCPY")
+                    )
+                    logger_uma.error(
+                        f"[AgentNav] Could not find/focus the {miss} window (title='{Settings.resolve_window_title(mode)}')."
+                    )
                 return
 
             # OCR from settings, YOLO engine for NAV specifically

@@ -9,6 +9,7 @@ from PIL import Image, ImageDraw
 from core.controllers.steam import SteamController
 from core.controllers.bluestacks import BlueStacksController
 from core.controllers.android import ScrcpyController
+from core.controllers.adb import ADBController
 from core.perception.yolo.yolo_local import LocalYOLOEngine
 from core.settings import Settings
 from core.types import DetectionDict
@@ -16,9 +17,9 @@ from core.types import DetectionDict
 
 def _build_controller(mode: str, window_title: str | None):
     mode = (mode or "steam").strip().lower()
-    if mode not in {"steam", "bluestack", "scrcpy"}:
+    if mode not in {"steam", "bluestack", "scrcpy", "adb"}:
         raise SystemExit(
-            f"Unsupported mode '{mode}'. Use one of: steam | bluestack | scrcpy"
+            f"Unsupported mode '{mode}'. Use one of: steam | bluestack | scrcpy | adb"
         )
 
     title = window_title or Settings.resolve_window_title(mode)
@@ -27,6 +28,9 @@ def _build_controller(mode: str, window_title: str | None):
         return SteamController(window_title=title, capture_client_only=True)
     if mode == "bluestack":
         return BlueStacksController(window_title=title, capture_client_only=True)
+    if mode == "adb":
+        device = Settings.ADB_DEVICE
+        return ADBController(device=device)
     # scrcpy
     return ScrcpyController(window_title=title, capture_client_only=True)
 
