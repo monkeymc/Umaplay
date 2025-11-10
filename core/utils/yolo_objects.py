@@ -1,19 +1,35 @@
 # core/utils/yolo_objects.py
 from __future__ import annotations
 
+
 from typing import List, Optional, Sequence, Tuple
 
 from PIL import Image
-from core.controllers.base import IController
 from core.perception.yolo.interface import IDetector
 from core.types import XYXY, DetectionDict
+from core.utils.logger import logger_uma
+
+
 
 
 def collect(
-    yolo_engine: IDetector, *, imgsz=832, conf=0.51, iou=0.45, tag="general"
+    yolo_engine: IDetector,
+    *,
+    imgsz=832,
+    conf=0.51,
+    iou=0.45,
+    tag: str = "general",
+    agent: Optional[str] = None,
 ) -> Tuple[Image.Image, List[DetectionDict]]:
     conf = max(conf, 0.1)
-    img, _, dets = yolo_engine.recognize(imgsz=imgsz, conf=conf, iou=iou, tag=tag)
+    if agent is None:
+        extra={"collect_tag": tag}
+        logger_uma.warning(
+            f"collect called without agent; defaulting to generic debug folder: {extra}",
+        )
+    img, _, dets = yolo_engine.recognize(
+        imgsz=imgsz, conf=conf, iou=iou, tag=tag, agent=agent
+    )
     return img, dets
 
 

@@ -902,7 +902,8 @@ class LobbyFlow(ABC):
                 imgsz=self.waiter.cfg.imgsz,
                 conf=self.waiter.cfg.conf,
                 iou=self.waiter.cfg.iou,
-                tag="recreation_screen"
+                tag="recreation_screen",
+                agent=self.waiter.cfg.agent,
             )
             
             # Check for recreation rows in detections

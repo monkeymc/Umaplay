@@ -82,6 +82,7 @@ class LobbyFlowUnityCup(LobbyFlow):
             conf=self.waiter.cfg.conf,
             iou=self.waiter.cfg.iou,
             tag="lobby_state",
+            agent=self.waiter.cfg.agent,
         )
 
         if not self.process_on_demand:
