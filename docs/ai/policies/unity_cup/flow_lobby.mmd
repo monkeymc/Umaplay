@@ -1,23 +1,20 @@
 flowchart TD
-START[Start of turn in lobby] --> PRECHECKS{Pre checks}
+START[Start of turn in lobby] --> PLAN{Planned race today?}
 
-PRECHECKS -->|Infirmary needed| INFIRMARY[Go to infirmary then end turn]
-PRECHECKS -->|Mood too low| RECREATION[Do recreation then end turn]
-PRECHECKS -->|Energy at or below auto rest| AUTOREST[Rest then end turn]
-PRECHECKS -->|Summer window| SUMMER{Plan for summer}
-PRECHECKS -->|Race day| RACEDAY{Handle race day}
-PRECHECKS -->|None of the above| ENTER_TRAIN[Open training screen]
+PLAN -->|Yes and guard passes| RACE_PLAN[Run planned race then end turn]
+PLAN -->|Yes but blocked| PLAN_SUPPRESS[Skip due to first junior day or skip guard]
+PLAN -->|No| EARLY{Critical goal race window?}
 
-%% Summer planning
-SUMMER -->|Next turn is summer| SUM1[Prefer light WIT or rest to enter summer with high energy then end turn]
-SUMMER -->|Within two turns and energy under ninety| SUM2[WIT if decent else rest then end turn]
-SUMMER -->|Otherwise| ENTER_TRAIN
+PLAN_SUPPRESS --> EARLY
 
-%% Race day
-RACEDAY -->|Scheduled race allowed| RACE_SCHED[Run scheduled race then end turn]
-RACEDAY -->|Junior fans goal unmet| RACE_FANS[Run a fans race then end turn]
-RACEDAY -->|Junior maiden uncleared| RACE_MAIDEN[Run maiden then end turn]
-RACEDAY -->|Target class or G1 goal pending| RACE_TARGET[Run target race then end turn]
-RACEDAY -->|Otherwise optional| RACE_OPT{Race or train}
-RACE_OPT -->|Prefer race| RACE_SAFE[Run safe race then end turn]
-RACE_OPT -->|Prefer training| ENTER_TRAIN
+EARLY -->|Yes| RACE_GOAL[Run goal race then end turn]
+EARLY -->|No| INFIRM{Infirmary active and not summer?}
+
+INFIRM -->|Yes| DO_INFIRM[Go to infirmary then end turn]
+INFIRM -->|No| ENERGY{Energy <= auto rest minimum?}
+
+ENERGY -->|Yes| REST_LOW[Rest then end turn]
+ENERGY -->|No| SUMMER{Summer in <=2 turns and energy <=50?}
+
+SUMMER -->|Yes| REST_SUMMER[Rest to prep summer then end turn]
+SUMMER -->|No| ENTER_TRAIN[Open training screen]

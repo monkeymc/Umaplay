@@ -10,18 +10,19 @@ auto_execution_mode: 1
 
 ## 🎯 Goal
 
-Produce accurate, readable, and maintainable **Lobby** and **Training** flowcharts (`flow_lobby.mmd`, `flow_training.mmd`) plus a concise `notes.txt` that documents thresholds, gates, and tie-break rules. Prefer **small, safe edits** when the code evolved slightly; perform **full rewrites** only when logic materially changed. For **minor** findings, adjust wording and edge labels; for **major** changes, update nodes/branches and the thresholds legend, and record rationale in `notes.txt`.
+Produce accurate, readable, and maintainable **Lobby**, **Training**, **Scoring**, and any other requested flowcharts (e.g. `flow_lobby.mmd`, `flow_training.mmd`, `flow_scoring_system.mmd`, `flow_<custom>.mmd`) plus a concise `notes.txt` that documents thresholds, gates, tie-break rules, and cameo/spirit scoring. Prefer **small, safe edits** when the code evolved slightly; perform **full rewrites** only when logic materially changed. For **minor** findings, adjust wording and edge labels; for **major** changes, update nodes/branches and the thresholds legend, and record rationale in `notes.txt`.
 
 ---
 
 ## ⚙️ Operating Rules
 
 * **Source of truth:** derive behavior from code, configs, and in-repo docs only.
-* **Two viewpoints per scenario:**
+* **Required viewpoints:** document every policy file the user names. By default cover:
 
-  1. **Lobby** (pre-training turn screening: infirmary, mood, summer/race windows, schedule).
-  2. **Training** (on the training screen: SV collection, caps, hints, director/pal, spirits/flames, WIT/REST/RACE gates, thresholds).
-* **Mermaid style (parse-safe):**
+  1. **Lobby** (pre-training turn screening: infirmary, mood, summer/race windows, schedule, race-plans).
+  2. **Training** (SV filters, priority guard, mood/energy/race gates, director/PAL, spirits, final season, WIT logic).
+  3. **Scoring system** when `compute_support_values` or similar scoring helpers changed.
+* **Mermaid style (parse-safe):** keep diagrams ASCII-only, single-line labels, no parentheses, IDs with underscores, and only end nodes with “then end turn” when the turn truly ends.
 
   * ASCII only (no Unicode arrows/quotes). Use `<=`, `>=`, `%`, plain digits.
   * No ampersands in labels; write “and”.
@@ -30,9 +31,9 @@ Produce accurate, readable, and maintainable **Lobby** and **Training** flowchar
   * End nodes with “then end turn” only when they truly end the turn.
 * **Thresholds & vocabulary:**
 
-  * Extract numeric gates (e.g., SV bins, energy %, mood levels) from code/constants.
-  * Define **named bins** in `notes.txt` (e.g., `SV_high`, `SV_mid`, `SV_late`) and reflect them in the diagrams with explicit numbers.
-  * Describe tie-break/priority guard succinctly in notes; keep edges short.
+  * Extract numeric gates (SV bins, energy %, mood levels, risk multipliers, hint multipliers) directly from code/constants.
+  * Define **named bins** in `notes.txt` (e.g., `SV_high`, `SV_mid`, `SV_late`, `risk_high`) and reflect them in the diagrams with explicit numbers.
+  * Describe tie-break/priority guard, cameo values, and spirit combos succinctly in notes; keep diagram edges short.
 * **Validation & truth-checking:**
 
   * Cross-check each branch against code comments and conditionals.
@@ -45,17 +46,18 @@ Produce accurate, readable, and maintainable **Lobby** and **Training** flowchar
 
 1. **Scan recent signals:**
 
-   * Diff relevant code modules, policy helpers, and constants; read recent commits, TODOs, and comments related to policy/thresholds.
-   * Inspect existing `flow_*.mmd` and `notes.txt` for drift (missing branches, outdated thresholds).
+   * Identify the scenario folder under `docs/ai/policies/<scenario>/`.
+   * Locate governing code: lobby flows (`core/actions/<scenario>/lobby.py`), training policy (`core/actions/<scenario>/training_policy.py`), scoring helpers (`core/actions/<scenario>/training_check.py`, `compute_support_values`), agent glue (`core/actions/<scenario>/agent.py`), and any scenario-specific utils/configs.
+   * Review existing diagrams and `notes.txt` for drift (missing branches, outdated thresholds or cameo numbers).
 2. **Compare with reference:**
 
-   * Map code branches → diagram nodes/edges; list mismatches (missing node, wrong threshold, renamed concept, reordered priority).
-   * Check whether resource files for the target **scenario** exist; if not, mark as “new”.
+   * Map code branches → diagram nodes/edges and list mismatches (missing node, wrong threshold, renamed concept, reordered priority, updated cameo/scoring rules).
+   * Check whether resource files for the target scenario exist; if any artifact is missing, plan to create it.
 3. **Decide update level:**
 
-   * **Minor:** wording/labels, threshold number nudges, legend tweaks.
-   * **Moderate:** add/remove a branch, update bins, add Director/Spirit or Race windows.
-   * **Major:** rewrite significant sections, split/merge nodes, add new ladders or modes.
+   * **Minor:** wording/labels, small numeric corrections, legend tweaks.
+   * **Moderate:** add/remove a branch, update bins, add director/spirit windows, adjust scoring nodes.
+   * **Major:** rewrite significant sections, split/merge ladders, add new flow files, or overhaul scoring diagrams.
 
 ---
 
@@ -63,32 +65,37 @@ Produce accurate, readable, and maintainable **Lobby** and **Training** flowchar
 
 ### Step 1 — Assess
 
-Define scenario (`<scenario>`), purpose (which files to touch), inputs (code, configs, current diagrams), expected outputs (two `.mmd` files + `notes.txt`), and validation (Mermaid parse sanity, branch coverage, threshold consistency).
+Define scenario (`<scenario>`), desired artifacts, and scope:
+
+* Collect inputs: source modules, existing diagrams, user screenshots/notes, scenario configs.
+* Record expected outputs (which `.mmd` files and whether `notes.txt` needs changes).
+* Decide validation plan (Mermaid parse sanity, branch coverage, threshold consistency).
 
 ### Step 2 — Select Mode
 
-Choose **light / moderate / major** based on the number and impact of mismatches (see “Update Detection Method”). Prefer light when only text or constants changed; move to major if core policy flow diverged.
+Choose **light / moderate / major** based on mismatches gathered in Update Detection. Prefer light edits for small constants; switch to major when control flow or scoring changed.
 
-### Step 3 — Apply
+### Step 3 — Research Details
 
-* Update `flow_lobby.mmd`:
+1. **Lobby logic:** trace `process_turn` (and helpers like `_plan_race_today`, `_maybe_do_goal_race`, `_go_rest`, `_go_training_screen_from_lobby`). Note energy gates, race guards, infirmary/mood handling, summer prep, and reasons returned.
+2. **Training decisions:** follow `decide_action_training` (caps, hints, distribution nudge, priority guard, final season, mood, summer staging, SV thresholds, energy/race fallbacks). Capture constants from function arguments and `Settings` references.
+3. **Scoring system:** read `compute_support_values` (cameo values, hint defaults, rainbow combo, spirits, risk multipliers, greedy flag). Include any scenario-specific overrides or multipliers.
+4. **Other flows:** if the user requests additional diagrams (e.g., showdown, race-day), read the associated modules and extract equivalent decision trees.
 
-  * Include: **race day checks**, junior/debut gates, **goals** (G1, maiden, fans) if they affect decision, **infirmary/mood**, **summer proximity**, schedule/skip toggles, and the decision to enter training.
-  * Summarize algorithms in natural language labels (no internal math).
-* Update `flow_training.mmd`:
+### Step 4 — Apply Updates
 
-  * Start with snapshot → **SV computation and risk gate**.
-  * **Caps & hint override**, **undertrained distribution** nudge, **SV bins** (high/mid/late), **Director** (color/window), **WIT** soft-skip rules, **spirits/flames** impact (white/blue + combo summary), **PAL/Reporter** cameo notes (if modeled), **energy** gates, **race fallback**, **final-season** rules (e.g., secure 600/1170/1200 targets).
-* Update `notes.txt`:
+* **flow_lobby.mmd:** encode race-plan guards, energy/mood/infirmary checks, summer prep, and transition to training. Show when the loop ends vs continues.
+* **flow_training.mmd:** map decision ladder from SV computation through final fallbacks. Highlight thresholds, caps, WIT logic, director windows, spirits, and race fallbacks. Keep priority guard and distribution gates explicit.
+* **flow_scoring_system.mmd (or requested scoring flow):** diagram scoring pipeline (support contributions, hints, combos, spirits, risk scaling, greedy flag). Reference cameo values and multipliers verbatim.
+* **notes.txt:** synchronize terminology and numeric gates (SV bins, energy thresholds, risk multipliers, cameo scores, spirit combos, hint defaults, distribution thresholds). Include quick references for tie-break logic, director windows, summer rules, and scenario toggles.
+* Apply the Mermaid style rules (ASCII labels, single-line nodes, no stray punctuation).
 
-  * Enumerate thresholds (SV bins, energy %, mood), tie-break/priority guard, distribution undertrain rule (threshold and gap logic), Director windows/colors, spirit/flame scoring and combos, summer logic, fast-mode differences, and any scenario-specific toggles.
-* Keep diagrams parse-safe (see rules).
+### Step 5 — Verify
 
-### Step 4 — Verify
-
-* **Syntax sanity:** ensure each `.mmd` compiles in a strict Mermaid renderer; decisions have all exits; no dangling nodes.
-* **Semantic checks:** thresholds in diagrams match `notes.txt` and code; naming is consistent across both flow files.
-* **Completeness:** Lobby covers pre-checks and the jump to training; Training covers in-screen choices and terminal actions.
+* **Syntax sanity:** ensure each `.mmd` renders in strict Mermaid (all nodes reachable, no dangling edges).
+* **Semantic alignment:** cross-check numbers and terminology against code; ensure `notes.txt` matches diagram labels.
+* **Completeness:** confirm every branch in code is reflected somewhere (including error/skip guards). Ensure scoring diagram covers all additive components and risk logic.
+* **Report:** summarize update mode, files touched, key changes, and verification results using the template below.
 
 ---
 

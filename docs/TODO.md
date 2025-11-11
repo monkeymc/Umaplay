@@ -8,92 +8,74 @@ This organizes the mixed notes into a clear, actionable backlog. Items are group
 
 ### 0.4.0
 
-General
-- Add minimal testing
-tag button pink (filter the race_after_next), we didn't have that before
+#### General Strategy / Policy:
+- Parameter to define 'weak turn'
+- Speaking of minimum mood, if it's great you often see the bot recreate for the first 2 turns, is it possible to perhaps have a different minimum mood option for the junior year or if energy is full and a friendship can be raised do that instead?
+- Lookup toggle: allow skipping **scheduled race** if training has **2+ rainbows**
+  “Check first” at lobby: pre-turn heuristics before going to infirmaty, rest, etc. Pre lookup
+  "Check first" allowed for races individually set
 
+#### PAL Policy:
+- Dating PAL before Junior Year Late Dec isn't super important.
+- Capture in lobby stats 'Recreation PAL' for later trainig decisions. YOLO model can detect that
+- On Week turn, if energy is not full and recreation is there with a turn that give us energy, use the pal.
+- Use dating with pal (if it give energy), as replacement of REST and RECREATION
+- @Rosetta: Tazuna blue was worth more, you want to get it to green ASAP to unlock her dates (there's a bonus if you do it in the junior year)
+- Some options doesn't give energy, but move the event chain, handle that if 'weak turn'. If we don't know in which chain number we are, open the recreation / collect and go back
+- @Rosetta: Speaking of Tazuna, I'd like to see an option that when auto rest is supposed to trigger and mood is below minimum, recreation takes priority
+- @Rosetta:
+For Tazuna I have stats > hints for energy overcap priority, but it will still reject dating if energy is high enough even though accepting provides stats and rejecting only a hint (I want energy overcap prevention for her third date)
 
-Aoharu Hai (beta):
-- Create Label Studio project for YOLO 'large' model, considerations:
+#### Unity Cup Policy:
+- Allowed / Disallowed stats for spirit burst.
+- Priority for explosion will be handled by the same stat priority config. 
+- Web UI, selector for first team opponent and the 'rest'
+- Configurable scoring system for: rainbow combo, white spirit values (before senior / in seniour), white spirit combo 
+- blue spirit will generate a 'spirit_burst' boolean. But value will be the same something similar to white spirit. Also configurable in score system
+- Don't explode in overtrained stats (more than our 'stats caps' in our config)
+- prioritize exploding remanent blue explosions in previous 4 turns before Senior November early (we get skill here) ->. In Last two turns (URA finale), just explode wherever they are if we found a burst.
+- Prioritize spirit on junior and classic; if there's no white flames in any tile, date Riko if you have her or train wit. Reduce its score in Senior
+
+#### Unity Cup finish screen bug:
+- it not officially finishing once the end screen is reached, it just hangs (and doesn't trigger the final skill buy sequence)
+
+#### Unity Cup UX:
+- scenario selector in web ui for events, should be forced to the particular active scenario
+- Feedback from Rocostre: Ok when switching to unity cup all the presets are blank I mean … the page it’s blank like there’s nothing for me to put there for some reason …
+- update web ui hint defaults for unity cup to 0.5 / 0.25
+
+#### General UX:
+- changing external processor takes too much time
+
+#### README.md:
+- Improve installation instructions
+- update requirements.txt
+- suggest just open terminal as admin in the worst case
+- slice the readme to make easier to read
+- Update images
+
+#### QoL:
+- @Rosetta:
 """
-1. not director, but keep it, put kashimoto intead. She is special here, not like tazuna
-kashimoto can act as new director (no support_type icon) or as our support card (then she will have the support_type pal icon). -> team joined. For URA we need to do this if they use Riko Kashimoto here
-
-new classes:
--> Retrain Calendar with new images
-1. Calendar below aoharu turns
-2. hint special training (classifier for the color)
-3. flame special training (classifier to check if 'explosion, normal / remaning energy)
-4. banner race
-5. clock
-6. Inspiration button change by: 'button_golden' to be able to support the riko confrontation
+Speaking of presets, if it's not too hard could we please have a way of sorting them into tabs/groups or at least be able to change the order in which they are on the list? When you have a lot like I do having to keep pressing the arrows while looking through them all is quite the tedious task
 """
 
-
-- Aoharu Strategy:
-"""
-
-- Add a priority stats for explosions (can be different than normal priority stats)
-- first trials may be better to select second one, the rest the first one. In web ui we need to set the 'first' team oponnent selection, and then the rest.
-- Rainbow score is configurable, with a button that says 'add rainbow combo' 
-- priority explosion, but also 'disable' stat to explode in the same ui
-- flexible risk now we need to be careful because we can easily get 5 6  7 etc, reuce and increase the requirements
-- first race in unity cup should press 'watch main race' and a yellow button like inspiration appears. After that a concert appears. Handle a new screen class 'Race Stale' to detect the 'advance / next' button and press it 
-- ability to disable explosion in certains stats, and also prioritize stats explosion so in case there are same scores we decide this in same ui
-- now a weak turn may be a little up, to sleep preparing for better opportunity. May be 1.75 because two flames may be or not may be ok)
-- "At team at last" will have options that will vary, so we need to check the OCR text to decide, by default the last one
-- 1.5 in wit (if flame) may be better than 1.75 in guts (if in priority order wit is first before guts)
-- mantain a counter, if explosion is not in expected stats to be exploded, don't explode and check if some flame is about to fill, keep counting to do the best planning algorithm
-- don't explode in overtrained stats
-- if it is the final season, just explode any blue ball, doesn't matter position (prefer wit)
-
-
-"""
-
-General Strategy / Policy:
-- Parameter to define 'weak turn' / 'low 
-- PAL training:
-  - @Rosetta: Tazuna blue was worth more, you want to get it to green ASAP to unlock her dates (there's a bonus if you do it in the junior year)
-  - Make Tazuna orange/max also configurable (Also Riko Kashimoto). +0.15 (orange, yellow, max) by default
-  - Capture in lobby stats 'Recreation PAL' for later trainig decisions
-    -> When energy needed, and tazuna available, prefer tazuna (keep the chain counting to not select one with no good energy recovery)
-
-Only
-
- — 9:09
-this is what my script are able to parse right now just need to make constant of trainee shared event such as Special Events / After a Race manually and and use this data { "nyear": "in", "dance": [ "sp", "st" ] } to adjust New Year's Resolutions and Dance Lesson accordingly then we are done. you can check the progress here https://github.com/preampinbut/Umaplay. 
-e.g.
-https://gametora.com/umamusume/supports/30027-mejiro-palmer
-https://gametora.com/umamusume/characters/105602-matikanefukukitaru
-
-
-PhantomDice —> Thanks for supporting project
-
-if race_after_next is disabled click pink?
-
-Weir error check thread, air grove: @
-
-
-Chat Ja
-
- — 11:20
-sorry to dm. my english not good. i found problem on dev branch. could you increase margin top and decrease margin bot ? thank you !
-
-
-
-scikit-image==0.25.2 -> new library, try to handle autoinstall
 
 ### 0.4.1
 
+
+Weir error check thread, air grove: @
+
 add a togle to 'prefer priority stats if are 0.75 less or equal' disabled by default
 
+also look for 'alone' hints / spirits, we may have a support card below. If not recognized a support_card
 
-annotated for 0.4.1, thanks for suggestions as always Rosetta
 
-For Tazuna I have stats > hints for energy overcap priority, but it will still reject dating if energy is high enough even though accepting provides stats and rejecting only a hint (I want energy overcap prevention for her third date)
-Speaking of Tazuna, I'd like to see an option that when auto rest is supposed to trigger and mood is below minimum, recreation takes priority
-Speaking of minimum mood, if it's great you often see the bot recreate for the first 2 turns, is it possible to perhaps have a different minimum mood option for the junior year or if energy is full and a friendship can be raised do that instead?
+@Rosetta:Final tip, only do optional races if:
+Never do optional races just because it doesn't look like there's anything else good. Discourage this option in Unity cup web ui
 
+
++1 for wit (we want to avoid resting as much as possible), but don't explode blue here
 
 General:
 - Create discord roles
@@ -103,19 +85,18 @@ Rosetta — 8:40
 
 After the bot checks for skills after a hint, it doesn't seem to be able to detect any info on the screen and will always rest regardless of energy value
 
-
-Speaking of presets, if it's not too hard could we please have a way of sorting them into tabs/groups or at least be able to change the order in which they are on the list? When you have a lot like I do having to keep pressing the arrows while looking through them all is quite the tedious task
-
-### Bugfixes
-- For initial stuff
-
-General Strategy / Policy:
-- Lookup toggle: allow skipping **scheduled race** if training has **2+ rainbows**
-  “Check first” at lobby: pre-turn heuristics before going to infirmaty, rest, etc. Pre lookup
-  "Check first" allowed for races individually set
-
 Claw Machine:
 - @Rosetta: Re-check of the logic so it always Win. If first detected plushie is good enough and it is not at the border take it, if not do a full scan. Check the zips on discord.
+
+we have 'silent' yolo detection errors. for example with support_bar, it has 0.31 so it was filtered out before our debug saver
+add a check like 'if support type, then you must have support bar, otherwise try again with less confidence
+
+Fast mode bugs:
+- Solve
+
+reprocess all events data and trainee data
+
+Handle a new screen class 'Race Stale' to detect the 'advance / next' button and press it 
 
 ### 0.4.2
 
@@ -125,6 +106,9 @@ Events:
 
 Bug:
 - race.py 867 when getting the style_btns chosen, error of list index out of range
+
+
+Roseta: Also I don't have a log for it but if it's on fast mode and finds a good training that's capped, it'll return NOOP before checking other trianings and keep looping like that 
 
 Bot Strategy:
 One more little idea I've just had - it would be cool if the settings "allow racing over low training" could be expanded into deciding what grades of races this is allowed to trigger with (eg. only G1s)
@@ -139,12 +123,26 @@ Quality Assurance:
 PhantomDice —> Thanks for supporting project
 
 
+with f8 also detect the shop
+
+@Unknown
+
+ — 3/11/2025 1:00
+Found another "bug" where it stops at Ura races
+Stuff I used
+
+thread of 'Unknown'
+
+support_type is confusing pwr and PAL, better use a classiffier or another logic
+
+
+### 0.4.3
+optimize CNN predicts with ONNX runtime for CPU automatically
+
+
 ## 0.5
 
 ### 0.5.0
-
-Scenario:
-- Aoharu Hai stabilization
 
 Bat and executable:
 - bat is failing
@@ -208,10 +206,39 @@ Bug:
 - for trainee matcher, train a classifier, for now keep template matching. With label studio train the classifier
 - 'pre-process' based on the preset, and use the preprocess to speed up the progress
 
+
+@Rocostre:
+"""
+test it in JP version to bring plugins and more:
+came across this repository a while back while using the Japanese version, and it worked incredibly well — even to this day. I was wondering if you could take a look at the logic behind it and suggest any possible fixes or improvements on your current project. Not sure if this helps or if you're already familiar with it.
+
+https://github.com/NateScarlet/auto-derby
+
+
+for the pluggins themselves it looks like they are custom macros or logic that other users generated or contribuited for the project to run certain events or training for example there are specific pluggins for an uma training in an specific way to get specific results here is the directory in the repo https://github.com/NateScarlet/auto-derby/wiki/Plugins is all in jap so youll need to translate it.
+
+and here are training results posted by other users that used specific pluggins during training https://github.com/NateScarlet/auto-derby/wiki/Nurturing-result
+"""
+
+@Rocostre:
+fair enough... also if you can at some point you can add the bot to have an optional setting to auto purchase skills based on currect uma stats to compensate and for the current next race, if possible, for example even if you set up priotity skills to buy but when you are about to purchase skills you don have your desired skills bot will look for alternate skills that are availble that will help you on your next race.
+im going to try it out with air grove and see what happens
+
 ### 0.5.1
 vestovia — Yesterday at 7:37
 hi! thank you for the umaplay bot, i understand you avoid emulators due to the inherent risk, but just wondering if adb support or support for other emulators is in the plans? im currently using mumuplayer for the 60fps+ as sometimes i play manually and i think it also might allow it to run in the background like uat? though i think i can use rdp for the meantime but it would be nice. thank you again!
 
+0.5.2
+support friend bar when overlapped by support_hint, make sure we don't confuse colors or classification
+new library, try to handle autoinstall
+
+
+Etsuke cures slacker
+
+
+allow buying in unity cup race day, take skill pts some steps before to have something kind of updated?
+
+adb
 ## 0.6
 
 ### 0.6.0
@@ -244,6 +271,7 @@ Bot Strategy:
 - You can cure slow metabolism by doing some training
 
 
+check that support bar is intersecting the support box, otherwise sometimes is not inside at all
 ## 0.7
 
 ### 0.7.0
@@ -260,3 +288,23 @@ End2End navigator play:
 
 
 
+
+
+## To validate
+
+@Chat Ja
+"""
+sorry to dm. my english not good. i found problem on dev branch. could you increase margin top and decrease margin bot ? thank you !
+"""
+
+PhantomDice —> Thanks for supporting project
+
+
+Unity cup:
+- Model trained in heavier YOLO model
+
+ADB support:
+Thanks for Adding ADB support @C
+
+Automatic scrapping for data
+Thanks! @Only

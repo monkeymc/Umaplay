@@ -260,7 +260,7 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
 
         # ---- rainbow combo (Unity) ------------------------------------------
         if rainbow_count >= 2:
-            combo_bonus = 0.25 * float(rainbow_count)
+            combo_bonus = 0.5 * float(rainbow_count - 1)
             sv_total += combo_bonus
             sv_by_type["rainbow_combo"] = sv_by_type.get("rainbow_combo", 0.0) + combo_bonus
             notes.append(f"Rainbow combo ({rainbow_count}): +{combo_bonus:.2f}")
@@ -279,7 +279,7 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
         n_blue_fill      = sum(1 for s in blues  if s.get("has_flame") and s.get("flame_type") == "filling_up")
 
         # White spirits: same rule as before (0.50 filling, 0.12 exploded)
-        white_value = 0.50 * n_white_fill + 0.12 * n_white_exploded
+        white_value = 0.40 * n_white_fill + 0.12 * n_white_exploded
         if white_value > 0:
             sv_total += white_value
             sv_by_type["spirits_white"] = sv_by_type.get("spirits_white", 0.0) + white_value
@@ -288,7 +288,7 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
         # White combo (only for not-exploded/flame filling) + tiny weight for exploded inside combo
         white_combo = 0.0
         if n_white_fill >= 2:
-            white_combo += 0.25 + 0.25 * n_white_fill  # 2→0.75, 3→1.0, ...
+            white_combo += 0.1 + 0.2 * n_white_fill  # 2→0.75, 3→1.0, ...
         if (n_white_fill + n_white_exploded) >= 2:
             white_combo += 0.01 * n_white_exploded
         if white_combo > 0:

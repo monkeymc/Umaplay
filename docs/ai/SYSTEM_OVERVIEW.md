@@ -62,6 +62,10 @@ The runtime supports Steam on Windows and Android mirrored via scrcpy, with expe
 - `docs/ai/SOPs/towards-custom-training-policy-graph.md` (Notes on evolving training-policy automation graph)
 - `docs/ai/SOPs/adding-new-scenario.md` (How to onboard a new training scenario end-to-end)
 
+## Extra docs
+Policies about how agent, training, etc algorithm works in diagrams
+- docs\ai\policies
+
 ## Runtime Topology (diagram as text)
 ```
 [Controllers (Steam/Scrcpy/BlueStacks)]
