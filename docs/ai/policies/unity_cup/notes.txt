@@ -1,0 +1,131 @@
+### Legend and policy details
+
+**Race day handling**
+
+* *Scheduled race exists and allowed*: the scenario has a calendar race you already queued. You run it unless your settings disable it.
+* *Junior and fans goal unmet*: on Junior race days, if the fans goal is not met, pick a fans farm race.
+* *Junior and maiden uncleared*: prioritize the maiden clear if not yet done.
+* *G1 or target goal pending*: if your goal is to secure a target class or G1 win by a deadline, prefer an appropriate race.
+* If none of the above applies and racing is optional, the policy may still train if FAST MODE is on and there is a high SV tile; otherwise it runs a safe race.
+
+**SV computation (per tile; strictly before any policy choice)**
+
+* **Supports with blue or green bar**: +1.00 each on that tile.
+* **Rainbow support on tile**: +1.00 each.
+* **Rainbow combo**: +0.25 times the number of rainbows on that tile.
+* **Hints**: take the best hint on the tile. Blue or green hint +0.50. Orange or max +0.25.
+* **Spirits and flames**:
+
+  * White spirit: +0.50 if flame filling, +0.12 if exploded.
+  * Blue spirit: +1.50 always.
+  * White combo: if white not exploded more than one, add (count_not_exploded minus two) times 0.25 plus (count_not_exploded) times 0.25 plus (count_exploded) times 0.01.
+  * Blue combo: if blue to explode more than one, add (count_to_explode minus one).
+* **Cameos**: Director +0.25 or +0.15 or +0.10 by bar level. PAL Kashimoto +1.50 or +0.25 or +0.15 or +0.10 by bar level. Reporter +0.10.
+* **Risk gate**: filter out tiles whose failure percent exceeds the active limit. Limit can scale with context so only reasonably safe tiles remain.
+
+**FAST MODE**
+
+* If FAST MODE is on and any allowed tile has SV at or above a fast high threshold, the policy short circuits and trains on the best SV tile immediately, skipping deeper checks for distribution and caps. Use this only when you want speed over fine control.
+
+**Priority rules for stats and undertraining**
+
+* *Caps and distribution*: deprioritize capped stats unless there is a high priority hint present on that tile.
+* *Undertrained check*: compare your top three priority stats to a reference distribution. If a top three stat is undertrained and its best SV is within a small gap of the global best and above a minimum gate, train that stat to correct distribution.
+* *Top three priority list*: defined by your build. Only those are considered by the undertraining and 1200 and 600 rules.
+
+**WIT preferences and mood**
+
+* Outside final season, WIT is preferred if it has rainbow or WIT SV at or above 1.5. If nothing is strong, mid value threshold is 2.5.
+* If mood is below the safe level at pre checks, recreation is taken before any other action.
+
+**Final season rules and secure thresholds**
+
+* If a hint exists, take it.
+* If any top three stat is below 600, train that stat toward 600.
+* Else if any top three stat is below 1170, train that stat toward 1200.
+* Else if WIT SV is at or above 0.5, train WIT.
+* Else fall through to mid value and energy rules.
+
+**Energy rules**
+
+* Auto rest minimum: if energy at or below this at pre checks, rest immediately.
+* General gate: if no good training and energy at or below 35 percent, rest.
+* If energy is ok but training value is poor, optional race fallback triggers if enabled; else rest.
+
+**Director friendship rules**
+
+* Director on the tile contributes to SV via cameo scoring (bar based), which can tip a tile over the mid or high threshold.
+* Director does not override caps and risk gates; it only feeds the SV sum.
+
+**PAL rules**
+
+* PAL Kashimoto cameo provides a strong SV bump when bar is blue, smaller bumps at lower bars. Same as Director, PAL feeds SV and can swing tie breaks, but it does not bypass risk or caps logic.
+
+**Spirit and flame rules**
+
+* White and blue spirits score individually plus combos as noted above.
+* White depends on flame state; blue is constant. Combos add significant value when multiple spirits align to explode soon.
+
+**Thresholds and knobs you will see in code or config**
+
+* **SV high**: 3.5. If any tile is at or above this, it is eligible for TRAIN MAX.
+* **SV mid**: 2.5. Used for mid value selection when no high exists.
+* **WIT high**: 1.5. WIT gets priority at or above this.
+* **WIT low in final season**: 0.5.
+* **Energy rest gate**: 35 percent.
+* **Undertraining threshold**: based on the difference between current stat share and reference share; only applies to top three stats and within an SV gap tolerance.
+* **Risk cap**: tiles with failure percent above the active limit are dropped before any ranking.
+
+If you want, I can slice this into **two layered diagrams** for readability:
+
+1. **Macro policy** (Pre checks, Race day, Summer, Energy, Final season) and
+2. **SV engine** (Signals, spirits, cameos, risk, thresholds, undertraining gates).
+   But the single chart above should already let you trace every major option the bot takes on training turns.
+
+* **SV “high” = 3.5**, **SV “mid” = 2.5**, **SV “late” = 2.0**, and **low pick gate = 1.75**. These come from:
+
+  * `max_pick_sv_top = 3.5`
+  * `next_pick_sv_top = 2.5`
+  * `late_pick_sv_top = 2.0`
+  * `low_pick_sv_gate = 1.75`
+
+* **WIT thresholds:**
+
+  * **Decent WIT** = **SV at or above 1.5** (used for soft-skip and final-season WIT).
+  * **Summer staging WIT** can go as low as **SV at or above 0.5** in the “summer in one or two turns” logic (that is handled in the lobby view; mentioned here just for context).
+
+* **Caps and hint override:** any stat **at or above its reference target** is deprioritized. However, a **strong hint on that stat** can **override** the cap and keep it in play, as long as the tile passes the risk gate.
+
+* **Undertraining rule (distribution nudge):**
+
+  * Compare your current stat distribution to the **reference distribution**.
+  * A top-three priority stat is considered **undertrained** if its share is **below reference by at least 6 percent by default** (`UNDERTRAIN_THRESHOLD = 6%`).
+  * If the best tile for that undertrained stat is **close to the best overall** (default **within 1.25 SV** gap, with a bit more slack when the gap is severe), and its **SV is at least 0.875** (half of the low gate) or the undertraining is very severe, pick it.
+  * If hints are marked important and at least one hint exists on the board, the undertraining check is skipped in favor of the hint.
+
+* **Tie-break and priority guard:** when two options are close:
+
+  * If the candidate is **not** one of your **top three priority stats**, and it is **within 0.75 SV** of the best top-three option **and** that top-three option is at least **0.5 SV**, the guard flips selection **back to the top-three stat**.
+  * **Exception:** if a candidate reaches **SV at or above 4.1**, it is treated as **exceptional** and bypasses the guard.
+
+* **Director rule (explicit):**
+
+  * We only consider the Director rule in **senior year** (`year_code == 3`).
+  * **Windows:**
+
+    * **January to March:** Director color **blue** qualifies.
+    * **September to December:** any color **except yellow or max** qualifies.
+  * The Director tile must be **risk-allowed**, and its **stat must be one of your top three priorities** (or the Director is **orange**, which is allowed even if not in top three).
+  * If the stat is already **capped**, we **skip** the Director rule unless Director is **orange**.
+
+* **WIT preference:** outside final season and after Director check, if **WIT has a rainbow** or **WIT SV is at or above 1.5**, prefer **WIT** as a soft-skip.
+
+* **Energy and race fallback:**
+
+  * **Rest** if **energy at or below 35%**.
+  * If **energy is fine** but the board is **weak**, try a **race** (if allowed by your settings and date gates); otherwise **rest**.
+  * If a **low WIT** option exists, you can soft-skip with WIT; if not, **train the best allowed fallback**.
+
+* **Risk gate:** every check that says “allowed” means the tile passed your **failure-risk filter**. Anything not “allowed” is ignored for selection.
+
+* **What goes into SV:** the calculation that feeds the chart includes the **sum of support contributions** on the tile, **rainbow** bonuses, **hint** value, **spirit and flame** bonuses (white vs blue, plus multi-spirit combo), and small **cameo** bumps from **Director**, **PAL**, and **Reporter**, all reduced by **risk filtering**. The thresholds above act on that single **sv_total** per tile.
