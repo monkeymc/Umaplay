@@ -54,6 +54,8 @@ def decide_action_training(
     skip_race=False,
     # Runtime settings from preset
     race_if_no_good_value: bool = False,
+    weak_turn_sv: Optional[float] = None,
+    junior_minimal_mood: Optional[str] = None,
 ) -> Tuple[TrainAction, Optional[int], str]:
     """
     Return the decided action and the target tile index (or None when not applicable).
@@ -204,7 +206,11 @@ def decide_action_training(
 
     PRIORITY_SV_DIFF_THRESHOLD = 0.75
     PRIORITY_TOP3_MIN_SV = 0.5
-    PRIORITY_EXCEPTIONAL_SV = 4.1
+    PRIORITY_EXCEPTIONAL_SV = 4.5
+
+    effective_minimal_mood = minimal_mood
+    if junior_minimal_mood and is_junior_year(di):
+        effective_minimal_mood = junior_minimal_mood
 
     def _apply_priority_guard(candidate_idx: Optional[int], *, context: str) -> Optional[int]:
         if candidate_idx is None or top3_tile_idx is None:
@@ -245,9 +251,7 @@ def decide_action_training(
     MAX_SV_GAP = 1.25
 
     try:
-        # Consider only known stats (ignore -1/0)
-        keys = ["SPD", "STA", "PWR", "GUTS", "WIT"]
-        known_keys = [k for k in keys if max(0, int(stats.get(k, -1))) > 0]
+        known_keys = [k for k in ["SPD", "STA", "PWR", "GUTS", "WIT"] if max(0, int(stats.get(k, -1))) > 0]
 
         # If hint is important ignore undertrain stat check, prioritize hint
         if known_keys and not (Settings.HINT_IS_IMPORTANT and len(hint_tiles) > 0):
@@ -256,22 +260,13 @@ def decide_action_training(
             cur_sum = sum(max(0, int(stats.get(k, 0))) for k in known_keys)
 
             if ref_sum > 0 and cur_sum > 0:
-                ref_dist = {
-                    k: max(0, int(reference_stats.get(k, 0))) / ref_sum
-                    for k in known_keys
-                }
-                cur_dist = {
-                    k: max(0, int(stats.get(k, 0))) / cur_sum for k in known_keys
-                }
-                deltas = {
-                    k: ref_dist[k] - cur_dist[k] for k in known_keys
-                }  # +ve → undertrained
+                ref_dist = {k: max(0, int(reference_stats.get(k, 0))) / ref_sum for k in known_keys}
+                cur_dist = {k: max(0, int(stats.get(k, 0))) / cur_sum for k in known_keys}
+                deltas = {k: ref_dist[k] - cur_dist[k] for k in known_keys}
                 logger_uma.debug(f"STATS deltas respect 'ideal' distribution: {deltas}")
                 # Get the top N stats to focus on, based on priority_stats or default order
                 default_priority = ["SPD", "STA", "WIT", "PWR", "GUTS"]
-                effective_priority = (
-                    priority_stats if priority_stats else default_priority
-                )
+                effective_priority = priority_stats if priority_stats else default_priority
                 top_n = effective_priority[: Settings.TOP_STATS_FOCUS]
 
                 # Log which stats we're focusing on
@@ -313,15 +308,13 @@ def decide_action_training(
                     top_allowed_idx = best_allowed_any
                     top_allowed_sv = sv_of(top_allowed_idx)
 
-                    # Best allowed tile for that specific stat
-                    def _best_tile_of_type(
-                        rows, stat: str, min_sv: float, tmap: Dict[int, str]
-                    ):
+                    def _best_tile_focus(
+                        rows: Sequence[Dict], stat: str, min_sv: float, tmap: Dict[int, str]
+                    ) -> Tuple[Optional[int], float]:
                         pool = [
                             r
                             for r in rows
-                            if str(tmap.get(int(r["tile_idx"]), "")).upper()
-                            == stat.upper()
+                            if str(tmap.get(int(r["tile_idx"]), "")).upper() == stat.upper()
                             and float(r.get("sv_total", 0.0)) >= min_sv
                         ]
                         if not pool:
@@ -329,8 +322,7 @@ def decide_action_training(
                         rbest = max(pool, key=lambda rr: float(rr.get("sv_total", 0.0)))
                         return int(rbest["tile_idx"]), float(rbest.get("sv_total", 0.0))
 
-                    # respect caps here by using allowed_rows_filtered
-                    under_idx, under_sv = _best_tile_of_type(
+                    under_idx, under_sv = _best_tile_focus(
                         allowed_rows_filtered, under_stat, -1.0, tile_to_type
                     )
 
@@ -455,7 +447,11 @@ def decide_action_training(
         f"Not a IMPRESIVE option to train (>= {max_pick_sv_top} in SV)"
     )
     # 2) Mood check → recreation
-    minimal_mood_key = str(minimal_mood).upper()
+    effective_minimal_mood = minimal_mood
+    if junior_minimal_mood and is_junior_year(di):
+        effective_minimal_mood = junior_minimal_mood
+
+    minimal_mood_key = str(effective_minimal_mood).upper()
     mood_lookup_key: MoodName = (
         cast(MoodName, minimal_mood_key)
         if minimal_mood_key in MOOD_MAP
@@ -468,7 +464,7 @@ def decide_action_training(
         and mood_score < MOOD_MAP["GREAT"]
     ):
         because(
-            f"Mood {mood_txt} below minimal {minimal_mood} and < GREAT → recreation"
+            f"Mood {mood_txt} below minimal {effective_minimal_mood} and < GREAT → recreation"
         )
         return (TrainAction.RECREATION, None, "; ".join(reasons))
     else:
@@ -635,7 +631,7 @@ def decide_action_training(
         return (TrainAction.TRAIN_WIT, best_wit_low, "; ".join(reasons))
 
     because("There is no value in training WIT unless no good option in top 3 stats")
-    # 12) If max SV ≥ 1.5 → TRAIN_MAX
+    # 12) If max SV ≥ 2 → TRAIN_MAX
     best_allowed_tile_15 = best_tile(
         allowed_rows_filtered,
         min_sv=late_pick_sv_top,
@@ -740,12 +736,23 @@ def decide_action_training(
     if is_summer(di) and best_wit_any:
         because("Fallback (Summer): WIT to skip turn and get stats")
         return (TrainAction.TRAIN_WIT, best_wit_any, "; ".join(reasons))
-    elif energy_pct <= 70:
+    best_any_sv = sv_of(best_allowed_any)
+    if best_allowed_any is None and energy_pct <= 70:
+        because("No viable training and energy <= 70% → rest")
+        return (TrainAction.REST, None, "; ".join(reasons))
+
+    if (
+        best_allowed_any is not None
+        and weak_turn_sv is not None
+        and energy_pct <= 70
+        and best_any_sv < float(weak_turn_sv)
+    ):
         because(
-            "Weak Turn, Opportunity cost if racing Instead of WIT, selecting rest because we can recover energy"
+            f"Weak turn: best SV {best_any_sv:.2f} < threshold {float(weak_turn_sv):.2f} with energy {energy_pct}% → rest"
         )
         return (TrainAction.REST, None, "; ".join(reasons))
-    elif best_allowed_any is not None:
+
+    if best_allowed_any is not None:
         because("Last resort: take best allowed training")
         target_tile = _apply_priority_guard(best_allowed_any, context="fallback")
         return (TrainAction.TRAIN_MAX, target_tile, "; ".join(reasons))

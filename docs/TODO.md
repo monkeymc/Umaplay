@@ -8,13 +8,6 @@ This organizes the mixed notes into a clear, actionable backlog. Items are group
 
 ### 0.4.0
 
-#### General Strategy / Policy:
-- Parameter to define 'weak turn'
-- Speaking of minimum mood, if it's great you often see the bot recreate for the first 2 turns, is it possible to perhaps have a different minimum mood option for the junior year or if energy is full and a friendship can be raised do that instead?
-- Lookup toggle: allow skipping **scheduled race** if training has **2+ rainbows**
-  “Check first” at lobby: pre-turn heuristics before going to infirmaty, rest, etc. Pre lookup
-  "Check first" allowed for races individually set
-
 #### PAL Policy:
 - Dating PAL before Junior Year Late Dec isn't super important.
 - Capture in lobby stats 'Recreation PAL' for later trainig decisions. YOLO model can detect that
@@ -308,3 +301,80 @@ Thanks for Adding ADB support @C
 
 Automatic scrapping for data
 Thanks! @Only
+
+#### General Strategy / Policy:
+- Parameter to define 'weak turn':
+"""
+Author notes: So, when I say weak turns, I mean there are some turns where we usually prefer to skip, and that's why we are using the weak part to skip the turn. And we need to define in the web UI, for both URAfinel and UnityCube, a way to set up which value is considered a weak turn. For example, for UnityCube, it may be by default 1.75, and for URA, it could be 1 in general.
+"""
+- Speaking of minimum mood, if it's great you often see the bot recreate for the first 2 turns, is it possible to perhaps have a different minimum mood option for the junior year or if energy is full and a friendship can be raised do that instead?
+"""
+Author notes: We can have also for both scenarios, for all scenarios, a sharded option for a toggle that when clicked, it will show a different mood option that will be triggered only for junior year. So they can set the minimal mood, but that will be only for junior year.
+"""
+- Lookup toggle: allow skipping **scheduled race** if training has a minimum defined SV like **2.5+ SV if URA or 4 if Unity Cup**. This should be configurable in web ui
+  “Check first” at lobby: pre-turn heuristics before going to infirmaty, rest, etc. Pre lookup
+  "Check first" allowed for races individually set
+"""
+Author notes: We’re making a decision to enter the Training phase. Inside Training, we rely on an additional decision layer — essentially another flowchart — to determine what to do during that specific training turn.
+
+This section explains how, in some cases, we might want to check for higher-priority actions before committing to a greedy choice like Training. For instance, going to the Infirmary might be important but not necessarily urgent.
+
+I’d like to introduce a toggle in the Web UI that applies to all scenarios. When this toggle is enabled in a preset, the bot should evaluate some additional conditions before performing its usual greedy actions in the lobby. Usually, we prefer to define such behaviors within presets, as it allows better configurability.
+
+Let’s go through some examples:
+
+1. Infirmary
+
+If the toggle is enabled, before going to the infirmary, we should first check whether the Training screen contains a high-value opportunity.
+Specifically, if there’s a super high Support Value (SV) — say, ≥ 3.5 in Unity Cup or ≥ 2.5 in URA — then we should skip the infirmary this turn and train instead, planning to visit the infirmary on the next turn. This logic is straightforward.
+
+2. Auto-Rest Minimum
+
+For the auto-rest rule, however, the toggle doesn’t override anything.
+Even if the toggle is active, if the player’s energy is below the auto-rest minimum, the bot should always rest, without any additional checks. This rule must remain absolute.
+
+3. Summer Handling
+
+Similarly, for summer proximity, the existing logic should remain unchanged.
+If summer is two or fewer turns away and energy is low, the bot should focus on recovering energy so that it enters summer in good condition — this must be respected even when the toggle is enabled.
+
+4. Goal Races (Critical Goals)
+
+Things get more complex for races, particularly those related to critical goals.
+If a mandatory goal race (like a G1, Maven, or fan milestone) is approaching, the bot must still respect the rule for maximum waiting turns before racing.
+
+For example, if the maximum allowed wait time before a goal race is 8 turns, and we’re currently at turn 13, we shouldn’t immediately take the race when we first detect it. Instead, we wait until the number of turns remaining equals 8, or possibly –1 if OCR failed and we couldn’t read it correctly.
+
+If the toggle is enabled, we can make this rule slightly more flexible:
+
+Before racing, check whether there’s a very good Training opportunity.
+
+If there is, we can take that training instead of racing immediately.
+
+However, once the turns left reach ≤ 5, we must proceed to the race, regardless of the toggle.
+
+This ensures the toggle won’t cause failed runs by endlessly delaying goal races just because of attractive training options.
+
+5. Optional / Planned Races
+
+For optional races (those not tied to mandatory goals), the logic differs.
+Since these races aren’t required, we should allow users to mark specific planned races as tentative.
+
+At the Web UI level, this would mean adding a per-race toggle in the scheduler.
+If this toggle is on for a given race, the bot should, before racing, scan the training screen for good options:
+
+If a valuable training tile is found, the bot should train instead of racing.
+
+If not, it proceeds with the race as usual.
+
+This gives users fine-grained control:
+
+Races marked with the toggle ON are tentative, meaning “only race if no strong training options exist.”
+
+Races with the toggle OFF are mandatory, meaning the bot must race regardless of available training options.
+
+By combining these controls, we gain better configurability, reduce the number of failed or suboptimal runs, and make the decision-making process much more adaptive to each preset and scenario.
+
+Summary:
+The new toggle provides a “pre-check” layer before greedy decisions like Infirmary, Rest, or Race actions. It allows the system to momentarily consider higher-value training opportunities but still respects critical safeguards (energy minimums, summer proximity, and goal deadlines). The final behavior should balance flexibility with safety, ensuring the bot neither skips essential actions nor wastes high-value turns.
+"""

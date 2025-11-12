@@ -296,8 +296,8 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
             sv_by_type["spirit_combo_white"] = sv_by_type.get("spirit_combo_white", 0.0) + white_combo
             notes.append(f"White spirit combo: +{white_combo:.2f}")
 
-        # Blue spirits: regardless of flame, 1.5 each
-        blue_value = 1.5 * n_blue_total
+        # Blue spirits: regardless of flame, 0.5 each
+        blue_value = 0.5 * n_blue_total
         if blue_value > 0:
             sv_total += blue_value
             sv_by_type["spirits_blue"] = sv_by_type.get("spirits_blue", 0.0) + blue_value

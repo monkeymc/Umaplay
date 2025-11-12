@@ -149,6 +149,20 @@ class Settings:
     }
 
     MINIMUM_SKILL_PTS = 700
+    WEAK_TURN_SV_BY_SCENARIO: Dict[str, float] = {
+        "ura": 1.0,
+        "unity_cup": 1.75,
+    }
+    RACE_PRECHECK_SV_BY_SCENARIO: Dict[str, float] = {
+        "ura": 2.5,
+        "unity_cup": 4.0,
+    }
+    WEAK_TURN_SV: float = WEAK_TURN_SV_BY_SCENARIO["ura"]
+    RACE_PRECHECK_SV: float = RACE_PRECHECK_SV_BY_SCENARIO["ura"]
+    LOBBY_PRECHECK_ENABLE: bool = False
+    JUNIOR_MINIMAL_MOOD: Optional[str] = None
+    GOAL_RACE_FORCE_TURNS: int = 5
+    PLAN_RACES_TENTATIVE: Dict[str, bool] = {}
     # Skills optimization (interval/delta gates)
     SKILL_CHECK_INTERVAL: int = 3  # only check skills every N turns (1 = every turn)
     SKILL_PTS_DELTA: int = (
@@ -244,6 +258,17 @@ class Settings:
         cls.ACTIVE_AGENT_NAME = cls.resolve_agent_name(cls.ACTIVE_SCENARIO)
         cls.ACTIVE_YOLO_WEIGHTS = cls.resolve_yolo_weights_path(cls.ACTIVE_SCENARIO)
         cls.ACTIVE_SKILL_MEMORY_PATH = cls.resolve_skill_memory_path(cls.ACTIVE_SCENARIO)
+
+        scenario_key = cls.ACTIVE_SCENARIO
+        cls.WEAK_TURN_SV = cls.WEAK_TURN_SV_BY_SCENARIO.get(
+            scenario_key, cls.WEAK_TURN_SV_BY_SCENARIO.get("ura", 1.0)
+        )
+        cls.RACE_PRECHECK_SV = cls.RACE_PRECHECK_SV_BY_SCENARIO.get(
+            scenario_key, cls.RACE_PRECHECK_SV_BY_SCENARIO.get("ura", 2.5)
+        )
+        cls.LOBBY_PRECHECK_ENABLE = False
+        cls.JUNIOR_MINIMAL_MOOD = None
+        cls.PLAN_RACES_TENTATIVE = {}
 
         presets: List[dict] = []
         active_id: Optional[str] = None
@@ -548,11 +573,70 @@ class Settings:
             preset
         )
 
+        plan_races_tentative_raw = preset.get("plannedRacesTentative", {}) or {}
+        plan_races_tentative: Dict[str, bool] = {}
+        if isinstance(plan_races_tentative_raw, dict):
+            for key, val in plan_races_tentative_raw.items():
+                try:
+                    normalized_key = str(key)
+                except Exception:
+                    continue
+                plan_races_tentative[normalized_key] = bool(val)
+        cls.PLAN_RACES_TENTATIVE = plan_races_tentative
+
+        weak_turn_sv_raw = preset.get("weakTurnSv")
+        if isinstance(weak_turn_sv_raw, (int, float)):
+            weak_turn_sv = float(weak_turn_sv_raw)
+        else:
+            weak_turn_sv = cls.WEAK_TURN_SV_BY_SCENARIO.get(
+                cls.ACTIVE_SCENARIO,
+                cls.WEAK_TURN_SV_BY_SCENARIO.get("ura", cls.WEAK_TURN_SV),
+            )
+
+        race_precheck_sv_raw = preset.get("racePrecheckSv")
+        if isinstance(race_precheck_sv_raw, (int, float)):
+            race_precheck_sv = float(race_precheck_sv_raw)
+        else:
+            race_precheck_sv = cls.RACE_PRECHECK_SV_BY_SCENARIO.get(
+                cls.ACTIVE_SCENARIO,
+                cls.RACE_PRECHECK_SV_BY_SCENARIO.get("ura", cls.RACE_PRECHECK_SV),
+            )
+
+        lobby_precheck_enable = bool(
+            preset.get("lobbyPrecheckEnable", cls.LOBBY_PRECHECK_ENABLE)
+        )
+
+        junior_minimal_mood_raw = preset.get("juniorMinimalMood")
+        if isinstance(junior_minimal_mood_raw, str) and junior_minimal_mood_raw.strip():
+            junior_minimal_mood = junior_minimal_mood_raw.strip().upper()
+        else:
+            junior_minimal_mood = None
+
+        goal_race_force_turns_raw = preset.get(
+            "goalRaceForceTurns", cls.GOAL_RACE_FORCE_TURNS
+        )
+        try:
+            goal_race_force_turns = max(0, int(goal_race_force_turns_raw))
+        except Exception:
+            goal_race_force_turns = cls.GOAL_RACE_FORCE_TURNS
+
+        cls.WEAK_TURN_SV = weak_turn_sv
+        cls.RACE_PRECHECK_SV = race_precheck_sv
+        cls.LOBBY_PRECHECK_ENABLE = lobby_precheck_enable
+        cls.JUNIOR_MINIMAL_MOOD = junior_minimal_mood
+        cls.GOAL_RACE_FORCE_TURNS = goal_race_force_turns
+
         return {
             "plan_races": plan_races,
+            "plan_races_tentative": plan_races_tentative,
             "skill_list": skill_list,
             "select_style": select_style,
             "raceIfNoGoodValue": race_if_no_good_value,
+            "weakTurnSv": weak_turn_sv,
+            "racePrecheckSv": race_precheck_sv,
+            "lobbyPrecheckEnable": lobby_precheck_enable,
+            "juniorMinimalMood": junior_minimal_mood,
+            "goalRaceForceTurns": goal_race_force_turns,
             "minimum_skill_pts": minimum_skill_pts,
             "support_deck": deck,
             "support_card_priorities": [

@@ -40,8 +40,8 @@ const newId = () => (crypto?.randomUUID?.() ?? Math.random().toString(36).slice(
 const normalizeScenario = (value: unknown): 'ura' | 'unity_cup' =>
   value === 'unity_cup' ? 'unity_cup' : 'ura'
 
-function normalizePreset(raw: any, general: Partial<GeneralConfig> | undefined): Preset {
-  const base = defaultPreset(raw?.id ?? newId(), raw?.name ?? 'Preset')
+function normalizePreset(raw: any, general: Partial<GeneralConfig> | undefined, scenario: 'ura' | 'unity_cup'): Preset {
+  const base = defaultPreset(raw?.id ?? newId(), raw?.name ?? 'Preset', scenario)
   const fallbackSkillPts = Number((general as any)?.skillPtsCheck ?? 600)
   const skillPts = Number.isFinite(Number(raw?.skillPtsCheck))
     ? Math.max(0, Number(raw?.skillPtsCheck))
@@ -90,7 +90,7 @@ const migrateConfig = (cfg: AppConfig): AppConfig => {
   console.log('[MIGRATE] Legacy activePresetId:', legacyActive)
   
   if (Array.isArray(legacyPresets)) {
-    const normalized = legacyPresets.map((p: any) => normalizePreset(p, cfg.general))
+    const normalized = legacyPresets.map((p: any) => normalizePreset(p, cfg.general, 'ura'))
     scenarios.ura = {
       presets: normalized,
       activePresetId:
@@ -102,7 +102,7 @@ const migrateConfig = (cfg: AppConfig): AppConfig => {
   for (const key of Object.keys(scenarios)) {
     const branch = scenarios[key] ?? { presets: [], activePresetId: undefined }
     const normalizedPresets = Array.isArray(branch.presets)
-      ? branch.presets.map((p: any) => normalizePreset(p, cfg.general))
+      ? branch.presets.map((p: any) => normalizePreset(p, cfg.general, key as 'ura' | 'unity_cup'))
       : []
     const activeId = branch.activePresetId && normalizedPresets.find((p) => p.id === branch.activePresetId)
       ? branch.activePresetId
@@ -222,7 +222,7 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
     set((s) => {
       const { key, branch, map } = resolveScenario(s.config, s.uiScenarioKey)
       const preset: Preset = {
-        ...defaultPreset(newId(), `Preset ${(branch.presets?.length ?? 0) + 1}`),
+        ...defaultPreset(newId(), `Preset ${(branch.presets?.length ?? 0) + 1}`, key),
         event_setup: defaultEventSetup(),
       }
       const presets = [...branch.presets, preset]
@@ -262,7 +262,7 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
       const left = branch.presets.filter((p) => p.id !== id)
       const presets = left.length
         ? left
-        : [{ ...defaultPreset(newId(), 'Preset 1'), event_setup: defaultEventSetup() }]
+        : [{ ...defaultPreset(newId(), 'Preset 1', key), event_setup: defaultEventSetup() }]
       const nextSelected = presets[presets.length - 1]?.id
       const nextActive = presets.find((p) => p.id === branch.activePresetId)
         ? branch.activePresetId

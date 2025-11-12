@@ -970,6 +970,11 @@ class UserPrefs:
     reward_priority_by_trainee: Dict[str, List[str]] = field(default_factory=dict)
     # Preferred trainee name from config (for portrait disambiguation)
     preferred_trainee_name: Optional[str] = None
+    weak_turn_sv: Optional[int] = None
+    race_precheck_sv: Optional[int] = None
+    lobby_precheck_enable: Optional[bool] = None
+    junior_minimal_mood: Optional[int] = None
+    goal_race_force_turns: Optional[int] = None
 
     @staticmethod
     def load(path: Path) -> "UserPrefs":
@@ -981,8 +986,11 @@ class UserPrefs:
                 default_by_type={"support": 1, "trainee": 1, "scenario": 1},
                 avoid_energy_overflow=True,
                 avoid_energy_overflow_by_support={},
-                avoid_energy_overflow_by_scenario={},
-                avoid_energy_overflow_by_trainee={},
+                weak_turn_sv=None,
+                race_precheck_sv=None,
+                lobby_precheck_enable=None,
+                junior_minimal_mood=None,
+                goal_race_force_turns=None,
             )
         with path.open("r", encoding="utf-8") as f:
             raw = json.load(f)
@@ -1009,19 +1017,99 @@ class UserPrefs:
             raw.get("rewardPriority") or raw.get("reward_priority")
         )
 
+        weak_turn_sv = raw.get("weakTurnSv")
+        race_precheck_sv = raw.get("racePrecheckSv")
+        lobby_precheck_enable = _coerce_bool(raw.get("lobbyPrecheckEnable"), default=None)
+        junior_minimal_mood = raw.get("juniorMinimalMood")
+        goal_race_force_turns = raw.get("goalRaceForceTurns")
+
+        avoid_energy_by_support: Dict[Tuple[str, str, str], bool] = {}
+        reward_priority_by_support: Dict[Tuple[str, str, str], List[str]] = {}
+        supports = raw.get("supports", []) or []
+        if isinstance(supports, list):
+            for entry in supports:
+                if not isinstance(entry, dict):
+                    continue
+                name = entry.get("name")
+                rarity = entry.get("rarity")
+                attribute = entry.get("attribute")
+                if not (name and rarity and attribute):
+                    continue
+                raw_flag = entry.get("avoidEnergyOverflow")
+                if raw_flag is None:
+                    raw_flag = entry.get("avoid_energy_overflow")
+                flag = _coerce_bool(raw_flag, default=True)
+                key = _support_key(name, attribute, rarity)
+                avoid_energy_by_support[key] = flag
+
+                raw_priority = entry.get("rewardPriority")
+                if raw_priority is None:
+                    raw_priority = entry.get("reward_priority")
+                if raw_priority is not None:
+                    priority_list = normalize_reward_priority_list(raw_priority)
+                    reward_priority_by_support[key] = priority_list
+
+        scenario_flags: Dict[str, bool] = {}
+        reward_priority_by_scenario: Dict[str, List[str]] = {}
+        scenario_entry = raw.get("scenario")
+        if isinstance(scenario_entry, dict):
+            name = scenario_entry.get("name")
+            if name:
+                raw_flag = scenario_entry.get("avoidEnergyOverflow")
+                if raw_flag is None:
+                    raw_flag = scenario_entry.get("avoid_energy_overflow")
+                scen_key = _scenario_key(str(name))
+                scenario_flags[scen_key] = _coerce_bool(raw_flag, default=True)
+
+                raw_priority = scenario_entry.get("rewardPriority")
+                if raw_priority is None:
+                    raw_priority = scenario_entry.get("reward_priority")
+                if raw_priority is not None:
+                    reward_priority_by_scenario[scen_key] = normalize_reward_priority_list(
+                        raw_priority
+                    )
+
+        trainee_flags: Dict[str, bool] = {}
+        reward_priority_by_trainee: Dict[str, List[str]] = {}
+        preferred_trainee_name: Optional[str] = None
+        trainee_entry = raw.get("trainee")
+        if isinstance(trainee_entry, dict):
+            name = trainee_entry.get("name")
+            if name:
+                preferred_trainee_name = str(name).strip()
+                raw_flag = trainee_entry.get("avoidEnergyOverflow")
+                if raw_flag is None:
+                    raw_flag = trainee_entry.get("avoid_energy_overflow")
+                trainee_key = _trainee_key(str(name))
+                trainee_flags[trainee_key] = _coerce_bool(raw_flag, default=True)
+
+                raw_priority = trainee_entry.get("rewardPriority")
+                if raw_priority is None:
+                    raw_priority = trainee_entry.get("reward_priority")
+                if raw_priority is not None:
+                    reward_priority_by_trainee[trainee_key] = normalize_reward_priority_list(
+                        raw_priority
+                    )
+
         return UserPrefs(
             overrides=overrides,
             patterns=patterns,
             default_by_type=default_by_type,
             alias_overrides=alias_overrides,
             avoid_energy_overflow=avoid_energy_overflow,
-            avoid_energy_overflow_by_support={},
-            avoid_energy_overflow_by_scenario={},
-            avoid_energy_overflow_by_trainee={},
+            avoid_energy_overflow_by_support=avoid_energy_by_support,
+            avoid_energy_overflow_by_scenario=scenario_flags,
+            avoid_energy_overflow_by_trainee=trainee_flags,
             reward_priority=reward_priority,
-            reward_priority_by_support={},
-            reward_priority_by_scenario={},
-            reward_priority_by_trainee={},
+            reward_priority_by_support=reward_priority_by_support,
+            reward_priority_by_scenario=reward_priority_by_scenario,
+            reward_priority_by_trainee=reward_priority_by_trainee,
+            preferred_trainee_name=preferred_trainee_name,
+            weak_turn_sv=weak_turn_sv,
+            race_precheck_sv=race_precheck_sv,
+            lobby_precheck_enable=lobby_precheck_enable,
+            junior_minimal_mood=junior_minimal_mood,
+            goal_race_force_turns=goal_race_force_turns,
         )
 
     # ---- build UserPrefs from the active preset inside config.json ----
@@ -1042,6 +1130,11 @@ class UserPrefs:
                 default_by_type={"support": 1, "trainee": 1, "scenario": 1},
                 avoid_energy_overflow=True,
                 avoid_energy_overflow_by_support={},
+                weak_turn_sv=None,
+                race_precheck_sv=None,
+                lobby_precheck_enable=None,
+                junior_minimal_mood=None,
+                goal_race_force_turns=None,
             )
 
         setup = preset.get("event_setup") or {}

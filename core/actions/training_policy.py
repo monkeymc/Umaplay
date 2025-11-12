@@ -90,6 +90,18 @@ def check_training(player, *, skip_race: bool = False) -> Optional[TrainingDecis
     )
     race_if_no_good_value = preset_settings.get("raceIfNoGoodValue", False)
 
+    weak_turn_sv_raw = preset_settings.get("weakTurnSv", Settings.WEAK_TURN_SV)
+    try:
+        weak_turn_sv = float(weak_turn_sv_raw)
+    except (TypeError, ValueError):
+        weak_turn_sv = float(Settings.WEAK_TURN_SV)
+
+    junior_minimal_mood_raw = preset_settings.get("juniorMinimalMood")
+    if isinstance(junior_minimal_mood_raw, str) and junior_minimal_mood_raw.strip():
+        junior_minimal_mood = junior_minimal_mood_raw.strip().upper()
+    else:
+        junior_minimal_mood = Settings.JUNIOR_MINIMAL_MOOD
+
     # 4) Decide the action (no side effects here)
     action, tidx, why = get_decide_action_training()(
         sv_rows,
@@ -105,6 +117,8 @@ def check_training(player, *, skip_race: bool = False) -> Optional[TrainingDecis
         minimal_mood=Settings.MINIMAL_MOOD,
         skip_race=bool(skip_race),
         race_if_no_good_value=race_if_no_good_value,
+        weak_turn_sv=weak_turn_sv,
+        junior_minimal_mood=junior_minimal_mood,
     )
     logger_uma.info(
         "[training] Decision: %s  tile=%s because=|%s|", action.value, tidx, why

@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import type { AppConfig, GeneralConfig, Preset, StatKey } from './types'
 
+type ScenarioKey = GeneralConfig['activeScenario']
+
 // Lightweight re-declare to avoid circulars in schema:
 const eventDefaults = { support: 1, trainee: 1, scenario: 1 }
 const defaultRewardPriority = ['skill_pts', 'stats', 'hints'] as const
@@ -10,6 +12,17 @@ export const defaultEventSetup = () => ({
   trainee: null,
   prefs: { overrides: {}, patterns: [], defaults: eventDefaults, rewardPriority: [...defaultRewardPriority] },
 })
+
+const scenarioPresetDefaults: Record<ScenarioKey, { weakTurnSv: number; racePrecheckSv: number }> = {
+  ura: {
+    weakTurnSv: 1.0,
+    racePrecheckSv: 2.5,
+  },
+  unity_cup: {
+    weakTurnSv: 1.75,
+    racePrecheckSv: 2.5,
+  },
+}
 
 export const STAT_KEYS: StatKey[] = ['SPD', 'STA', 'PWR', 'GUTS', 'WIT']
 
@@ -79,8 +92,14 @@ export const presetSchema = z.object({
   skillsToBuy: z.array(z.string()),
   skillPtsCheck: z.number().int().min(0).default(600),
   plannedRaces: z.record(z.string(), z.string()),
+  plannedRacesTentative: z.record(z.string(), z.boolean()).default({}),
   raceIfNoGoodValue: z.boolean().default(false),
   prioritizeHint: z.boolean().default(false),
+  weakTurnSv: z.number().min(0).max(10).default(1.0),
+  racePrecheckSv: z.number().min(0).max(10).default(2.5),
+  lobbyPrecheckEnable: z.boolean().default(false),
+  juniorMinimalMood: z.enum(['AWFUL', 'BAD', 'NORMAL', 'GOOD', 'GREAT']).nullable().default(null),
+  goalRaceForceTurns: z.number().int().min(0).max(12).default(5),
   // Make optional on input, but always present on output via default()
   event_setup: (() => {
     const rarity = z.enum(['SSR','SR','R'])
@@ -177,27 +196,35 @@ export const appConfigSchema = z.object({
 })
 
 export const defaultGeneral: GeneralConfig = generalSchema.parse({})
-export const defaultPreset = (id: string, name: string): Preset => ({
-  id,
-  name,
-  priorityStats: ['SPD', 'STA', 'WIT', 'PWR', 'GUTS'],
-  raceIfNoGoodValue: false,
-  prioritizeHint: false,
-  skillPtsCheck: 600,
-  targetStats: {
-    SPD: 1150,
-    STA: 900,
-    PWR: 700,
-    GUTS: 250,
-    WIT: 300,
-  },
-  minimalMood: 'NORMAL',
-  juniorStyle: null,
-  skillsToBuy: [],
-  plannedRaces: {},
-  // let schema inject defaults; or be explicit:
-  event_setup: defaultEventSetup(),
-})
+export const defaultPreset = (id: string, name: string, scenario: ScenarioKey = 'ura'): Preset => {
+  const scenarioDefaults = scenarioPresetDefaults[scenario] ?? scenarioPresetDefaults.ura
+
+  return {
+    id,
+    name,
+    priorityStats: ['SPD', 'STA', 'WIT', 'PWR', 'GUTS'],
+    raceIfNoGoodValue: false,
+    prioritizeHint: false,
+    skillPtsCheck: 600,
+    targetStats: {
+      SPD: 1150,
+      STA: 900,
+      PWR: 700,
+      GUTS: 250,
+      WIT: 300,
+    },
+    minimalMood: 'NORMAL',
+    juniorStyle: null,
+    skillsToBuy: [],
+    plannedRaces: {},
+    weakTurnSv: scenarioDefaults.weakTurnSv,
+    racePrecheckSv: scenarioDefaults.racePrecheckSv,
+    lobbyPrecheckEnable: false,
+    juniorMinimalMood: null,
+    goalRaceForceTurns: 5,
+    event_setup: defaultEventSetup(),
+  }
+}
 
 export const defaultAppConfig = (): AppConfig => ({
   version: 1,

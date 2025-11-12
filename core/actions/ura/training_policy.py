@@ -54,6 +54,8 @@ def decide_action_training(
     skip_race=False,
     # Runtime settings from preset
     race_if_no_good_value: bool = False,
+    weak_turn_sv: Optional[float] = None,
+    junior_minimal_mood: Optional[str] = None,
 ) -> Tuple[TrainAction, Optional[int], str]:
     """
     Return the decided action and the target tile index (or None when not applicable).
@@ -211,6 +213,10 @@ def decide_action_training(
     PRIORITY_SV_DIFF_THRESHOLD = 0.75
     PRIORITY_TOP3_MIN_SV = 0.5
     PRIORITY_EXCEPTIONAL_SV = 4.1
+
+    effective_minimal_mood = minimal_mood
+    if junior_minimal_mood and is_junior_year(di):
+        effective_minimal_mood = junior_minimal_mood
 
     def _apply_priority_guard(candidate_idx: Optional[int], *, context: str) -> Optional[int]:
         if candidate_idx is None or top3_tile_idx is None:
@@ -461,7 +467,7 @@ def decide_action_training(
         "Not a IMPRESIVE option to train (>= 2.5 in SV)"
     )
     # 2) Mood check → recreation
-    minimal_mood_key = str(minimal_mood).upper()
+    minimal_mood_key = str(effective_minimal_mood).upper()
     mood_lookup_key: MoodName = (
         cast(MoodName, minimal_mood_key)
         if minimal_mood_key in MOOD_MAP
@@ -474,7 +480,7 @@ def decide_action_training(
         and mood_score < MOOD_MAP["GREAT"]
     ):
         because(
-            f"Mood {mood_txt} below minimal {minimal_mood} and < GREAT → recreation"
+            f"Mood {mood_txt} below minimal {effective_minimal_mood} and < GREAT → recreation"
         )
         return (TrainAction.RECREATION, None, "; ".join(reasons))
     else:
@@ -746,12 +752,27 @@ def decide_action_training(
     if is_summer(di) and best_wit_any:
         because("Fallback (Summer): WIT to skip turn and get stats")
         return (TrainAction.TRAIN_WIT, best_wit_any, "; ".join(reasons))
-    elif energy_pct <= 70:
-        because(
-            "Weak Turn, Opportunity cost if racing Instead of WIT, selecting rest because we can recover energy"
-        )
-        return (TrainAction.REST, None, "; ".join(reasons))
-    elif best_allowed_any is not None:
+    best_any_sv = sv_of(best_allowed_any)
+    if energy_pct <= 70:
+        threshold = float(weak_turn_sv) if weak_turn_sv is not None else None
+        if (
+            threshold is not None
+            and best_allowed_any is not None
+            and best_any_sv >= threshold
+        ):
+            because(
+                f"Weak turn threshold met (SV {best_any_sv:.2f} ≥ {threshold:.2f}) despite energy {energy_pct}% → allow training fallback"
+            )
+        else:
+            reason = (
+                f"Weak turn: best SV {best_any_sv:.2f} < threshold {threshold:.2f}"
+                if threshold is not None and best_allowed_any is not None
+                else "Energy ≤ 70% with no strong training option"
+            )
+            because(reason + " → rest")
+            return (TrainAction.REST, None, "; ".join(reasons))
+
+    if best_allowed_any is not None:
         because("Last resort: take best allowed training")
         target_tile = _apply_priority_guard(best_allowed_any, context="fallback")
         return (TrainAction.TRAIN_MAX, target_tile, "; ".join(reasons))

@@ -42,8 +42,14 @@ export interface Preset {
   skillPtsCheck: number
   event_setup?: EventSetup
   plannedRaces: Record<string, string> // dateKey -> raceName (Y{year}-{MM}-{half})
+  plannedRacesTentative?: Record<string, boolean>
   raceIfNoGoodValue?: boolean // Whether to race even if no good training options are available
   prioritizeHint?: boolean // Moved from general to per-preset
+  weakTurnSv?: number
+  racePrecheckSv?: number
+  lobbyPrecheckEnable?: boolean
+  juniorMinimalMood?: MoodName | null
+  goalRaceForceTurns?: number
 }
 
 export interface ScenarioConfig {

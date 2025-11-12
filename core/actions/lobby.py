@@ -6,13 +6,17 @@ from collections import deque
 import statistics
 import time
 from dataclasses import dataclass
-from typing import Literal, Optional, Tuple
+from typing import Any, Dict, Literal, Optional, Tuple
 
 from core.controllers.base import IController
 from core.perception.extractors.state import extract_career_date, extract_goal_text, extract_stats
 from core.perception.is_button_active import ActiveButtonClassifier
 from core.perception.yolo.interface import IDetector
 from core.settings import Settings
+from core.actions.training_check import (
+    get_compute_support_values,
+    scan_training_screen,
+)
 from core.utils.logger import logger_uma
 from core.utils.race_index import RaceIndex, date_key_from_dateinfo
 from core.utils.text import fuzzy_contains
@@ -49,6 +53,7 @@ class LobbyState:
     stats = {"SPD": -1, "STA": -1, "PWR": -1, "GUTS": -1, "WIT": -1}
     planned_race_name: Optional[str] = None
     planned_race_canonical: Optional[str] = None
+    planned_race_tentative: bool = False
 
 
 @dataclass
@@ -102,6 +107,7 @@ class LobbyFlow(ABC):
         self.last_turns_left_prediction = None
         self._last_date_key: Optional[str] = None
         self.plan_races = plan_races
+        self.plan_races_tentative = getattr(Settings, "PLAN_RACES_TENTATIVE", {}) or {}
         self._date_stable_count: int = 0
         self._date_artificial: bool = False
         self._pending_date_jump = None
@@ -110,6 +116,8 @@ class LobbyFlow(ABC):
         self._last_turn_at_date_update: Optional[int] = None
         self._raced_keys_recent: set[str] = set()
         self._skip_guard_key: Optional[str] = None
+        self._peek_cache_key: Optional[Tuple[Optional[str], int, Optional[int]]] = None
+        self._peek_cache_value: Optional[Tuple[float, Dict[str, Any]]] = None
 
         self.date_layout = date_layout
         self.date_turns_class = date_turns_class
@@ -767,6 +775,7 @@ class LobbyFlow(ABC):
         self._last_date_key = key
         self.state.planned_race_name = None
         self.state.planned_race_canonical = None
+        self.state.planned_race_tentative = False
         if not key:
             return
 
@@ -784,6 +793,9 @@ class LobbyFlow(ABC):
                 )
             self.state.planned_race_name = raw_name
             self.state.planned_race_canonical = canon or raw_name.lower()
+            self.state.planned_race_tentative = bool(
+                self.plan_races_tentative.get(key)
+            )
             self._log_planned_race_decision(
                 action="plan_selected",
                 plan_name=raw_name,
@@ -809,6 +821,112 @@ class LobbyFlow(ABC):
         # one-shot guard this loop as well
         self._skip_race_once = True
         self._skip_guard_key = date_key
+
+    def _current_date_key(self) -> Optional[str]:
+        di = getattr(self.state, "date_info", None)
+        return date_key_from_dateinfo(di) if di else None
+
+    def _invalidate_peek_cache(self) -> None:
+        self._peek_cache_key = None
+        self._peek_cache_value = None
+
+    def _precheck_allowed(self) -> bool:
+        if not Settings.LOBBY_PRECHECK_ENABLE:
+            return False
+        energy = self.state.energy
+        if energy is None:
+            return False
+        if energy <= self.auto_rest_minimum:
+            return False
+        if (
+            self.state.date_info
+            and energy <= 50
+            and is_summer_in_two_or_less_turns(self.state.date_info)
+        ):
+            return False
+        return True
+
+    def _peek_training_best_sv(
+        self,
+        img,
+        dets,
+        *,
+        force_refresh: bool = False,
+    ) -> Tuple[float, Dict[str, Any]]:
+        if not Settings.LOBBY_PRECHECK_ENABLE:
+            return 0.0, {"status": "disabled"}
+
+        turn = self.state.turn if isinstance(self.state.turn, int) else -1
+        energy = self.state.energy if isinstance(self.state.energy, (int, float)) else None
+        cache_key = (self._current_date_key(), int(turn), energy)
+
+        if (
+            not force_refresh
+            and self._peek_cache_key == cache_key
+            and self._peek_cache_value is not None
+        ):
+            cached_sv, cached_meta = self._peek_cache_value
+            meta = dict(cached_meta)
+            meta["cache_hit"] = True
+            return cached_sv, meta
+
+        enter_ok = self._go_training_screen_from_lobby(img, dets)
+        if not enter_ok:
+            meta = {"status": "enter_failed"}
+            self._peek_cache_key = cache_key
+            self._peek_cache_value = (0.0, dict(meta))
+            return 0.0, meta
+
+        best_sv = 0.0
+        meta: Dict[str, Any] = {"status": "unknown"}
+        try:
+            training_state, _, _ = scan_training_screen(
+                self.ctrl,
+                self.ocr,
+                self.yolo_engine,
+                energy=self.state.energy,
+            )
+
+            if not training_state:
+                meta = {"status": "scan_empty"}
+                self._peek_cache_key = cache_key
+                self._peek_cache_value = (best_sv, dict(meta))
+                return best_sv, meta
+
+            try:
+                sv_rows = get_compute_support_values()(training_state)
+            except Exception as exc:  # pragma: no cover - defensive
+                meta = {"status": "compute_failed", "error": str(exc)}
+                self._peek_cache_key = cache_key
+                self._peek_cache_value = (best_sv, dict(meta))
+                return best_sv, meta
+
+            allowed_rows = [r for r in sv_rows if r.get("allowed_by_risk")]
+            best_row = None
+            if allowed_rows:
+                best_row = max(
+                    allowed_rows,
+                    key=lambda r: float(r.get("sv_total", 0.0)),
+                )
+                best_sv = float(best_row.get("sv_total", 0.0))
+                meta = {
+                    "status": "ok",
+                    "tile_idx": best_row.get("tile_idx"),
+                    "tile_type": best_row.get("tile_type"),
+                    "sv_total": best_sv,
+                    "failure_pct": best_row.get("failure_pct"),
+                }
+            else:
+                meta = {"status": "no_allowed_tiles"}
+
+        finally:
+            self._go_back()
+
+        self._peek_cache_key = cache_key
+        self._peek_cache_value = (best_sv, dict(meta))
+        meta_with_flag = dict(meta)
+        meta_with_flag["cache_hit"] = False
+        return best_sv, meta_with_flag
 
     @abstractmethod
     def _process_turns_left(self, img, dets):
@@ -858,14 +976,68 @@ class LobbyFlow(ABC):
             return False, "It is first day, no races available"
 
         if self.state.turn <= self.max_critical_turn:
+            force_deadline = (
+                isinstance(self.state.turn, int)
+                and self.state.turn >= 0
+                and self.state.turn <= Settings.GOAL_RACE_FORCE_TURNS
+            )
             # Critical G1
             if critical_goal_g1:
+                if self._precheck_allowed() and not force_deadline:
+                    best_sv, meta = self._peek_training_best_sv(img, dets)
+                    if best_sv >= Settings.RACE_PRECHECK_SV:
+                        logger_uma.info(
+                            "[lobby] Goal G1 pre-check skip: sv=%.2f threshold=%.2f meta=%s",
+                            best_sv,
+                            Settings.RACE_PRECHECK_SV,
+                            meta,
+                        )
+                        return False, (
+                            f"Pre-check training (G1) sv={best_sv:.2f}"
+                        )
                 return True, f"[lobby] Critical goal G1 | turn={self.state.turn}"
             # Critical Fans
             elif critical_goal_fans:
+                if self._precheck_allowed() and not force_deadline:
+                    best_sv, meta = self._peek_training_best_sv(img, dets)
+                    if best_sv >= Settings.RACE_PRECHECK_SV:
+                        logger_uma.info(
+                            "[lobby] Goal fans pre-check skip: sv=%.2f threshold=%.2f meta=%s",
+                            best_sv,
+                            Settings.RACE_PRECHECK_SV,
+                            meta,
+                        )
+                        return False, (
+                            f"Pre-check training (fans) sv={best_sv:.2f}"
+                        )
                 return True, f"[lobby] Critical goal FANS/MAIDEN | turn={self.state.turn}"
 
         return False, "Unknown"
+
+    def _should_skip_planned_race_for_training(self, img, dets) -> Tuple[bool, str]:
+        if not self._precheck_allowed():
+            return False, "precheck_disabled"
+
+        best_sv, meta = self._peek_training_best_sv(img, dets)
+        threshold = Settings.RACE_PRECHECK_SV
+        cache_info = f"cache={'hit' if meta.get('cache_hit') else 'miss'}"
+
+        if best_sv >= threshold:
+            logger_uma.info(
+                "[lobby] Planned race pre-check skip: sv=%.2f threshold=%.2f meta=%s",
+                best_sv,
+                threshold,
+                meta,
+            )
+            return True, f"Pre-check training sv={best_sv:.2f} {cache_info}"
+
+        logger_uma.info(
+            "[lobby] Planned race pre-check fail: sv=%.2f threshold=%.2f meta=%s",
+            best_sv,
+            threshold,
+            meta,
+        )
+        return False, cache_info
 
     # --------------------------
     # Click helpers (Lobby targets)

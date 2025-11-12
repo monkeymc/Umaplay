@@ -3,6 +3,7 @@ from __future__ import annotations
 
 
 from core.actions.lobby import LobbyFlow
+from core.settings import Settings
 from core.controllers.base import IController
 from core.perception.extractors.state import (
     extract_mood,
@@ -132,6 +133,7 @@ class LobbyFlowURA(LobbyFlow):
             guard_extra = {
                 "first_junior": is_first_junior_date,
                 "skip_guard": self._skip_race_once,
+                "tentative": self.state.planned_race_tentative,
             }
             self._log_planned_race_decision(
                 action="guard_evaluate",
@@ -139,6 +141,18 @@ class LobbyFlowURA(LobbyFlow):
                 extra=guard_extra,
             )
             if not is_first_junior_date and not self._skip_race_once:
+                if self.state.planned_race_tentative:
+                    skip_training, skip_reason = self._should_skip_planned_race_for_training(img, dets)
+                    if skip_training:
+                        self._log_planned_race_decision(
+                            action="precheck_skip",
+                            plan_name=self.state.planned_race_name,
+                            reason=skip_reason,
+                            extra=guard_extra,
+                        )
+                        if self._go_training_screen_from_lobby(img, dets):
+                            return "TO_TRAINING", skip_reason
+                        return "CONTINUE", skip_reason
                 reason = f"Planned race: {self.state.planned_race_name}"
                 self._log_planned_race_decision(
                     action="enter_race",
@@ -184,6 +198,18 @@ class LobbyFlowURA(LobbyFlow):
 
         # --- Infirmary handling (only outside summer) ---
         if self.state.infirmary_on and (self.state.is_summer is False):
+            if self._precheck_allowed():
+                best_sv, meta = self._peek_training_best_sv(img, dets)
+                if best_sv >= Settings.RACE_PRECHECK_SV:
+                    logger_uma.info(
+                        "[lobby] Infirmary pre-check skip: sv=%.2f threshold=%.2f meta=%s",
+                        best_sv,
+                        Settings.RACE_PRECHECK_SV,
+                        meta,
+                    )
+                    if self._go_training_screen_from_lobby(img, dets):
+                        return "TO_TRAINING", f"Pre-check training sv={best_sv:.2f}"
+                    return "CONTINUE", "Pre-check training after infirmary skip"
             if self._go_infirmary():
                 return "INFIRMARY", "Infirmary to remove blue condition"
 
