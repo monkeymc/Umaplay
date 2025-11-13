@@ -20,7 +20,7 @@ const scenarioPresetDefaults: Record<ScenarioKey, { weakTurnSv: number; racePrec
   },
   unity_cup: {
     weakTurnSv: 1.75,
-    racePrecheckSv: 2.5,
+    racePrecheckSv: 3.5,
   },
 }
 

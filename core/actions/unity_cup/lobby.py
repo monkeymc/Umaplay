@@ -73,6 +73,7 @@ class LobbyFlowUnityCup(LobbyFlow):
           - "INFIRMARY"      → we went to infirmary
           - "RESTED"         → we chose rest/recreation
           - "TO_TRAINING"    → we navigated to the training screen
+          - "TRAINING_READY" → we're in training with tile already clicked (pre-check optimization)
           - "CONTINUE"       → we did a minor click or nothing
 
         optional extra message
@@ -158,6 +159,10 @@ class LobbyFlowUnityCup(LobbyFlow):
                             reason=skip_reason,
                             extra=guard_extra,
                         )
+                        # Check if tile already clicked by pre-check optimization
+                        if "[tile_clicked]" in skip_reason:
+                            return "TRAINING_READY", skip_reason
+                        # Otherwise navigate to training
                         if self._go_training_screen_from_lobby(img, dets):
                             return "TO_TRAINING", skip_reason
                         return "CONTINUE", skip_reason
@@ -198,6 +203,9 @@ class LobbyFlowUnityCup(LobbyFlow):
                 outcome_bool, reason = self._maybe_do_goal_race(img, dets)
                 if outcome_bool:
                     return "TO_RACE", reason
+                # Check if goal race pre-check clicked tile (outcome_bool=False means skip race)
+                elif not outcome_bool and "[tile_clicked]" in reason:
+                    return "TRAINING_READY", reason
 
         # After special-case goal racing, clear the one-shot skip guard.
         self._skip_race_once = False
@@ -208,7 +216,7 @@ class LobbyFlowUnityCup(LobbyFlow):
         # --- Infirmary handling (only outside summer) ---
         if self.state.infirmary_on and (self.state.is_summer is False):
             if self._precheck_allowed():
-                best_sv, meta = self._peek_training_best_sv(img, dets)
+                best_sv, meta = self._peek_training_best_sv(img, dets, stay_if_above_threshold=True)
                 if best_sv >= Settings.RACE_PRECHECK_SV:
                     logger_uma.info(
                         "[lobby] Infirmary pre-check skip: sv=%.2f threshold=%.2f meta=%s",
@@ -216,6 +224,13 @@ class LobbyFlowUnityCup(LobbyFlow):
                         Settings.RACE_PRECHECK_SV,
                         meta,
                     )
+                    # Tile already clicked, return TRAINING_READY to skip scan
+                    if meta.get("tile_clicked"):
+                        return "TRAINING_READY", f"Pre-check tile clicked sv={best_sv:.2f}"
+                    # Already in training screen but not clicked
+                    if meta.get("stayed_in_training"):
+                        return "TO_TRAINING", f"Pre-check training sv={best_sv:.2f}"
+                    # Fallback: navigate if peek didn't stay
                     if self._go_training_screen_from_lobby(img, dets):
                         return "TO_TRAINING", f"Pre-check training sv={best_sv:.2f}"
                     return "CONTINUE", "Pre-check training after infirmary skip"

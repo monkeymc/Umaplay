@@ -588,6 +588,15 @@ class AgentUnityCup(AgentScenario):
                     self.handle_training()
                     continue
 
+                if outcome == "TRAINING_READY":
+                    logger_uma.info(
+                        f"[lobby] Pre-check tile already clicked, waiting for confirm | reason={reason}"
+                    )
+                    # Tile already clicked by pre-check, just wait for the normal flow
+                    # The agent will detect TrainingConfirm screen and handle it
+                    sleep(1.5)  # Give time for UI to settle
+                    continue
+
                 # For other outcomes ("INFIRMARY", "RESTED", "CONTINUE") we just loop
                 continue
 

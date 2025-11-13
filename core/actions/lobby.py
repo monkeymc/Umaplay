@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections import deque
+import random
 import statistics
 import time
 from dataclasses import dataclass
@@ -17,6 +18,7 @@ from core.actions.training_check import (
     get_compute_support_values,
     scan_training_screen,
 )
+from core.utils.geometry import calculate_jitter
 from core.utils.logger import logger_uma
 from core.utils.race_index import RaceIndex, date_key_from_dateinfo
 from core.utils.text import fuzzy_contains, fuzzy_best_match, normalize_ocr_text
@@ -907,7 +909,7 @@ class LobbyFlow(ABC):
             return False
         if (
             self.state.date_info
-            and energy <= 50
+            and energy <= 30
             and is_summer_in_two_or_less_turns(self.state.date_info)
         ):
             return False
@@ -919,6 +921,7 @@ class LobbyFlow(ABC):
         dets,
         *,
         force_refresh: bool = False,
+        stay_if_above_threshold: bool = False,
     ) -> Tuple[float, Dict[str, Any]]:
         if not Settings.LOBBY_PRECHECK_ENABLE:
             return 0.0, {"status": "disabled"}
@@ -970,27 +973,71 @@ class LobbyFlow(ABC):
 
             allowed_rows = [r for r in sv_rows if r.get("allowed_by_risk")]
             best_row = None
+            best_tile_xyxy = None
             if allowed_rows:
                 best_row = max(
                     allowed_rows,
                     key=lambda r: float(r.get("sv_total", 0.0)),
                 )
                 best_sv = float(best_row.get("sv_total", 0.0))
+                # Find the tile_xyxy from training_state using tile_idx
+                tile_idx = best_row.get("tile_idx")
+                if tile_idx is not None:
+                    for tile in training_state:
+                        if tile.get("tile_idx") == tile_idx:
+                            best_tile_xyxy = tile.get("tile_xyxy")
+                            break
                 meta = {
                     "status": "ok",
                     "tile_idx": best_row.get("tile_idx"),
                     "tile_type": best_row.get("tile_type"),
                     "sv_total": best_sv,
                     "failure_pct": best_row.get("failure_pct"),
+                    "tile_xyxy": best_tile_xyxy,  # Store geometry for clicking
                 }
             else:
                 meta = {"status": "no_allowed_tiles"}
 
         finally:
-            self._go_back()
+            # Only go back if we're not staying in training or if SV is below threshold
+            should_stay = (
+                stay_if_above_threshold
+                and best_sv >= Settings.RACE_PRECHECK_SV
+                and meta.get("status") == "ok"
+            )
+            if not should_stay:
+                self._go_back()
+            else:
+                # Click the best tile directly to save time
+                tile_xyxy = meta.get("tile_xyxy")
+                if tile_xyxy:
+                    self.ctrl.click_xyxy_center(
+                        tile_xyxy,
+                        clicks=random.randint(3, 4),
+                        jitter=calculate_jitter(tile_xyxy, percentage_offset=0.20),
+                    )
+                    logger_uma.info(
+                        "[lobby] Pre-check clicked tile_idx=%s type=%s sv=%.2f",
+                        meta.get("tile_idx"),
+                        meta.get("tile_type"),
+                        best_sv,
+                    )
+                    meta["stayed_in_training"] = True
+                    meta["tile_clicked"] = True
+                else:
+                    # Fallback: go back if we can't click
+                    logger_uma.warning(
+                        "[lobby] Pre-check optimization failed: tile_xyxy not found for tile_idx=%s",
+                        meta.get("tile_idx"),
+                    )
+                    self._go_back()
+                    meta["stayed_in_training"] = False
 
-        self._peek_cache_key = cache_key
-        self._peek_cache_value = (best_sv, dict(meta))
+        # Don't cache if we clicked a tile (state changed)
+        if not meta.get("tile_clicked"):
+            self._peek_cache_key = cache_key
+            self._peek_cache_value = (best_sv, dict(meta))
+        
         meta_with_flag = dict(meta)
         meta_with_flag["cache_hit"] = False
         return best_sv, meta_with_flag
@@ -1051,7 +1098,7 @@ class LobbyFlow(ABC):
             # Critical G1
             if critical_goal_g1:
                 if self._precheck_allowed() and not force_deadline:
-                    best_sv, meta = self._peek_training_best_sv(img, dets)
+                    best_sv, meta = self._peek_training_best_sv(img, dets, stay_if_above_threshold=True)
                     if best_sv >= Settings.RACE_PRECHECK_SV:
                         logger_uma.info(
                             "[lobby] Goal G1 pre-check skip: sv=%.2f threshold=%.2f meta=%s",
@@ -1059,14 +1106,16 @@ class LobbyFlow(ABC):
                             Settings.RACE_PRECHECK_SV,
                             meta,
                         )
-                        return False, (
-                            f"Pre-check training (G1) sv={best_sv:.2f}"
-                        )
+                        # Mark that tile is already clicked if optimization applied
+                        reason = f"Pre-check training (G1) sv={best_sv:.2f}"
+                        if meta.get("tile_clicked"):
+                            reason += " [tile_clicked]"
+                        return False, reason
                 return True, f"[lobby] Critical goal G1 | turn={self.state.turn}"
             # Critical Fans
             elif critical_goal_fans:
                 if self._precheck_allowed() and not force_deadline:
-                    best_sv, meta = self._peek_training_best_sv(img, dets)
+                    best_sv, meta = self._peek_training_best_sv(img, dets, stay_if_above_threshold=True)
                     if best_sv >= Settings.RACE_PRECHECK_SV:
                         logger_uma.info(
                             "[lobby] Goal fans pre-check skip: sv=%.2f threshold=%.2f meta=%s",
@@ -1074,9 +1123,11 @@ class LobbyFlow(ABC):
                             Settings.RACE_PRECHECK_SV,
                             meta,
                         )
-                        return False, (
-                            f"Pre-check training (fans) sv={best_sv:.2f}"
-                        )
+                        # Mark that tile is already clicked if optimization applied
+                        reason = f"Pre-check training (fans) sv={best_sv:.2f}"
+                        if meta.get("tile_clicked"):
+                            reason += " [tile_clicked]"
+                        return False, reason
                 return True, f"[lobby] Critical goal FANS/MAIDEN | turn={self.state.turn}"
 
         return False, "Unknown"
@@ -1085,7 +1136,7 @@ class LobbyFlow(ABC):
         if not self._precheck_allowed():
             return False, "precheck_disabled"
 
-        best_sv, meta = self._peek_training_best_sv(img, dets)
+        best_sv, meta = self._peek_training_best_sv(img, dets, stay_if_above_threshold=True)
         threshold = Settings.RACE_PRECHECK_SV
         cache_info = f"cache={'hit' if meta.get('cache_hit') else 'miss'}"
 
@@ -1096,7 +1147,10 @@ class LobbyFlow(ABC):
                 threshold,
                 meta,
             )
-            return True, f"Pre-check training sv={best_sv:.2f} {cache_info}"
+            reason = f"Pre-check training sv={best_sv:.2f} {cache_info}"
+            if meta.get("tile_clicked"):
+                reason += " [tile_clicked]"
+            return True, reason
 
         logger_uma.info(
             "[lobby] Planned race pre-check fail: sv=%.2f threshold=%.2f meta=%s",
