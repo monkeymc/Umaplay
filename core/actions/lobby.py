@@ -19,10 +19,13 @@ from core.actions.training_check import (
 )
 from core.utils.logger import logger_uma
 from core.utils.race_index import RaceIndex, date_key_from_dateinfo
-from core.utils.text import fuzzy_contains
+from core.utils.text import fuzzy_contains, fuzzy_best_match, normalize_ocr_text
 from core.utils.waiter import Waiter
 from core.utils.yolo_objects import collect
 from core.constants import CLASS_UI_TURNS, CLASS_UI_GOAL
+from core.utils.pal_memory import PalMemoryManager
+from core.actions.events import _count_chain_steps
+from core.utils.event_processor import predict_next_chain_has_energy_from_raw
 
 from core.utils.date_uma import (
     DateInfo,
@@ -54,6 +57,8 @@ class LobbyState:
     planned_race_name: Optional[str] = None
     planned_race_canonical: Optional[str] = None
     planned_race_tentative: bool = False
+    # PAL icon available near Recreation on the lobby screen
+    pal_available: bool = False
 
 
 @dataclass
@@ -122,6 +127,68 @@ class LobbyFlow(ABC):
         self.date_layout = date_layout
         self.date_turns_class = date_turns_class
         self.date_goal_class = date_goal_class
+
+        # Lightweight PAL memory for recreation/dating context
+        try:
+            from core.settings import Settings as _S
+            pal_path = _S.PREFS_DIR / "runtime_pal_memory.json"
+            self.pal_memory = PalMemoryManager(pal_path, scenario=getattr(_S, "ACTIVE_SCENARIO", None))
+        except Exception:
+            # Fallback to a local temp path if settings are unavailable
+            from pathlib import Path
+            self.pal_memory = PalMemoryManager(Path("runtime_pal_memory.json"))
+
+    # Keep PAL memory metadata aligned with current run
+    def _refresh_pal_memory(self) -> None:
+        try:
+            from core.settings import Settings as _S
+            cfg = getattr(_S, "_last_config", None) or {}
+            # Reuse AgentScenario helper behavior: Settings might provide a private util
+            preset_id = None
+            try:
+                _, active_id, _ = _S._get_active_preset_from_config(cfg)
+                if isinstance(active_id, str) and active_id.strip():
+                    preset_id = active_id.strip()
+            except Exception:
+                preset_id = None
+            di = getattr(self.state, "date_info", None)
+            date_key = di.as_key() if di else None
+            idx = date_index(di) if di else None
+            if not self.pal_memory.is_compatible_run(
+                preset_id=preset_id,
+                date_key=date_key,
+                date_index=idx,
+                scenario=getattr(_S, "ACTIVE_SCENARIO", None),
+            ):
+                self.pal_memory.reset()
+            self.pal_memory.set_run_metadata(
+                preset_id=preset_id,
+                date_key=date_key,
+                date_index=idx,
+                scenario=getattr(_S, "ACTIVE_SCENARIO", None),
+                commit=True,
+            )
+        except Exception:
+            pass
+
+    # Centralized helper to update PAL availability from detections
+    def _update_pal_from_dets(self, dets) -> None:
+        try:
+            has_pal = any(
+                d.get("name") == "lobby_pal" and float(d.get("conf", 0.0)) >= 0.6
+                for d in dets
+            )
+            self.state.pal_available = bool(has_pal)
+            date_key = (
+                date_key_from_dateinfo(self.state.date_info)
+                if getattr(self.state, "date_info", None)
+                else None
+            )
+            turn_val = self.state.turn if isinstance(self.state.turn, int) else None
+            self.pal_memory.record_availability(has_pal, date_key=date_key, turn=turn_val, commit=True)
+        except Exception:
+            # Non-fatal; keep running without PAL telemetry if something goes wrong
+            pass
 
     @abstractmethod
     def process_turn(self):
@@ -1077,29 +1144,188 @@ class LobbyFlow(ABC):
                 tag="recreation_screen",
                 agent=self.waiter.cfg.agent,
             )
-            
+            # Persist a lightweight snapshot of PAL rows (support + chain steps)
+            try:
+                date_key = date_key_from_dateinfo(getattr(self.state, "date_info", None))
+                turn_val = self.state.turn if isinstance(self.state.turn, int) else None
+                # Gather PAL deck names for fuzzy matching (Settings preset deck)
+                try:
+                    pal_deck_names = [
+                        str(e.get("name")).strip()
+                        for e in (getattr(Settings, "SUPPORT_DECK", []) or [])
+                        if str(e.get("attribute", "")).strip().upper() == "PAL"
+                        and str(e.get("name", "")).strip()
+                    ]
+                except Exception:
+                    pal_deck_names = []
+                static_pal_names = ["Riko Kashimoto", "Tazuna Hayakawa", "Aoi Kiryuin"]
+                pal_name_targets = list({*(n for n in static_pal_names if n), *pal_deck_names})
+                # Group items inside each recreation_row by bounding box containment
+                def _center(xyxy):
+                    x1, y1, x2, y2 = xyxy
+                    return (0.5 * (x1 + x2), 0.5 * (y1 + y2))
+
+                def _inside(pt, xyxy):
+                    x, y = pt
+                    x1, y1, x2, y2 = xyxy
+                    return x1 <= x <= x2 and y1 <= y <= y2
+
+                supports = [d for d in dets if isinstance(d.get("name"), str) and d["name"].startswith("support_")]
+                chains = [d for d in dets if d.get("name") == "event_chain"]
+                candidates = []
+                # Iterate rows and persist observations
+                for row in [d for d in dets if d.get('name') == 'recreation_row']:
+                    rxy = row['xyxy']
+                    # Match first support face inside the row
+                    support_det = None
+                    for s in supports:
+                        if _inside(_center(s['xyxy']), rxy):
+                            support_det = s
+                            break
+
+                    # Map detection class to canonical support name for catalog lookups
+                    support_name = None
+                    if support_det:
+                        if support_det['name'] == 'support_kashimoto':
+                            support_name = 'Riko Kashimoto'
+                        elif support_det['name'] == 'support_tazuna':
+                            support_name = 'Tazuna Hayakawa'
+                        elif support_det['name'] == 'support_director':
+                            # Aoi Kiryuin (Director)
+                            support_name = 'Aoi Kiryuin'
+                    # If face class not detected, try OCR name in row (top-half, left area)
+                    if not support_name and self.ocr is not None and pal_name_targets:
+                        try:
+                            x1, y1, x2, y2 = rxy
+                            W = float(x2 - x1)
+                            H = float(y2 - y1)
+                            crop = img.crop((x1, y1, x1 + max(1.0, 0.72 * W), y1 + max(1.0, 0.52 * H)))
+                            raw_txt = self.ocr.text(crop, joiner=" ", min_conf=0.2)
+                            # Remove common UI tokens
+                            blacklist = [
+                                "friendship",
+                                "gauge",
+                                "event progress",
+                                "trainee umamusume",
+                                "cancel",
+                            ]
+                            nt = normalize_ocr_text(raw_txt)
+                            for token in blacklist:
+                                nt = nt.replace(normalize_ocr_text(token), " ")
+                            nt = nt.strip()
+                            if nt:
+                                best, score = fuzzy_best_match(nt, [normalize_ocr_text(n) for n in pal_name_targets])
+                                if best and score >= 0.65:
+                                    # Map back from normalized to original target by index
+                                    idx = [normalize_ocr_text(n) for n in pal_name_targets].index(best)
+                                    support_name = pal_name_targets[idx]
+                        except Exception:
+                            pass
+                    # Final fallback: single PAL in deck and only two rows
+                    if not support_name and len(pal_deck_names) == 1:
+                        # Heuristic: if only two rows exist, top one is likely PAL
+                        # We'll assign the single deck PAL as the candidate name
+                        support_name = pal_deck_names[0]
+
+                    # Count completed chain steps (blue arrows only)
+                    steps_completed = 0
+                    if chains:
+                        chain_in_row = [c for c in chains if _inside(_center(c['xyxy']), rxy)]
+                        cnt = _count_chain_steps(chain_in_row, frame=img)
+                        steps_completed = int(cnt) if cnt is not None else 0
+
+                    next_step = max(1, steps_completed + 1)
+                    energy_expected = None
+                    energy_max = None
+                    if support_name:
+                        energy_expected = predict_next_chain_has_energy_from_raw(
+                            support_name=support_name,
+                            next_step=next_step,
+                            attribute='PAL',
+                        )
+                        try:
+                            from core.utils.event_processor import (
+                                predict_next_chain_max_energy_from_raw,
+                            )
+                            energy_max = predict_next_chain_max_energy_from_raw(
+                                support_name=support_name,
+                                next_step=next_step,
+                                attribute='PAL',
+                            )
+                        except Exception:
+                            energy_max = None
+
+                    # Persist using detection key as the dictionary key (stable class name)
+                    key = (support_det['name'] if support_det else None)
+                    if key:
+                        self.pal_memory.record_chain_snapshot(
+                            key,
+                            steps=max(0, int(steps_completed)),
+                            date_key=date_key,
+                            turn=turn_val,
+                            next_energy=(bool(energy_expected) if energy_expected is not None else None),
+                            commit=False,
+                        )
+                        # Score this row
+                        # Determine if row appears active
+                        try:
+                            crop = img.crop(rxy)
+                            clf = ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH)
+                            is_active = bool(clf.predict(crop))
+                        except Exception:
+                            is_active = True
+                        score = 0.0
+                        energy_val = self.state.energy if isinstance(self.state.energy, (int, float)) else None
+                        energy_need = energy_val is not None and energy_val <= float(self.auto_rest_minimum)
+                        if energy_need and energy_expected:
+                            score += 10.0
+                        if not energy_need:
+                            sclass = str(key)
+                            if sclass == 'support_kashimoto':
+                                score += 3.0
+                            elif sclass == 'support_tazuna':
+                                score += 2.0
+                            elif sclass == 'support_director':
+                                score += 1.0
+                        if energy_val is not None and energy_max is not None:
+                            try:
+                                if energy_val + int(energy_max) > 100:
+                                    score -= 1.0
+                            except Exception:
+                                pass
+                        if is_active:
+                            score += 0.5
+                        candidates.append((score, row))
+                # Persist once after processing all rows
+                self.pal_memory.save()
+            except Exception as e:
+                logger_uma.debug(f"[pal] snapshot failed: {e}")
+
             # Check for recreation rows in detections
             recreation_rows = [d for d in dets if d.get('name') == 'recreation_row']
-            
+
             if recreation_rows:
-                # Sort rows by y-coordinate (top to bottom)
-                recreation_rows.sort(key=lambda r: r['xyxy'][1])
-                
-                # Try each row until we find an active one or run out of rows
-                for row in recreation_rows:                    
-                    # Check if the row is active
-                    crop = img.crop(row['xyxy'])
-                    clf = ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH)
-                    is_active = clf.predict(crop)
-                    
-                    if is_active:
-                        # Click the active row
-                        self.ctrl.click_xyxy_center(row['xyxy'])
-                        logger_uma.info("[lobby] Selected active recreation row")
-                        time.sleep(0.5)  # Wait for any animation
-                        break
-                    else:
-                        logger_uma.info("[lobby] Skipping inactive recreation row")
+                chosen = None
+                if candidates:
+                    candidates.sort(key=lambda x: float(x[0]), reverse=True)
+                    chosen = candidates[0][1]
+                else:
+                    # Sort rows by y (top→bottom) and pick first active
+                    recreation_rows.sort(key=lambda r: r['xyxy'][1])
+                    for row in recreation_rows:
+                        try:
+                            crop = img.crop(row['xyxy'])
+                            clf = ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH)
+                            is_active = bool(clf.predict(crop))
+                        except Exception:
+                            is_active = True
+                        if is_active:
+                            chosen = row
+                            break
+                if chosen is not None:
+                    self.ctrl.click_xyxy_center(chosen['xyxy'])
+                    logger_uma.info("[lobby] Selected recreation row via PAL policy")
+                    time.sleep(0.5)
                 
             time.sleep(2)
         return click

@@ -249,7 +249,11 @@ class AgentURA(AgentScenario):
                 self._consecutive_event_stale_clicks = 0
                 # pass what we know about current energy (may be None if not read yet)
                 self.lobby.state.energy = extract_energy_pct(img, dets)
-                curr_energy = self.lobby.state.energy or 100
+                curr_energy = (
+                    self.lobby.state.energy
+                    if isinstance(self.lobby.state.energy, (int, float))
+                    else None
+                )
                 decision = self.event_flow.process_event_screen(
                     img,
                     dets,

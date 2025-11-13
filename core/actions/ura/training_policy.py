@@ -56,6 +56,7 @@ def decide_action_training(
     race_if_no_good_value: bool = False,
     weak_turn_sv: Optional[float] = None,
     junior_minimal_mood: Optional[str] = None,
+    pal_recreation_hint: bool = False,
 ) -> Tuple[TrainAction, Optional[int], str]:
     """
     Return the decided action and the target tile index (or None when not applicable).
@@ -625,6 +626,9 @@ def decide_action_training(
 
     # 8) If energy <= 35% → REST
     if energy_pct <= energy_rest_gate_lo:
+        if pal_recreation_hint and not is_final_season(di):
+            because("Low energy and PAL available → prefer recreation over rest")
+            return (TrainAction.RECREATION, None, "; ".join(reasons))
         because(f"Energy {energy_pct}% ≤ {energy_rest_gate_lo}% → rest")
         return (TrainAction.REST, None, "; ".join(reasons))
 
@@ -753,6 +757,19 @@ def decide_action_training(
         because("Fallback (Summer): WIT to skip turn and get stats")
         return (TrainAction.TRAIN_WIT, best_wit_any, "; ".join(reasons))
     best_any_sv = sv_of(best_allowed_any)
+    # Weak-turn PAL preference: if energy is low and PAL is available, prefer recreation over rest
+    if (
+        energy_pct <= 70
+        and pal_recreation_hint
+        and not is_final_season(di)
+        and (
+            best_allowed_any is None
+            or weak_turn_sv is None
+            or (best_any_sv < float(weak_turn_sv))
+        )
+    ):
+        because("Weak-turn with PAL available → prefer recreation instead of rest")
+        return (TrainAction.RECREATION, None, "; ".join(reasons))
     if energy_pct <= 70:
         threshold = float(weak_turn_sv) if weak_turn_sv is not None else None
         if (

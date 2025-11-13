@@ -143,7 +143,8 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
             note += f", important×{important_mult:.1f}"
         note += ")"
         return note
-
+    
+    KNOWN_TYPES = {"SPD","STA","PWR","GUTS","WIT","PAL"}
     for tile in training_state:
         idx = int(tile.get("tile_idx", -1))
         failure_pct = int(tile.get("failure_pct", 0) or 0)
@@ -170,6 +171,7 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
             is_max = bool(bar.get("is_max", False))
             has_hint = bool(s.get("has_hint", False))
             has_rainbow = bool(s.get("has_rainbow", False))
+            stype = (s.get("support_type") or "").strip().upper()
             label = _support_label(s)
 
             # Normalize 'max' color if flagged
@@ -201,24 +203,28 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
                 continue
 
             if sname == "support_tazuna":
-                # Tazuna score depends on color:
-                if color in ("blue", "green"):
-                    score = 1.0
-                elif color in ("orange", ):
-                    score = 0.5
-                elif color in ("yellow",) or is_max:
-                    score = 0.15
-                else:
-                    score = 0.0
-                
-                if score > 0:
+                # PAL rules
+                if color in ("blue",):       score = 1.5
+                else:                                 score = 0.15
+                sv_total += score
+                sv_by_type["special_tazuna"] = sv_by_type.get("special_tazuna", 0.0) + score
+                notes.append(f"Tazuna ({label}, {color}): +{score:.2f}")
+                continue
+
+            if sname == "support_kashimoto":
+                # If she shows any support_type → treat as PAL; else as Director
+                if stype in KNOWN_TYPES and stype != "":
+                    if color in ("blue",):       score = 1.5
+                    else:                                 score = 0.15
                     sv_total += score
-                    sv_by_type["special_tazuna"] = (
-                        sv_by_type.get("special_tazuna", 0.0) + score
-                    )
-                    notes.append(f"Tazuna ({label}, {color}): +{score:.2f}")
+                    sv_by_type["special_kashimoto_pal"] = sv_by_type.get("special_kashimoto_pal", 0.0) + score
+                    notes.append(f"Kashimoto as PAL ({label}, {color}): +{score:.2f}")
                 else:
-                    notes.append(f"Tazuna ({label}, {color}): +0.00")
+                    score = DIRECTOR_SCORE_BY_COLOR.get(color, DIRECTOR_SCORE_BY_COLOR["yellow"])
+                    if score > 0:
+                        sv_total += score
+                        sv_by_type["special_kashimoto_director"] = sv_by_type.get("special_kashimoto_director", 0.0) + score
+                    notes.append(f"Kashimoto as Director ({label}, {color}): +{score:.2f}")
                 continue
 
             # --- standard support cards (including rainbow variants) ---

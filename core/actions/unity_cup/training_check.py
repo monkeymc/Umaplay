@@ -166,10 +166,7 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
             if sname == "support_tazuna":
                 # PAL rules
                 if color in ("blue",):       score = 1.5
-                elif color in ("green",):       score = 0.25
-                elif color in ("orange",):          score = 0.15
-                elif color in ("yellow",) or is_max: score = 0.10
-                else:                                 score = 0.0
+                else:                                 score = 0.5
                 sv_total += score
                 sv_by_type["special_tazuna"] = sv_by_type.get("special_tazuna", 0.0) + score
                 notes.append(f"Tazuna ({label}, {color}): +{score:.2f}")
@@ -179,10 +176,7 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
                 # If she shows any support_type → treat as PAL; else as Director
                 if stype in KNOWN_TYPES and stype != "":
                     if color in ("blue",):       score = 1.5
-                    elif color in ("green",):       score = 0.25
-                    elif color in ("orange",):          score = 0.15
-                    elif color in ("yellow", "max") or is_max: score = 0.10
-                    else:                                 score = 0.0
+                    else:                                 score = 0.5
                     sv_total += score
                     sv_by_type["special_kashimoto_pal"] = sv_by_type.get("special_kashimoto_pal", 0.0) + score
                     notes.append(f"Kashimoto as PAL ({label}, {color}): +{score:.2f}")

@@ -193,7 +193,10 @@ class AgentNav:
             ):
                 return "TeamTrialsResults", {"counts": dict(counts)}
 
-            if nav.has(dets, "button_white", conf_min=self._thr["button_back"]) and not nav.has(dets, "button_pink", conf_min=self._thr["button_pink"]) and not nav.has(dets, "button_advance", conf_min=self._thr["button_advance"]) and not nav.has(dets, "button_green", conf_min=self._thr["button_green"]):
+            if (
+                sum(1 for d in dets if d["name"] == "button_white") <= 1 and
+                nav.has(dets, "button_white", conf_min=self._thr["button_back"]) and not nav.has(dets, "button_pink", conf_min=self._thr["button_pink"]) and not nav.has(dets, "button_advance", conf_min=self._thr["button_advance"]) and not nav.has(dets, "button_green", conf_min=self._thr["button_green"])
+            ):
                 return "TeamTrialsStale", {"counts": dict(counts)}
 
             if nav.has(dets, "button_white", conf_min=self._thr["button_back"]) and nav.has(

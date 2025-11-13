@@ -85,6 +85,8 @@ class LobbyFlowUnityCup(LobbyFlow):
             tag="lobby_state",
             agent=self.waiter.cfg.agent,
         )
+        # Update PAL availability flag on-demand (centralized helper)
+        self._update_pal_from_dets(dets)
 
         if not self.process_on_demand:
             self._update_state(
@@ -98,6 +100,8 @@ class LobbyFlowUnityCup(LobbyFlow):
             logger_uma.info(
                 f"Date: {self.state.date_info} | raw: {self.state.career_date_raw}"
             )
+            # Align PAL memory metadata with the current run/date
+            self._refresh_pal_memory()
 
         if self.process_on_demand:
             self.state.energy = extract_energy_pct(img, dets)
@@ -218,9 +222,28 @@ class LobbyFlowUnityCup(LobbyFlow):
             if self._go_infirmary():
                 return "INFIRMARY", "Infirmary to remove blue condition"
 
-        # --- Energy management (rest) ---
+        # --- Energy management (rest / prefer PAL recreation) ---
         if self.state.energy is not None:
             if self.state.energy <= self.auto_rest_minimum:
+                # Prefer PAL recreation if available AND mood < GREAT
+                mem = getattr(self, 'pal_memory', None)
+                mood_lbl, mood_score = (
+                    self.state.mood if isinstance(self.state.mood, tuple) and len(self.state.mood) == 2 else ("UNKNOWN", -1)
+                )
+                if mood_score < 0:
+                    try:
+                        self.state.mood = extract_mood(self.ocr, img, dets, conf_min=0.3)
+                        _, mood_score = self.state.mood
+                    except Exception:
+                        mood_score = -1
+                if (
+                    mood_score >= 0
+                    and mood_score < 5
+                    and (getattr(self.state, 'pal_available', False) or (mem and mem.any_next_energy()))
+                ):
+                    reason = f"Auto-rest: prefer PAL recreation (min={self.auto_rest_minimum}; mood<Great)"
+                    if self._go_recreate(reason=reason):
+                        return "RESTED", reason
                 reason = f"Energy too low, resting: auto_rest_minimum={self.auto_rest_minimum}"
                 if self._go_rest(reason=reason):
                     return "RESTED", reason
@@ -229,6 +252,12 @@ class LobbyFlowUnityCup(LobbyFlow):
                 and self.state.date_info
                 and is_summer_in_two_or_less_turns(self.state.date_info)
             ):
+                # Prefer PAL recreation when preparing for summer if available
+                mem = getattr(self, 'pal_memory', None)
+                if (getattr(self.state, 'pal_available', False) and (mem and mem.any_next_energy())):
+                    reason = "Preparing for summer: prefer PAL recreation"
+                    if self._go_recreate(reason=reason):
+                        return "RESTED", reason
                 reason = "Resting to prepare for summer"
                 if self._go_rest(reason=reason):
                     return "RESTED", reason

@@ -5468,37 +5468,13 @@
 		"id": "Tazuna Hayakawa_PAL_SSR",
 		"choice_events": [
 			{
-				"type": "chain",
-				"chain_step": 3,
-				"name": "Memories of Cinema",
-				"options": {
-					"1": [
-						{
-							"energy": 38,
-							"stamina": 6,
-							"mood": 1,
-							"bond": 5
-						}
-					],
-					"2": [
-						{
-							"stamina": 13,
-							"guts": 13,
-							"mood": 1,
-							"bond": 5
-						}
-					]
-				},
-				"default_preference": 1
-			},
-			{
 				"type": "random",
 				"chain_step": 1,
 				"name": "My Chosen Way of Life",
 				"options": {
 					"1": [
 						{
-							"energy": 15,
+							"energy": 10,
 							"mood": 1,
 							"bond": 5
 						}
@@ -5506,7 +5482,7 @@
 					"2": [
 						{
 							"mood": 1,
-							"wit": 6,
+							"wit": 5,
 							"bond": 5
 						}
 					]
@@ -5516,64 +5492,37 @@
 			{
 				"type": "random",
 				"chain_step": 1,
-				"name": "Enthusiastic Pair Dating starts",
+				"name": "Enthusiastic Pair",
 				"options": {
 					"1": [
 						{
-							"energy": 15,
-							"wit": 6,
+							"energy": 10,
+							"wit": 5,
 							"mood": 1,
-							"bond": 5,
-							"status": "Can start dating"
+							"bond": 5
 						}
 					],
 					"2": [
 						{
 							"mood": -1,
-							"bond": 5,
+							"bond": -5,
 							"hints": [
-								"Watchful Eye"
+								"Watchful Eye (+1)"
 							]
 						}
 					]
 				},
 				"default_preference": 1
-			}
-		]
-	},
-	{
-		"type": "support",
-		"name": "Aoi Kiryuuin",
-		"rarity": "SR",
-		"attribute": "PAL",
-		"id": "Aoi Kiryuuin_PAL_SR",
-		"choice_events": [
+			},
 			{
-				"type": "chain",
-				"chain_step": 2,
-				"name": "How I Play at the Park",
+				"type": "date",
+				"chain_step": 1,
+				"name": "Milk with a Chance of Apples",
 				"options": {
 					"1": [
 						{
-							"energy": 37,
-							"wit": 6,
-							"bond": 5,
-							"mood": 1
-						},
-						{
-							"energy": 37,
-							"wit": 6,
-							"bond": 5
-						}
-					],
-					"2": [
-						{
-							"skill_pts": 19,
-							"bond": 5
-						},
-						{
-							"speed": 6,
-							"skill_pts": 58,
+							"energy": 25,
+							"speed": 5,
 							"mood": 1,
 							"bond": 5
 						}
@@ -5581,6 +5530,191 @@
 				},
 				"default_preference": 1
 			},
+			{
+				"type": "date",
+				"chain_step": 2,
+				"name": "Inexplicable Speed",
+				"options": {
+					"1": [
+						{
+							"energy": 25,
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "date",
+				"chain_step": 3,
+				"name": "Memories of Cinema",
+				"options": {
+					"1": [
+						{
+							"energy": 25,
+							"stamina": 5,
+							"mood": 1,
+							"bond": 5
+						}
+					],
+					"2": [
+						{
+							"stamina": 10,
+							"guts": 10,
+							"mood": 1,
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "date",
+				"chain_step": 4,
+				"name": "A Sigh and a Bandage",
+				"options": {
+					"1": [
+						{
+							"energy": 35,
+							"wit": 5,
+							"mood": 1,
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "date",
+				"chain_step": 5,
+				"name": "A Surprise Breather",
+				"options": {
+					"1": [
+						{
+							"energy": 35,
+							"skill_pts": 30,
+							"mood": 2,
+							"bond": 5,
+							"hints": [
+								"Focus (+1)"
+							]
+						},
+						{
+							"energy": 35,
+							"skill_pts": 30,
+							"mood": 2,
+							"bond": 5,
+							"hints": [
+								"Concentration (+1)"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Tazuna, the Director's Secretary",
+				"options": {
+					"1": [
+						{
+							"skill_pts": 15,
+							"mood": 1,
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Good Job! ♪",
+				"options": {
+					"1": [
+						{
+							"mood": 1,
+							"speed": 3,
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "From Just a Little Closer",
+				"options": {
+					"1": [
+						{
+							"skill_pts": 30
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Usual, Please!",
+				"options": {
+					"1": [
+						{
+							"skill_pts": 20
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Bond with Tazuna: Aspirations Entrusted",
+				"options": {
+					"1": [
+						{
+							"energy": 10,
+							"speed": 15,
+							"mood": 1,
+							"bond": 5,
+							"hints": [
+								"Tail Held High (+3)"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			}
+		],
+		"hint_skills": [],
+		"event_skills": [
+			{
+				"id": "200692",
+				"name": "Watchful Eye"
+			},
+			{
+				"id": "200432",
+				"name": "Focus"
+			},
+			{
+				"id": "200431",
+				"name": "Concentration"
+			},
+			{
+				"id": "201611",
+				"name": "Tail Held High"
+			}
+		]
+	},
+	{
+		"type": "support",
+		"name": "Aoi Kiryuin",
+		"rarity": "SR",
+		"attribute": "PAL",
+		"id": "Aoi Kiryuin_PAL_SR",
+		"choice_events": [
 			{
 				"type": "random",
 				"chain_step": 1,
@@ -5588,15 +5722,15 @@
 				"options": {
 					"1": [
 						{
-							"energy": 15,
-							"skill_pts": 19,
+							"energy": 10,
+							"skill_pts": 15,
 							"bond": 5
 						}
 					],
 					"2": [
 						{
-							"speed": 6,
-							"wit": 6,
+							"speed": 5,
+							"wit": 5,
 							"bond": 5
 						}
 					]
@@ -5606,28 +5740,233 @@
 			{
 				"type": "random",
 				"chain_step": 1,
-				"name": "The Search for a Hobby Dating starts",
+				"name": "The Search for a Hobby",
 				"options": {
 					"1": [
 						{
-							"energy": 30,
-							"skill_pts": 19,
+							"energy": 20,
+							"skill_pts": 15,
 							"mood": 1,
-							"bond": 5,
-							"status": "Can start dating"
+							"bond": 5
 						}
 					],
 					"2": [
 						{
 							"mood": -1,
 							"hints": [
-								"Maverick ○"
+								"Maverick ○ (+1)"
 							],
 							"bond": -5
 						}
 					]
 				},
 				"default_preference": 1
+			},
+			{
+				"type": "date",
+				"chain_step": 1,
+				"name": "Studying with Your Body!",
+				"options": {
+					"1": [
+						{
+							"energy": 25,
+							"skill_pts": 30,
+							"mood": 2,
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "date",
+				"chain_step": 2,
+				"name": "How I Play at the Park",
+				"options": {
+					"1": [
+						{
+							"energy": 25,
+							"wit": 5,
+							"bond": 5,
+							"mood": 1
+						}
+					],
+					"2": [
+						{
+							"skill_pts": 15,
+							"bond": 5
+						},
+						{
+							"speed": 5,
+							"skill_pts": 45,
+							"mood": 1,
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "date",
+				"chain_step": 3,
+				"name": "Reckless Training",
+				"options": {
+					"1": [
+						{
+							"energy": 20,
+							"skill_pts": 30,
+							"mood": 1,
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "date",
+				"chain_step": 4,
+				"name": "The Joy of Respect",
+				"options": {
+					"1": [
+						{
+							"power": 10,
+							"skill_pts": 45,
+							"mood": 1,
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "date",
+				"chain_step": 5,
+				"name": "Chasing Dreams",
+				"options": {
+					"1": [
+						{
+							"stamina": 5,
+							"skill_pts": 15,
+							"hints": [
+								"Subdued Front Runners (+1)"
+							],
+							"bond": 5
+						},
+						{
+							"stamina": 5,
+							"power": 5,
+							"guts": 5,
+							"skill_pts": 45,
+							"mood": 1,
+							"hints": [
+								"Subdued Front Runners (+3)"
+							],
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Fellow Trainer Aoi Kiryuin",
+				"options": {
+					"1": [
+						{
+							"skill_pts": 15,
+							"mood": 1,
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Good Job!",
+				"options": {
+					"1": [
+						{
+							"mood": 1,
+							"wit": 3,
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "Gift of Words",
+				"options": {
+					"1": [
+						{
+							"hints": [
+								"Hesitant End Closers (+1",
+								"+3)",
+								"Lay Low (+3)"
+							]
+						}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "The Perfect Place for a Party",
+				"options": {
+					"1": [
+						{}
+					]
+				},
+				"default_preference": 1
+			},
+			{
+				"type": "random",
+				"chain_step": 1,
+				"name": "A Bond with Aoi: Being a Good Mentor",
+				"options": {
+					"1": [
+						{
+							"wit": 15,
+							"skill_pts": 15,
+							"mood": 1,
+							"hints": [
+								"Shake It Out (+1",
+								"+3)"
+							],
+							"bond": 5
+						}
+					]
+				},
+				"default_preference": 1
+			}
+		],
+		"hint_skills": [],
+		"event_skills": [
+			{
+				"id": "200272",
+				"name": "Maverick ○"
+			},
+			{
+				"id": "200831",
+				"name": "Subdued Front Runners"
+			},
+			{
+				"id": "200941",
+				"name": "Hesitant End Closers"
+			},
+			{
+				"id": "200442",
+				"name": "Lay Low"
+			},
+			{
+				"id": "201621",
+				"name": "Shake It Out"
 			}
 		]
 	},
@@ -26663,7 +27002,7 @@
 				"default_preference": 2
 			},
 			{
-				"type": "random",
+				"type": "date",
 				"chain_step": 1,
 				"name": "Sing from the Heart",
 				"options": {
@@ -26679,8 +27018,8 @@
 				"default_preference": 1
 			},
 			{
-				"type": "random",
-				"chain_step": 1,
+				"type": "date",
+				"chain_step": 2,
 				"name": "A Change of Pace",
 				"options": {
 					"1": [
@@ -26720,8 +27059,8 @@
 				"default_preference": 1
 			},
 			{
-				"type": "random",
-				"chain_step": 1,
+				"type": "date",
+				"chain_step": 4,
 				"name": "Confused by Kindness",
 				"options": {
 					"1": [
@@ -26738,8 +27077,8 @@
 				"default_preference": 1
 			},
 			{
-				"type": "random",
-				"chain_step": 1,
+				"type": "date",
+				"chain_step": 5,
 				"name": "A Peek at Her Heart",
 				"options": {
 					"1": [

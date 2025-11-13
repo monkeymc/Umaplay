@@ -8,17 +8,6 @@ This organizes the mixed notes into a clear, actionable backlog. Items are group
 
 ### 0.4.0
 
-#### PAL Policy:
-- Dating PAL before Junior Year Late Dec isn't super important.
-- Capture in lobby stats 'Recreation PAL' for later trainig decisions. YOLO model can detect that
-- On Week turn, if energy is not full and recreation is there with a turn that give us energy, use the pal.
-- Use dating with pal (if it give energy), as replacement of REST and RECREATION
-- @Rosetta: Tazuna blue was worth more, you want to get it to green ASAP to unlock her dates (there's a bonus if you do it in the junior year)
-- Some options doesn't give energy, but move the event chain, handle that if 'weak turn'. If we don't know in which chain number we are, open the recreation / collect and go back
-- @Rosetta: Speaking of Tazuna, I'd like to see an option that when auto rest is supposed to trigger and mood is below minimum, recreation takes priority
-- @Rosetta:
-For Tazuna I have stats > hints for energy overcap priority, but it will still reject dating if energy is high enough even though accepting provides stats and rejecting only a hint (I want energy overcap prevention for her third date)
-
 #### Unity Cup Policy:
 - Allowed / Disallowed stats for spirit burst.
 - Priority for explosion will be handled by the same stat priority config. 
@@ -29,10 +18,8 @@ For Tazuna I have stats > hints for energy overcap priority, but it will still r
 - prioritize exploding remanent blue explosions in previous 4 turns before Senior November early (we get skill here) ->. In Last two turns (URA finale), just explode wherever they are if we found a burst.
 - Prioritize spirit on junior and classic; if there's no white flames in any tile, date Riko if you have her or train wit. Reduce its score in Senior
 
-#### Unity Cup finish screen bug:
+#### Unity Cup polishment:
 - it not officially finishing once the end screen is reached, it just hangs (and doesn't trigger the final skill buy sequence)
-
-#### Unity Cup UX:
 - scenario selector in web ui for events, should be forced to the particular active scenario
 - Feedback from Rocostre: Ok when switching to unity cup all the presets are blank I mean … the page it’s blank like there’s nothing for me to put there for some reason …
 - update web ui hint defaults for unity cup to 0.5 / 0.25
@@ -90,6 +77,13 @@ Fast mode bugs:
 reprocess all events data and trainee data
 
 Handle a new screen class 'Race Stale' to detect the 'advance / next' button and press it 
+
+
+- @Rosetta:
+For Tazuna I have stats > hints for energy overcap priority, but it will still reject dating if energy is high enough even though accepting provides stats and rejecting only a hint (I want energy overcap prevention for her third date)
+"""
+Author notes: I think this is a bug. This is a problem that should not be happening this way. So we need to investigate what's going on and what this person is trying to to do. This is regarding the energy cap prevention, well, the overflow of energy prevention that we are rotating the options here. But I think it's also related to not only to PALs, but this is also related to in general, because maybe we have this bug also for other support cards, not only for Tasu Nakashimoto or, well, PAL support. Maybe we have this for other ones.
+"""
 
 ### 0.4.2
 
@@ -377,4 +371,39 @@ By combining these controls, we gain better configurability, reduce the number o
 
 Summary:
 The new toggle provides a “pre-check” layer before greedy decisions like Infirmary, Rest, or Race actions. It allows the system to momentarily consider higher-value training opportunities but still respects critical safeguards (energy minimums, summer proximity, and goal deadlines). The final behavior should balance flexibility with safety, ensuring the bot neither skips essential actions nor wastes high-value turns.
+"""
+
+
+#### PAL Policy:
+- Capture in lobby stats 'Recreation PAL' for later trainig decisions. YOLO model can detect that
+"""
+Author notes:
+In this model, we are capturing a special class just for this RecreationPawl and it's a pink little icon and we should store that in memories so we can use this in next steps. Even more, every time we have a pawl, we need to know in which chain we have this pawl because if this pawl can have 5 dates, 5 chains, and the first chain for example will regenerate some energy, the second one will generate some energy, there will be some special chain step that will not generate that particular energy and we need to keep that in memory and if we know that there is this RecreationPawl icon, we can press the RecreationPawl icon and a pop-up will be displayed and we can just capture the chain steps there. So we know how many chain steps we have and we can take some decisions for this.
+"""
+
+
+- Use dating with pal (if it give energy), as replacement of REST and RECREATION
+"""
+Author notes: This is literally something, like, I think it's the same as mentioned before, because we either in summer and summer or normal rune we can just have this facility of going to rest or recreation. In case of summer, those options are merged, so anyway. So I think we need to have this option in the web UI. So by default, no, sorry, we don't need this in web UI because this should be a default behavior. If we need energy and we have some events to be triggered from the PAL, we should go back and just take the recreation with the PAL.
+"""
+
+- @Rosetta: Tazuna blue was worth more, you want to get it to green ASAP to unlock her dates (there's a bonus if you do it in the junior year)
+"""
+Author notes: Regarding this requirement, I think I already worked on it. Probably it's done. But let's check that this is implemented in EURA and UnityCup. Basically, I think if the PAL either TASUNA or Super Kashimoto or a support card that contains inside a support PAL icon, this is not very effective. So maybe we want to use this just as a final fallback. But in general, if we have this TASUNA or Kashimoto, we should give more points to if they have the blue color. And I will say if they have blue color, let's add a score of 1.5. I think I already did that anyway. So we can go to green as fast as possible. Maybe we can do that logic for now and we can improve later.
+"""
+
+- Some options doesn't give energy, but move the event chain, handle that if 'weak turn'. If we don't know in which chain number we are, open the recreation / collect and go back
+"""
+Author notes: So, as you can see in the event catalog, some options for Tasuna or Super Kashimoto will not give us energy, will give us stats, so we need to be very careful if we detect a weak turn, but the event chain, let's say we are using a Pal that in its event, in the next event, let's say we are in the second chain right now, after we can collect that information, so let's say we are in the second chain, that means that the next date we will have with the Pal will be the third chain, but let's say for this particular Pal, they will not give us the energy in the third chain, so we need to be careful here because if we need energy and we decide to go back and go using the rest option from this Pal, we will have problems, definitely we will have some problems there because we will not be generating energy, but if we are going back with the reason of do it to, we need recreation, yeah, it doesn't matter if this next chain, this next event will not give us energy, it doesn't matter because we are going back just for the mood increasing or just for the stats, because this is another one, even if we don't need energy or mood increasing, we may detect a weak turn and we should prioritize going with Riko Kashimoto if we have enough energy available to be recovered, so we can move the event chain because our objective is to finalize the date as fast as possible, but only if we have a weak turn and we have some energy to restore, so only if it's worth to do that. Thank you.
+"""
+
+
+- On Weak turn, if energy is not full and recreation is there with a turn that give us energy, use the pal.
+"""
+Author notes: We are already collecting a weak turn value from YBY, and we should leverage that parameter, or at least make sure we are leveraging properly that. And on weak turn, in weak turn, not a strong turn, sometimes we are deciding in the policy, either in EURA or Unity Cup, we are deciding to go to rest. But if we previously captured that we have this PAL icon, that means that we can have dates, and we can trigger some chain events, and those chain events will be better than going to rest. So, if we have a weak turn, and we know that we need energy, or we need recreation, we can just go back and take the recreation, and take the support PAL recreation.
+"""
+
+- @Rosetta: Speaking of Tazuna, I'd like to see an option that when auto rest is supposed to trigger and mood is below minimum, recreation takes priority
+"""
+Author notes: Again, something similar as before, so we're using this AutoRest, I think the default value is 20%, so if we are triggering the AutoRest option, before just selecting the Rest option, let's check if we have the PAL available, and if we have that, then we should then we should just take the recreation, that would be better, as I told you before, so it's something similar as before, but this is just regarding the lobby policy, I think, that you can review in the policies documentation.
 """

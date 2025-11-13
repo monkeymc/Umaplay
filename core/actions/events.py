@@ -502,6 +502,17 @@ class EventFlow:
             option_energy_gain: Dict[int, int] = {}
             safe_candidates: List[int] = []
 
+            # Allow a small overcap window for PAL support dates (≤ +10)
+            pal_overcap_extra = 0
+            try:
+                if (
+                    str(getattr(best.rec, "type", "")).strip().lower() == "support"
+                    and str(getattr(best.rec, "attribute", "")).strip().upper() == "PAL"
+                ):
+                    pal_overcap_extra = 10
+            except Exception:
+                pal_overcap_extra = 0
+
             for option_num in range(1, expected_n + 1):
                 outcomes_raw = best.rec.options.get(str(option_num), []) or []
                 if not isinstance(outcomes_raw, list):
@@ -512,7 +523,7 @@ class EventFlow:
                 gain = max_positive_energy(outcomes)
                 option_energy_gain[option_num] = gain
 
-                if gain <= 0 or (current_energy + gain) <= max_energy_cap:
+                if gain <= 0 or (current_energy + gain) <= (max_energy_cap + pal_overcap_extra):
                     safe_candidates.append(option_num)
 
                 option_categories[option_num] = extract_reward_categories(outcomes)

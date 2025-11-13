@@ -109,7 +109,7 @@ This design allows the core loop to evolve independently of perception implement
 ## Perception & Automation Stack
 - **Perception**: `core/perception/yolo/` wraps local (`yolo_local.py`) and remote (`yolo_remote.py`) detectors; `core/perception/ocr/` exposes PaddleOCR engines (`ocr_local.py`, `ocr_remote.py`).
 - **Classifiers**: `core/perception/classifiers/` hosts lightweight HTTP clients (e.g., `spirit_remote.py`) that mirror local inference APIs when offloading to the remote server.
-- **Analyzers**: `core/perception/analyzers/` classifies screens, detects UI states, and supports navigation heuristics.
+- **Analyzers**: `core/perception/analyzers/` classifies screens, detects UI states, and supports navigation heuristics. Screen classifiers also surface PAL presence by mapping YOLO class `lobby_pal` into `ScreenInfo.pal_available`.
 - **Hint detection**: `core/perception/analyzers/hint.py` fuses HSV ROI checks with anchor-aware hint assignment so YOLO detections favor the card's top-right quadrant and penalize support_bar overlaps, preventing jump misassociation.
 - **Template matching**: `core/perception/analyzers/matching/` prepares histogram/hash caches, performs gray-world balancing, and extracts HSV hair-region fingerprints before combining them with multi-scale TM + perceptual hash scores. OpenCV usage is feature-gated so thin clients can route calls to the remote `/template-match` endpoint (`server/main_inference.py`) when local `cv2` is unavailable.
 - **Extractors**: `core/perception/extractors/` pulls structured stats, goals, and energy values used by flows.

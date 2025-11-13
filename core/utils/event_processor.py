@@ -702,6 +702,8 @@ class EventRecord:
     image_path: Optional[str]  # representative icon path (per name+rarity)
     phash64: Optional[int]  # 64-bit pHash int
     image_variants: Tuple[str, ...] = ()
+    # Optional: per-event kind from raw dataset (e.g., 'date', 'chain', 'random')
+    event_kind: Optional[str] = None
 
     @staticmethod
     def from_json_item(
@@ -717,6 +719,7 @@ class EventRecord:
         chain_step = ev_item.get("chain_step", None)
         default_pref = ev_item.get("default_preference", None)
         options = ev_item.get("options", {})
+        event_kind = ev_item.get("type")
 
         # Make options keys strings for JSON stability
         options_str_keys = {str(k): v for k, v in options.items()}
@@ -749,6 +752,7 @@ class EventRecord:
             image_path=(str(img_path) if img_path else None),
             phash64=phash,
             image_variants=variants_tuple,
+            event_kind=event_kind,
         )
 
 
@@ -1372,6 +1376,126 @@ class Catalog:
             rows = json.load(f)
         recs = [EventRecord(**row) for row in rows]
         return Catalog(records=recs)
+
+    # Lightweight query: does the next "date/chain" step provide energy?
+    def next_chain_has_energy(
+        self,
+        *,
+        support_name: str,
+        next_step: int,
+        attribute: Optional[str] = None,
+        rarity: Optional[str] = None,
+    ) -> Optional[bool]:
+        name_norm = normalize_text(support_name)
+        attr_norm = normalize_text(attribute or "")
+        rar_norm = normalize_text(rarity or "")
+        if not name_norm or not isinstance(next_step, (int, float)):
+            return None
+        step = int(next_step)
+        # Prefer records tagged as 'date' or 'chain' kinds; fall back to any if missing
+        def _is_date_kind(r: EventRecord) -> bool:
+            k = (r.event_kind or "").strip().lower()
+            return k in {"date", "chain"}
+
+        pool = [
+            r
+            for r in self.records
+            if r.type == "support"
+            and normalize_text(r.name) == name_norm
+            and (not attr_norm or normalize_text(r.attribute) == attr_norm)
+            and (not rar_norm or normalize_text(r.rarity) == rar_norm)
+            and (r.chain_step or 1) == step
+        ]
+        if not pool:
+            return None
+        dated = [r for r in pool if _is_date_kind(r)]
+        use = dated if dated else pool
+        has_energy = False
+        for r in use:
+            cats = extract_reward_categories([r.options])
+            if "energy" in cats or max_positive_energy([r.options]) > 0:
+                has_energy = True
+                break
+        return has_energy
+
+# Cached raw dataset for fallback lookups
+_EVENTS_RAW: Optional[List[Dict[str, Any]]] = None
+
+def _load_events_raw() -> List[Dict[str, Any]]:
+    global _EVENTS_RAW
+    if _EVENTS_RAW is None:
+        try:
+            _EVENTS_RAW = json.loads(DATASETS_EVENTS.read_text(encoding="utf-8"))
+        except Exception:
+            _EVENTS_RAW = []
+    return _EVENTS_RAW
+
+def predict_next_chain_has_energy_from_raw(
+    *, support_name: str, next_step: int, attribute: Optional[str] = None, rarity: Optional[str] = None
+) -> Optional[bool]:
+    data = _load_events_raw()
+    name_norm = normalize_text(support_name)
+    attr_norm = normalize_text(attribute or "")
+    rar_norm = normalize_text(rarity or "")
+    if not name_norm or not isinstance(next_step, (int, float)):
+        return None
+    step = int(next_step)
+    matches = [
+        item for item in data
+        if str(item.get("type")) == "support"
+        and normalize_text(item.get("name")) == name_norm
+        and (not attr_norm or normalize_text(item.get("attribute")) == attr_norm)
+        and (not rar_norm or normalize_text(item.get("rarity")) == rar_norm)
+    ]
+    if not matches:
+        return None
+    allowed_kinds = {"date", "chain"}
+    has_energy = False
+    for parent in matches:
+        for ev in parent.get("choice_events", []) or []:
+            if (ev.get("chain_step") == step) and (str(ev.get("type")).strip().lower() in allowed_kinds):
+                cats = extract_reward_categories([ev.get("options", {})])
+                if "energy" in cats or max_positive_energy([ev.get("options", {})]) > 0:
+                    has_energy = True
+                    break
+        if has_energy:
+            break
+    return has_energy
+
+def predict_next_chain_max_energy_from_raw(
+    *, support_name: str, next_step: int, attribute: Optional[str] = None, rarity: Optional[str] = None
+) -> Optional[int]:
+    """Return the maximum positive energy from the next chain step (raw dataset).
+
+    This is a fast, in-process scan over datasets/in_game/events.json using cached
+    content. It considers only events of kind 'date' or 'chain' for support cards.
+    """
+    data = _load_events_raw()
+    name_norm = normalize_text(support_name)
+    attr_norm = normalize_text(attribute or "")
+    rar_norm = normalize_text(rarity or "")
+    if not name_norm or not isinstance(next_step, (int, float)):
+        return None
+    step = int(next_step)
+    matches = [
+        item for item in data
+        if str(item.get("type")) == "support"
+        and normalize_text(item.get("name")) == name_norm
+        and (not attr_norm or normalize_text(item.get("attribute")) == attr_norm)
+        and (not rar_norm or normalize_text(item.get("rarity")) == rar_norm)
+    ]
+    if not matches:
+        return None
+    allowed_kinds = {"date", "chain"}
+    max_energy = 0
+    found = False
+    for parent in matches:
+        for ev in parent.get("choice_events", []) or []:
+            if (ev.get("chain_step") == step) and (str(ev.get("type")).strip().lower() in allowed_kinds):
+                gain = max_positive_energy([ev.get("options", {})])
+                max_energy = max(max_energy, int(gain))
+                found = True
+    return (max_energy if found else None)
 
 
 # -----------------------------

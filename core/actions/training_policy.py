@@ -83,6 +83,16 @@ def check_training(player, *, skip_race: bool = False) -> Optional[TrainingDecis
     career_date = player.lobby.state.date_info if player.lobby else None
     energy_pct = player.lobby.state.energy if player.lobby else None
     stats = player.lobby.state.stats if player.lobby else None
+    # PAL context (availability + recent memory)
+    pal_hint = False
+    try:
+        mem = getattr(player.lobby, "pal_memory", None)
+        if mem and mem.any_next_energy():
+            pal_hint = True
+        else:
+            pal_hint = bool(getattr(player.lobby.state, "pal_available", False))
+    except Exception:
+        pal_hint = False
 
     # Get the current preset's runtime settings from the last applied config
     preset_settings = Settings.extract_runtime_preset(
@@ -119,6 +129,7 @@ def check_training(player, *, skip_race: bool = False) -> Optional[TrainingDecis
         race_if_no_good_value=race_if_no_good_value,
         weak_turn_sv=weak_turn_sv,
         junior_minimal_mood=junior_minimal_mood,
+        pal_recreation_hint=pal_hint,
     )
     logger_uma.info(
         "[training] Decision: %s  tile=%s because=|%s|", action.value, tidx, why
