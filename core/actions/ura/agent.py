@@ -506,6 +506,7 @@ class AgentURA(AgentScenario):
                         f"[lobby] goal='{self.lobby.state.goal}' | energy={self.lobby.state.energy} | "
                         f"skill_pts={self.lobby.state.skill_pts} | turn={self.lobby.state.turn} | "
                         f"summer={self.lobby.state.is_summer} | mood={self.lobby.state.mood} | stats={self.lobby.state.stats} |"
+                        f"infirmary={self.lobby.state.infirmary_on}"
                     )
                     # sleep(1.0)
                     self.handle_training()
