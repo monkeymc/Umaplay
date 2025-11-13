@@ -1305,27 +1305,42 @@ class LobbyFlow(ABC):
             recreation_rows = [d for d in dets if d.get('name') == 'recreation_row']
 
             if recreation_rows:
+                # Always filter out inactive rows first to avoid clicking completed PAL chains
+                active_rows = []
+                clf = ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH)
+                for row in recreation_rows:
+                    try:
+                        crop = img.crop(row['xyxy'])
+                        is_active = bool(clf.predict(crop))
+                    except Exception:
+                        is_active = True
+                    if is_active:
+                        active_rows.append(row)
+                
                 chosen = None
                 if candidates:
-                    candidates.sort(key=lambda x: float(x[0]), reverse=True)
-                    chosen = candidates[0][1]
-                else:
-                    # Sort rows by y (top→bottom) and pick first active
-                    recreation_rows.sort(key=lambda r: r['xyxy'][1])
-                    for row in recreation_rows:
-                        try:
-                            crop = img.crop(row['xyxy'])
-                            clf = ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH)
-                            is_active = bool(clf.predict(crop))
-                        except Exception:
-                            is_active = True
-                        if is_active:
-                            chosen = row
-                            break
+                    # Filter candidates to only include active rows
+                    active_candidates = [(score, row) for score, row in candidates if row in active_rows]
+                    if active_candidates:
+                        active_candidates.sort(key=lambda x: float(x[0]), reverse=True)
+                        chosen = active_candidates[0][1]
+                        logger_uma.info("[lobby] Selected PAL recreation row (scored)")
+                    elif active_rows:
+                        # Fallback: pick first active row if no scored candidates remain
+                        active_rows.sort(key=lambda r: r['xyxy'][1])
+                        chosen = active_rows[0]
+                        logger_uma.info("[lobby] Selected first active recreation row (fallback)")
+                elif active_rows:
+                    # No PAL candidates, pick first active row
+                    active_rows.sort(key=lambda r: r['xyxy'][1])
+                    chosen = active_rows[0]
+                    logger_uma.info("[lobby] Selected first active recreation row")
+                
                 if chosen is not None:
                     self.ctrl.click_xyxy_center(chosen['xyxy'])
-                    logger_uma.info("[lobby] Selected recreation row via PAL policy")
                     time.sleep(0.5)
+                else:
+                    logger_uma.warning("[lobby] No active recreation rows found, skipping click")
                 
             time.sleep(2)
         return click

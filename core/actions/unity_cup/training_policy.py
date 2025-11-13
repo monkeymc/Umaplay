@@ -254,8 +254,24 @@ def decide_action_training(
     try:
         known_keys = [k for k in ["SPD", "STA", "PWR", "GUTS", "WIT"] if max(0, int(stats.get(k, -1))) > 0]
 
+        # Skip undertrain check if junior/pre-debut with mood below target minimal mood
+        skip_undertrain_for_mood = False
+        if junior_minimal_mood and (is_junior_year(di) or is_pre_debut(di)):
+            junior_mood_key = str(junior_minimal_mood).upper()
+            junior_mood_lookup: MoodName = (
+                cast(MoodName, junior_mood_key)
+                if junior_mood_key in MOOD_MAP
+                else "UNKNOWN"
+            )
+            junior_min_score = MOOD_MAP.get(junior_mood_lookup, 3)
+            if mood_score != -1 and mood_score < junior_min_score:
+                skip_undertrain_for_mood = True
+                because(
+                    f"Junior/pre-debut with mood {mood_txt} below target {junior_minimal_mood} → skip undertrain check, prioritize mood recovery"
+                )
+
         # If hint is important ignore undertrain stat check, prioritize hint
-        if known_keys and not (Settings.HINT_IS_IMPORTANT and len(hint_tiles) > 0):
+        if known_keys and not (Settings.HINT_IS_IMPORTANT and len(hint_tiles) > 0) and not skip_undertrain_for_mood:
             # Normalize reference to the same subset
             ref_sum = sum(max(0, int(reference_stats.get(k, 0))) for k in known_keys)
             cur_sum = sum(max(0, int(stats.get(k, 0))) for k in known_keys)
@@ -757,16 +773,29 @@ def decide_action_training(
         because("No viable training and energy <= 70% → rest")
         return (TrainAction.REST, None, "; ".join(reasons))
 
-    if (
-        best_allowed_any is not None
-        and weak_turn_sv is not None
-        and energy_pct <= 70
-        and best_any_sv < float(weak_turn_sv)
-    ):
-        because(
-            f"Weak turn: best SV {best_any_sv:.2f} < threshold {float(weak_turn_sv):.2f} with energy {energy_pct}% → rest"
-        )
-        return (TrainAction.REST, None, "; ".join(reasons))
+    if energy_pct <= 70:
+        threshold = float(weak_turn_sv) if weak_turn_sv is not None else None
+        if (
+            threshold is not None
+            and best_allowed_any is not None
+            and best_any_sv >= threshold
+        ):
+            because(
+                f"Weak turn threshold met (SV {best_any_sv:.2f} ≥ {threshold:.2f}) despite energy {energy_pct}% → allow training fallback"
+            )
+        else:
+            if energy_pct >= 60:
+                # if wit is >= 0.5, return TRAIN_WIT
+                if sv_of(best_wit_any) >= 0.5:
+                    because("Weak turn with >0.5 WIT available → prefer WIT instead of rest")
+                    return (TrainAction.TRAIN_WIT, best_wit_any, "; ".join(reasons))
+            reason = (
+                f"Weak turn: best SV {best_any_sv:.2f} < threshold {threshold:.2f}"
+                if threshold is not None and best_allowed_any is not None
+                else "Energy ≤ 70% with no strong training option"
+            )
+            because(reason + " → rest")
+            return (TrainAction.REST, None, "; ".join(reasons))
 
     if best_allowed_any is not None:
         because("Last resort: take best allowed training")
