@@ -63,7 +63,7 @@ I take no responsibility for bans, issues, or account losses that may result fro
 * **Auto Team Trials** – Automatically plays Team Trials with F7 hotkey, handles shop purchases, session resume, and respects your banner preference (1-3). You need to be in the race screen where the team trials, room match, daily races are.
 * **Auto Daily Races** – Automates daily races with F8 hotkey, manages shop purchases and session resume. You need to be in the race screen where the team trials, room match, daily races are.
 * **Auto Roulette / Prize Derby** – Automatically spins the Roulette/Prize Derby (F9 hotkey) with smart button state detection.
-
+* **URA and Unity Cup Supported!**
 ---
 
 ### Before You Start
@@ -202,6 +202,9 @@ I created a version for Bluestacks, you only need to set 'bluestacks' option and
 ## WEB UI
 You can change the configuration at http://127.0.0.1:8000/
 ![UI](assets/doc/UI.png)
+
+Unity Cup scenario is fully supported, with dedicated strategy controls:
+![Unity Cup Strategy](assets/doc/unity_cup_strategy.png)
 
 **Important: Don't forget to press 'Save Config' button**
 
