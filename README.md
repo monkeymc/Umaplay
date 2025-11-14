@@ -27,13 +27,17 @@ It’s based on and improved from:
 ## 💬 Discord
 Wanna drop a quick thought, idea, or just hang out? Come say hi either in Issues section or in discord:
 
-<p align="left">
-  <a href="https://discord.gg/JtJfuADDYz" target="_blank">
-    <img src="assets/doc/discord.jpg" alt="Discord" width="40" style="vertical-align:middle; margin-right:10px;" />
+<p align="left" style="margin-top: 12px;">
+  <a href="https://discord.gg/JtJfuADDYz" target="_blank" style="text-decoration: none;">
+    <img src="assets/doc/discord.jpg" alt="Discord" width="56" style="vertical-align:middle; margin-right:16px;" />
   </a>
   <a href="https://discord.gg/JtJfuADDYz" target="_blank">
-    https://discord.gg/JtJfuADDYz
+    <img src="assets/doc/discord_community.png" alt="Discord Community" width="520" style="vertical-align:middle;" />
   </a>
+</p>
+
+<p>
+  <a href="https://discord.gg/JtJfuADDYz" target="_blank">https://discord.gg/JtJfuADDYz</a>
 </p>
 
 ---
