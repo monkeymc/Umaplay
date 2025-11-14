@@ -40656,5 +40656,125 @@
     "phash64": null,
     "image_variants": [],
     "event_kind": "special"
+  },
+  {
+    "key": "support/Riko Kashimoto/PAL/R/The Kashimoto Art of Tidying Up",
+    "key_step": "support/Riko Kashimoto/PAL/R/The Kashimoto Art of Tidying Up#s1",
+    "type": "support",
+    "name": "Riko Kashimoto",
+    "rarity": "R",
+    "attribute": "PAL",
+    "event_name": "The Kashimoto Art of Tidying Up",
+    "chain_step": 1,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "stamina": 15,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "guts": 15,
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "the kashimoto art of tidying up",
+    "image_path": "web\\public\\events\\support\\Riko Kashimoto_PAL_R.png",
+    "phash64": 12439280093115288970,
+    "image_variants": [
+      "web\\public\\events\\support\\Riko Kashimoto_PAL_R.png"
+    ],
+    "event_kind": "random"
+  },
+  {
+    "key": "support/Riko Kashimoto/PAL/R/Unexpected Side",
+    "key_step": "support/Riko Kashimoto/PAL/R/Unexpected Side#s1",
+    "type": "support",
+    "name": "Riko Kashimoto",
+    "rarity": "R",
+    "attribute": "PAL",
+    "event_name": "Unexpected Side",
+    "chain_step": 1,
+    "default_preference": 2,
+    "options": {
+      "1": [
+        {
+          "energy": 15,
+          "mood": 1,
+          "stamina": 10,
+          "hints": [
+            "Ramp Up (+3)"
+          ],
+          "bond": 12
+        },
+        {
+          "hints": [
+            "Maverick ○ (+5)"
+          ],
+          "bond": -10
+        }
+      ],
+      "2": [
+        {
+          "mood": 1,
+          "guts": 15,
+          "bond": 5
+        }
+      ],
+      "3": [
+        {
+          "hints": [
+            "Lone Wolf (+3)"
+          ],
+          "bond": -10
+        }
+      ]
+    },
+    "title_norm": "unexpected side",
+    "image_path": "web\\public\\events\\support\\Riko Kashimoto_PAL_R.png",
+    "phash64": 12439280093115288970,
+    "image_variants": [
+      "web\\public\\events\\support\\Riko Kashimoto_PAL_R.png"
+    ],
+    "event_kind": "random"
+  },
+  {
+    "key": "support/Riko Kashimoto/PAL/R/Picture Their Joy",
+    "key_step": "support/Riko Kashimoto/PAL/R/Picture Their Joy#s3",
+    "type": "support",
+    "name": "Riko Kashimoto",
+    "rarity": "R",
+    "attribute": "PAL",
+    "event_name": "Picture Their Joy",
+    "chain_step": 3,
+    "default_preference": 1,
+    "options": {
+      "1": [
+        {
+          "energy": 20,
+          "mood": 1,
+          "stamina": 10,
+          "guts": 5,
+          "bond": 5
+        }
+      ],
+      "2": [
+        {
+          "skill_pts": 30,
+          "mood": 1,
+          "bond": 5
+        }
+      ]
+    },
+    "title_norm": "picture their joy",
+    "image_path": "web\\public\\events\\support\\Riko Kashimoto_PAL_R.png",
+    "phash64": 12439280093115288970,
+    "image_variants": [
+      "web\\public\\events\\support\\Riko Kashimoto_PAL_R.png"
+    ],
+    "event_kind": "date"
   }
 ]

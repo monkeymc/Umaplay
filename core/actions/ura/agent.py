@@ -21,14 +21,11 @@ from core.agent_scenario import AgentScenario
 from core.settings import Settings
 from core.utils.logger import logger_uma
 from core.utils.text import fuzzy_contains
-from core.utils.skill_memory import SkillMemoryManager
-from core.utils.date_uma import date_index as uma_date_index
 from core.utils.training_policy_utils import click_training_tile
 from core.utils.waiter import PollConfig, Waiter
 from core.actions.race import ConsecutiveRaceRefused
 from core.utils.abort import abort_requested
-from core.utils.event_processor import CATALOG_JSON, Catalog, UserPrefs
-from core.utils.race_index import RaceIndex
+from core.utils.event_processor import UserPrefs
 
 class AgentURA(AgentScenario):
     def __init__(

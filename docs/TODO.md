@@ -6,41 +6,6 @@ This organizes the mixed notes into a clear, actionable backlog. Items are group
 
 ## 0.4
 
-### 0.4.0
-
-#### Unity Cup Policy:
-- Allowed / Disallowed stats for spirit burst.
-- Priority for explosion will be handled by the same stat priority config. 
-- Web UI, selector for first team opponent and the 'rest'
-- Configurable scoring system for: rainbow combo, white spirit values (before senior / in seniour), white spirit combo 
-- blue spirit will generate a 'spirit_burst' boolean. But value will be the same something similar to white spirit. Also configurable in score system
-- Don't explode in overtrained stats (more than our 'stats caps' in our config)
-- prioritize exploding remanent blue explosions in previous 4 turns before Senior November early (we get skill here) ->. In Last two turns (URA finale), just explode wherever they are if we found a burst.
-- Prioritize spirit on junior and classic; if there's no white flames in any tile, date Riko if you have her or train wit. Reduce its score in Senior
-
-#### Unity Cup polishment:
-- it not officially finishing once the end screen is reached, it just hangs (and doesn't trigger the final skill buy sequence)
-- scenario selector in web ui for events, should be forced to the particular active scenario
-- Feedback from Rocostre: Ok when switching to unity cup all the presets are blank I mean … the page it’s blank like there’s nothing for me to put there for some reason …
-- update web ui hint defaults for unity cup to 0.5 / 0.25
-
-#### General UX:
-- changing external processor takes too much time
-
-#### README.md:
-- Improve installation instructions
-- update requirements.txt
-- suggest just open terminal as admin in the worst case
-- slice the readme to make easier to read
-- Update images
-
-#### QoL:
-- @Rosetta:
-"""
-Speaking of presets, if it's not too hard could we please have a way of sorting them into tabs/groups or at least be able to change the order in which they are on the list? When you have a lot like I do having to keep pressing the arrows while looking through them all is quite the tedious task
-"""
-
-
 ### 0.4.1
 
 
@@ -85,6 +50,11 @@ For Tazuna I have stats > hints for energy overcap priority, but it will still r
 Author notes: I think this is a bug. This is a problem that should not be happening this way. So we need to investigate what's going on and what this person is trying to to do. This is regarding the energy cap prevention, well, the overflow of energy prevention that we are rotating the options here. But I think it's also related to not only to PALs, but this is also related to in general, because maybe we have this bug also for other support cards, not only for Tasu Nakashimoto or, well, PAL support. Maybe we have this for other ones.
 """
 
+
+#### README.md:
+- suggest just open terminal as admin in the worst case
+- slice the readme to make easier to read
+- Update images
 ### 0.4.2
 
 Events:
@@ -407,3 +377,50 @@ Author notes: We are already collecting a weak turn value from YBY, and we shoul
 """
 Author notes: Again, something similar as before, so we're using this AutoRest, I think the default value is 20%, so if we are triggering the AutoRest option, before just selecting the Rest option, let's check if we have the PAL available, and if we have that, then we should then we should just take the recreation, that would be better, as I told you before, so it's something similar as before, but this is just regarding the lobby policy, I think, that you can review in the policies documentation.
 """
+
+- IF auto rest and more than october in senior year and pal icon, let's go to use that even if mood is not great
+#### General UX:
+- Advanced settings: changing external processor takes too much time, improved 
+
+
+#### Unity Cup Policy:
+- Prioritize spirit on junior and classic. Reduce its score in Senior
+"""
+Author notes: This one is very important, because I think we need to increase the value of White Spirit. I think right now we are using 0.4, but if we are in Junior and Classic year, we should increase that by 2. Maybe we can just use 0.8, or well, let's just define a multiplier, we can change that later, but we should give more importance to White Spirit in Classic year and Junior year. In Senior year we should go back to the default values for White Spirit. And we should also give more importance to GPT-4 in Junior year. So, we are going to increase the value of GPT-4 in Junior year, and we are going to increase the value of GPT-4 in Senior year.And the same goes to the White Spirit combo and the Blue Spirit combo. We may want to increase those scores a little with a little multiplier like 1. I think we can define for each one, maybe we can use 1.2 multiplier for the combos or 1.5 maybe is better. And we should disable that if we notice that we are in either final season or in the senior year, in the third year.
+"""
+
+- Web UI, selector for first team opponent and the 'rest'
+"""
+Author notes: So, Unity Cup has some special races, I think they have 5 races, so we should include that in the web UI, a configuration, and in each race you need to select an opponent, I think right now we are selecting always the second opponent, the opponent in the middle, but by default we will have like 5 races I think, or well, for now let's just have 2 options, the first option is what to, well no, let's have an option for each race, so we will have 5 races, and by default in the first race we want to select the middle option, and the rest we want to select the top option, and I think the default one, if we don't know in which race we are, we should select the top option.
+"""
+
+
+- Configurable scoring system for: rainbow combo score, white spirit values (before senior / in senior), white spirit combo score, blue spirit value combo score
+"""
+Author notes: I have added some values for the combos, but I would like to also let the users configure this, but I don't want to show this directly in the UI. This is only for UnityCup preset. URA doesn't have the Blue Spirits or similar. In the UnityCup preset, we should have a section that says Advanced Settings in the preset where the bot policy is, I think at the end. If the user presses that Advanced Settings, we will open a new model, and inside that model we will have the scores, so they can set up the combo scores. The other ones may be the same.
+"""
+
+- Don't explode in overtrained stats (more than our 'stats caps' in our config)
+"""
+Author notes: If for some reason we already reached the cap level of a particular stat and that stat is allowed and that stat contains the blue spirit let's not explore that there, otherwise we will be wasting a turn, we will be wasting a stat except if we don't have another option but in general we don't want to explore that because the stat is already overtrained
+"""
+
+- Allowed / Disallowed stats for spirit burst.
+"""
+Author notes: So, we have the Spirit Burst, these explosions, that we should call them Spirit Burst. And here is the idea. Those are only triggered when you train with a blue flame, well, where a blue spirit is. So, if you press the blue spirit, you will consume that. And sometimes that blue spirit is in goods or in a particular stat that we don't want to explode, we don't want to press. So, we should put in a web UI an option to enable or disable some stats where we can do the burst.
+"""
+
+- prioritize exploding remanent blue explosions in previous 4 turns before Senior November early (we get skill here) ->. In Last two turns (URA finale), just explode wherever they are if we found a burst.
+"""
+Author notes: So, I noticed that the blue combo sometimes is not being exploded and we end the career, so we should detect from 4 turns before Dec or Nove early. We should check if we have a blue spirit and we should prioritize them, maybe we can multiply the value by 2 if we notice that we are in those dates, because before that event we will get a skill and the skill depends on how much blue spirit have we exploded, so we need to explode as much as possible. And I would say let's check from 4 turns before, but after Nove early, from Nove late, we should not take too much attention to blue spirit, except if we are in the last 2 turns in the UR Finale, in final season, usually final season has 3 turns, and you can check that probably in the goal, or in the turns left, well not in the goal, because in the goal you can see a text that says like Qualifier, another one Semi-Final, and another one Final, so maybe we can use that to understand in which turn are we now that we know we are in the final season. And if we notice that we are in the last 2 turns of the gameplay, we should just explode the blue spirits, it doesn't matter where they are, where they are.
+"""
+
+
+#### QoL:
+- @Rosetta:
+"""
+Speaking of presets, if it's not too hard could we please have a way of sorting them into tabs/groups or at least be able to change the order in which they are on the list? When you have a lot like I do having to keep pressing the arrows while looking through them all is quite the tedious task
+"""
+
+Tentative scheduled races:
+- If marked as tentative, bot may first check training tiles and if find a good SV will take it and ignore the tentative scheduled race (not tested at all)

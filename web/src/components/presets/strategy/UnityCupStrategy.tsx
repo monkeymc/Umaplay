@@ -242,7 +242,6 @@ export default function UnityCupStrategy({ preset }: StrategyComponentProps) {
               'race2',
               'race3',
               'race4',
-              'race5',
               'defaultUnknown',
             ]
 
@@ -275,6 +274,9 @@ export default function UnityCupStrategy({ preset }: StrategyComponentProps) {
                     </FormLabel>
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
                       Blue icons: bursts allowed. Faded icons: bursts blocked for that stat.
+                    </Typography>
+                    <Typography variant="caption" color="red" sx={{ display: 'block', mt: 0.25 }}>
+                      Be careful, This config can cause the bot to skip multiple trainings (bad RNG). I recommend you to allow at least 2 stats.
                     </Typography>
                     <Stack
                       direction="row"
@@ -368,6 +370,9 @@ export default function UnityCupStrategy({ preset }: StrategyComponentProps) {
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
                       Pick Hard / Medium / Easy for each race; the bot will click the corresponding banner slot.
                     </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
+                      If bot can't determine the 'race number' / 'date info', it will use the fallback option.
+                    </Typography>
                     <Box
                       sx={{
                         display: 'grid',
@@ -375,7 +380,7 @@ export default function UnityCupStrategy({ preset }: StrategyComponentProps) {
                         gridTemplateColumns: {
                           xs: '1fr',
                           sm: 'repeat(3, minmax(0, 1fr))',
-                          md: 'repeat(6, minmax(0, 1fr))',
+                          md: 'repeat(5, minmax(0, 1fr))',
                         },
                       }}
                     >

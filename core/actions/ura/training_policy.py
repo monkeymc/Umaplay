@@ -216,7 +216,7 @@ def decide_action_training(
     PRIORITY_EXCEPTIONAL_SV = 4.1
 
     effective_minimal_mood = minimal_mood
-    if junior_minimal_mood and is_junior_year(di):
+    if junior_minimal_mood and is_junior_year(di) and energy_pct < 90:
         effective_minimal_mood = junior_minimal_mood
 
     def _apply_priority_guard(candidate_idx: Optional[int], *, context: str) -> Optional[int]:
@@ -411,11 +411,12 @@ def decide_action_training(
         logger_uma.error(f"Distribution check skipped due to stats error: {_e}")
     # 1) If max SV option is >= 2.5 → select TRAIN_MAX (tie → priority order)
     if best_allowed_tile_25 is not None:
+        best_allowed_tile_25_sv = sv_of(best_allowed_tile_25)
         because(
-            f"Top SV ≥ {max_pick_sv_top} allowed by risk → pick tile {best_allowed_tile_25}"
+            f"Top SV {best_allowed_tile_25_sv} ≥ {max_pick_sv_top} allowed by risk → pick tile {best_allowed_tile_25}"
         )
         target_tile = _apply_priority_guard(
-            best_allowed_tile_25, context=f"SV ≥ {max_pick_sv_top}"
+            best_allowed_tile_25, context=f"SV {best_allowed_tile_25_sv} ≥ {max_pick_sv_top}"
         )
         return (TrainAction.TRAIN_MAX, target_tile, "; ".join(reasons))
 
@@ -537,11 +538,12 @@ def decide_action_training(
 
     # 6) If max SV option >= 2.0 → TRAIN_MAX
     if best_allowed_tile_20 is not None:
+        best_allowed_tile_20_sv = sv_of(best_allowed_tile_20)
         because(
-            f"Top SV ≥ {next_pick_sv_top} allowed by risk → tile {best_allowed_tile_20}"
+            f"Top SV {best_allowed_tile_20_sv} ≥ {next_pick_sv_top} allowed by risk → tile {best_allowed_tile_20}"
         )
         target_tile = _apply_priority_guard(
-            best_allowed_tile_20, context=f"SV ≥ {next_pick_sv_top}"
+            best_allowed_tile_20, context=f"SV {best_allowed_tile_20_sv} ≥ {next_pick_sv_top}"
         )
         return (TrainAction.TRAIN_MAX, target_tile, "; ".join(reasons))
 
@@ -675,11 +677,12 @@ def decide_action_training(
         tile_to_type=tile_to_type,
     )
     if best_allowed_tile_15 is not None:
+        best_allowed_tile_15_sv = sv_of(best_allowed_tile_15)
         because(
-            f"Top training SV ≥ {late_pick_sv_top} allowed by risk → tile {best_allowed_tile_15}"
+            f"Top training SV {best_allowed_tile_15_sv} ≥ {late_pick_sv_top} allowed by risk → tile {best_allowed_tile_15}"
         )
         target_tile = _apply_priority_guard(
-            best_allowed_tile_15, context=f"SV ≥ {late_pick_sv_top}"
+            best_allowed_tile_15, context=f"SV {best_allowed_tile_15_sv} ≥ {late_pick_sv_top}"
         )
         return (TrainAction.TRAIN_MAX, target_tile, "; ".join(reasons))
 

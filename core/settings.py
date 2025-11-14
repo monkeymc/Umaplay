@@ -107,6 +107,35 @@ class Settings:
         _env("UNITY_CUP_SPIRIT_COLOR_CLASS_PATH") or (MODELS_DIR / "unity_spirit_cnn.pt")
     )
 
+    UNITY_CUP_ADVANCED_DEFAULT: Dict[str, Any] = {
+        "burst_allowed_stats": ["SPD", "STA", "PWR", "GUTS", "WIT"],
+        "scores": {
+            "rainbowCombo": 0.5,
+            "whiteSpiritFill": 0.4,
+            "whiteSpiritExploded": 0.13,
+            "whiteComboBase": 0.2,
+            "whiteComboPerFill": 0.25,
+            "whiteComboExplodedTiny": 0.01,
+            "blueSpiritEach": 0.5,
+            "blueComboPerExtraFill": 0.25,
+        },
+        "multipliers": {
+            "juniorClassic": {"white": 1.0, "whiteCombo": 1.0, "blueCombo": 1.0},
+            "senior": {"white": 1.0, "whiteCombo": 1.0, "blueCombo": 1.0},
+        },
+        "burstDeadline": {
+            "preSeniorNovEarlyTurns": 4,
+            "finalSeasonExplodeLastTurns": 2,
+        },
+        "opponentSelection": {
+            "race1": 2,
+            "race2": 1,
+            "race3": 1,
+            "race4": 1,
+            "defaultUnknown": 1,
+        },
+    }
+
     MODE: str = _env("MODE", "steam") or "steam"
     USE_ADB: bool = _env_bool("USE_ADB", False)
     ADB_DEVICE: Optional[str] = _env("ADB_DEVICE", "localhost:5555")
@@ -193,6 +222,17 @@ class Settings:
         "team_trials": dict(_DEFAULT_NAV_PREFS["team_trials"]),
     }
 
+    UNITY_CUP_ADVANCED: Dict[str, Any] = {
+        "burst_allowed_stats": list(UNITY_CUP_ADVANCED_DEFAULT["burst_allowed_stats"]),
+        "scores": dict(UNITY_CUP_ADVANCED_DEFAULT["scores"]),
+        "multipliers": {
+            "juniorClassic": dict(UNITY_CUP_ADVANCED_DEFAULT["multipliers"]["juniorClassic"]),
+            "senior": dict(UNITY_CUP_ADVANCED_DEFAULT["multipliers"]["senior"]),
+        },
+        "burstDeadline": dict(UNITY_CUP_ADVANCED_DEFAULT["burstDeadline"]),
+        "opponentSelection": dict(UNITY_CUP_ADVANCED_DEFAULT["opponentSelection"]),
+    }
+
     # Keep the last applied config so other modules can extract runtime preset safely
     _last_config: dict | None = None
 
@@ -270,6 +310,57 @@ class Settings:
         cls.JUNIOR_MINIMAL_MOOD = None
         cls.PLAN_RACES_TENTATIVE = {}
 
+        def _normalize_unity_cup_advanced(raw_adv: Any) -> Dict[str, Any]:
+            adv_defaults = cls.UNITY_CUP_ADVANCED_DEFAULT
+            if not isinstance(raw_adv, dict):
+                raw_adv = {}
+
+            burst_stats = raw_adv.get("burstAllowedStats") or adv_defaults["burst_allowed_stats"]
+            if isinstance(burst_stats, list):
+                burst_stats = [str(s).upper() for s in burst_stats if str(s).upper() in adv_defaults["burst_allowed_stats"]]
+            else:
+                burst_stats = list(adv_defaults["burst_allowed_stats"])
+
+            def _merge_nested(default_block: Dict[str, Any], incoming: Any) -> Dict[str, Any]:
+                if not isinstance(incoming, dict):
+                    incoming = {}
+                merged: Dict[str, Any] = {}
+                for key, default_value in default_block.items():
+                    value = incoming.get(key, default_value)
+                    if isinstance(default_value, dict):
+                        merged[key] = _merge_nested(default_value, value)
+                    else:
+                        try:
+                            merged[key] = float(value)
+                        except (TypeError, ValueError):
+                            merged[key] = default_value
+                return merged
+
+            scores = _merge_nested(adv_defaults["scores"], raw_adv.get("scores"))
+            multipliers = _merge_nested(adv_defaults["multipliers"], raw_adv.get("multipliers"))
+            burst_deadline = _merge_nested(adv_defaults["burstDeadline"], raw_adv.get("burstDeadline"))
+
+            opponents_raw = raw_adv.get("opponentSelection")
+            opponent_defaults = adv_defaults["opponentSelection"]
+            opponent_selection: Dict[str, int] = {}
+            if not isinstance(opponents_raw, dict):
+                opponents_raw = {}
+            for slot, default_value in opponent_defaults.items():
+                try:
+                    value = int(opponents_raw.get(slot, default_value))
+                except (TypeError, ValueError):
+                    value = default_value
+                value = max(1, min(3, value))
+                opponent_selection[slot] = value
+
+            return {
+                "burst_allowed_stats": burst_stats or list(adv_defaults["burst_allowed_stats"]),
+                "scores": scores,
+                "multipliers": multipliers,
+                "burstDeadline": burst_deadline,
+                "opponentSelection": opponent_selection,
+            }
+
         presets: List[dict] = []
         active_id: Optional[str] = None
         scenarios_raw = cfg.get("scenarios") if isinstance(cfg, dict) else None
@@ -306,10 +397,22 @@ class Settings:
         if not preset and presets:
             first = presets[0]
             preset = first if isinstance(first, dict) else None
-            if isinstance(preset, dict):
-                active_id = str(preset.get("id") or "") or active_id
 
         preset_data = preset or {}
+
+        if cls.normalize_scenario(scenario_key) == "unity_cup":
+            cls.UNITY_CUP_ADVANCED = _normalize_unity_cup_advanced(preset_data.get("unityCupAdvanced"))
+        else:
+            cls.UNITY_CUP_ADVANCED = {
+                "burst_allowed_stats": list(cls.UNITY_CUP_ADVANCED_DEFAULT["burst_allowed_stats"]),
+                "scores": dict(cls.UNITY_CUP_ADVANCED_DEFAULT["scores"]),
+                "multipliers": {
+                    "juniorClassic": dict(cls.UNITY_CUP_ADVANCED_DEFAULT["multipliers"]["juniorClassic"]),
+                    "senior": dict(cls.UNITY_CUP_ADVANCED_DEFAULT["multipliers"]["senior"]),
+                },
+                "burstDeadline": dict(cls.UNITY_CUP_ADVANCED_DEFAULT["burstDeadline"]),
+                "opponentSelection": dict(cls.UNITY_CUP_ADVANCED_DEFAULT["opponentSelection"]),
+            }
 
         # Minimum skill points is now per-preset. Fall back to legacy general setting if missing.
         skill_pts_value = preset_data.get("skillPtsCheck")
@@ -637,6 +740,7 @@ class Settings:
             "lobbyPrecheckEnable": lobby_precheck_enable,
             "juniorMinimalMood": junior_minimal_mood,
             "goalRaceForceTurns": goal_race_force_turns,
+            "unityCupAdvanced": cls.UNITY_CUP_ADVANCED if cls.normalize_scenario(cls.ACTIVE_SCENARIO) == "unity_cup" else None,
             "minimum_skill_pts": minimum_skill_pts,
             "support_deck": deck,
             "support_card_priorities": [

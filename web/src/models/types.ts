@@ -33,7 +33,6 @@ export interface UnityCupAdvancedSettings {
     race2: number
     race3: number
     race4: number
-    race5: number
     defaultUnknown: number
   }
 }
@@ -66,6 +65,7 @@ export interface GeneralConfig {
 export interface Preset {
   id: string
   name: string
+  group?: string | null
   priorityStats: StatKey[]
   targetStats: Record<StatKey, number>
   minimalMood: MoodName

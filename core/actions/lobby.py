@@ -940,7 +940,7 @@ class LobbyFlow(ABC):
             meta["cache_hit"] = True
             return cached_sv, meta
 
-        enter_ok = self._go_training_screen_from_lobby(img, dets)
+        enter_ok = self._go_training_screen_from_lobby(img, dets, reason="PRECHECK")
         if not enter_ok:
             meta = {"status": "enter_failed"}
             self._peek_cache_key = cache_key
@@ -1006,6 +1006,7 @@ class LobbyFlow(ABC):
                 and meta.get("status") == "ok"
             )
             if not should_stay:
+                logger_uma.info(f"[lobby] Pre-check SV too low={best_sv} is not more than {Settings.RACE_PRECHECK_SV}, going back")
                 self._go_back()
             else:
                 # Click the best tile directly to save time
@@ -1423,8 +1424,11 @@ class LobbyFlow(ABC):
             time.sleep(2)
         return click
 
-    def _go_training_screen_from_lobby(self, img, dets) -> bool:
-        logger_uma.info("[lobby] No critical actions → go Train")
+    def _go_training_screen_from_lobby(self, img, dets, reason: Optional[str] = None) -> bool:
+        if reason:
+            logger_uma.info("[lobby] %s → go Train", reason)
+        else:
+            logger_uma.info("[lobby] No critical actions → go Train")
         clicked = self.waiter.click_when(
             classes=("lobby_training",),
             prefer_bottom=True,

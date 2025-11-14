@@ -68,7 +68,6 @@ export const unityCupAdvancedSchema = z.object({
       race2: unityCupOpponentValue.default(1),
       race3: unityCupOpponentValue.default(1),
       race4: unityCupOpponentValue.default(1),
-      race5: unityCupOpponentValue.default(1),
       defaultUnknown: unityCupOpponentValue.default(1),
     })
     .default({
@@ -76,7 +75,6 @@ export const unityCupAdvancedSchema = z.object({
       race2: 1,
       race3: 1,
       race4: 1,
-      race5: 1,
       defaultUnknown: 1,
     }),
 })
@@ -95,7 +93,7 @@ const UNITY_CUP_ADVANCED_DEFAULTS = {
     juniorClassic: { white: 1.5, whiteCombo: 1.5, blueCombo: 1.5 },
     senior: { white: 1, whiteCombo: 1, blueCombo: 1 },
   },
-  opponentSelection: { race1: 2, race2: 1, race3: 1, race4: 1, race5: 1, defaultUnknown: 1 },
+  opponentSelection: { race1: 2, race2: 1, race3: 1, race4: 1, defaultUnknown: 1 },
 } as const
 
 export const defaultUnityCupAdvanced = () => ({
@@ -167,6 +165,12 @@ export const generalSchema = z.object({
 export const presetSchema = z.object({
   id: z.string(),
   name: z.string(),
+  group: z
+    .string()
+    .max(80)
+    .optional()
+    .nullable()
+    .default(null),
   priorityStats: z.array(z.enum(STAT_KEYS)).min(5).max(5),
   targetStats: z.record(z.enum(STAT_KEYS), z.number().int().min(0)),
   minimalMood: z.enum(['AWFUL', 'BAD', 'NORMAL', 'GOOD', 'GREAT']),
@@ -285,6 +289,7 @@ export const defaultPreset = (id: string, name: string, scenario: ScenarioKey = 
   const preset = {
     id,
     name,
+    group: null,
     priorityStats: ['SPD', 'STA', 'WIT', 'PWR', 'GUTS'],
     raceIfNoGoodValue: false,
     prioritizeHint: false,
@@ -324,7 +329,7 @@ export const defaultAppConfig = (): AppConfig => ({
       activePresetId: undefined,
     },
     unity_cup: {
-      presets: [],
+      presets: [defaultPreset(crypto.randomUUID(), 'Preset 1', 'unity_cup')],
       activePresetId: undefined,
     },
   },

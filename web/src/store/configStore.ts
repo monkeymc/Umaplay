@@ -25,6 +25,10 @@ type Actions = {
   copyPreset: (id: string) => void
   deletePreset: (id: string) => void
   renamePreset: (id: string, name: string) => void
+  setPresetGroup: (id: string, group: string | null) => void
+  renamePresetGroup: (oldName: string, newName: string) => void
+  deletePresetGroup: (name: string) => void
+  reorderPresets: (order: string[]) => void
   patchPreset: <K extends keyof Preset>(id: string, key: K, value: Preset[K]) => void
   replaceConfig: (cfg: AppConfig) => void
   saveLocal: () => void
@@ -301,6 +305,98 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
             [key]: {
               ...branch,
               presets: branch.presets.map((p) => (p.id === id ? { ...p, name } : p)),
+            },
+          },
+        },
+      }
+    }),
+
+  setPresetGroup: (id, group) =>
+    set((s) => {
+      const { key, branch, map } = resolveScenario(s.config, s.uiScenarioKey)
+      return {
+        config: {
+          ...s.config,
+          scenarios: {
+            ...map,
+            [key]: {
+              ...branch,
+              presets: branch.presets.map((p) => (p.id === id ? { ...p, group } : p)),
+            },
+          },
+        },
+      }
+    }),
+
+  renamePresetGroup: (oldName, newName) =>
+    set((s) => {
+      if (!oldName || oldName === newName) return {}
+      const { key, branch, map } = resolveScenario(s.config, s.uiScenarioKey)
+      return {
+        config: {
+          ...s.config,
+          scenarios: {
+            ...map,
+            [key]: {
+              ...branch,
+              presets: branch.presets.map((p) =>
+                (p as any).group === oldName ? { ...p, group: newName } : p,
+              ),
+            },
+          },
+        },
+      }
+    }),
+
+  deletePresetGroup: (name) =>
+    set((s) => {
+      if (!name) return {}
+      const { key, branch, map } = resolveScenario(s.config, s.uiScenarioKey)
+      return {
+        config: {
+          ...s.config,
+          scenarios: {
+            ...map,
+            [key]: {
+              ...branch,
+              presets: branch.presets.map((p) =>
+                (p as any).group === name ? { ...p, group: null } : p,
+              ),
+            },
+          },
+        },
+      }
+    }),
+
+  reorderPresets: (order) =>
+    set((s) => {
+      const { key, branch, map } = resolveScenario(s.config, s.uiScenarioKey)
+      const idToPreset = new Map<string, Preset>()
+      for (const p of branch.presets) {
+        idToPreset.set(p.id, p)
+      }
+      const next: Preset[] = []
+      for (const id of order) {
+        const p = idToPreset.get(id)
+        if (p) {
+          next.push(p)
+          idToPreset.delete(id)
+        }
+      }
+      for (const p of branch.presets) {
+        if (idToPreset.has(p.id)) {
+          next.push(p)
+          idToPreset.delete(p.id)
+        }
+      }
+      return {
+        config: {
+          ...s.config,
+          scenarios: {
+            ...map,
+            [key]: {
+              ...branch,
+              presets: next,
             },
           },
         },

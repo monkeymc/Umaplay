@@ -48,6 +48,24 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
 
     default_priority_cfg = Settings.default_support_priority()
     # Unity defaults (still overridable):
+    adv_settings = Settings.UNITY_CUP_ADVANCED
+    scores_cfg = adv_settings.get("scores", {}) if isinstance(adv_settings, dict) else {}
+
+    def _score_value(key: str, fallback: float) -> float:
+        try:
+            return float(scores_cfg.get(key, fallback))
+        except (TypeError, ValueError):
+            return fallback
+
+    SCORE_WHITE_FILL = _score_value("whiteSpiritFill", 0.40)
+    SCORE_WHITE_EXPLODED = _score_value("whiteSpiritExploded", 0.13)
+    SCORE_WHITE_COMBO_BASE = _score_value("whiteComboBase", 0.20)
+    SCORE_WHITE_COMBO_PER_FILL = _score_value("whiteComboPerFill", 0.25)
+    SCORE_WHITE_COMBO_EXPLODED = _score_value("whiteComboExplodedTiny", 0.01)
+    SCORE_BLUE_EACH = _score_value("blueSpiritEach", 0.50)
+    SCORE_BLUE_COMBO_PER_EXTRA = _score_value("blueComboPerExtraFill", 0.25)
+    SCORE_RAINBOW_COMBO = _score_value("rainbowCombo", 0.50)
+
     UNITY_BLUEGREEN_HINT_DEFAULT = 0.50
     UNITY_ORANGE_HINT_DEFAULT = 0.25
 
@@ -254,7 +272,7 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
 
         # ---- rainbow combo (Unity) ------------------------------------------
         if rainbow_count >= 2:
-            combo_bonus = 0.5 * float(rainbow_count - 1)
+            combo_bonus = SCORE_RAINBOW_COMBO * float(rainbow_count - 1)
             sv_total += combo_bonus
             sv_by_type["rainbow_combo"] = sv_by_type.get("rainbow_combo", 0.0) + combo_bonus
             notes.append(f"Rainbow combo ({rainbow_count}): +{combo_bonus:.2f}")
@@ -273,25 +291,25 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
         n_blue_fill      = sum(1 for s in blues  if s.get("has_flame") and s.get("flame_type") == "filling_up")
 
         # White spirits: same rule as before (0.50 filling, 0.12 exploded)
-        white_value = 0.40 * n_white_fill + 0.13 * n_white_exploded
+        white_value = SCORE_WHITE_FILL * n_white_fill + SCORE_WHITE_EXPLODED * n_white_exploded
         if white_value > 0:
             sv_total += white_value
             sv_by_type["spirits_white"] = sv_by_type.get("spirits_white", 0.0) + white_value
-            notes.append(f"White spirits: +{white_value:.2f} (fill={n_white_fill}, exploded={n_white_exploded})")
+            notes.append(f"White spirits value sum: +{white_value:.2f} (fill={n_white_fill}, exploded={n_white_exploded})")
 
         # White combo (only for not-exploded/flame filling) + tiny weight for exploded inside combo
         white_combo = 0.0
         if n_white_fill >= 2:
-            white_combo += 0.2 + 0.25 * n_white_fill  # 2→0.75, 3→1.0, ...
+            white_combo += SCORE_WHITE_COMBO_BASE + SCORE_WHITE_COMBO_PER_FILL * n_white_fill
         if (n_white_fill + n_white_exploded) >= 2:
-            white_combo += 0.01 * n_white_exploded
+            white_combo += SCORE_WHITE_COMBO_EXPLODED * n_white_exploded
         if white_combo > 0:
             sv_total += white_combo
             sv_by_type["spirit_combo_white"] = sv_by_type.get("spirit_combo_white", 0.0) + white_combo
-            notes.append(f"White spirit combo: +{white_combo:.2f}")
+            notes.append(f"White spirit combo sum: +{white_combo:.2f} => SCORE_WHITE_COMBO_BASE={SCORE_WHITE_COMBO_BASE} + (SCORE_WHITE_COMBO_PER_FILL * n_white_fill)={SCORE_WHITE_COMBO_PER_FILL * n_white_fill} + (SCORE_WHITE_COMBO_EXPLODED * n_white_exploded)={SCORE_WHITE_COMBO_EXPLODED * n_white_exploded}")
 
         # Blue spirits: regardless of flame, 0.5 each
-        blue_value = 0.5 * n_blue_total
+        blue_value = SCORE_BLUE_EACH * n_blue_total
         if blue_value > 0:
             sv_total += blue_value
             sv_by_type["spirits_blue"] = sv_by_type.get("spirits_blue", 0.0) + blue_value
@@ -301,34 +319,48 @@ def compute_support_values(training_state: List[Dict]) -> List[Dict[str, Any]]:
         blue_combo = 0.0
         if n_blue_fill > 1:
             # Blue is ADDITIVE, so combo is not as strong as white
-            blue_combo = 0.25 * (n_blue_fill - 1)
+            blue_combo = SCORE_BLUE_COMBO_PER_EXTRA * (n_blue_fill - 1)
             sv_total += blue_combo
             sv_by_type["spirit_combo_blue"] = sv_by_type.get("spirit_combo_blue", 0.0) + blue_combo
             notes.append(f"Blue spirit combo: +{blue_combo:.2f} (filling={n_blue_fill})")
+
+        sv_by_type["meta_white_fill_units"] = float(n_white_fill)
+        sv_by_type["meta_white_exploded_units"] = float(n_white_exploded)
+        sv_by_type["meta_blue_total_units"] = float(n_blue_total)
+        sv_by_type["meta_blue_fill_units"] = float(n_blue_fill)
+        sv_by_type["meta_blue_has_spirit"] = 1.0 if n_blue_total > 0 else 0.0
+        # Preserve the base SV before any seasonal multipliers in policy.
+        sv_by_type["meta_sv_base_unity"] = float(sv_total)
 
         # ---- risk gating (higher than URA) --------------------------------------
         base_limit = Settings.MAX_FAILURE
         has_any_hint = bool(blue_hint_candidates or orange_hint_candidates)
         if sv_total >= 7:
             risk_mult = 2.0
-        elif sv_total >= 5 and not (has_any_hint and Settings.HINT_IS_IMPORTANT):
-            risk_mult = 2.0
-        elif sv_total > 4.5 and not (has_any_hint and Settings.HINT_IS_IMPORTANT):
+        elif sv_total > 5.5 and not (has_any_hint and Settings.HINT_IS_IMPORTANT):
+            risk_mult = 1.65
+        elif sv_total > 5 and not (has_any_hint and Settings.HINT_IS_IMPORTANT):
             risk_mult = 1.5
-        elif sv_total >= 4.25 and not (has_any_hint and Settings.HINT_IS_IMPORTANT):
+        elif sv_total >= 4.5 and not (has_any_hint and Settings.HINT_IS_IMPORTANT):
             risk_mult = 1.35
-        elif sv_total >= 4:
+        elif sv_total >= 3.5:
             risk_mult = 1.25
+        elif sv_total >= 2.5:
+            risk_mult = 1.1
         else:
             risk_mult = 1.0
 
         risk_limit = int(min(100, base_limit * risk_mult))
         allowed = failure_pct <= risk_limit
-        notes.append(f"Dynamic risk: SV={sv_total:.2f} → base {base_limit}% × {risk_mult:.2f} = {risk_limit}%")
+        notes.append(
+            f"Dynamic risk (base SV before seasonal multipliers): SV={sv_total:.2f} -> base {base_limit}% x {risk_mult:.2f} = {risk_limit}%"
+        )
 
         greedy_hit = (sv_total >= GREEDY_THRESHOLD_UNITY_CUP) and allowed
         if greedy_hit:
-            notes.append(f"Greedy hit: SV {sv_total:.2f} ≥ {GREEDY_THRESHOLD_UNITY_CUP} and failure {failure_pct}% ≤ {risk_limit}%")
+            notes.append(
+                f"Greedy hit: SV {sv_total:.2f} ≥ {GREEDY_THRESHOLD_UNITY_CUP} and failure {failure_pct}% ≤ {risk_limit}%"
+            )
 
         out.append(
             TileSV(

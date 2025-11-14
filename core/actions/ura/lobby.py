@@ -22,6 +22,7 @@ from core.utils.yolo_objects import collect
 from core.utils.date_uma import (
     is_summer_in_two_or_less_turns,
     date_is_confident,
+    date_index,
 )
 
 class LobbyFlowURA(LobbyFlow):
@@ -234,11 +235,34 @@ class LobbyFlowURA(LobbyFlow):
 
         # --- Energy management (rest / prefer PAL recreation) ---
         if self.state.energy is not None:
+            # Precompute PAL readiness and late-season guard (Y3-Sep-1 and later).
+            mem = getattr(self, "pal_memory", None)
+            pal_ready = (
+                getattr(self.state, "pal_available", False)
+                and mem is not None
+                and mem.any_next_energy()
+            )
+
+            late_pal_window = False
+            if self.state.date_info is not None:
+                idx = date_index(self.state.date_info)
+                if idx is not None and idx >= 64:  # Y3-Sep-1 using date_index()
+                    late_pal_window = True
+
             if self.state.energy <= self.auto_rest_minimum:
-                # Prefer PAL recreation if available and mood < GREAT
-                mem = getattr(self, 'pal_memory', None)
+                # Late-season: always use PAL recreation when possible to avoid losing trainings.
+                if pal_ready and late_pal_window:
+                    reason = (
+                        "Auto-rest: late-season PAL recreation (Y3-Sep-1+; avoid lost trainings)"
+                    )
+                    if self._go_recreate(reason=reason):
+                        return "RESTED", reason
+
+                # Otherwise prefer PAL recreation if available and mood < GREAT
                 mood_lbl, mood_score = (
-                    self.state.mood if isinstance(self.state.mood, tuple) and len(self.state.mood) == 2 else ("UNKNOWN", -1)
+                    self.state.mood
+                    if isinstance(self.state.mood, tuple) and len(self.state.mood) == 2
+                    else ("UNKNOWN", -1)
                 )
                 if mood_score < 0:
                     try:
@@ -249,22 +273,25 @@ class LobbyFlowURA(LobbyFlow):
                 if (
                     mood_score >= 0
                     and mood_score < 5  # MOOD_MAP["GREAT"]
-                    and (getattr(self.state, 'pal_available', False) and (mem and mem.any_next_energy()))
+                    and pal_ready
                 ):
-                    reason = f"Auto-rest: prefer PAL recreation (min={self.auto_rest_minimum}; mood<Great)"
+                    reason = (
+                        f"Auto-rest: prefer PAL recreation (min={self.auto_rest_minimum}; mood<Great)"
+                    )
                     if self._go_recreate(reason=reason):
                         return "RESTED", reason
+
                 reason = f"Energy too low, resting: auto_rest_minimum={self.auto_rest_minimum}"
                 if self._go_rest(reason=reason):
                     return "RESTED", reason
+
             elif (
                 self.state.energy <= 50
                 and self.state.date_info
                 and is_summer_in_two_or_less_turns(self.state.date_info)
             ):
                 # Prefer PAL recreation when preparing for summer if available
-                mem = getattr(self, 'pal_memory', None)
-                if (getattr(self.state, 'pal_available', False) and (mem and mem.any_next_energy())):
+                if pal_ready:
                     reason = "Preparing for summer: prefer PAL recreation"
                     if self._go_recreate(reason=reason):
                         return "RESTED", reason
