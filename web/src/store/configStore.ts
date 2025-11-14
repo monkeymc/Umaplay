@@ -236,17 +236,19 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
   addPreset: () =>
     set((s) => {
       const { key, branch, map } = resolveScenario(s.config, s.uiScenarioKey)
-      const preset: Preset = {
-        ...defaultPreset(newId(), `Preset ${(branch.presets?.length ?? 0) + 1}`, key),
-        event_setup: defaultEventSetup(),
-      }
+      const newPresetId = newId()
+      const newPresetName = `Preset ${(branch.presets?.length ?? 0) + 1}`
+      const preset = defaultPreset(newPresetId, newPresetName, key)
+      preset.event_setup = defaultEventSetup()
+      console.log('[addPreset] Created new preset:', { id: preset.id, name: preset.name, scenario: key, skillsToBuy: preset.skillsToBuy, plannedRaces: preset.plannedRaces })
       const presets = [...branch.presets, preset]
+      const activeId = branch.activePresetId ?? presets[0]?.id ?? preset.id
       return {
         config: {
           ...s.config,
-          scenarios: { ...map, [key]: { ...branch, presets, activePresetId: preset.id } },
+          scenarios: { ...map, [key]: { ...branch, presets, activePresetId: activeId } },
         },
-        uiSelectedPresetId: preset.id,
+        uiSelectedPresetId: newPresetId,
       }
     }),
 
