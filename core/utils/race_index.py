@@ -12,6 +12,7 @@ from PIL import Image
 
 from core.settings import Settings
 from core.utils.logger import logger_uma
+from core.utils.date_uma import DateInfo, date_index
 
 
 _CANON_TRANSLATION = str.maketrans(
@@ -109,6 +110,60 @@ def date_key_from_dateinfo(di) -> Optional[DateKey]:
     if m < 1 or m > 12 or h not in (1, 2):
         return None
     return f"Y{y}-{m:02d}-{h:d}"
+
+
+# --------------------------
+# Unity Cup helpers
+# --------------------------
+
+# Fixed Unity Cup preseason schedule in career calendar
+_UNITY_CUP_PRESEASON_DATES: Tuple[Tuple[int, int, int], ...] = (
+    (1, 12, 2),  # Junior Late Dec
+    (2, 6, 2),   # Classic Late Jun
+    (2, 12, 2),  # Classic Late Dec
+    (3, 6, 2),   # Senior Late Jun
+)
+
+
+def unity_cup_preseason_index(di: Optional[DateInfo]) -> Optional[int]:
+    """Return 1..4 for the Unity Cup preseason stage inferred from this date.
+
+    Instead of requiring an exact match on the scheduled date, this uses the
+    linear date_index and picks the first scheduled preseason date whose index
+    is >= the given date index. This lets us handle cases where our last known
+    date is slightly earlier than the actual Unity Cup raceday, e.g. when the
+    lobby date OCR lagged a bit.
+
+    Returns None for dates after all preseasons, finals, or unknown/partial
+    dates.
+    """
+
+    return unity_cup_next_preseason_index(di)
+
+
+def unity_cup_next_preseason_index(di: Optional[DateInfo]) -> Optional[int]:
+    """Return the next Unity Cup preseason index (1..4) on/after the given date.
+
+    Uses the linear date_index to compare the current date against the fixed
+    preseason schedule. Returns None if the date is unknown or all 4 preseasons
+    are in the past.
+    """
+
+    if not isinstance(di, DateInfo):
+        return None
+
+    base_idx = date_index(di)
+    if base_idx is None:
+        return None
+
+    for idx, (yy, mm, hh) in enumerate(_UNITY_CUP_PRESEASON_DATES, start=1):
+        candidate = DateInfo(raw="", year_code=yy, month=mm, half=hh)
+        cand_idx = date_index(candidate)
+        if cand_idx is None:
+            continue
+        if cand_idx >= base_idx:
+            return idx
+    return None
 
 
 class RaceIndex:

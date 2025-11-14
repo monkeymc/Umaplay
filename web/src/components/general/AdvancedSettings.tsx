@@ -15,6 +15,7 @@ export default function AdvancedSettings() {
   const [skillDelta, setSkillDelta] = useState(a.skillPtsDelta)
   const [undertrain, setUndertrain] = useState(a.undertrainThreshold)
   const [topStats, setTopStats] = useState(a.topStatsFocus)
+  const [externalUrl, setExternalUrl] = useState(a.externalProcessorUrl)
 
   const autoRestMarks = useMemo(() => {
     const marks = [{ value: 1 }]
@@ -32,12 +33,14 @@ export default function AdvancedSettings() {
     setSkillDelta(a.skillPtsDelta)
     setUndertrain(a.undertrainThreshold)
     setTopStats(a.topStatsFocus)
+    setExternalUrl(a.externalProcessorUrl)
   }, [
     a.autoRestMinimum,
     a.skillCheckInterval,
     a.skillPtsDelta,
     a.undertrainThreshold,
     a.topStatsFocus,
+    a.externalProcessorUrl,
   ])
 
   const commitAdvanced = <K extends keyof typeof a>(key: K, value: (typeof a)[K]) => {
@@ -239,8 +242,21 @@ export default function AdvancedSettings() {
             <TextField
               size="small"
               fullWidth
-              value={a.externalProcessorUrl}
-              onChange={(e) => setGeneral({ advanced: { ...a, externalProcessorUrl: e.target.value } })}
+              value={externalUrl}
+              onChange={(e) => setExternalUrl(e.target.value)}
+              onBlur={() => {
+                if (externalUrl !== a.externalProcessorUrl) {
+                  setGeneral({ advanced: { ...a, externalProcessorUrl: externalUrl } })
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const next = externalUrl.trim()
+                  if (next && next !== a.externalProcessorUrl) {
+                    setGeneral({ advanced: { ...a, externalProcessorUrl: next } })
+                  }
+                }
+              }}
               disabled={!a.useExternalProcessor}
               placeholder="http://127.0.0.1:8001"
             />

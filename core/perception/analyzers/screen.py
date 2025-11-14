@@ -42,6 +42,7 @@ def classify_screen_ura(
         "lobby_skills": "lobby_skills",
         "button_claw_action": "button_claw_action",
         "claw": "claw",
+        "pal": "lobby_pal",
     }
 
     counts = Counter(d["name"] for d in dets)
@@ -90,6 +91,9 @@ def classify_screen_ura(
     has_claw = any(
         d["name"] == names_map["claw"] and d["conf"] >= lobby_conf for d in dets
     )
+    has_pal = any(
+        d["name"] == names_map["pal"] and d["conf"] >= lobby_conf for d in dets
+    )
 
     # 1) Event
     if n_event_choices >= 2:
@@ -111,6 +115,7 @@ def classify_screen_ura(
             "rest_summer": has_rest_summer,
             "infirmary": has_infirmary,
             "recreation_present": has_recreation,
+            "pal_available": has_pal,
         }
 
     # 4) Regular Lobby
@@ -119,6 +124,7 @@ def classify_screen_ura(
             "tazuna": has_tazuna,
             "infirmary": has_infirmary,
             "has_lobby_skills": has_lobby_skills,
+            "pal_available": has_pal,
         }
 
     if (len(dets) == 2 and has_lobby_skills and race_after_next) or (
@@ -146,6 +152,7 @@ def classify_screen_ura(
         "recreation": has_recreation,
         "race_day": has_race_day,
         "counts": dict(counts),
+        "pal_available": has_pal,
     }
 
 def classify_screen_unity_cup(
@@ -190,6 +197,7 @@ def classify_screen_unity_cup(
         "button_white": "button_white",
         "button_green": "button_green",
         "button_pink": "button_pink",
+        "pal": "lobby_pal",
     }
 
     counts = Counter(d["name"] for d in dets)
@@ -247,6 +255,9 @@ def classify_screen_unity_cup(
     has_button_pink = any(
         d["name"] == names_map["button_pink"] and d["conf"] >= lobby_conf for d in dets
     )
+    has_pal = any(
+        d["name"] == names_map["pal"] and d["conf"] >= lobby_conf for d in dets
+    )
     
     
     # 1) Event
@@ -274,6 +285,7 @@ def classify_screen_unity_cup(
             "rest_summer": has_rest_summer,
             "infirmary": has_infirmary,
             "recreation_present": has_recreation,
+            "pal_available": has_pal,
         }
 
     # 4) Regular Lobby
@@ -282,6 +294,7 @@ def classify_screen_unity_cup(
             "tazuna": has_tazuna,
             "infirmary": has_infirmary,
             "has_lobby_skills": has_lobby_skills,
+            "pal_available": has_pal,
         }
 
     if (
@@ -309,4 +322,5 @@ def classify_screen_unity_cup(
         "recreation": has_recreation,
         "race_day": has_race_day,
         "counts": dict(counts),
+        "pal_available": has_pal,
     }

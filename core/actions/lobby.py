@@ -3,22 +3,31 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections import deque
+import random
 import statistics
 import time
 from dataclasses import dataclass
-from typing import Literal, Optional, Tuple
+from typing import Any, Dict, Literal, Optional, Tuple
 
 from core.controllers.base import IController
 from core.perception.extractors.state import extract_career_date, extract_goal_text, extract_stats
 from core.perception.is_button_active import ActiveButtonClassifier
 from core.perception.yolo.interface import IDetector
 from core.settings import Settings
+from core.actions.training_check import (
+    get_compute_support_values,
+    scan_training_screen,
+)
+from core.utils.geometry import calculate_jitter
 from core.utils.logger import logger_uma
 from core.utils.race_index import RaceIndex, date_key_from_dateinfo
-from core.utils.text import fuzzy_contains
+from core.utils.text import fuzzy_contains, fuzzy_best_match, normalize_ocr_text
 from core.utils.waiter import Waiter
 from core.utils.yolo_objects import collect
 from core.constants import CLASS_UI_TURNS, CLASS_UI_GOAL
+from core.utils.pal_memory import PalMemoryManager
+from core.actions.events import _count_chain_steps
+from core.utils.event_processor import predict_next_chain_has_energy_from_raw
 
 from core.utils.date_uma import (
     DateInfo,
@@ -49,6 +58,9 @@ class LobbyState:
     stats = {"SPD": -1, "STA": -1, "PWR": -1, "GUTS": -1, "WIT": -1}
     planned_race_name: Optional[str] = None
     planned_race_canonical: Optional[str] = None
+    planned_race_tentative: bool = False
+    # PAL icon available near Recreation on the lobby screen
+    pal_available: bool = False
 
 
 @dataclass
@@ -102,6 +114,7 @@ class LobbyFlow(ABC):
         self.last_turns_left_prediction = None
         self._last_date_key: Optional[str] = None
         self.plan_races = plan_races
+        self.plan_races_tentative = getattr(Settings, "PLAN_RACES_TENTATIVE", {}) or {}
         self._date_stable_count: int = 0
         self._date_artificial: bool = False
         self._pending_date_jump = None
@@ -110,10 +123,74 @@ class LobbyFlow(ABC):
         self._last_turn_at_date_update: Optional[int] = None
         self._raced_keys_recent: set[str] = set()
         self._skip_guard_key: Optional[str] = None
+        self._peek_cache_key: Optional[Tuple[Optional[str], int, Optional[int]]] = None
+        self._peek_cache_value: Optional[Tuple[float, Dict[str, Any]]] = None
 
         self.date_layout = date_layout
         self.date_turns_class = date_turns_class
         self.date_goal_class = date_goal_class
+
+        # Lightweight PAL memory for recreation/dating context
+        try:
+            from core.settings import Settings as _S
+            pal_path = _S.PREFS_DIR / "runtime_pal_memory.json"
+            self.pal_memory = PalMemoryManager(pal_path, scenario=getattr(_S, "ACTIVE_SCENARIO", None))
+        except Exception:
+            # Fallback to a local temp path if settings are unavailable
+            from pathlib import Path
+            self.pal_memory = PalMemoryManager(Path("runtime_pal_memory.json"))
+
+    # Keep PAL memory metadata aligned with current run
+    def _refresh_pal_memory(self) -> None:
+        try:
+            from core.settings import Settings as _S
+            cfg = getattr(_S, "_last_config", None) or {}
+            # Reuse AgentScenario helper behavior: Settings might provide a private util
+            preset_id = None
+            try:
+                _, active_id, _ = _S._get_active_preset_from_config(cfg)
+                if isinstance(active_id, str) and active_id.strip():
+                    preset_id = active_id.strip()
+            except Exception:
+                preset_id = None
+            di = getattr(self.state, "date_info", None)
+            date_key = di.as_key() if di else None
+            idx = date_index(di) if di else None
+            if not self.pal_memory.is_compatible_run(
+                preset_id=preset_id,
+                date_key=date_key,
+                date_index=idx,
+                scenario=getattr(_S, "ACTIVE_SCENARIO", None),
+            ):
+                self.pal_memory.reset()
+            self.pal_memory.set_run_metadata(
+                preset_id=preset_id,
+                date_key=date_key,
+                date_index=idx,
+                scenario=getattr(_S, "ACTIVE_SCENARIO", None),
+                commit=True,
+            )
+        except Exception:
+            pass
+
+    # Centralized helper to update PAL availability from detections
+    def _update_pal_from_dets(self, dets) -> None:
+        try:
+            has_pal = any(
+                d.get("name") == "lobby_pal" and float(d.get("conf", 0.0)) >= 0.6
+                for d in dets
+            )
+            self.state.pal_available = bool(has_pal)
+            date_key = (
+                date_key_from_dateinfo(self.state.date_info)
+                if getattr(self.state, "date_info", None)
+                else None
+            )
+            turn_val = self.state.turn if isinstance(self.state.turn, int) else None
+            self.pal_memory.record_availability(has_pal, date_key=date_key, turn=turn_val, commit=True)
+        except Exception:
+            # Non-fatal; keep running without PAL telemetry if something goes wrong
+            pass
 
     @abstractmethod
     def process_turn(self):
@@ -767,6 +844,7 @@ class LobbyFlow(ABC):
         self._last_date_key = key
         self.state.planned_race_name = None
         self.state.planned_race_canonical = None
+        self.state.planned_race_tentative = False
         if not key:
             return
 
@@ -784,6 +862,9 @@ class LobbyFlow(ABC):
                 )
             self.state.planned_race_name = raw_name
             self.state.planned_race_canonical = canon or raw_name.lower()
+            self.state.planned_race_tentative = bool(
+                self.plan_races_tentative.get(key)
+            )
             self._log_planned_race_decision(
                 action="plan_selected",
                 plan_name=raw_name,
@@ -809,6 +890,158 @@ class LobbyFlow(ABC):
         # one-shot guard this loop as well
         self._skip_race_once = True
         self._skip_guard_key = date_key
+
+    def _current_date_key(self) -> Optional[str]:
+        di = getattr(self.state, "date_info", None)
+        return date_key_from_dateinfo(di) if di else None
+
+    def _invalidate_peek_cache(self) -> None:
+        self._peek_cache_key = None
+        self._peek_cache_value = None
+
+    def _precheck_allowed(self) -> bool:
+        if not Settings.LOBBY_PRECHECK_ENABLE:
+            return False
+        energy = self.state.energy
+        if energy is None:
+            return False
+        if energy <= self.auto_rest_minimum:
+            return False
+        if (
+            self.state.date_info
+            and energy <= 30
+            and is_summer_in_two_or_less_turns(self.state.date_info)
+        ):
+            return False
+        return True
+
+    def _peek_training_best_sv(
+        self,
+        img,
+        dets,
+        *,
+        force_refresh: bool = False,
+        stay_if_above_threshold: bool = False,
+    ) -> Tuple[float, Dict[str, Any]]:
+        if not Settings.LOBBY_PRECHECK_ENABLE:
+            return 0.0, {"status": "disabled"}
+
+        turn = self.state.turn if isinstance(self.state.turn, int) else -1
+        energy = self.state.energy if isinstance(self.state.energy, (int, float)) else None
+        cache_key = (self._current_date_key(), int(turn), energy)
+
+        if (
+            not force_refresh
+            and self._peek_cache_key == cache_key
+            and self._peek_cache_value is not None
+        ):
+            cached_sv, cached_meta = self._peek_cache_value
+            meta = dict(cached_meta)
+            meta["cache_hit"] = True
+            return cached_sv, meta
+
+        enter_ok = self._go_training_screen_from_lobby(img, dets, reason="PRECHECK")
+        if not enter_ok:
+            meta = {"status": "enter_failed"}
+            self._peek_cache_key = cache_key
+            self._peek_cache_value = (0.0, dict(meta))
+            return 0.0, meta
+
+        best_sv = 0.0
+        meta: Dict[str, Any] = {"status": "unknown"}
+        try:
+            training_state, _, _ = scan_training_screen(
+                self.ctrl,
+                self.ocr,
+                self.yolo_engine,
+                energy=self.state.energy,
+            )
+
+            if not training_state:
+                meta = {"status": "scan_empty"}
+                self._peek_cache_key = cache_key
+                self._peek_cache_value = (best_sv, dict(meta))
+                return best_sv, meta
+
+            try:
+                sv_rows = get_compute_support_values()(training_state)
+            except Exception as exc:  # pragma: no cover - defensive
+                meta = {"status": "compute_failed", "error": str(exc)}
+                self._peek_cache_key = cache_key
+                self._peek_cache_value = (best_sv, dict(meta))
+                return best_sv, meta
+
+            allowed_rows = [r for r in sv_rows if r.get("allowed_by_risk")]
+            best_row = None
+            best_tile_xyxy = None
+            if allowed_rows:
+                best_row = max(
+                    allowed_rows,
+                    key=lambda r: float(r.get("sv_total", 0.0)),
+                )
+                best_sv = float(best_row.get("sv_total", 0.0))
+                # Find the tile_xyxy from training_state using tile_idx
+                tile_idx = best_row.get("tile_idx")
+                if tile_idx is not None:
+                    for tile in training_state:
+                        if tile.get("tile_idx") == tile_idx:
+                            best_tile_xyxy = tile.get("tile_xyxy")
+                            break
+                meta = {
+                    "status": "ok",
+                    "tile_idx": best_row.get("tile_idx"),
+                    "tile_type": best_row.get("tile_type"),
+                    "sv_total": best_sv,
+                    "failure_pct": best_row.get("failure_pct"),
+                    "tile_xyxy": best_tile_xyxy,  # Store geometry for clicking
+                }
+            else:
+                meta = {"status": "no_allowed_tiles"}
+
+        finally:
+            # Only go back if we're not staying in training or if SV is below threshold
+            should_stay = (
+                stay_if_above_threshold
+                and best_sv >= Settings.RACE_PRECHECK_SV
+                and meta.get("status") == "ok"
+            )
+            if not should_stay:
+                logger_uma.info(f"[lobby] Pre-check SV too low={best_sv} is not more than {Settings.RACE_PRECHECK_SV}, going back")
+                self._go_back()
+            else:
+                # Click the best tile directly to save time
+                tile_xyxy = meta.get("tile_xyxy")
+                if tile_xyxy:
+                    self.ctrl.click_xyxy_center(
+                        tile_xyxy,
+                        clicks=random.randint(3, 4),
+                        jitter=calculate_jitter(tile_xyxy, percentage_offset=0.20),
+                    )
+                    logger_uma.info(
+                        "[lobby] Pre-check clicked tile_idx=%s type=%s sv=%.2f",
+                        meta.get("tile_idx"),
+                        meta.get("tile_type"),
+                        best_sv,
+                    )
+                    meta["stayed_in_training"] = True
+                    meta["tile_clicked"] = True
+                else:
+                    # Fallback: go back if we can't click
+                    logger_uma.warning(
+                        "[lobby] Pre-check optimization failed: tile_xyxy not found for tile_idx=%s",
+                        meta.get("tile_idx"),
+                    )
+                    self._go_back()
+                    meta["stayed_in_training"] = False
+
+        # Don't cache if we clicked a tile (state changed)
+        if not meta.get("tile_clicked"):
+            self._peek_cache_key = cache_key
+            self._peek_cache_value = (best_sv, dict(meta))
+        
+        meta_with_flag = dict(meta)
+        meta_with_flag["cache_hit"] = False
+        return best_sv, meta_with_flag
 
     @abstractmethod
     def _process_turns_left(self, img, dets):
@@ -858,14 +1091,75 @@ class LobbyFlow(ABC):
             return False, "It is first day, no races available"
 
         if self.state.turn <= self.max_critical_turn:
+            force_deadline = (
+                isinstance(self.state.turn, int)
+                and self.state.turn >= 0
+                and self.state.turn <= Settings.GOAL_RACE_FORCE_TURNS
+            )
             # Critical G1
             if critical_goal_g1:
+                if self._precheck_allowed() and not force_deadline:
+                    best_sv, meta = self._peek_training_best_sv(img, dets, stay_if_above_threshold=True)
+                    if best_sv >= Settings.RACE_PRECHECK_SV:
+                        logger_uma.info(
+                            "[lobby] Goal G1 pre-check skip: sv=%.2f threshold=%.2f meta=%s",
+                            best_sv,
+                            Settings.RACE_PRECHECK_SV,
+                            meta,
+                        )
+                        # Mark that tile is already clicked if optimization applied
+                        reason = f"Pre-check training (G1) sv={best_sv:.2f}"
+                        if meta.get("tile_clicked"):
+                            reason += " [tile_clicked]"
+                        return False, reason
                 return True, f"[lobby] Critical goal G1 | turn={self.state.turn}"
             # Critical Fans
             elif critical_goal_fans:
+                if self._precheck_allowed() and not force_deadline:
+                    best_sv, meta = self._peek_training_best_sv(img, dets, stay_if_above_threshold=True)
+                    if best_sv >= Settings.RACE_PRECHECK_SV:
+                        logger_uma.info(
+                            "[lobby] Goal fans pre-check skip: sv=%.2f threshold=%.2f meta=%s",
+                            best_sv,
+                            Settings.RACE_PRECHECK_SV,
+                            meta,
+                        )
+                        # Mark that tile is already clicked if optimization applied
+                        reason = f"Pre-check training (fans) sv={best_sv:.2f}"
+                        if meta.get("tile_clicked"):
+                            reason += " [tile_clicked]"
+                        return False, reason
                 return True, f"[lobby] Critical goal FANS/MAIDEN | turn={self.state.turn}"
 
         return False, "Unknown"
+
+    def _should_skip_planned_race_for_training(self, img, dets) -> Tuple[bool, str]:
+        if not self._precheck_allowed():
+            return False, "precheck_disabled"
+
+        best_sv, meta = self._peek_training_best_sv(img, dets, stay_if_above_threshold=True)
+        threshold = Settings.RACE_PRECHECK_SV
+        cache_info = f"cache={'hit' if meta.get('cache_hit') else 'miss'}"
+
+        if best_sv >= threshold:
+            logger_uma.info(
+                "[lobby] Planned race pre-check skip: sv=%.2f threshold=%.2f meta=%s",
+                best_sv,
+                threshold,
+                meta,
+            )
+            reason = f"Pre-check training sv={best_sv:.2f} {cache_info}"
+            if meta.get("tile_clicked"):
+                reason += " [tile_clicked]"
+            return True, reason
+
+        logger_uma.info(
+            "[lobby] Planned race pre-check fail: sv=%.2f threshold=%.2f meta=%s",
+            best_sv,
+            threshold,
+            meta,
+        )
+        return False, cache_info
 
     # --------------------------
     # Click helpers (Lobby targets)
@@ -905,29 +1199,203 @@ class LobbyFlow(ABC):
                 tag="recreation_screen",
                 agent=self.waiter.cfg.agent,
             )
-            
+            # Persist a lightweight snapshot of PAL rows (support + chain steps)
+            try:
+                date_key = date_key_from_dateinfo(getattr(self.state, "date_info", None))
+                turn_val = self.state.turn if isinstance(self.state.turn, int) else None
+                # Gather PAL deck names for fuzzy matching (Settings preset deck)
+                try:
+                    pal_deck_names = [
+                        str(e.get("name")).strip()
+                        for e in (getattr(Settings, "SUPPORT_DECK", []) or [])
+                        if str(e.get("attribute", "")).strip().upper() == "PAL"
+                        and str(e.get("name", "")).strip()
+                    ]
+                except Exception:
+                    pal_deck_names = []
+                static_pal_names = ["Riko Kashimoto", "Tazuna Hayakawa", "Aoi Kiryuin"]
+                pal_name_targets = list({*(n for n in static_pal_names if n), *pal_deck_names})
+                # Group items inside each recreation_row by bounding box containment
+                def _center(xyxy):
+                    x1, y1, x2, y2 = xyxy
+                    return (0.5 * (x1 + x2), 0.5 * (y1 + y2))
+
+                def _inside(pt, xyxy):
+                    x, y = pt
+                    x1, y1, x2, y2 = xyxy
+                    return x1 <= x <= x2 and y1 <= y <= y2
+
+                supports = [d for d in dets if isinstance(d.get("name"), str) and d["name"].startswith("support_")]
+                chains = [d for d in dets if d.get("name") == "event_chain"]
+                candidates = []
+                # Iterate rows and persist observations
+                for row in [d for d in dets if d.get('name') == 'recreation_row']:
+                    rxy = row['xyxy']
+                    # Match first support face inside the row
+                    support_det = None
+                    for s in supports:
+                        if _inside(_center(s['xyxy']), rxy):
+                            support_det = s
+                            break
+
+                    # Map detection class to canonical support name for catalog lookups
+                    support_name = None
+                    if support_det:
+                        if support_det['name'] == 'support_kashimoto':
+                            support_name = 'Riko Kashimoto'
+                        elif support_det['name'] == 'support_tazuna':
+                            support_name = 'Tazuna Hayakawa'
+                        elif support_det['name'] == 'support_director':
+                            # Aoi Kiryuin (Director)
+                            support_name = 'Aoi Kiryuin'
+                    # If face class not detected, try OCR name in row (top-half, left area)
+                    if not support_name and self.ocr is not None and pal_name_targets:
+                        try:
+                            x1, y1, x2, y2 = rxy
+                            W = float(x2 - x1)
+                            H = float(y2 - y1)
+                            crop = img.crop((x1, y1, x1 + max(1.0, 0.72 * W), y1 + max(1.0, 0.52 * H)))
+                            raw_txt = self.ocr.text(crop, joiner=" ", min_conf=0.2)
+                            # Remove common UI tokens
+                            blacklist = [
+                                "friendship",
+                                "gauge",
+                                "event progress",
+                                "trainee umamusume",
+                                "cancel",
+                            ]
+                            nt = normalize_ocr_text(raw_txt)
+                            for token in blacklist:
+                                nt = nt.replace(normalize_ocr_text(token), " ")
+                            nt = nt.strip()
+                            if nt:
+                                best, score = fuzzy_best_match(nt, [normalize_ocr_text(n) for n in pal_name_targets])
+                                if best and score >= 0.65:
+                                    # Map back from normalized to original target by index
+                                    idx = [normalize_ocr_text(n) for n in pal_name_targets].index(best)
+                                    support_name = pal_name_targets[idx]
+                        except Exception:
+                            pass
+                    # Final fallback: single PAL in deck and only two rows
+                    if not support_name and len(pal_deck_names) == 1:
+                        # Heuristic: if only two rows exist, top one is likely PAL
+                        # We'll assign the single deck PAL as the candidate name
+                        support_name = pal_deck_names[0]
+
+                    # Count completed chain steps (blue arrows only)
+                    steps_completed = 0
+                    if chains:
+                        chain_in_row = [c for c in chains if _inside(_center(c['xyxy']), rxy)]
+                        cnt = _count_chain_steps(chain_in_row, frame=img)
+                        steps_completed = int(cnt) if cnt is not None else 0
+
+                    next_step = max(1, steps_completed + 1)
+                    energy_expected = None
+                    energy_max = None
+                    if support_name:
+                        energy_expected = predict_next_chain_has_energy_from_raw(
+                            support_name=support_name,
+                            next_step=next_step,
+                            attribute='PAL',
+                        )
+                        try:
+                            from core.utils.event_processor import (
+                                predict_next_chain_max_energy_from_raw,
+                            )
+                            energy_max = predict_next_chain_max_energy_from_raw(
+                                support_name=support_name,
+                                next_step=next_step,
+                                attribute='PAL',
+                            )
+                        except Exception:
+                            energy_max = None
+
+                    # Persist using detection key as the dictionary key (stable class name)
+                    key = (support_det['name'] if support_det else None)
+                    if key:
+                        self.pal_memory.record_chain_snapshot(
+                            key,
+                            steps=max(0, int(steps_completed)),
+                            date_key=date_key,
+                            turn=turn_val,
+                            next_energy=(bool(energy_expected) if energy_expected is not None else None),
+                            commit=False,
+                        )
+                        # Score this row
+                        # Determine if row appears active
+                        try:
+                            crop = img.crop(rxy)
+                            clf = ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH)
+                            is_active = bool(clf.predict(crop))
+                        except Exception:
+                            is_active = True
+                        score = 0.0
+                        energy_val = self.state.energy if isinstance(self.state.energy, (int, float)) else None
+                        energy_need = energy_val is not None and energy_val <= float(self.auto_rest_minimum)
+                        if energy_need and energy_expected:
+                            score += 10.0
+                        if not energy_need:
+                            sclass = str(key)
+                            if sclass == 'support_kashimoto':
+                                score += 3.0
+                            elif sclass == 'support_tazuna':
+                                score += 2.0
+                            elif sclass == 'support_director':
+                                score += 1.0
+                        if energy_val is not None and energy_max is not None:
+                            try:
+                                if energy_val + int(energy_max) > 100:
+                                    score -= 1.0
+                            except Exception:
+                                pass
+                        if is_active:
+                            score += 0.5
+                        candidates.append((score, row))
+                # Persist once after processing all rows
+                self.pal_memory.save()
+            except Exception as e:
+                logger_uma.debug(f"[pal] snapshot failed: {e}")
+
             # Check for recreation rows in detections
             recreation_rows = [d for d in dets if d.get('name') == 'recreation_row']
-            
+
             if recreation_rows:
-                # Sort rows by y-coordinate (top to bottom)
-                recreation_rows.sort(key=lambda r: r['xyxy'][1])
-                
-                # Try each row until we find an active one or run out of rows
-                for row in recreation_rows:                    
-                    # Check if the row is active
-                    crop = img.crop(row['xyxy'])
-                    clf = ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH)
-                    is_active = clf.predict(crop)
-                    
+                # Always filter out inactive rows first to avoid clicking completed PAL chains
+                active_rows = []
+                clf = ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH)
+                for row in recreation_rows:
+                    try:
+                        crop = img.crop(row['xyxy'])
+                        is_active = bool(clf.predict(crop))
+                    except Exception:
+                        is_active = True
                     if is_active:
-                        # Click the active row
-                        self.ctrl.click_xyxy_center(row['xyxy'])
-                        logger_uma.info("[lobby] Selected active recreation row")
-                        time.sleep(0.5)  # Wait for any animation
-                        break
-                    else:
-                        logger_uma.info("[lobby] Skipping inactive recreation row")
+                        active_rows.append(row)
+                
+                chosen = None
+                if candidates:
+                    # Filter candidates to only include active rows
+                    active_candidates = [(score, row) for score, row in candidates if row in active_rows]
+                    if active_candidates:
+                        active_candidates.sort(key=lambda x: float(x[0]), reverse=True)
+                        chosen = active_candidates[0][1]
+                        logger_uma.info("[lobby] Selected PAL recreation row (scored)")
+                    elif active_rows:
+                        # Fallback: pick first active row if no scored candidates remain
+                        active_rows.sort(key=lambda r: r['xyxy'][1])
+                        chosen = active_rows[0]
+                        logger_uma.info("[lobby] Selected first active recreation row (fallback)")
+                elif active_rows:
+                    # No PAL candidates, pick first active row
+                    active_rows.sort(key=lambda r: r['xyxy'][1])
+                    chosen = active_rows[0]
+                    logger_uma.info("[lobby] Selected first active recreation row")
+                
+                if chosen is not None:
+                    self.ctrl.click_xyxy_center(chosen['xyxy'])
+                    time.sleep(0.5)
+                else:
+                    logger_uma.warning("[lobby] No active recreation rows found, skipping click")
                 
             time.sleep(2)
         return click
@@ -956,8 +1424,11 @@ class LobbyFlow(ABC):
             time.sleep(2)
         return click
 
-    def _go_training_screen_from_lobby(self, img, dets) -> bool:
-        logger_uma.info("[lobby] No critical actions → go Train")
+    def _go_training_screen_from_lobby(self, img, dets, reason: Optional[str] = None) -> bool:
+        if reason:
+            logger_uma.info("[lobby] %s → go Train", reason)
+        else:
+            logger_uma.info("[lobby] No critical actions → go Train")
         clicked = self.waiter.click_when(
             classes=("lobby_training",),
             prefer_bottom=True,

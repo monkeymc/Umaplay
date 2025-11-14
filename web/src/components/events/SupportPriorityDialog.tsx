@@ -24,10 +24,16 @@ import { useEventsSetupStore } from '@/store/eventsSetupStore'
 import { useQuery } from '@tanstack/react-query'
 import { fetchSkills } from '@/services/api'
 
-const DEFAULT_PRIORITY: SupportPriority = {
+const DEFAULT_PRIORITY_URA: SupportPriority = {
   enabled: true,
   scoreBlueGreen: 0.75,
   scoreOrangeMax: 0.5,
+}
+
+const DEFAULT_PRIORITY_UNITY: SupportPriority = {
+  enabled: true,
+  scoreBlueGreen: 0.5,
+  scoreOrangeMax: 0.25,
 }
 
 type Props = {
@@ -38,15 +44,20 @@ type Props = {
 
 export default function SupportPriorityDialog({ open, support, onClose }: Props) {
   const setSupportPriority = useEventsSetupStore((s) => s.setSupportPriority)
+  const scenario = useEventsSetupStore((s) => s.setup.scenario)
+  const activeDefaults = useMemo<SupportPriority>(() => {
+    if (scenario?.name === 'Unity Cup') return DEFAULT_PRIORITY_UNITY
+    return DEFAULT_PRIORITY_URA
+  }, [scenario?.name])
   const slot = support?.slot ?? -1
   const current = useMemo<SupportPriority>(() => {
-    if (!support?.priority) return DEFAULT_PRIORITY
+    if (!support?.priority) return activeDefaults
     return {
       enabled: support.priority.enabled,
       scoreBlueGreen: support.priority.scoreBlueGreen,
       scoreOrangeMax: support.priority.scoreOrangeMax,
     }
-  }, [support])
+  }, [support, activeDefaults])
 
   const [enabled, setEnabled] = useState(current.enabled)
   const [scoreBlueGreen, setScoreBlueGreen] = useState<number>(current.scoreBlueGreen)
@@ -92,7 +103,7 @@ export default function SupportPriorityDialog({ open, support, onClose }: Props)
   }
 
   const handleReset = () => {
-    const defaults = DEFAULT_PRIORITY
+    const defaults = activeDefaults
     setEnabled(defaults.enabled)
     setScoreBlueGreen(defaults.scoreBlueGreen)
     setScoreOrangeMax(defaults.scoreOrangeMax)

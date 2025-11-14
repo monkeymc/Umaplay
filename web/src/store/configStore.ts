@@ -1,6 +1,6 @@
 import { create } from 'zustand'
-import { appConfigSchema, defaultAppConfig, defaultGeneral, defaultPreset, defaultEventSetup } from '@/models/config.schema'
-import type { AppConfig, GeneralConfig, Preset, ScenarioConfig } from '@/models/types'
+import { appConfigSchema, defaultAppConfig, defaultGeneral, defaultPreset, defaultEventSetup, defaultUnityCupAdvanced, unityCupAdvancedSchema } from '@/models/config.schema'
+import type { AppConfig, GeneralConfig, Preset, ScenarioConfig, UnityCupAdvancedSettings } from '@/models/types'
 
 const LS_KEY = 'uma:config:v1'
 
@@ -25,6 +25,10 @@ type Actions = {
   copyPreset: (id: string) => void
   deletePreset: (id: string) => void
   renamePreset: (id: string, name: string) => void
+  setPresetGroup: (id: string, group: string | null) => void
+  renamePresetGroup: (oldName: string, newName: string) => void
+  deletePresetGroup: (name: string) => void
+  reorderPresets: (order: string[]) => void
   patchPreset: <K extends keyof Preset>(id: string, key: K, value: Preset[K]) => void
   replaceConfig: (cfg: AppConfig) => void
   saveLocal: () => void
@@ -40,12 +44,22 @@ const newId = () => (crypto?.randomUUID?.() ?? Math.random().toString(36).slice(
 const normalizeScenario = (value: unknown): 'ura' | 'unity_cup' =>
   value === 'unity_cup' ? 'unity_cup' : 'ura'
 
-function normalizePreset(raw: any, general: Partial<GeneralConfig> | undefined): Preset {
-  const base = defaultPreset(raw?.id ?? newId(), raw?.name ?? 'Preset')
+function normalizePreset(raw: any, general: Partial<GeneralConfig> | undefined, scenario: 'ura' | 'unity_cup'): Preset {
+  const base = defaultPreset(raw?.id ?? newId(), raw?.name ?? 'Preset', scenario)
   const fallbackSkillPts = Number((general as any)?.skillPtsCheck ?? 600)
   const skillPts = Number.isFinite(Number(raw?.skillPtsCheck))
     ? Math.max(0, Number(raw?.skillPtsCheck))
     : Math.max(0, fallbackSkillPts)
+
+  let unityCupAdvanced: UnityCupAdvancedSettings | undefined
+  if (scenario === 'unity_cup') {
+    try {
+      const parsed = unityCupAdvancedSchema.parse(raw?.unityCupAdvanced ?? base.unityCupAdvanced ?? defaultUnityCupAdvanced())
+      unityCupAdvanced = parsed
+    } catch {
+      unityCupAdvanced = defaultUnityCupAdvanced()
+    }
+  }
 
   return {
     ...base,
@@ -58,6 +72,7 @@ function normalizePreset(raw: any, general: Partial<GeneralConfig> | undefined):
         ? raw.prioritizeHint
         : !!(general as any)?.prioritizeHint,
     event_setup: raw?.event_setup ?? base.event_setup,
+    unityCupAdvanced: unityCupAdvanced ?? base.unityCupAdvanced,
   }
 }
 
@@ -90,7 +105,7 @@ const migrateConfig = (cfg: AppConfig): AppConfig => {
   console.log('[MIGRATE] Legacy activePresetId:', legacyActive)
   
   if (Array.isArray(legacyPresets)) {
-    const normalized = legacyPresets.map((p: any) => normalizePreset(p, cfg.general))
+    const normalized = legacyPresets.map((p: any) => normalizePreset(p, cfg.general, 'ura'))
     scenarios.ura = {
       presets: normalized,
       activePresetId:
@@ -102,7 +117,7 @@ const migrateConfig = (cfg: AppConfig): AppConfig => {
   for (const key of Object.keys(scenarios)) {
     const branch = scenarios[key] ?? { presets: [], activePresetId: undefined }
     const normalizedPresets = Array.isArray(branch.presets)
-      ? branch.presets.map((p: any) => normalizePreset(p, cfg.general))
+      ? branch.presets.map((p: any) => normalizePreset(p, cfg.general, key as 'ura' | 'unity_cup'))
       : []
     const activeId = branch.activePresetId && normalizedPresets.find((p) => p.id === branch.activePresetId)
       ? branch.activePresetId
@@ -222,7 +237,7 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
     set((s) => {
       const { key, branch, map } = resolveScenario(s.config, s.uiScenarioKey)
       const preset: Preset = {
-        ...defaultPreset(newId(), `Preset ${(branch.presets?.length ?? 0) + 1}`),
+        ...defaultPreset(newId(), `Preset ${(branch.presets?.length ?? 0) + 1}`, key),
         event_setup: defaultEventSetup(),
       }
       const presets = [...branch.presets, preset]
@@ -245,6 +260,9 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
         id: newId(),
         name: src.name + ' (copy)',
         event_setup: JSON.parse(JSON.stringify(src.event_setup ?? defaultEventSetup())),
+        unityCupAdvanced: src.unityCupAdvanced
+          ? JSON.parse(JSON.stringify(src.unityCupAdvanced))
+          : src.unityCupAdvanced,
       }
       const presets = [...branch.presets, clone]
       return {
@@ -262,7 +280,7 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
       const left = branch.presets.filter((p) => p.id !== id)
       const presets = left.length
         ? left
-        : [{ ...defaultPreset(newId(), 'Preset 1'), event_setup: defaultEventSetup() }]
+        : [{ ...defaultPreset(newId(), 'Preset 1', key), event_setup: defaultEventSetup() }]
       const nextSelected = presets[presets.length - 1]?.id
       const nextActive = presets.find((p) => p.id === branch.activePresetId)
         ? branch.activePresetId
@@ -287,6 +305,98 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
             [key]: {
               ...branch,
               presets: branch.presets.map((p) => (p.id === id ? { ...p, name } : p)),
+            },
+          },
+        },
+      }
+    }),
+
+  setPresetGroup: (id, group) =>
+    set((s) => {
+      const { key, branch, map } = resolveScenario(s.config, s.uiScenarioKey)
+      return {
+        config: {
+          ...s.config,
+          scenarios: {
+            ...map,
+            [key]: {
+              ...branch,
+              presets: branch.presets.map((p) => (p.id === id ? { ...p, group } : p)),
+            },
+          },
+        },
+      }
+    }),
+
+  renamePresetGroup: (oldName, newName) =>
+    set((s) => {
+      if (!oldName || oldName === newName) return {}
+      const { key, branch, map } = resolveScenario(s.config, s.uiScenarioKey)
+      return {
+        config: {
+          ...s.config,
+          scenarios: {
+            ...map,
+            [key]: {
+              ...branch,
+              presets: branch.presets.map((p) =>
+                (p as any).group === oldName ? { ...p, group: newName } : p,
+              ),
+            },
+          },
+        },
+      }
+    }),
+
+  deletePresetGroup: (name) =>
+    set((s) => {
+      if (!name) return {}
+      const { key, branch, map } = resolveScenario(s.config, s.uiScenarioKey)
+      return {
+        config: {
+          ...s.config,
+          scenarios: {
+            ...map,
+            [key]: {
+              ...branch,
+              presets: branch.presets.map((p) =>
+                (p as any).group === name ? { ...p, group: null } : p,
+              ),
+            },
+          },
+        },
+      }
+    }),
+
+  reorderPresets: (order) =>
+    set((s) => {
+      const { key, branch, map } = resolveScenario(s.config, s.uiScenarioKey)
+      const idToPreset = new Map<string, Preset>()
+      for (const p of branch.presets) {
+        idToPreset.set(p.id, p)
+      }
+      const next: Preset[] = []
+      for (const id of order) {
+        const p = idToPreset.get(id)
+        if (p) {
+          next.push(p)
+          idToPreset.delete(id)
+        }
+      }
+      for (const p of branch.presets) {
+        if (idToPreset.has(p.id)) {
+          next.push(p)
+          idToPreset.delete(p.id)
+        }
+      }
+      return {
+        config: {
+          ...s.config,
+          scenarios: {
+            ...map,
+            [key]: {
+              ...branch,
+              presets: next,
             },
           },
         },

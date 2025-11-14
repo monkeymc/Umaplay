@@ -65,6 +65,7 @@ class ScreenInfo(TypedDict, total=False):
     rest_summer: bool
     recreation: bool
     recreation_present: bool
+    pal_available: bool
     race_day: bool
     has_lobby_skills: bool
     race_after_next: bool

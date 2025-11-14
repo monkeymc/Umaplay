@@ -27,6 +27,7 @@ from core.utils.event_processor import UserPrefs
 from core.actions.unity_cup.lobby import LobbyFlowUnityCup
 from core.utils.geometry import crop_pil
 from core.perception.is_button_active import ActiveButtonClassifier
+from core.utils.race_index import unity_cup_preseason_index
 import time
 import random
 from core.types import TrainAction
@@ -97,12 +98,16 @@ class AgentUnityCup(AgentScenario):
             ),
         )
 
+        # Track Unity Cup opponent stage count
+        self._unity_cup_race_stage: int = 0
+
     def run(self, *, delay: float = 0.4, max_iterations: int | None = None) -> None:
         self.ctrl.focus()
         self.is_running = True
 
         # Ensure memory metadata is aligned at the start of a run
         self._refresh_skill_memory()
+        self._unity_cup_race_stage = 0
 
         while self.is_running:
             # Hard-stop hook (F2)
@@ -250,7 +255,11 @@ class AgentUnityCup(AgentScenario):
                 self._consecutive_event_stale_clicks = 0
                 # pass what we know about current energy (may be None if not read yet)
                 self.lobby.state.energy = extract_energy_pct(img, dets)
-                curr_energy = self.lobby.state.energy or 100
+                curr_energy = (
+                    self.lobby.state.energy
+                    if isinstance(self.lobby.state.energy, (int, float))
+                    else None
+                )
                 decision = self.event_flow.process_event_screen(
                     img,
                     dets,
@@ -440,11 +449,42 @@ class AgentUnityCup(AgentScenario):
                         banners = banners[:3]
                         banners.sort(key=lambda d: d["xyxy"][1])  # top → bottom @core/actions/team_trials.py#94-125
 
-                        # second position by default
-                        idx = 1 if len(banners) > 1 else len(banners) - 1
+                        # Determine preferred slot from preset advanced settings
+                        # Prefer date-based race index when available; otherwise, use the
+                        # user's defaultUnknown setting instead of guessing a stage counter.
+                        date_info = getattr(self.lobby.state, "date_info", None)
+                        stage_idx = unity_cup_preseason_index(date_info)
+                        if stage_idx is None:
+                            # Still advance the internal counter for logging/telemetry only
+                            self._unity_cup_race_stage += 1
+
+                        selection_cfg = Settings.UNITY_CUP_ADVANCED if isinstance(Settings.UNITY_CUP_ADVANCED, dict) else {}
+                        opponent_selection = selection_cfg.get("opponentSelection") if isinstance(selection_cfg, dict) else None
+                        if not isinstance(opponent_selection, dict):
+                            opponent_selection = {}
+
+                        slot_pref = None
+                        if stage_idx is not None:
+                            stage_key = f"race{stage_idx}"
+                            slot_pref = opponent_selection.get(stage_key)
+                        if slot_pref is None:
+                            slot_pref = opponent_selection.get("defaultUnknown", 2)
+                        try:
+                            slot_pref = int(slot_pref)
+                        except (TypeError, ValueError):
+                            slot_pref = 2
+                        slot_pref = max(1, min(3, slot_pref))
+                        idx = slot_pref - 1
+                        if idx >= len(banners):
+                            idx = min(len(banners) - 1, max(0, idx))
+
                         target = banners[idx]
                         self.ctrl.click_xyxy_center(target["xyxy"], clicks=1)
-                        logger_uma.info("[UnityCup] Clicked opponent banner slot=%d", idx + 1)
+                        logger_uma.info(
+                            "[UnityCup] Clicked opponent banner stage=%d slot=%d",
+                            self._unity_cup_race_stage,
+                            idx + 1,
+                        )
 
                         if self.waiter.click_when(
                             classes=("button_green",),
@@ -578,9 +618,19 @@ class AgentUnityCup(AgentScenario):
                         f"[lobby] goal='{self.lobby.state.goal}' | energy={self.lobby.state.energy} | "
                         f"skill_pts={self.lobby.state.skill_pts} | turn={self.lobby.state.turn} | "
                         f"summer={self.lobby.state.is_summer} | mood={self.lobby.state.mood} | stats={self.lobby.state.stats} |"
+                        f"infirmary={self.lobby.state.infirmary_on}"
                     )
                     # sleep(1.0)
                     self.handle_training()
+                    continue
+
+                if outcome == "TRAINING_READY":
+                    logger_uma.info(
+                        f"[lobby] Pre-check tile already clicked, waiting for confirm | reason={reason}"
+                    )
+                    # Tile already clicked by pre-check, just wait for the normal flow
+                    # The agent will detect TrainingConfirm screen and handle it
+                    sleep(1.5)  # Give time for UI to settle
                     continue
 
                 # For other outcomes ("INFIRMARY", "RESTED", "CONTINUE") we just loop

@@ -115,7 +115,7 @@ Make sure you meet these conditions:
    ```bash
    conda create -n env_uma python==3.10
    conda activate env_uma
-   pip install -r requirements.txt
+   python -m pip install -r requirements.txt
    ```
    - Type `y` and press Enter if prompted to proceed
    - This may take several minutes to complete

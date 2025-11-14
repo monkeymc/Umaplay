@@ -1,13 +1,14 @@
 # core/actions/unity_cup/training_policy.py
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Sequence, Tuple, cast
+from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
 
 from core.types import TrainAction
 from core.constants import DEFAULT_TILE_TO_TYPE, MOOD_MAP
 from core.types import MoodName
 from core.utils.date_uma import (
     DateInfo,
+    date_index,
     is_final_season,
     is_junior_year,
     is_pre_debut,
@@ -54,6 +55,9 @@ def decide_action_training(
     skip_race=False,
     # Runtime settings from preset
     race_if_no_good_value: bool = False,
+    weak_turn_sv: Optional[float] = None,
+    junior_minimal_mood: Optional[str] = None,
+    pal_recreation_hint: bool = False,
 ) -> Tuple[TrainAction, Optional[int], str]:
     """
     Return the decided action and the target tile index (or None when not applicable).
@@ -125,6 +129,186 @@ def decide_action_training(
             )
         ]
 
+    adv_cfg = Settings.UNITY_CUP_ADVANCED if isinstance(Settings.UNITY_CUP_ADVANCED, dict) else {}
+    try:
+        allowed_burst_stats = {str(s).upper() for s in adv_cfg.get("burst_allowed_stats", [])}
+    except Exception:
+        allowed_burst_stats = set()
+    if not allowed_burst_stats:
+        allowed_burst_stats = {"SPD", "STA", "PWR", "GUTS", "WIT"}
+
+    multipliers_cfg = adv_cfg.get("multipliers", {}) if isinstance(adv_cfg, dict) else {}
+
+    def _phase_multiplier(group: str, key: str, default: float = 1.0) -> float:
+        try:
+            return float(multipliers_cfg.get(group, {}).get(key, default))
+        except (TypeError, ValueError):
+            return default
+
+    deadline_cfg = adv_cfg.get("burstDeadline", {}) if isinstance(adv_cfg, dict) else {}
+    try:
+        pre_senior_deadline_turns = int(deadline_cfg.get("preSeniorNovEarlyTurns", 4))
+    except (TypeError, ValueError):
+        pre_senior_deadline_turns = 4
+    try:
+        final_season_last_turns = int(deadline_cfg.get("finalSeasonExplodeLastTurns", 2))
+    except (TypeError, ValueError):
+        final_season_last_turns = 2
+
+    def _scale_contributions(row: Dict[str, Any], keys: List[str], multiplier: float, note_label: Optional[str] = None) -> None:
+        if multiplier == 1.0:
+            return
+        sv_map = row.get("sv_by_type") or {}
+        if not isinstance(sv_map, dict):
+            return
+        delta_total = 0.0
+        for key in keys:
+            try:
+                original = float(sv_map.get(key, 0.0))
+            except (TypeError, ValueError):
+                original = 0.0
+            if not original:
+                continue
+            adjusted = original * multiplier
+            sv_map[key] = adjusted
+            delta_total += adjusted - original
+        if delta_total:
+            row["sv_total"] = max(0.0, float(row.get("sv_total", 0.0)) + delta_total)
+            notes = row.get("notes")
+            if isinstance(notes, list) and note_label:
+                notes.append(f"{note_label}: ×{multiplier:.2f}")
+
+    def _remove_blue_contrib(row: Dict[str, Any], reason: str) -> None:
+        sv_map = row.get("sv_by_type") or {}
+        if not isinstance(sv_map, dict):
+            return
+        removed = 0.0
+        for key in ("spirits_blue", "spirit_combo_blue"):
+            try:
+                value = float(sv_map.get(key, 0.0))
+            except (TypeError, ValueError):
+                value = 0.0
+            if not value:
+                continue
+            removed += value
+            sv_map[key] = 0.0
+        if removed:
+            row["sv_total"] = max(0.0, float(row.get("sv_total", 0.0)) - removed)
+            notes = row.get("notes")
+            if isinstance(notes, list):
+                notes.append(f"Blue burst suppressed: {reason}")
+            sv_map["meta_blue_suppressed"] = 1.0
+
+    def _is_within_pre_senior_window(di: DateInfo | None) -> bool:
+        if not isinstance(di, DateInfo):
+            return False
+        if pre_senior_deadline_turns <= 0:
+            return False
+        if di.year_code != 3:
+            return False
+        try:
+            target = DateInfo(raw="Senior Nov Early", year_code=3, month=11, half=1)
+        except TypeError:
+            return False
+        current_idx = date_index(di)
+        target_idx = date_index(target)
+        if current_idx is None or target_idx is None:
+            return False
+        diff = target_idx - current_idx
+        return 0 <= diff <= pre_senior_deadline_turns
+
+    phase_name: Optional[str] = None
+    if isinstance(di, DateInfo):
+        if di.year_code in (0, 1, 2):
+            phase_name = "juniorClassic"
+        elif di.year_code == 3:
+            phase_name = "senior"
+
+    pre_senior_window = _is_within_pre_senior_window(di)
+    final_season_force = bool(
+        is_final_season(di)
+        and isinstance(turns_left, (int, float))
+        and turns_left >= 0
+        and final_season_last_turns > 0
+        and turns_left <= final_season_last_turns
+    )
+
+    for row in sv_rows:
+        sv_map = row.get("sv_by_type") or {}
+        if not isinstance(sv_map, dict):
+            continue
+        tile_idx = row.get("tile_idx")
+        try:
+            tile_idx_int = int(tile_idx)
+        except (TypeError, ValueError):
+            continue
+        stat = _stat_of_tile(tile_idx_int)
+        stat_allowed = stat in allowed_burst_stats
+        stat_is_capped = stat in capped_stats
+        notes = row.get("notes")
+        if not isinstance(notes, list):
+            notes = []
+            row["notes"] = notes
+        blue_total_units = float(sv_map.get("meta_blue_total_units", 0.0) or 0.0)
+        if blue_total_units > 0.0:
+            if not final_season_force:
+                if not stat_allowed:
+                    _remove_blue_contrib(row, "stat not in burst allowlist")
+                    # Hard-block this tile from being picked under normal policy
+                    row["allowed_by_risk"] = False
+                    logger_uma.debug("Tile blocked: blue burst on disallowed stat")
+                        
+                    if isinstance(notes, list):
+                        notes.append("Tile blocked: blue burst on disallowed stat")
+                elif stat_is_capped:
+                    _remove_blue_contrib(row, "stat already at cap")
+                    # Avoid exploding blue on overtrained stats under normal policy
+                    row["allowed_by_risk"] = False
+                    logger_uma.debug("Tile blocked: blue burst on capped stat")
+                    
+                    if isinstance(notes, list):
+                        notes.append("Tile blocked: blue burst on capped stat")
+            else:
+                notes.append("Final season burst override active")
+        row["sv_total"] = max(0.0, float(row.get("sv_total", 0.0)))
+
+        # Apply seasonal multipliers
+        if phase_name == "juniorClassic":
+            _scale_contributions(row, ["spirits_white"], _phase_multiplier("juniorClassic", "white"), "Junior/Classic white boost")
+            _scale_contributions(row, ["spirit_combo_white"], _phase_multiplier("juniorClassic", "whiteCombo"), "Junior/Classic white combo boost")
+            _scale_contributions(row, ["spirit_combo_blue"], _phase_multiplier("juniorClassic", "blueCombo"), "Junior/Classic blue combo boost")
+        elif phase_name == "senior":
+            _scale_contributions(row, ["spirits_white"], _phase_multiplier("senior", "white"), "Senior white adjust")
+            _scale_contributions(row, ["spirit_combo_white"], _phase_multiplier("senior", "whiteCombo"), "Senior white combo adjust")
+            _scale_contributions(row, ["spirit_combo_blue"], _phase_multiplier("senior", "blueCombo"), "Senior blue combo adjust")
+
+        # Deadline boosts for blue bursts
+        blue_multiplier_deadline = 1.0
+        if pre_senior_window:
+            blue_multiplier_deadline = max(blue_multiplier_deadline, 2.0)
+        if final_season_force:
+            blue_multiplier_deadline = max(blue_multiplier_deadline, 3.0)
+        if blue_multiplier_deadline > 1.0:
+            _scale_contributions(row, ["spirits_blue", "spirit_combo_blue"], blue_multiplier_deadline, "Blue burst deadline boost")
+
+        # For debugging, surface how seasonal multipliers changed SV.
+        try:
+            base_sv = float(sv_map.get("meta_sv_base_unity", row.get("sv_total", 0.0)))
+        except (TypeError, ValueError):
+            base_sv = float(row.get("sv_total", 0.0))
+        try:
+            effective_sv = float(row.get("sv_total", 0.0))
+        except (TypeError, ValueError):
+            effective_sv = base_sv
+        if effective_sv != base_sv:
+            notes = row.get("notes")
+            if isinstance(notes, list):
+                notes.append(
+                    f"Season multipliers applied: base SV={base_sv:.2f}  effective SV={effective_sv:.2f}"
+                )
+            sv_map["meta_sv_effective_unity"] = effective_sv
+
+    allowed_rows = [r for r in sv_rows if r.get("allowed_by_risk", False)]
     allowed_rows_filtered = _exclude_capped(allowed_rows)
 
     # WIT helpers respect caps too
@@ -204,7 +388,11 @@ def decide_action_training(
 
     PRIORITY_SV_DIFF_THRESHOLD = 0.75
     PRIORITY_TOP3_MIN_SV = 0.5
-    PRIORITY_EXCEPTIONAL_SV = 4.1
+    PRIORITY_EXCEPTIONAL_SV = 4.5
+
+    effective_minimal_mood = minimal_mood
+    if junior_minimal_mood and is_junior_year(di) and energy_pct < 90:
+        effective_minimal_mood = junior_minimal_mood
 
     def _apply_priority_guard(candidate_idx: Optional[int], *, context: str) -> Optional[int]:
         if candidate_idx is None or top3_tile_idx is None:
@@ -245,33 +433,38 @@ def decide_action_training(
     MAX_SV_GAP = 1.25
 
     try:
-        # Consider only known stats (ignore -1/0)
-        keys = ["SPD", "STA", "PWR", "GUTS", "WIT"]
-        known_keys = [k for k in keys if max(0, int(stats.get(k, -1))) > 0]
+        known_keys = [k for k in ["SPD", "STA", "PWR", "GUTS", "WIT"] if max(0, int(stats.get(k, -1))) > 0]
+
+        # Skip undertrain check if junior/pre-debut with mood below target minimal mood
+        skip_undertrain_for_mood = False
+        if junior_minimal_mood and (is_junior_year(di) or is_pre_debut(di)):
+            junior_mood_key = str(junior_minimal_mood).upper()
+            junior_mood_lookup: MoodName = (
+                cast(MoodName, junior_mood_key)
+                if junior_mood_key in MOOD_MAP
+                else "UNKNOWN"
+            )
+            junior_min_score = MOOD_MAP.get(junior_mood_lookup, 3)
+            if mood_score != -1 and mood_score < junior_min_score:
+                skip_undertrain_for_mood = True
+                because(
+                    f"Junior/pre-debut with mood {mood_txt} below target {junior_minimal_mood} → skip undertrain check, prioritize mood recovery"
+                )
 
         # If hint is important ignore undertrain stat check, prioritize hint
-        if known_keys and not (Settings.HINT_IS_IMPORTANT and len(hint_tiles) > 0):
+        if known_keys and not (Settings.HINT_IS_IMPORTANT and len(hint_tiles) > 0) and not skip_undertrain_for_mood:
             # Normalize reference to the same subset
             ref_sum = sum(max(0, int(reference_stats.get(k, 0))) for k in known_keys)
             cur_sum = sum(max(0, int(stats.get(k, 0))) for k in known_keys)
 
             if ref_sum > 0 and cur_sum > 0:
-                ref_dist = {
-                    k: max(0, int(reference_stats.get(k, 0))) / ref_sum
-                    for k in known_keys
-                }
-                cur_dist = {
-                    k: max(0, int(stats.get(k, 0))) / cur_sum for k in known_keys
-                }
-                deltas = {
-                    k: ref_dist[k] - cur_dist[k] for k in known_keys
-                }  # +ve → undertrained
+                ref_dist = {k: max(0, int(reference_stats.get(k, 0))) / ref_sum for k in known_keys}
+                cur_dist = {k: max(0, int(stats.get(k, 0))) / cur_sum for k in known_keys}
+                deltas = {k: ref_dist[k] - cur_dist[k] for k in known_keys}
                 logger_uma.debug(f"STATS deltas respect 'ideal' distribution: {deltas}")
                 # Get the top N stats to focus on, based on priority_stats or default order
                 default_priority = ["SPD", "STA", "WIT", "PWR", "GUTS"]
-                effective_priority = (
-                    priority_stats if priority_stats else default_priority
-                )
+                effective_priority = priority_stats if priority_stats else default_priority
                 top_n = effective_priority[: Settings.TOP_STATS_FOCUS]
 
                 # Log which stats we're focusing on
@@ -313,15 +506,13 @@ def decide_action_training(
                     top_allowed_idx = best_allowed_any
                     top_allowed_sv = sv_of(top_allowed_idx)
 
-                    # Best allowed tile for that specific stat
-                    def _best_tile_of_type(
-                        rows, stat: str, min_sv: float, tmap: Dict[int, str]
-                    ):
+                    def _best_tile_focus(
+                        rows: Sequence[Dict], stat: str, min_sv: float, tmap: Dict[int, str]
+                    ) -> Tuple[Optional[int], float]:
                         pool = [
                             r
                             for r in rows
-                            if str(tmap.get(int(r["tile_idx"]), "")).upper()
-                            == stat.upper()
+                            if str(tmap.get(int(r["tile_idx"]), "")).upper() == stat.upper()
                             and float(r.get("sv_total", 0.0)) >= min_sv
                         ]
                         if not pool:
@@ -329,8 +520,7 @@ def decide_action_training(
                         rbest = max(pool, key=lambda rr: float(rr.get("sv_total", 0.0)))
                         return int(rbest["tile_idx"]), float(rbest.get("sv_total", 0.0))
 
-                    # respect caps here by using allowed_rows_filtered
-                    under_idx, under_sv = _best_tile_of_type(
+                    under_idx, under_sv = _best_tile_focus(
                         allowed_rows_filtered, under_stat, -1.0, tile_to_type
                     )
 
@@ -382,8 +572,10 @@ def decide_action_training(
         logger_uma.error(f"Distribution check skipped due to stats error: {_e}")
     # 1) If max SV option is >= 2.5 → select TRAIN_MAX (tie → priority order)
     if best_allowed_tile_25 is not None:
+        # sv of best_allowed_tile_25
+        max_pick_tile_25 = sv_of(best_allowed_tile_25)
         because(
-            f"Top SV ≥ {max_pick_sv_top} allowed by risk → pick tile {best_allowed_tile_25}"
+            f"Top SV ({max_pick_tile_25}) ≥ {max_pick_sv_top} allowed by risk → pick tile {best_allowed_tile_25}"
         )
         target_tile = _apply_priority_guard(
             best_allowed_tile_25, context=f"SV ≥ {max_pick_sv_top}"
@@ -454,8 +646,8 @@ def decide_action_training(
     because(
         f"Not a IMPRESIVE option to train (>= {max_pick_sv_top} in SV)"
     )
-    # 2) Mood check → recreation
-    minimal_mood_key = str(minimal_mood).upper()
+
+    minimal_mood_key = str(effective_minimal_mood).upper()
     mood_lookup_key: MoodName = (
         cast(MoodName, minimal_mood_key)
         if minimal_mood_key in MOOD_MAP
@@ -468,7 +660,7 @@ def decide_action_training(
         and mood_score < MOOD_MAP["GREAT"]
     ):
         because(
-            f"Mood {mood_txt} below minimal {minimal_mood} and < GREAT → recreation"
+            f"Mood {mood_txt} below minimal {effective_minimal_mood} and < GREAT → recreation"
         )
         return (TrainAction.RECREATION, None, "; ".join(reasons))
     else:
@@ -508,8 +700,9 @@ def decide_action_training(
 
     # 6) If max SV option >= 2.0 → TRAIN_MAX
     if best_allowed_tile_20 is not None:
+        best_allowed_tile_20_sv = sv_of(best_allowed_tile_20)
         because(
-            f"Top SV ≥ {next_pick_sv_top} allowed by risk → tile {best_allowed_tile_20}"
+            f"Top SV {best_allowed_tile_20_sv} ≥ {next_pick_sv_top} allowed by risk → tile {best_allowed_tile_20}"
         )
         target_tile = _apply_priority_guard(
             best_allowed_tile_20, context=f"SV ≥ {next_pick_sv_top}"
@@ -613,6 +806,9 @@ def decide_action_training(
 
     # 8) If energy <= 35% → REST
     if energy_pct <= energy_rest_gate_lo:
+        if pal_recreation_hint and not is_final_season(di):
+            because("Low energy and PAL available → prefer recreation over rest")
+            return (TrainAction.RECREATION, None, "; ".join(reasons))
         because(f"Energy {energy_pct}% ≤ {energy_rest_gate_lo}% → rest")
         return (TrainAction.REST, None, "; ".join(reasons))
 
@@ -635,7 +831,7 @@ def decide_action_training(
         return (TrainAction.TRAIN_WIT, best_wit_low, "; ".join(reasons))
 
     because("There is no value in training WIT unless no good option in top 3 stats")
-    # 12) If max SV ≥ 1.5 → TRAIN_MAX
+    # 12) If max SV ≥ 2 → TRAIN_MAX
     best_allowed_tile_15 = best_tile(
         allowed_rows_filtered,
         min_sv=late_pick_sv_top,
@@ -740,15 +936,77 @@ def decide_action_training(
     if is_summer(di) and best_wit_any:
         because("Fallback (Summer): WIT to skip turn and get stats")
         return (TrainAction.TRAIN_WIT, best_wit_any, "; ".join(reasons))
-    elif energy_pct <= 70:
-        because(
-            "Weak Turn, Opportunity cost if racing Instead of WIT, selecting rest because we can recover energy"
+    best_any_sv = sv_of(best_allowed_any)
+    # Weak-turn PAL preference: if energy is low and PAL is available, prefer recreation over rest
+    if (
+        energy_pct <= 70
+        and pal_recreation_hint
+        and not is_final_season(di)
+        and (
+            best_allowed_any is None
+            or (weak_turn_sv is not None and best_any_sv < float(weak_turn_sv))
         )
+    ):
+        because("Weak-turn with PAL available → prefer recreation instead of rest")
+        return (TrainAction.RECREATION, None, "; ".join(reasons))
+    if best_allowed_any is None and energy_pct <= 70:
+        because("No viable training and energy <= 70% → rest")
         return (TrainAction.REST, None, "; ".join(reasons))
-    elif best_allowed_any is not None:
+
+    if energy_pct <= 70:
+        threshold = float(weak_turn_sv) if weak_turn_sv is not None else None
+        if (
+            threshold is not None
+            and best_allowed_any is not None
+            and best_any_sv >= threshold
+        ):
+            because(
+                f"Weak turn threshold met (SV {best_any_sv:.2f} ≥ {threshold:.2f}) despite energy {energy_pct}% → allow training fallback"
+            )
+        else:
+            if energy_pct >= 60:
+                # if wit is >= 0.5, return TRAIN_WIT
+                if sv_of(best_wit_any) >= 0.5:
+                    because("Weak turn with >0.5 WIT available → prefer WIT instead of rest")
+                    return (TrainAction.TRAIN_WIT, best_wit_any, "; ".join(reasons))
+            reason = (
+                f"Weak turn: best SV {best_any_sv:.2f} < threshold {threshold:.2f}"
+                if threshold is not None and best_allowed_any is not None
+                else "Energy ≤ 70% with no strong training option"
+            )
+            because(reason + " → rest")
+            return (TrainAction.REST, None, "; ".join(reasons))
+
+    if best_allowed_any is not None:
         because("Last resort: take best allowed training")
         target_tile = _apply_priority_guard(best_allowed_any, context="fallback")
         return (TrainAction.TRAIN_MAX, target_tile, "; ".join(reasons))
+
+    # If all allowed options were filtered out by risk/caps/burst rules,
+    # apply a last-resort training choice to avoid getting stuck.
+    fallback_wit_any = best_wit_tile(
+        sv_rows,
+        allowed_only=False,
+        min_sv=0.0,
+        tile_to_type=tile_to_type,
+    )
+    if fallback_wit_any is not None:
+        because(
+            "All allowed options blocked  → fallback to WIT ignoring risk/burst allowlist"
+        )
+        return (TrainAction.TRAIN_WIT, fallback_wit_any, "; ".join(reasons))
+
+    fallback_any = best_tile(
+        sv_rows,
+        min_sv=-1.0,
+        prefer_types=priority_stats,
+        tile_to_type=tile_to_type,
+    )
+    if fallback_any is not None:
+        because(
+            "All allowed options blocked  → fallback to best training ignoring risk/burst allowlist"
+        )
+        return (TrainAction.TRAIN_MAX, fallback_any, "; ".join(reasons))
 
     because("No allowed options → NOOP")
     return (TrainAction.NOOP, None, "; ".join(reasons))

@@ -21,14 +21,11 @@ from core.agent_scenario import AgentScenario
 from core.settings import Settings
 from core.utils.logger import logger_uma
 from core.utils.text import fuzzy_contains
-from core.utils.skill_memory import SkillMemoryManager
-from core.utils.date_uma import date_index as uma_date_index
 from core.utils.training_policy_utils import click_training_tile
 from core.utils.waiter import PollConfig, Waiter
 from core.actions.race import ConsecutiveRaceRefused
 from core.utils.abort import abort_requested
-from core.utils.event_processor import CATALOG_JSON, Catalog, UserPrefs
-from core.utils.race_index import RaceIndex
+from core.utils.event_processor import UserPrefs
 
 class AgentURA(AgentScenario):
     def __init__(
@@ -249,7 +246,11 @@ class AgentURA(AgentScenario):
                 self._consecutive_event_stale_clicks = 0
                 # pass what we know about current energy (may be None if not read yet)
                 self.lobby.state.energy = extract_energy_pct(img, dets)
-                curr_energy = self.lobby.state.energy or 100
+                curr_energy = (
+                    self.lobby.state.energy
+                    if isinstance(self.lobby.state.energy, (int, float))
+                    else None
+                )
                 decision = self.event_flow.process_event_screen(
                     img,
                     dets,
@@ -502,9 +503,19 @@ class AgentURA(AgentScenario):
                         f"[lobby] goal='{self.lobby.state.goal}' | energy={self.lobby.state.energy} | "
                         f"skill_pts={self.lobby.state.skill_pts} | turn={self.lobby.state.turn} | "
                         f"summer={self.lobby.state.is_summer} | mood={self.lobby.state.mood} | stats={self.lobby.state.stats} |"
+                        f"infirmary={self.lobby.state.infirmary_on}"
                     )
                     # sleep(1.0)
                     self.handle_training()
+                    continue
+
+                if outcome == "TRAINING_READY":
+                    logger_uma.info(
+                        f"[lobby] Pre-check tile already clicked, waiting for confirm | reason={reason}"
+                    )
+                    # Tile already clicked by pre-check, just wait for the normal flow
+                    # The agent will detect TrainingConfirm screen and handle it
+                    sleep(1.5)  # Give time for UI to settle
                     continue
 
                 # For other outcomes ("INFIRMARY", "RESTED", "CONTINUE") we just loop

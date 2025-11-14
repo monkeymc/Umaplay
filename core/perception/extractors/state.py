@@ -524,6 +524,7 @@ def extract_infirmary_on(
     """
     d = find_best(parsed_objects_screen, CLASS_LOBBY_INFIRMARY, conf_min=conf_min)
     if not d:
+        logger_uma.warning("infirmary not found")
         return False
 
     crop = crop_pil(game_img, d["xyxy"], pad=0)
@@ -533,6 +534,7 @@ def extract_infirmary_on(
         try:
             clf = ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH)
             p = float(clf.predict_proba(crop))
+            logger_uma.debug("infirmary model: %s", p)
             return p >= threshold
         except Exception as e:
             logger_uma.debug("infirmary model failed, fallback to heuristic: %s", e)

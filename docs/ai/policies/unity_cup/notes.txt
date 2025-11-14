@@ -1,0 +1,54 @@
+### Unity Cup lobby and training notes
+
+**Lobby policy**
+
+* Planned races: `_plan_race_today` checks preset `plan_races`. The guard suppresses entry on the first junior date (Y1 Jul Early) or when `_skip_race_once` is set. Otherwise the bot enters RaceFlow.
+* Critical goal races: `_maybe_do_goal_race` fires during the first `max_critical_turn` (default 8) if the goal text includes fans progress, maiden win, or G1 placement phrases and energy > 2.
+* Infirmary: only outside summer; if the blue condition icon is detected (`extract_infirmary_on`), the bot enters infirmary immediately and ends the turn.
+* Energy gates: rest when energy <= `auto_rest_minimum` (default 24). Secondary rest guard triggers when energy <= 50 and summer is within two turns.
+* If none of the above triggers, the bot opens the training screen.
+
+**Training SV makeup (`compute_support_values`)**
+
+* Supports: +1.0 for each blue or green bar, +1.0 per rainbow. Kashimoto acts like PAL when she shows a stat, otherwise like Director (color based). Director cameo adds +0.25 blue, +0.15 green, +0.10 orange. PAL Kashimoto adds +1.5 blue, +0.25 green, +0.15 orange, +0.10 yellow. Reporter cameo adds +0.10.
+* Hints: only the best enabled hint per tile. Defaults +0.50 (blue/green) or +0.25 (orange/max). If `HINT_IS_IMPORTANT`, the hint bonus is multiplied by 3. Disabled priorities contribute 0.
+* Spirits: white filling +0.40, white exploded +0.12, white combo adds +0.10 +0.20 per filling plus +0.01 per exploded. Blue spirits +1.50 each with combo +0.25 per filling beyond the first.
+* Rainbow combo: +0.50 for every rainbow beyond the first.
+* Risk: base limit `Settings.MAX_FAILURE`. SV-dependent multiplier raises the limit (1.25× at SV>=4.0, 1.5× at 4.5, 2× at 5+, 2× at SV>=7). Tile is allowed only if failure% <= limit. `greedy_hit` marks SV >= 3.5 that pass risk.
+
+**Training decision (`decide_action_training`)**
+
+* Caps: stats at or above `reference_stats` targets are excluded unless the tile carries an enabled hint when `HINT_IS_IMPORTANT` is True.
+* Distribution nudge: considers top `priority_stats` (default SPD, STA, WIT). If undertrained share exceeds `UNDERTRAIN_THRESHOLD` (default 6%) and the best tile is within ~1.25 SV of the global best (with extra slack for severe gaps) and SV >= max(0.5, low gate / 2), train that stat.
+* High SV: any allowed tile >= 3.5 trains immediately but passes through priority guard (diff <= 0.75, top-three SV >= 0.5, exception at SV >= 4.1).
+* Final season: hint > 600 > 1170 > WIT soft skip (SV >=1.5). These checks ignore caps.
+* Mood: recreation if mood < minimal mood (default NORMAL) and < GREAT.
+* Summer staging: next turn summer → WIT when 75-96 energy, rest at <=70. Summer within two turns and energy <=90 → WIT SV >=0.5.
+* Mid SV: allowed tile >= 2.5 after priority guard.
+* G1 racing: when `prioritize_g1` is True, date has a G1, not junior, not final, and race not skipped. If `race_if_no_good_value` is False and best SV >0 the bot trains instead.
+* Director: senior year only. Accept blue Jan-Mar or any non-yellow Sep-Dec. Tile must be top-three stat unless director color is orange. Caps still apply unless orange. Risk gate must pass.
+* WIT soft skip: rainbow WIT with SV >=1.5, else rest if energy <=35, else WIT >=1.5, else WIT >=1.75.
+* Late SV: top-three tiles >=1.75 after guard. If none, mood recovery triggers (summer <=65 energy, else <=90).
+* Race fallback: outside summer, energy >=68, not pre debut, not junior, not final, and race not skipped. If `race_if_no_good_value` is off and best SV >0, train; else race.
+* Fallback ladder: summer → any WIT tile, else energy <=70 rest, else any allowed training, finally NOOP.
+
+**Shared thresholds**
+
+* SV gates: high 3.5, mid 2.5, late 2.0, low 1.75.
+* WIT gates: normal soft skip 1.5, staging 0.5, late fallback 1.75.
+* Energy: rest <=35, race gate >=68, lobby rest minimum default 24, summer prep rest at <=50.
+* Priority guard: diff <=0.75 when top-three SV >=0.5; candidates at SV >=4.1 bypass this guard.
+* Distribution: gap >=6% (tunable via `Settings.UNDERTRAIN_THRESHOLD`), flexible SV gap about 1.25 with extra slack when the deficit is severe; hints marked important disable the nudge for that turn.
+* Director windows: senior year only. Accept blue Jan-Mar, any non-yellow Sep-Dec; orange ignores stat priority and caps while others require a top-three stat and uncapped target.
+
+* **WIT preference:** outside final season and after Director check, if **WIT has a rainbow** or **WIT SV is at or above 1.5**, prefer **WIT** as a soft-skip.
+
+* **Energy and race fallback:**
+
+  * **Rest** if **energy at or below 35%**.
+  * If **energy is fine** but the board is **weak**, try a **race** (if allowed by your settings and date gates); otherwise **rest**.
+  * If a **low WIT** option exists, you can soft-skip with WIT; if not, **train the best allowed fallback**.
+
+* **Risk gate:** every check that says “allowed” means the tile passed your **failure-risk filter**. Anything not “allowed” is ignored for selection.
+
+* **What goes into SV:** the calculation that feeds the chart includes the **sum of support contributions** on the tile, **rainbow** bonuses, **hint** value, **spirit and flame** bonuses (white vs blue, plus multi-spirit combo), and small **cameo** bumps from **Director**, **PAL**, and **Reporter**, all reduced by **risk filtering**. The thresholds above act on that single **sv_total** per tile.

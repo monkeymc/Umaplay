@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Box, Card, CardActionArea, CardContent, Chip, Dialog, DialogActions, DialogContent, DialogTitle,
   Divider, FormControlLabel, IconButton, InputAdornment, Stack, Switch, TextField, Tooltip, Typography
@@ -13,7 +13,6 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward'
 import type {
   EventsIndex,
   SupportSet,
-  ScenarioSet,
   TraineeSet,
   AttrKey,
   EventOptionEffect,
@@ -23,6 +22,7 @@ import type {
 import SmartImage from '@/components/common/SmartImage'
 import { supportImageCandidates, scenarioImageCandidates, traineeImageCandidates, supportTypeIcons } from '@/utils/imagePaths'
 import { useEventsSetupStore } from '@/store/eventsSetupStore'
+import { useConfigStore } from '@/store/configStore'
 import { pickFor } from '@/utils/eventPick'
 import SupportPriorityDialog from './SupportPriorityDialog'
 
@@ -193,45 +193,6 @@ function SupportPickerDialog({
                       <Typography variant="body2" noWrap>{s.name}</Typography>
                       {/* rarity text removed per design; keep attribute subtle if you want */}
                     </Box>
-                  </Stack>
-                </CardActionArea>
-              </Card>
-            </Box>
-          ))}
-        </Stack>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-// ---- Scenario picker
-function ScenarioPickerDialog({
-  open, onClose, scenarios, onPick,
-}: { open: boolean; onClose: () => void; scenarios: ScenarioSet[]; onPick: (s: ScenarioSet) => void }) {
-  const [q, setQ] = useState('')
-  const list = useMemo(() => q ? scenarios.filter(s => s.name.toLowerCase().includes(q.toLowerCase())) : scenarios, [q, scenarios])
-  return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle sx={{ display:'flex', alignItems:'center' }}>
-        Select Scenario
-        <Box flex={1} />
-        <IconButton onClick={onClose}><CloseIcon /></IconButton>
-      </DialogTitle>
-      <DialogContent dividers>
-        <TextField
-          fullWidth size="small" placeholder="Search scenario…"
-          value={q} onChange={e => setQ(e.target.value)}
-          InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon /></InputAdornment> }}
-          sx={{ mb: 2 }}
-        />
-        <Stack direction="row" flexWrap="wrap" gap={1.5}>
-          {list.map(s => (
-            <Box key={s.name} sx={{ flexBasis: { xs: 'calc(50% - 12px)', sm: 'calc(33.33% - 12px)' } }}>
-              <Card variant="outlined">
-                <CardActionArea onClick={() => onPick(s)}>
-                  <Stack direction="row" spacing={1} sx={{ p: 1, alignItems: 'center' }}>
-                    <SmartImage candidates={scenarioImageCandidates(s.name)} alt={s.name} width={48} height={48} rounded={6}/>
-                    <Typography variant="body2" noWrap>{s.name}</Typography>
                   </Stack>
                 </CardActionArea>
               </Card>
@@ -562,9 +523,37 @@ export default function EventSetupSection({ index }: Props) {
   const setScenarioRewardPriority = useEventsSetupStore((s) => s.setScenarioRewardPriority)
   const setTraineeRewardPriority = useEventsSetupStore((s) => s.setTraineeRewardPriority)
 
+  const uiScenarioKey = useConfigStore((s) => s.uiScenarioKey)
+  const generalActiveScenario = useConfigStore((s) => s.config.general?.activeScenario)
+  const activeScenarioKey = (uiScenarioKey ?? generalActiveScenario) === 'unity_cup' ? 'unity_cup' : 'ura'
+
+  const autoScenarioName = useMemo(() => {
+    const list = index.scenarios ?? []
+    const toLower = (value: string) => value.toLowerCase()
+
+    if (activeScenarioKey === 'unity_cup') {
+      const unity = list.find((s) => {
+        const name = toLower(s.name)
+        return name.includes('unity') && name.includes('cup')
+      })
+      if (unity) return unity.name
+    }
+
+    const ura = list.find((s) => toLower(s.name).includes('ura'))
+    return (ura ?? list[0] ?? null)?.name ?? null
+  }, [index.scenarios, activeScenarioKey])
+
+  useEffect(() => {
+    if (!autoScenarioName) return
+    if (scenario?.name === autoScenarioName) return
+
+    const avoid = scenario?.avoidEnergyOverflow ?? true
+    const rewardPriority = scenario?.rewardPriority ?? globalRewardPriority
+    setScenario({ name: autoScenarioName, avoidEnergyOverflow: avoid, rewardPriority })
+  }, [autoScenarioName, scenario?.name, scenario?.avoidEnergyOverflow, scenario?.rewardPriority, globalRewardPriority, setScenario])
+
   // dialogs state
   const [pickSlot, setPickSlot] = useState<number | null>(null)
-  const [scenarioOpen, setScenarioOpen] = useState(false)
   const [traineeOpen, setTraineeOpen] = useState(false)
   const [optionsFor, setOptionsFor] = useState<{
     type:'support'|'scenario'|'trainee'
@@ -881,7 +870,7 @@ export default function EventSetupSection({ index }: Props) {
             </Stack>
             <Box sx={{ maxWidth: 280 }}>
               <Card variant="outlined" sx={{ position:'relative' }}>
-                <CardActionArea onClick={() => setScenarioOpen(true)}>
+                <CardActionArea>
                   <Stack alignItems="center" spacing={1} sx={{ p: 1 }}>
                     {scenario ? (
                       <>
@@ -964,17 +953,6 @@ export default function EventSetupSection({ index }: Props) {
           const avoid = prev?.avoidEnergyOverflow ?? true
           setSupport(pickSlot, { name: s.name, rarity, attribute: s.attribute, avoidEnergyOverflow: avoid })
           setPickSlot(null)
-        }}
-      />
-      <ScenarioPickerDialog
-        open={scenarioOpen}
-        onClose={() => setScenarioOpen(false)}
-        scenarios={index.scenarios}
-        onPick={(s)=>{
-          const avoid = scenario?.avoidEnergyOverflow ?? true
-          const rewardPriority = scenario?.rewardPriority ?? globalRewardPriority
-          setScenario({ name: s.name, avoidEnergyOverflow: avoid, rewardPriority })
-          setScenarioOpen(false)
         }}
       />
       <TraineePickerDialog

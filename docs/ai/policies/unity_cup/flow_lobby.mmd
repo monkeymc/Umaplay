@@ -1,0 +1,20 @@
+flowchart TD
+START[Start of turn in lobby] --> PLAN{Planned race today?}
+
+PLAN -->|Yes and guard passes| RACE_PLAN[Run planned race then end turn]
+PLAN -->|Yes but blocked| PLAN_SUPPRESS[Skip due to first junior day or skip guard]
+PLAN -->|No| EARLY{Critical goal race window?}
+
+PLAN_SUPPRESS --> EARLY
+
+EARLY -->|Yes| RACE_GOAL[Run goal race then end turn]
+EARLY -->|No| INFIRM{Infirmary active and not summer?}
+
+INFIRM -->|Yes| DO_INFIRM[Go to infirmary then end turn]
+INFIRM -->|No| ENERGY{Energy <= auto rest minimum?}
+
+ENERGY -->|Yes| REST_LOW[Rest then end turn]
+ENERGY -->|No| SUMMER{Summer in <=2 turns and energy <=50?}
+
+SUMMER -->|Yes| REST_SUMMER[Rest to prep summer then end turn]
+SUMMER -->|No| ENTER_TRAIN[Open training screen]

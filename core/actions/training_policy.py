@@ -83,12 +83,34 @@ def check_training(player, *, skip_race: bool = False) -> Optional[TrainingDecis
     career_date = player.lobby.state.date_info if player.lobby else None
     energy_pct = player.lobby.state.energy if player.lobby else None
     stats = player.lobby.state.stats if player.lobby else None
+    # PAL context (availability + recent memory)
+    pal_hint = False
+    try:
+        mem = getattr(player.lobby, "pal_memory", None)
+        if mem and mem.any_next_energy():
+            pal_hint = True
+        else:
+            pal_hint = bool(getattr(player.lobby.state, "pal_available", False))
+    except Exception:
+        pal_hint = False
 
     # Get the current preset's runtime settings from the last applied config
     preset_settings = Settings.extract_runtime_preset(
         getattr(Settings, "_last_config", {}) or {}
     )
     race_if_no_good_value = preset_settings.get("raceIfNoGoodValue", False)
+
+    weak_turn_sv_raw = preset_settings.get("weakTurnSv", Settings.WEAK_TURN_SV)
+    try:
+        weak_turn_sv = float(weak_turn_sv_raw)
+    except (TypeError, ValueError):
+        weak_turn_sv = float(Settings.WEAK_TURN_SV)
+
+    junior_minimal_mood_raw = preset_settings.get("juniorMinimalMood")
+    if isinstance(junior_minimal_mood_raw, str) and junior_minimal_mood_raw.strip():
+        junior_minimal_mood = junior_minimal_mood_raw.strip().upper()
+    else:
+        junior_minimal_mood = Settings.JUNIOR_MINIMAL_MOOD
 
     # 4) Decide the action (no side effects here)
     action, tidx, why = get_decide_action_training()(
@@ -105,6 +127,9 @@ def check_training(player, *, skip_race: bool = False) -> Optional[TrainingDecis
         minimal_mood=Settings.MINIMAL_MOOD,
         skip_race=bool(skip_race),
         race_if_no_good_value=race_if_no_good_value,
+        weak_turn_sv=weak_turn_sv,
+        junior_minimal_mood=junior_minimal_mood,
+        pal_recreation_hint=pal_hint,
     )
     logger_uma.info(
         "[training] Decision: %s  tile=%s because=|%s|", action.value, tidx, why

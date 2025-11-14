@@ -54,6 +54,9 @@ def decide_action_training(
     skip_race=False,
     # Runtime settings from preset
     race_if_no_good_value: bool = False,
+    weak_turn_sv: Optional[float] = None,
+    junior_minimal_mood: Optional[str] = None,
+    pal_recreation_hint: bool = False,
 ) -> Tuple[TrainAction, Optional[int], str]:
     """
     Return the decided action and the target tile index (or None when not applicable).
@@ -76,6 +79,12 @@ def decide_action_training(
         di = parse_career_date(career_date)
     elif isinstance(career_date, DateInfo):
         di = career_date
+    else:
+        logger_uma.warning(
+            "decide_action_training: missing/invalid career_date %r; using fallback",
+            career_date,
+        )
+        di = DateInfo(raw=str(career_date or "Unknown"), year_code=0, month=None, half=None)
 
     # Collect reasoning as we go
     reasons: List[str] = []
@@ -206,6 +215,10 @@ def decide_action_training(
     PRIORITY_TOP3_MIN_SV = 0.5
     PRIORITY_EXCEPTIONAL_SV = 4.1
 
+    effective_minimal_mood = minimal_mood
+    if junior_minimal_mood and is_junior_year(di) and energy_pct < 90:
+        effective_minimal_mood = junior_minimal_mood
+
     def _apply_priority_guard(candidate_idx: Optional[int], *, context: str) -> Optional[int]:
         if candidate_idx is None or top3_tile_idx is None:
             return candidate_idx
@@ -249,8 +262,24 @@ def decide_action_training(
         keys = ["SPD", "STA", "PWR", "GUTS", "WIT"]
         known_keys = [k for k in keys if max(0, int(stats.get(k, -1))) > 0]
 
+        # Skip undertrain check if junior/pre-debut with mood below target minimal mood
+        skip_undertrain_for_mood = False
+        if junior_minimal_mood and (is_junior_year(di) or is_pre_debut(di)):
+            junior_mood_key = str(junior_minimal_mood).upper()
+            junior_mood_lookup: MoodName = (
+                cast(MoodName, junior_mood_key)
+                if junior_mood_key in MOOD_MAP
+                else "UNKNOWN"
+            )
+            junior_min_score = MOOD_MAP.get(junior_mood_lookup, 3)
+            if mood_score != -1 and mood_score < junior_min_score:
+                skip_undertrain_for_mood = True
+                because(
+                    f"Junior/pre-debut with mood {mood_txt} below target {junior_minimal_mood} → skip undertrain check, prioritize mood recovery"
+                )
+
         # If hint is important ignore undertrain stat check, prioritize hint
-        if known_keys and not (Settings.HINT_IS_IMPORTANT and len(hint_tiles) > 0):
+        if known_keys and not (Settings.HINT_IS_IMPORTANT and len(hint_tiles) > 0) and not skip_undertrain_for_mood:
             # Normalize reference to the same subset
             ref_sum = sum(max(0, int(reference_stats.get(k, 0))) for k in known_keys)
             cur_sum = sum(max(0, int(stats.get(k, 0))) for k in known_keys)
@@ -382,11 +411,12 @@ def decide_action_training(
         logger_uma.error(f"Distribution check skipped due to stats error: {_e}")
     # 1) If max SV option is >= 2.5 → select TRAIN_MAX (tie → priority order)
     if best_allowed_tile_25 is not None:
+        best_allowed_tile_25_sv = sv_of(best_allowed_tile_25)
         because(
-            f"Top SV ≥ {max_pick_sv_top} allowed by risk → pick tile {best_allowed_tile_25}"
+            f"Top SV {best_allowed_tile_25_sv} ≥ {max_pick_sv_top} allowed by risk → pick tile {best_allowed_tile_25}"
         )
         target_tile = _apply_priority_guard(
-            best_allowed_tile_25, context=f"SV ≥ {max_pick_sv_top}"
+            best_allowed_tile_25, context=f"SV {best_allowed_tile_25_sv} ≥ {max_pick_sv_top}"
         )
         return (TrainAction.TRAIN_MAX, target_tile, "; ".join(reasons))
 
@@ -455,7 +485,7 @@ def decide_action_training(
         "Not a IMPRESIVE option to train (>= 2.5 in SV)"
     )
     # 2) Mood check → recreation
-    minimal_mood_key = str(minimal_mood).upper()
+    minimal_mood_key = str(effective_minimal_mood).upper()
     mood_lookup_key: MoodName = (
         cast(MoodName, minimal_mood_key)
         if minimal_mood_key in MOOD_MAP
@@ -468,7 +498,7 @@ def decide_action_training(
         and mood_score < MOOD_MAP["GREAT"]
     ):
         because(
-            f"Mood {mood_txt} below minimal {minimal_mood} and < GREAT → recreation"
+            f"Mood {mood_txt} below minimal {effective_minimal_mood} and < GREAT → recreation"
         )
         return (TrainAction.RECREATION, None, "; ".join(reasons))
     else:
@@ -508,11 +538,12 @@ def decide_action_training(
 
     # 6) If max SV option >= 2.0 → TRAIN_MAX
     if best_allowed_tile_20 is not None:
+        best_allowed_tile_20_sv = sv_of(best_allowed_tile_20)
         because(
-            f"Top SV ≥ {next_pick_sv_top} allowed by risk → tile {best_allowed_tile_20}"
+            f"Top SV {best_allowed_tile_20_sv} ≥ {next_pick_sv_top} allowed by risk → tile {best_allowed_tile_20}"
         )
         target_tile = _apply_priority_guard(
-            best_allowed_tile_20, context=f"SV ≥ {next_pick_sv_top}"
+            best_allowed_tile_20, context=f"SV {best_allowed_tile_20_sv} ≥ {next_pick_sv_top}"
         )
         return (TrainAction.TRAIN_MAX, target_tile, "; ".join(reasons))
 
@@ -613,6 +644,9 @@ def decide_action_training(
 
     # 8) If energy <= 35% → REST
     if energy_pct <= energy_rest_gate_lo:
+        if pal_recreation_hint and not is_final_season(di):
+            because("Low energy and PAL available → prefer recreation over rest")
+            return (TrainAction.RECREATION, None, "; ".join(reasons))
         because(f"Energy {energy_pct}% ≤ {energy_rest_gate_lo}% → rest")
         return (TrainAction.REST, None, "; ".join(reasons))
 
@@ -643,11 +677,12 @@ def decide_action_training(
         tile_to_type=tile_to_type,
     )
     if best_allowed_tile_15 is not None:
+        best_allowed_tile_15_sv = sv_of(best_allowed_tile_15)
         because(
-            f"Top training SV ≥ {late_pick_sv_top} allowed by risk → tile {best_allowed_tile_15}"
+            f"Top training SV {best_allowed_tile_15_sv} ≥ {late_pick_sv_top} allowed by risk → tile {best_allowed_tile_15}"
         )
         target_tile = _apply_priority_guard(
-            best_allowed_tile_15, context=f"SV ≥ {late_pick_sv_top}"
+            best_allowed_tile_15, context=f"SV {best_allowed_tile_15_sv} ≥ {late_pick_sv_top}"
         )
         return (TrainAction.TRAIN_MAX, target_tile, "; ".join(reasons))
 
@@ -740,12 +775,45 @@ def decide_action_training(
     if is_summer(di) and best_wit_any:
         because("Fallback (Summer): WIT to skip turn and get stats")
         return (TrainAction.TRAIN_WIT, best_wit_any, "; ".join(reasons))
-    elif energy_pct <= 70:
-        because(
-            "Weak Turn, Opportunity cost if racing Instead of WIT, selecting rest because we can recover energy"
+    best_any_sv = sv_of(best_allowed_any)
+    # Weak-turn PAL preference: if energy is low and PAL is available, prefer recreation over rest
+    if (
+        energy_pct <= 70
+        and pal_recreation_hint
+        and not is_final_season(di)
+        and (
+            best_allowed_any is None
+            or weak_turn_sv is None
+            or (best_any_sv < float(weak_turn_sv))
         )
-        return (TrainAction.REST, None, "; ".join(reasons))
-    elif best_allowed_any is not None:
+    ):
+        because("Weak-turn with PAL available → prefer recreation instead of rest")
+        return (TrainAction.RECREATION, None, "; ".join(reasons))
+    if energy_pct <= 70:
+        threshold = float(weak_turn_sv) if weak_turn_sv is not None else None
+        if (
+            threshold is not None
+            and best_allowed_any is not None
+            and best_any_sv >= threshold
+        ):
+            because(
+                f"Weak turn threshold met (SV {best_any_sv:.2f} ≥ {threshold:.2f}) despite energy {energy_pct}% → allow training fallback"
+            )
+        else:
+            if energy_pct >= 60:
+                # if wit is >= 0.5, return TRAIN_WIT
+                if sv_of(best_wit_any) >= 0.5:
+                    because("Weak turn with WIT available → prefer WIT instead of rest")
+                    return (TrainAction.TRAIN_WIT, best_wit_any, "; ".join(reasons))
+            reason = (
+                f"Weak turn: best SV {best_any_sv:.2f} < threshold {threshold:.2f}"
+                if threshold is not None and best_allowed_any is not None
+                else "Energy ≤ 70% with no strong training option"
+            )
+            because(reason + " → rest")
+            return (TrainAction.REST, None, "; ".join(reasons))
+
+    if best_allowed_any is not None:
         because("Last resort: take best allowed training")
         target_tile = _apply_priority_guard(best_allowed_any, context="fallback")
         return (TrainAction.TRAIN_MAX, target_tile, "; ".join(reasons))
