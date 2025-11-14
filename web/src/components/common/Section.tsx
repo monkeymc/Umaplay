@@ -42,7 +42,7 @@ export default function Section({
         ...sx,
       }}
     >
-      <Stack spacing={2} sx={contentSx}>
+      <Stack spacing={1} sx={contentSx}>
         <Typography variant="h6" sx={titleSx}>{title}</Typography>
         {children}
         {footer}

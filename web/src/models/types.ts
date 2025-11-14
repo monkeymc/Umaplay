@@ -6,6 +6,38 @@ export type Hotkey = 'F1' | 'F2' | 'F3' | 'F4'
 export type StatKey = 'SPD' | 'STA' | 'PWR' | 'GUTS' | 'WIT'
 export type MoodName = 'AWFUL' | 'BAD' | 'NORMAL' | 'GOOD' | 'GREAT'
 
+export interface UnityCupMultiplierSet {
+  white: number
+  whiteCombo: number
+  blueCombo: number
+}
+
+export interface UnityCupAdvancedScores {
+  rainbowCombo: number
+  whiteSpiritFill: number
+  whiteSpiritExploded: number
+  whiteComboPerFill: number
+  blueSpiritEach: number
+  blueComboPerExtraFill: number
+}
+
+export interface UnityCupAdvancedSettings {
+  burstAllowedStats: StatKey[]
+  scores: UnityCupAdvancedScores
+  multipliers: {
+    juniorClassic: UnityCupMultiplierSet
+    senior: UnityCupMultiplierSet
+  }
+  opponentSelection: {
+    race1: number
+    race2: number
+    race3: number
+    race4: number
+    race5: number
+    defaultUnknown: number
+  }
+}
+
 export interface GeneralConfig {
   mode: Mode
   windowTitle: string
@@ -50,6 +82,7 @@ export interface Preset {
   lobbyPrecheckEnable?: boolean
   juniorMinimalMood?: MoodName | null
   goalRaceForceTurns?: number
+  unityCupAdvanced?: UnityCupAdvancedSettings
 }
 
 export interface ScenarioConfig {

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
-import { appConfigSchema, defaultAppConfig, defaultGeneral, defaultPreset, defaultEventSetup } from '@/models/config.schema'
-import type { AppConfig, GeneralConfig, Preset, ScenarioConfig } from '@/models/types'
+import { appConfigSchema, defaultAppConfig, defaultGeneral, defaultPreset, defaultEventSetup, defaultUnityCupAdvanced, unityCupAdvancedSchema } from '@/models/config.schema'
+import type { AppConfig, GeneralConfig, Preset, ScenarioConfig, UnityCupAdvancedSettings } from '@/models/types'
 
 const LS_KEY = 'uma:config:v1'
 
@@ -47,6 +47,16 @@ function normalizePreset(raw: any, general: Partial<GeneralConfig> | undefined, 
     ? Math.max(0, Number(raw?.skillPtsCheck))
     : Math.max(0, fallbackSkillPts)
 
+  let unityCupAdvanced: UnityCupAdvancedSettings | undefined
+  if (scenario === 'unity_cup') {
+    try {
+      const parsed = unityCupAdvancedSchema.parse(raw?.unityCupAdvanced ?? base.unityCupAdvanced ?? defaultUnityCupAdvanced())
+      unityCupAdvanced = parsed
+    } catch {
+      unityCupAdvanced = defaultUnityCupAdvanced()
+    }
+  }
+
   return {
     ...base,
     ...raw,
@@ -58,6 +68,7 @@ function normalizePreset(raw: any, general: Partial<GeneralConfig> | undefined, 
         ? raw.prioritizeHint
         : !!(general as any)?.prioritizeHint,
     event_setup: raw?.event_setup ?? base.event_setup,
+    unityCupAdvanced: unityCupAdvanced ?? base.unityCupAdvanced,
   }
 }
 
@@ -245,6 +256,9 @@ export const useConfigStore = create<State & Actions>((set, get) => ({
         id: newId(),
         name: src.name + ' (copy)',
         event_setup: JSON.parse(JSON.stringify(src.event_setup ?? defaultEventSetup())),
+        unityCupAdvanced: src.unityCupAdvanced
+          ? JSON.parse(JSON.stringify(src.unityCupAdvanced))
+          : src.unityCupAdvanced,
       }
       const presets = [...branch.presets, clone]
       return {

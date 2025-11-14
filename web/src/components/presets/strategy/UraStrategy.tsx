@@ -130,8 +130,8 @@ export default function UraStrategy({ preset }: StrategyComponentProps) {
                 }
               />
               <FieldRow
-                label="Race pre-check SV threshold"
-                info="Skip planned races or infirmary if training SV meets or exceeds this value during lobby pre-check."
+                label="Pre-check SV threshold"
+                info="Skip races or infirmary if max training SV meets or exceeds this value during lobby pre-check."
                 control={
                   <TextField
                     fullWidth
@@ -163,7 +163,7 @@ export default function UraStrategy({ preset }: StrategyComponentProps) {
               </Typography>
               <FieldRow
                 label="Weak turn SV threshold"
-                info="If the best allowed training SV is below this value and energy is low, rest instead."
+                info="If the best allowed training SV is below this value. Bot could skip training and either: rest, race (if enabled), etc."
                 control={
                   <TextField
                     fullWidth

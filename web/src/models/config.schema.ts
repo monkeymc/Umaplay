@@ -26,6 +26,88 @@ const scenarioPresetDefaults: Record<ScenarioKey, { weakTurnSv: number; racePrec
 
 export const STAT_KEYS: StatKey[] = ['SPD', 'STA', 'PWR', 'GUTS', 'WIT']
 
+const unityCupOpponentValue = z.number().int().min(1).max(3)
+
+const unityCupMultiplierSchema = z.object({
+  white: z.number().min(0).max(10).default(1),
+  whiteCombo: z.number().min(0).max(10).default(1),
+  blueCombo: z.number().min(0).max(10).default(1),
+})
+
+export const unityCupAdvancedSchema = z.object({
+  burstAllowedStats: z.array(z.enum(STAT_KEYS)).min(0).max(STAT_KEYS.length).default([...STAT_KEYS]),
+  scores: z
+    .object({
+      rainbowCombo: z.number().min(0).max(10).default(0.5),
+      whiteSpiritFill: z.number().min(0).max(10).default(0.4),
+      whiteSpiritExploded: z.number().min(0).max(10).default(0.13),
+      whiteComboPerFill: z.number().min(0).max(10).default(0.25),
+      blueSpiritEach: z.number().min(0).max(10).default(0.5),
+      blueComboPerExtraFill: z.number().min(0).max(10).default(0.25),
+    })
+    .default({
+      rainbowCombo: 0.5,
+      whiteSpiritFill: 0.4,
+      whiteSpiritExploded: 0.13,
+      whiteComboPerFill: 0.25,
+      blueSpiritEach: 0.5,
+      blueComboPerExtraFill: 0.25,
+    }),
+  multipliers: z
+    .object({
+      juniorClassic: unityCupMultiplierSchema.default({ white: 1.5, whiteCombo: 1.5, blueCombo: 1.5 }),
+      senior: unityCupMultiplierSchema.default({ white: 1, whiteCombo: 1, blueCombo: 1 }),
+    })
+    .default({
+      juniorClassic: { white: 1.5, whiteCombo: 1.5, blueCombo: 1.5 },
+      senior: { white: 1, whiteCombo: 1, blueCombo: 1 },
+    }),
+  opponentSelection: z
+    .object({
+      race1: unityCupOpponentValue.default(2),
+      race2: unityCupOpponentValue.default(1),
+      race3: unityCupOpponentValue.default(1),
+      race4: unityCupOpponentValue.default(1),
+      race5: unityCupOpponentValue.default(1),
+      defaultUnknown: unityCupOpponentValue.default(1),
+    })
+    .default({
+      race1: 2,
+      race2: 1,
+      race3: 1,
+      race4: 1,
+      race5: 1,
+      defaultUnknown: 1,
+    }),
+})
+
+const UNITY_CUP_ADVANCED_DEFAULTS = {
+  burstAllowedStats: [...STAT_KEYS],
+  scores: {
+    rainbowCombo: 0.5,
+    whiteSpiritFill: 0.4,
+    whiteSpiritExploded: 0.13,
+    whiteComboPerFill: 0.25,
+    blueSpiritEach: 0.5,
+    blueComboPerExtraFill: 0.25,
+  },
+  multipliers: {
+    juniorClassic: { white: 1.5, whiteCombo: 1.5, blueCombo: 1.5 },
+    senior: { white: 1, whiteCombo: 1, blueCombo: 1 },
+  },
+  opponentSelection: { race1: 2, race2: 1, race3: 1, race4: 1, race5: 1, defaultUnknown: 1 },
+} as const
+
+export const defaultUnityCupAdvanced = () => ({
+  burstAllowedStats: [...UNITY_CUP_ADVANCED_DEFAULTS.burstAllowedStats],
+  scores: { ...UNITY_CUP_ADVANCED_DEFAULTS.scores },
+  multipliers: {
+    juniorClassic: { ...UNITY_CUP_ADVANCED_DEFAULTS.multipliers.juniorClassic },
+    senior: { ...UNITY_CUP_ADVANCED_DEFAULTS.multipliers.senior },
+  },
+  opponentSelection: { ...UNITY_CUP_ADVANCED_DEFAULTS.opponentSelection },
+})
+
 export const generalSchema = z.object({
   mode: z.enum(['steam', 'scrcpy', 'bluestack', 'adb']).default('steam'),
   windowTitle: z.string().default('Umamusume'),
@@ -100,6 +182,7 @@ export const presetSchema = z.object({
   lobbyPrecheckEnable: z.boolean().default(false),
   juniorMinimalMood: z.enum(['AWFUL', 'BAD', 'NORMAL', 'GOOD', 'GREAT']).nullable().default(null),
   goalRaceForceTurns: z.number().int().min(0).max(12).default(5),
+  unityCupAdvanced: unityCupAdvancedSchema.optional().default(() => defaultUnityCupAdvanced()),
   // Make optional on input, but always present on output via default()
   event_setup: (() => {
     const rarity = z.enum(['SSR','SR','R'])
@@ -199,7 +282,7 @@ export const defaultGeneral: GeneralConfig = generalSchema.parse({})
 export const defaultPreset = (id: string, name: string, scenario: ScenarioKey = 'ura'): Preset => {
   const scenarioDefaults = scenarioPresetDefaults[scenario] ?? scenarioPresetDefaults.ura
 
-  return {
+  const preset = {
     id,
     name,
     priorityStats: ['SPD', 'STA', 'WIT', 'PWR', 'GUTS'],
@@ -223,7 +306,13 @@ export const defaultPreset = (id: string, name: string, scenario: ScenarioKey = 
     juniorMinimalMood: null,
     goalRaceForceTurns: 5,
     event_setup: defaultEventSetup(),
+  } as Preset & { unityCupAdvanced?: ReturnType<typeof defaultUnityCupAdvanced> }
+
+  if (scenario === 'unity_cup') {
+    preset.unityCupAdvanced = defaultUnityCupAdvanced()
   }
+
+  return preset
 }
 
 export const defaultAppConfig = (): AppConfig => ({

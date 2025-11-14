@@ -80,7 +80,11 @@ export default function MoodSelector({ presetId }: { presetId: string }) {
             bgcolor: 'background.default',
           }}
         >
-          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: 'block', mb: 0.5, textTransform: 'uppercase', letterSpacing: 0.4 }}
+          >
             Junior-year override
           </Typography>
           <Select
@@ -89,17 +93,54 @@ export default function MoodSelector({ presetId }: { presetId: string }) {
             value={juniorMoodValue}
             onChange={(e) => handleJuniorMood(e.target.value as MoodName | '')}
             displayEmpty
+            renderValue={(value) => {
+              const v = value as MoodName | ''
+              if (!v) {
+                return (
+                  <Box component="span" sx={{ color: 'text.secondary' }}>
+                    Inherit preset minimal mood
+                  </Box>
+                )
+              }
+              const src = moodImgs[v]
+              return (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  {src && (
+                    <Box
+                      component="img"
+                      src={src}
+                      alt={v}
+                      sx={{ width: 40, height: 'auto', display: 'block' }}
+                    />
+                  )}
+                  <Typography variant="body2">{v}</Typography>
+                </Box>
+              )
+            }}
           >
             <MenuItem value="">
               <Box component="span" sx={{ color: 'text.secondary' }}>
                 Inherit preset minimal mood
               </Box>
             </MenuItem>
-            {MOODS.map((mood) => (
-              <MenuItem key={mood} value={mood}>
-                {mood}
-              </MenuItem>
-            ))}
+            {MOODS.map((mood) => {
+              const src = moodImgs[mood]
+              return (
+                <MenuItem key={mood} value={mood}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {src && (
+                      <Box
+                        component="img"
+                        src={src}
+                        alt={mood}
+                        sx={{ width: 48, height: 'auto', display: 'block' }}
+                      />
+                    )}
+                    <Typography variant="body2">{mood}</Typography>
+                  </Box>
+                </MenuItem>
+              )
+            })}
           </Select>
         </Box>
       </Box>
