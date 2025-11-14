@@ -1,11 +1,9 @@
 # Umamusume Auto Train
 
-> 🔧 **Bug Fix (v0.3.3)**: Ongoing model fixes
-
-> **Latest Update (v0.3.2)**: Skill memory, hint scoring, portrait disambiguation, and new scraper pipeline. [See what's new!](#-whats-new-in-032)
-> 
-> _Previous update (v0.3.1): Fixed remote template matching for support cards and race banners._
+> **Latest Update (v0.4.0)**: Unity Cup strategy, PAL policy, ADB mode, preset groups, and smarter training/race handling.
 >
+> _Previous updates_: v0.3.3 bugfixes, v0.3.2 skill memory + data scraper, v0.3.1 remote template matching fixes.
+
 
 This project is an **AI bot for Umamusume: Pretty Derby** that automates training, races, and skill management. It helps you **farm fans, clear goals, and optimize stats** without grinding manually.
 
@@ -305,6 +303,29 @@ The bot uses multiple AI components to make decisions:
 ---
 
 ## 🆕 Changelog (latest)
+ 
+### ✨ Umaplay v0.4.0 — Unity Cup & PAL Update
+
+- **Unity Cup upgrades**  
+  - Uses a heavier YOLO model for better Unity Cup detection.  
+  - New Unity Cup "Advanced" preset settings (combo scores, spirit multipliers, allowed burst stats, late-season burst prioritization, per-race opponent selection).
+- **ADB controller mode**  
+  - New ADB-based controller path for BlueStacks/Android without hijacking the local mouse. *(CC: @C)*
+- **Training & races**  
+  - Per-scenario "weak turn SV" threshold (separate defaults for URA vs Unity Cup) to decide when a turn is skippable.  
+  - Optional junior-only minimal mood and tweaks so the bot doesn't over-recreate at full energy.  
+  - Tentative scheduled races: when marked tentative, the bot can prefer a strong training tile over that race. *(CC: @Rosetta)*
+- **PAL policy**  
+  - Tracks the special "Recreation PAL" icon in lobby and uses PAL dates as a smarter replacement for REST/RECREATION when they give energy or advance chains.  
+  - Better handling for Tazuna / Riko chains and blue TAP bonuses, especially in Junior. *(CC: @Rosetta)*
+- **Web UI & UX**  
+  - Presets can be grouped, reordered via drag-and-drop, and filtered by group chips; arrow buttons for moving presets were removed. *(CC: @Rosetta)*  
+  - Unity Cup now starts with a default preset; Event Setup scenario auto-syncs with the active scenario.  
+  - General layout margins adjusted per feedback. *(CC: @Chat Ja)*
+- **Data & infra**  
+  - Automatic scraping pipeline for in-game data (skills/races/events) integrated into the main flow. *(CC: @Only)*
+
+---
 
 ### 🔧 **Bug Fix (v0.3.3)**:
 - Ongoing model fixes
@@ -376,14 +397,6 @@ The bot uses multiple AI components to make decisions:
 > ```bash
 > git checkout 59a5340f2c014a6d616c63b554bc0fe791513cef
 > ```
-
----
-
-
-### Next steps (0.4.0):
-- Refactor code to support multiple scenarios and the explosions from Aoharu Hai (Unity Cup)
-- Review of claw machine... But I don't promise anything XD
-- PAL (Tazuna/Riko Kashimoto) special configurations on web UI to leverage them properly
 
 ---
 
