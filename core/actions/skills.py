@@ -52,7 +52,8 @@ class SkillsFlow:
         self._clf = ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH)
         self._skill_matcher = SkillMatcher.from_dataset()
         self._skill_memory = skill_memory or SkillMemoryManager(
-            Settings.RUNTIME_SKILL_MEMORY_PATH
+            Settings.resolve_skill_memory_path(Settings.ACTIVE_SCENARIO),
+            scenario=Settings.ACTIVE_SCENARIO,
         )
 
     # --------------------------
@@ -159,6 +160,7 @@ class SkillsFlow:
             conf=self.waiter.cfg.conf,
             iou=self.waiter.cfg.iou,
             tag=tag,
+            agent=self.waiter.cfg.agent,
         )
         return img, dets
 

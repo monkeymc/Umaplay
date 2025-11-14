@@ -11,6 +11,8 @@ CLASS_UI_SKILLS_PTS: str = "ui_skills_pts"
 CLASS_LOBBY_TAZUNA: str = "lobby_tazuna"
 CLASS_LOBBY_INFIRMARY: str = "lobby_infirmary"
 
+UNITY_TURNS_CLASS = "ui_turns_unity"
+
 SUPPORT_CLASS_NAMES: Set[str] = {
     "support_card",
     "support_card_rainbow",

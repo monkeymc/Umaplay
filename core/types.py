@@ -8,8 +8,9 @@ Keep this file small and focused on:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Dict, List, Literal, Tuple, TypedDict
+from dataclasses import asdict, dataclass
+import enum
+from typing import Any, Dict, List, Literal, Tuple, TypedDict
 
 # ---------- Basic geometric aliases ----------
 
@@ -39,6 +40,9 @@ ScreenName = Literal[
     "ClawMachine",
     "EventStale",
     "Unknown",
+    "UnityCupRaceday",
+    "EventGolden",
+    "KashimotoTeam",
 ]
 
 
@@ -61,12 +65,15 @@ class ScreenInfo(TypedDict, total=False):
     rest_summer: bool
     recreation: bool
     recreation_present: bool
+    pal_available: bool
     race_day: bool
     has_lobby_skills: bool
     race_after_next: bool
+    has_golden: bool
     has_button_claw_action: bool
     has_claw: bool
     counts: Dict[str, int]
+    has_button_white: bool
 
 
 # ---------- Training scan structures ----------
@@ -138,3 +145,56 @@ _Box = List[List[float]]  # 4 points [[x1,y1],[x2,y2],[x3,y3],[x4,y4]]
 OCRItem = Tuple[_Box, str, float]  # (box, text, score)
 
 RegionXYWH = Tuple[int, int, int, int]
+
+
+class TrainAction(enum.Enum):
+    """Atomic decisions for the training turn."""
+
+    # Tile-targeting actions (return a tile_idx)
+    TRAIN_MAX = "train_max"  # train the highest-SV tile (risk-allowed)
+    TRAIN_WIT = "train_wit"  # specifically train WIT tile
+    TRAIN_DIRECTOR = "train_director"  # train where Director is (special rule)
+    TAKE_HINT = "take_hint"  # train any tile that has a hint
+
+    # Non-tile actions (tile_idx=None)
+    REST = "rest"
+    RECREATION = "recreation"
+    RACE = "race"
+    SECURE_SKILL = "secure_skill"  # late-game safety: ensure 1200/600
+    NOOP = "noop"  # fallback (should not normally happen)
+
+
+RISK_RELAX_FACTOR = 1.5  # e.g., 20% -> 30% when SV is high
+
+# Director scoring by bar color (latest rule you wrote)
+DIRECTOR_SCORE_BY_COLOR = {
+    "blue": 0.25,  # "blue or less"
+    "green": 0.15,
+    "orange": 0.10,
+    "yellow": 0.00,  # max (or treat is_max as yellow)
+    "max": 0.00,  # alias
+}
+
+# What counts as blue/green vs orange/max for the standard supports
+BLUE_GREEN = {"blue", "green"}
+ORANGE_MAX = {"orange", "yellow"}
+
+
+@dataclass
+class TileSV:
+    tile_idx: int
+    failure_pct: int
+    risk_limit_pct: int
+    allowed_by_risk: bool
+    sv_total: float
+    sv_by_type: Dict[str, float]
+    greedy_hit: bool
+    notes: List[str]
+
+    def as_dict(self) -> Dict[str, Any]:
+        d = asdict(self)
+        # optional rounding/pretty-printing
+        d["sv_total"] = float(f"{d['sv_total']:.2f}")
+        d["sv_by_type"] = {k: float(f"{v:.2f}") for k, v in d["sv_by_type"].items()}
+        return d
+        

@@ -8,6 +8,7 @@ import { useState } from 'react'
 export default function SaveLoadBar() {
   const commitSelectedPreset = useConfigStore((s) => s.commitSelectedPreset)
   const getActivePreset = useConfigStore((s) => s.getActivePreset)
+  const setGeneral = useConfigStore((s) => s.setGeneral)
   const navPrefs = useNavPrefsStore((s) => s.prefs)
   const refreshNavPrefs = useNavPrefsStore((s) => s.load)
   const [saving, setSaving] = useState(false)
@@ -26,14 +27,21 @@ export default function SaveLoadBar() {
               setSaving(true)
               // 1) Commit selected preset as active
               commitSelectedPreset()
+
+              // 1a) Mark scenario as confirmed from Web UI before snapshotting
+              setGeneral({ scenarioConfirmed: true })
               
               // 2) snapshot current Event Setup from its store
               const setup = useEventsSetupStore.getState().getSetup()
 
               // 3) Get updated config after commit
               const updatedConfig = useConfigStore.getState().config
-              const { id: activeId, preset: activePreset } = getActivePreset()
-              const presets = Array.isArray(updatedConfig?.presets) ? updatedConfig.presets : []
+              const { scenario, id: activeId, preset: activePreset } = getActivePreset()
+              
+              // Get the active scenario branch
+              const scenarios = updatedConfig?.scenarios || {}
+              const scenarioBranch = scenarios[scenario] || { presets: [], activePresetId: undefined }
+              const presets = Array.isArray(scenarioBranch.presets) ? scenarioBranch.presets : []
               const targetId = activeId || presets[0]?.id || null
 
               // 4) merge event_setup into that preset (no other changes)
@@ -41,9 +49,15 @@ export default function SaveLoadBar() {
                 targetId
                   ? {
                       ...updatedConfig,
-                      presets: presets.map((p: any) =>
-                        p.id === targetId ? { ...p, event_setup: setup } : p
-                      ),
+                      scenarios: {
+                        ...scenarios,
+                        [scenario]: {
+                          ...scenarioBranch,
+                          presets: presets.map((p: any) =>
+                            p.id === targetId ? { ...p, event_setup: setup } : p
+                          ),
+                        },
+                      },
                     }
                   : updatedConfig // if no presets, just send config as-is
 

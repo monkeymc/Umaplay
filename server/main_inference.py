@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import base64
 import io
+import threading
 from typing import Any, Dict, List, Literal, Optional, Tuple
 from pathlib import Path
 
@@ -26,6 +27,7 @@ from core.perception.analyzers.matching.base import (
     TemplateMatch,
     TemplateMatcherBase,
 )
+from core.perception.unity_cup_spirit_classifier import UnityCupSpiritClassifier
 
 app = FastAPI()
 engine = LocalOCREngine()  # load once; keeps models on CPU/GPU as configured
@@ -136,8 +138,9 @@ def ocr(req: OCRRequest) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"OCR failure: {e}")
 
 
-# Instantiate one YOLO engine for the service (no controller needed here)
-yolo_engine = LocalYOLOEngine(ctrl=None)
+# Instantiate YOLO engines for each scenario/mode (no controller needed here)
+yolo_engine_ura = LocalYOLOEngine(ctrl=None, weights=Settings.YOLO_WEIGHTS_URA)
+yolo_engine_unity_cup = LocalYOLOEngine(ctrl=None, weights=Settings.YOLO_WEIGHTS_UNITY_CUP)
 yolo_engine_nav = LocalYOLOEngine(ctrl=None, weights=Settings.YOLO_WEIGHTS_NAV)
 
 
@@ -154,22 +157,40 @@ class YoloRequest(BaseModel):
 @app.post("/yolo")
 def yolo_detect(req: YoloRequest):
     try:
-        # Normalize incoming weights selection (string) and compare against server's NAV path
+        # Normalize incoming weights selection (string) and match against server's engines
         w_in = req.weights_path or ""
         try:
             w_str = str(w_in)
         except Exception:
             w_str = ""
+        
+        # Check which engine matches the requested weights
+        yolo_engine_req = yolo_engine_ura  # default fallback
+        default_agent = Settings.AGENT_NAME_URA
+        
         try:
             nav_str = str(Settings.YOLO_WEIGHTS_NAV)
-            nav_match = (w_str == nav_str) or (Path(w_str).name == Path(nav_str).name)
+            if (w_str == nav_str) or (Path(w_str).name == Path(nav_str).name):
+                yolo_engine_req = yolo_engine_nav
+                default_agent = Settings.AGENT_NAME_NAV
         except Exception:
-            nav_match = False
-
-        yolo_engine_req = yolo_engine_nav if nav_match else yolo_engine
-        default_agent = (
-            Settings.AGENT_NAME_NAV if nav_match else Settings.AGENT_NAME_URA
-        )
+            pass
+        
+        try:
+            unity_cup_str = str(Settings.YOLO_WEIGHTS_UNITY_CUP)
+            if (w_str == unity_cup_str) or (Path(w_str).name == Path(unity_cup_str).name):
+                yolo_engine_req = yolo_engine_unity_cup
+                default_agent = Settings.AGENT_NAME_UNITY_CUP
+        except Exception:
+            pass
+        
+        try:
+            ura_str = str(Settings.YOLO_WEIGHTS_URA)
+            if (w_str == ura_str) or (Path(w_str).name == Path(ura_str).name):
+                yolo_engine_req = yolo_engine_ura
+                default_agent = Settings.AGENT_NAME_URA
+        except Exception:
+            pass
         agent_name = (req.agent or default_agent or "").strip()
         default_tag = "yolo_endpoint"
         tag_name = (req.tag or default_tag or "").strip() or default_tag
@@ -266,6 +287,30 @@ class TemplateMatchRequest(BaseModel):
 _TEMPLATE_CACHE: "OrderedDict[str, PreparedTemplate]" = OrderedDict()
 _TEMPLATE_CACHE_STATS: Dict[str, int] = {"hits": 0, "misses": 0}
 _TEMPLATE_CACHE_MAX = 256
+
+
+class SpiritClassifyRequest(BaseModel):
+    img: str = Field(..., description="Base64-encoded spirit icon (PNG/JPEG)")
+    threshold: float = Field(0.0, ge=0.0, le=1.0)
+
+
+_SPIRIT_CLF: Optional[UnityCupSpiritClassifier] = None
+_SPIRIT_CLF_LOCK = threading.Lock()
+
+
+def _get_spirit_classifier() -> UnityCupSpiritClassifier:
+    global _SPIRIT_CLF
+    if _SPIRIT_CLF is None:
+        with _SPIRIT_CLF_LOCK:
+            if _SPIRIT_CLF is None:
+                try:
+                    _SPIRIT_CLF = UnityCupSpiritClassifier.load_from_settings()
+                except Exception as e:
+                    raise HTTPException(
+                        status_code=500,
+                        detail=f"Failed to load spirit classifier: {e}",
+                    )
+    return _SPIRIT_CLF
 
 
 def _template_cache_key(mode: str, descriptor: TemplateDescriptor) -> str:
@@ -411,3 +456,39 @@ def template_match(req: TemplateMatchRequest) -> Dict[str, Any]:
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Template matching failure: {e}")
+
+
+@app.post("/classify/spirit")
+def classify_spirit(req: SpiritClassifyRequest) -> Dict[str, Any]:
+    try:
+        bgr, pil_img = _decode_b64_to_bgr(req.img)
+        clf = _get_spirit_classifier()
+        pred = clf.predict(pil_img)
+
+        pred_id = int(pred.get("pred_id", -1))
+        raw = pred.get("raw", [])
+        confidence = float(pred.get("confidence", 0.0))
+        pred_label = str(pred.get("pred_label", "unknown"))
+
+        if confidence < req.threshold:
+            pred_label = "unknown"
+
+        sha = hashlib.sha256(bgr.tobytes()).hexdigest()[:12]
+
+        return {
+            "pred_id": pred_id,
+            "pred_label": pred_label,
+            "confidence": confidence,
+            "raw": raw,
+            "classes": clf.classes_list(),
+            "img_size": clf.img_size,
+            "threshold": float(req.threshold),
+            "meta": {
+                "checksum": sha,
+                "backend": "unity_cup_spirit_cnn",
+            },
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Spirit classification failure: {e}")

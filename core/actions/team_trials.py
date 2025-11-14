@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import random
+import time
 from time import sleep
 from typing import Tuple, List
 from enum import Enum
@@ -274,7 +275,7 @@ class TeamTrialsFlow:
             self.yolo_engine,
             self.ctrl,
             tag_prefix="team_trials_adv",
-            iterations_max=6,
+            iterations_max=1,
             advance_class="button_advance",
             advance_texts=None,
             taps_each_click=(3, 4),
@@ -282,7 +283,40 @@ class TeamTrialsFlow:
             sleep_after_advance=1,
         )
         logger_uma.debug(f"[TeamTrials] advances performed: {adv}")
-        sleep(7)
+        skip_clicks = 0
+        t0 = time.time()
+        while (time.time() - t0) < 5.0 and skip_clicks < 1:
+            if self.waiter.click_when(
+                classes=("button_skip",),
+                prefer_bottom=True,
+                timeout_s=2.0,
+                clicks=random.randint(3, 5),
+                tag="team_trials_skip",
+            ):
+                skip_clicks += 1
+            sleep(0.12)
+
+        sleep(2)
+
+        if skip_clicks > 0:
+            logger_uma.debug(f"[TeamTrials] Completed skip sequence (clicks={skip_clicks})")
+            if self.waiter.click_when(
+                classes=("button_green",),
+                texts=("NEXT",),
+                allow_greedy_click=True,
+                timeout_s=2.0,
+                tag="team_trials_next",
+            ):
+                sleep(5)
+                if self.waiter.click_when(
+                    classes=("race_after_next",),
+                    allow_greedy_click=True,
+                    tag="team_trials_race_after_next",
+                ):
+                    logger_uma.debug("[TeamTrials] Clicked race_after_next")
+                    sleep(3)
+        else:
+            sleep(5)
 
         img, dets = nav.collect_snapshot(
             self.waiter, self.yolo_engine, tag="team_trials_midtap"
@@ -328,11 +362,11 @@ class TeamTrialsFlow:
 
         if not self.waiter.click_when(
             classes=("button_pink",),
-            texts=("RACE AGAIN",),
-            prefer_bottom=False,
+            # texts=("RACE AGAIN",),
+            prefer_bottom=True,
             timeout_s=2.2,
             clicks=1,
-            allow_greedy_click=False,
+            # allow_greedy_click=False,
             tag="team_trials_race_again",
         ):
             logger_uma.info("[TeamTrials] RACE AGAIN NOT FOUND")

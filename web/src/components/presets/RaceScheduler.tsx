@@ -1,5 +1,16 @@
 import {
-  Box, Paper, Stack, TextField, Typography, List, ListItemButton, ListItemText, Chip, IconButton,
+  Box,
+  Paper,
+  Stack,
+  TextField,
+  Typography,
+  List,
+  ListItemButton,
+  ListItemText,
+  Chip,
+  IconButton,
+  Switch,
+  Tooltip,
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import SearchIcon from '@mui/icons-material/Search'
@@ -14,7 +25,7 @@ import { BADGE_ICON, DEFAULT_RACE_BANNER } from '@/constants/ui'
 type RaceRow = { raceName: string; instance: RaceInstance; dateKey: string }
 
 export default function RaceScheduler({ presetId }: { presetId: string; compact?: boolean }) {
-  const preset = useConfigStore((s) => s.config.presets.find((p) => p.id === presetId))
+  const preset = useConfigStore((s) => s.getSelectedPreset().preset)
   const patchPreset = useConfigStore((s) => s.patchPreset)
   const { data: races = {} as RacesMap } = useQuery({ queryKey: ['races'], queryFn: fetchRaces })
 
@@ -52,6 +63,16 @@ export default function RaceScheduler({ presetId }: { presetId: string; compact?
     const next = { ...preset.plannedRaces }
     delete next[dateKey]
     patchPreset(presetId, 'plannedRaces', next)
+  }
+
+  const toggleTentative = (dateKey: string) => {
+    const next = { ...(preset.plannedRacesTentative ?? {}) }
+    if (next[dateKey]) {
+      delete next[dateKey]
+    } else {
+      next[dateKey] = true
+    }
+    patchPreset(presetId, 'plannedRacesTentative', Object.keys(next).length ? next : {})
   }
 
   const selectedRows: RaceRow[] = useMemo(() => {
@@ -162,6 +183,7 @@ export default function RaceScheduler({ presetId }: { presetId: string; compact?
                         const day = (half === '1') ? '1' : '2'
                         return `${yearLabel} — ${monthName} ${day}`
                       })()
+                const tentative = !!preset.plannedRacesTentative?.[r.dateKey]
                 return (
                   <ListItemButton
                     key={`${r.dateKey}-${r.raceName}`}
@@ -188,13 +210,32 @@ export default function RaceScheduler({ presetId }: { presetId: string; compact?
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <span>{r.raceName}</span>
                           {badge && <Box component="img" src={badge} alt={r.instance.rank} sx={{ height: 18 }} />}
+                          {tentative && <Chip size="small" label="Tentative" variant="outlined" />}
                         </Box>
                       }
                       secondary={`${prettyDate}${r.instance.location ? ` — ${r.instance.location}` : ''}${r.instance.distance_text ? ` — ${r.instance.distance_text}` : ''}`}
                     />
-                    <IconButton edge="end" onClick={() => remove(r.dateKey)}>
-                      <DeleteIcon />
-                    </IconButton>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5, minWidth: 56 }}>
+                      <Tooltip title={tentative ? 'Unmark tentative' : 'Mark race as tentative'}>
+                        <Switch
+                          size="small"
+                          checked={tentative}
+                          onChange={(e) => {
+                            e.stopPropagation()
+                            toggleTentative(r.dateKey)
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </Tooltip>
+                      <Tooltip title="Remove race">
+                        <IconButton edge="end" size="small" onClick={(e) => {
+                          e.stopPropagation()
+                          remove(r.dateKey)
+                        }}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   </ListItemButton>
                 )
               })}

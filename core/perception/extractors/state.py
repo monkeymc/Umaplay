@@ -101,6 +101,9 @@ def extract_turns(
     ocr: OCRInterface,
     game_img: Image.Image,
     parsed_objects_screen: List[DetectionDict],
+    turns_class: str = CLASS_UI_TURNS,
+    add_gap_y1: bool = True,
+    add_gap_y2: bool = True,
     *,
     conf_min: float = 0.20,
 ) -> int:
@@ -108,7 +111,7 @@ def extract_turns(
     Returns turns_left (1..30) or -1 if not recognized.
     Uses light preprocessing only when the full frame is small (H < 900).
     """
-    d = find_best(parsed_objects_screen, CLASS_UI_TURNS, conf_min=conf_min)
+    d = find_best(parsed_objects_screen, turns_class, conf_min=conf_min)
     if not d:
         return -1
 
@@ -116,8 +119,10 @@ def extract_turns(
     x1, y1, x2, y2 = d["xyxy"]
     element_height = abs(y2 - y1)
     gap = element_height * 0.20
-    y1 = y1 + gap
-    y2 = y2 - gap
+    if add_gap_y1:
+        y1 = y1 + gap
+    if add_gap_y2:
+        y2 = y2 - gap
 
     turns_img = crop_pil(game_img, (x1, y1, x2, y2), pad=0)
 
@@ -181,31 +186,79 @@ def extract_career_date(
     parsed_objects_screen: List[DetectionDict],
     *,
     conf_min: float = 0.20,
+    layout: Literal["above", "right"] = "above",
+    turns_class: str = CLASS_UI_TURNS,
+    goal_class: str = CLASS_UI_GOAL,
 ) -> str:
     """
     Return the raw text inside the career-date pill; empty string if not found.
     """
-    d = find_best(parsed_objects_screen, CLASS_UI_TURNS, conf_min=conf_min)
-    if not d:
+    turns_det = find_best(parsed_objects_screen, turns_class, conf_min=conf_min)
+    if not turns_det:
         return ""
-    # Use shared helper so we can also draw the crop in notebooks.
-    # 1) Robust box for the banner region above Turns
-    rx1, ry1, rx2, ry2 = career_date_crop_box(game_img, d["xyxy"])
+
+    W, H = game_img.size
+    tx1, ty1, tx2, ty2 = turns_det["xyxy"]
+
+    if layout == "above":
+        rx1, ry1, rx2, ry2 = career_date_crop_box(game_img, turns_det["xyxy"])
+    else:  # layout == "right"  → Unity Cup
+        goal_det = find_best(parsed_objects_screen, goal_class, conf_min=0.10)
+
+        # Turns box
+        tx1, ty1, tx2, ty2 = turns_det["xyxy"]
+        t_h = max(1, ty2 - ty1)
+        t_w = max(1, tx2 - tx1)
+
+        # Margins proportional to frame size
+        margin_x = max(6, int(0.010 * W))
+        margin_y = max(4, int(0.005 * H))
+
+        # X-range: from the right edge of Turns → to the right edge of Goal (if present)
+        rx1 = min(max(tx2 + margin_x, 0), W)
+        if goal_det:
+            gx1, gy1, gx2, gy2 = goal_det["xyxy"]
+            rx2 = min(W, max(rx1 + 10, gx2 - margin_x))
+        else:
+            # Fallback width if Goal not detected this frame
+            rx2 = min(W, rx1 + max(int(0.28 * W), int(1.25 * t_w)))
+
+        # Y-range:
+        #   - put a *thin* band just above the Goal’s top (the pill sits there),
+        #   - fallback to a band above the Turns if Goal is missing.
+        if goal_det:
+            gy1 = goal_det["xyxy"][1]
+            # band height: narrow (pill-height-ish), but never too small
+            band_h = max(int(0.045 * H), min(int(0.095 * H), int(0.55 * (gy1 - ty1))))
+            ry2 = max(int(gy1 - margin_y), 0)
+            ry1 = max(ry2 - band_h, 0)
+        else:
+            # No Goal → build a band above the Turns box
+            band_h = max(int(0.055 * H), int(0.9 * t_h))
+            ry2 = max(ty1 - margin_y, 0)
+            ry1 = max(ry2 - band_h, 0)
+
+        # Safety clamp
+        rx1, ry1, rx2, ry2 = (
+            max(0, min(rx1, W)),
+            max(0, min(ry1, H)),
+            max(0, min(rx2, W)),
+            max(0, min(ry2, H)),
+        )
+        if (rx2 - rx1) < 12 or (ry2 - ry1) < 12:
+            return ""
+
     banner = game_img.crop((rx1, ry1, rx2, ry2))
 
-    #    Heuristic: in HSV, the pill is a bright, low-saturation blob near the lower half.
     pill_box = tighten_to_pill(banner)
     cx1, cy1, cx2, cy2 = pill_box
-    cx1, cy1, cx2, cy2 = (
-        rx1 + cx1,
-        ry1 + cy1,
-        rx1 + cx2,
-        ry1 + cy2,
-    )  # map to full image coords (for debugging)
-    pill = banner.crop((pill_box))
+    pill = banner.crop((cx1, cy1, cx2, cy2))
 
-    # 3) OCR the pill with low-res friendly pre-processing and choose best candidate
     career_date_raw = read_date_pill_robust(ocr, pill)
+    if not career_date_raw:
+        # Fallback: try the banner directly if pill tightening missed
+        career_date_raw = read_date_pill_robust(ocr, banner)
+
     return (career_date_raw or "").strip()
 
 
@@ -471,6 +524,7 @@ def extract_infirmary_on(
     """
     d = find_best(parsed_objects_screen, CLASS_LOBBY_INFIRMARY, conf_min=conf_min)
     if not d:
+        logger_uma.warning("infirmary not found")
         return False
 
     crop = crop_pil(game_img, d["xyxy"], pad=0)
@@ -480,6 +534,7 @@ def extract_infirmary_on(
         try:
             clf = ActiveButtonClassifier.load(Settings.IS_BUTTON_ACTIVE_CLF_PATH)
             p = float(clf.predict_proba(crop))
+            logger_uma.debug("infirmary model: %s", p)
             return p >= threshold
         except Exception as e:
             logger_uma.debug("infirmary model failed, fallback to heuristic: %s", e)

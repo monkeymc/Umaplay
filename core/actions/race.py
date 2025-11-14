@@ -76,6 +76,9 @@ class RaceFlow:
             pass
         if reason:
             logger_uma.debug(f"Looking for race buttons: {reason}")
+        if Settings.ACTIVE_SCENARIO == "unity_cup":
+            # Little delay before pressing race
+            time.sleep(1.5)
         # Try to enter race screen from lobby (idempotent)
         clicked = self.waiter.click_when(
             classes=("lobby_races", "race_race_day"),
@@ -143,6 +146,7 @@ class RaceFlow:
             conf=self.waiter.cfg.conf,
             iou=self.waiter.cfg.iou,
             tag=tag,
+            agent=self.waiter.cfg.agent,
         )
 
     def _deduplicate_stars(self, stars: List[DetectionDict]) -> List[DetectionDict]:
@@ -788,8 +792,8 @@ class RaceFlow:
                 classes=("button_green",),
                 texts=("NEXT",),
                 prefer_bottom=True,
-                timeout_s=3.6,
-                clicks=1,
+                timeout_s=4.6,
+                clicks=3,
                 tag="race_after_flow_next",
             )
 
@@ -802,7 +806,7 @@ class RaceFlow:
                 classes=("race_after_next",),
                 texts=("NEXT",),
                 prefer_bottom=True,
-                timeout_s=6.0,
+                timeout_s=8.0,
                 clicks=random.randint(2, 4),
                 tag="race_after",
             )

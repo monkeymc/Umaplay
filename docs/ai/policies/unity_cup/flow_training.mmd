@@ -1,0 +1,117 @@
+flowchart TD
+%% ============================================================================
+%% TRAINING SCREEN POLICY Unity Cup — mirrors decide_action_training logic
+%% ASCII only labels and explicit thresholds
+%% ============================================================================
+
+%% -------------------------- LEGEND / DEFAULTS -------------------------------
+subgraph LEGEND[Legend thresholds and terms]
+  L1[High SV >= 3.5]
+  L2[Good SV >= 2.5]
+  L3[Late SV >= 2.0]
+  L4[Low gate SV >= 1.75]
+  L5[WIT decent SV >= 1.5]
+  L6[Undertrained gap >= 6 percent vs reference]
+  L7[Priority guard diff <= 0.75 vs top three]
+  L8[Priority guard top three SV >= 0.5]
+  L9[Exceptional SV >= 4.1 bypass guard]
+  L10[Energy low rest gate <= 35 percent]
+  L11[Race energy gate >= 68 percent when not summer]
+  L12[Summer next turn energy bands
+      75 to 96 go WIT
+      at or below 70 rest]
+  L13[Summer two turn window energy <= 90 needs WIT SV >= 0.5]
+end
+
+%% ---------------------------- ENTRY ----------------------------------------
+START([Training screen ready\nSV already computed]) --> DISTN{Top three stat undertrained by 6 percent or more\nand best tile near global best?}
+
+%% --------------------- DISTRIBUTION NUDGE ----------------------------------
+DISTN -->|Yes and meets flexible gap and SV gate| PICK_UNDER[[Train max on undertrained stat tile]]
+DISTN -->|No| SV35{Any allowed tile SV >= 3.5?}
+
+%% ------------------------- HIGH SV FAST PICK -------------------------------
+SV35 -->|Yes| PG1{Priority guard check\ncandidate outside top three?}
+PG1 -->|Guard redirects| PG1_TOP3[[Train max on top three tile]]
+PG1 -->|Keep candidate| PG1_TAKE[[Train max on best candidate]]
+SV35 -->|No| URA{Final season active?}
+
+%% --------------------------- FINAL SEASON ----------------------------------
+URA -->|Yes| URA_HINT{Hint available?}
+URA_HINT -->|Yes| TAKE_HINT[[Take hint tile]]
+URA_HINT -->|No| URA_600{Any top three stat below 600?}
+URA_600 -->|Yes| PUSH600[[Train max push stat toward 600]]
+URA_600 -->|No| URA_1170{Any top three stat below 1170?}
+URA_1170 -->|Yes| PUSH1170[[Train max push stat toward 1200]]
+URA_1170 -->|No| URA_WIT{WIT SV >= 1.5?}
+URA_WIT -->|Yes| WIT_FINAL[[Train WIT soft skip]]
+URA_WIT -->|No| AFTER_URA[Continue]
+URA -->|No| AFTER_URA
+
+%% ----------------------------- MOOD GATE -----------------------------------
+AFTER_URA --> MOOD{Mood below minimal normal and also below great?}
+MOOD -->|Yes| RECREATE[[Recreation then end turn]]
+MOOD -->|No| SUM1{Summer in next turn?}
+
+%% ---------------------------- SUMMER CLOSE ---------------------------------
+SUM1 -->|Yes and energy 75 to 96| SUM1_WIT[[Train WIT soft skip]]
+SUM1 -->|Yes and energy <= 70| SUM1_REST[[Rest to charge for summer]]
+SUM1 -->|Yes and energy > 96| SUM1_SKIP[Skip rest and continue]
+SUM1 -->|No| SUM2{Summer in two or fewer turns and energy <= 90?}
+
+SUM2 -->|Yes and WIT SV >= 0.5| SUM2_WIT[[Train WIT for staging]]
+SUM2 -->|Yes but no WIT option| AFTER_SUM[Continue]
+SUM2 -->|No| AFTER_SUM
+
+%% ----------------------------- GOOD SV -------------------------------------
+AFTER_SUM --> SV25{Any allowed tile SV >= 2.5?}
+SV25 -->|Yes| PG2{Priority guard check for mid SV}
+PG2 -->|Guard redirects| PG2_TOP3[[Train max on top three tile]]
+PG2 -->|Keep candidate| PG2_TAKE[[Train max on best candidate]]
+SV25 -->|No| G1RACE{Prioritize G1 and date has G1 and not junior and not final and race not skipped?}
+
+%% ----------------------------- G1 RACE -------------------------------------
+G1RACE -->|Yes and race if no good value off and best training SV <= 0| G1_TRAIN[[Train max best available even if small]]
+G1RACE -->|Yes otherwise| RACE_G1[[Race for G1 goal]]
+G1RACE -->|No| DIRECTOR{Director window senior year?}
+
+%% --------------------------- DIRECTOR RULE ---------------------------------
+DIRECTOR -->|Tile stat in top three or director orange and risk ok and not capped unless orange| TAKE_DIR[[Train director tile]]
+DIRECTOR -->|Else| WIT_RB{Any WIT rainbow and WIT SV >= 1.5?}
+
+%% ---------------------------- WIT RAINBOW ----------------------------------
+WIT_RB -->|Yes| WIT_RAIN[[Train WIT rainbow tile]]
+WIT_RB -->|No| ENERGY{Energy <= 35 percent?}
+
+%% ----------------------------- ENERGY REST ---------------------------------
+ENERGY -->|Yes| REST_LOW[[Rest then end turn]]
+ENERGY -->|No| WIT_SOFT{Soft skip WIT SV >= 1.5 or rainbow?}
+
+WIT_SOFT -->|Yes rainbow present| WIT_ANY[[Train WIT best rainbow tile]]
+WIT_SOFT -->|Yes no rainbow but SV >= 1.5| WIT_15[[Train WIT decent tile]]
+WIT_SOFT -->|No| WIT_LOW{Any WIT SV >= 1.75?}
+
+WIT_LOW -->|Yes| WIT_175[[Train WIT low gate tile]]
+WIT_LOW -->|No| SV_TOP3_175{Any top three tile SV >= 1.75?}
+
+%% ------------------------- LATE TRAINING PICK ------------------------------
+SV_TOP3_175 -->|Yes| PG3{Priority guard check for late SV}
+PG3 -->|Guard redirects| PG3_TOP3[[Train max on top three tile]]
+PG3 -->|Keep candidate| PG3_TAKE[[Train max on late candidate]]
+SV_TOP3_175 -->|No| MOOD2{Mood below great and not near mood up?}
+
+%% ------------------------- MOOD RECOVERY PASS ------------------------------
+MOOD2 -->|Yes and summer and energy <= 65| REC_SUM[[Recreation for mood in summer]]
+MOOD2 -->|Yes and not summer and energy <= 90| REC_NOSUM[[Recreation for mood outside summer]]
+MOOD2 -->|No or gates fail| RACE_GATE{Not summer and energy >= 68 and not debut block and not final and race not skipped?}
+
+%% ------------------------------- RACE GATE ---------------------------------
+RACE_GATE -->|Yes and race if no good value off and best training SV > 0| RACE_SKIP[[Train max instead of race]]
+RACE_GATE -->|Yes otherwise| RACE_FREE[[Race fallback]]
+RACE_GATE -->|No| FALLBACK{Fallback path}
+
+%% ------------------------------- FALLBACKS ---------------------------------
+FALLBACK -->|Summer and any WIT tile| FB_WIT[[Train WIT best available]]
+FALLBACK -->|Energy <= 70| FB_REST[[Rest due to low energy]]
+FALLBACK -->|Any allowed training exists| FB_TRAIN[[Train max best allowed]]
+FALLBACK -->|None| NOOP[[No action]]

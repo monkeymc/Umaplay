@@ -171,7 +171,7 @@ class DailyRaceFlow:
                 classes=("button_white",),
                 prefer_bottom=False,
                 timeout_s=2.3,
-                texts=("VIEW RESULTS",),
+                texts=("VIEW RESULTS", "CLOSE"),
                 forbid_texts=("BACK",),
                 allow_greedy_click=False,
                 clicks=random.randint(3, 4),

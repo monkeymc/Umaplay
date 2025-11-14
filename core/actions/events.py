@@ -16,6 +16,7 @@ from core.perception.ocr.interface import OCRInterface  # your interface type
 from core.perception.yolo.interface import IDetector
 from core.utils.logger import logger_uma
 from core.utils.waiter import Waiter
+from core.utils.text import fuzzy_contains
 
 # Event retriever (local-only, CPU) you packaged
 from core.utils.event_processor import (
@@ -337,6 +338,82 @@ class EventFlow:
         pick = self.prefs.pick_for(best.rec)
         debug["pick_resolved"] = pick
 
+        # 5.5) Special case: Unity Cup "A Team at Last" - match by team name using OCR BEFORE validation
+        unity_cup_override = False
+        if best.rec.key_step == "scenario/Unity Cup/None/None/A Team at Last#s1":
+            logger_uma.info("[event] Unity Cup 'A Team at Last' detected - using OCR-based team matching.")
+            
+            # Get the desired team text from the pick option
+            desired_team_text = None
+            option_data = best.rec.options.get(str(pick))
+            if option_data and isinstance(option_data, list) and len(option_data) > 0:
+                desired_team_text = option_data[0].get("team")
+            
+            if desired_team_text:
+                debug["unity_cup_team_search"] = {
+                    "desired_pick": pick,
+                    "desired_team": desired_team_text,
+                    "available_choices": len(choices_sorted)
+                }
+                
+                # OCR all visible choices to find the matching team
+                best_match_idx = None
+                best_match_score = 0.0
+                ocr_results = []
+                
+                for idx, choice_det in enumerate(choices_sorted):
+                    choice_crop = _crop(frame, tuple(choice_det["xyxy"]))
+                    choice_text = self.ocr.text(choice_crop)
+                    if isinstance(choice_text, list):
+                        choice_text = " ".join(choice_text)
+                    choice_text = choice_text.strip()
+                    
+                    ocr_results.append(choice_text)
+                    
+                    # Use fuzzy matching to handle OCR errors (threshold 0.7)
+                    is_match, match_score = fuzzy_contains(
+                        choice_text, 
+                        desired_team_text, 
+                        threshold=0.55, 
+                        return_ratio=True
+                    )
+                    
+                    if is_match and match_score > best_match_score:
+                        best_match_score = match_score
+                        best_match_idx = idx
+                
+                debug["unity_cup_team_search"]["ocr_results"] = ocr_results
+                
+                if best_match_idx is not None:
+                    original_pick = pick
+                    pick = best_match_idx + 1  # Convert to 1-indexed
+                    unity_cup_override = True
+                    logger_uma.info(
+                        "[event] Unity Cup team matched: '%s' found at visual index %d (was %d). Match score: %.2f",
+                        desired_team_text,
+                        pick,
+                        original_pick,
+                        best_match_score
+                    )
+                    debug["unity_cup_team_search"]["matched_index"] = pick
+                    debug["unity_cup_team_search"]["original_pick"] = original_pick
+                    debug["unity_cup_team_search"]["match_score"] = best_match_score
+                else:
+                    # Fallback: if user chose a team that doesn't exist, select bottom choice (Team Carrot)
+                    original_pick = pick
+                    pick = len(choices_sorted)  # Bottom choice
+                    unity_cup_override = True
+                    logger_uma.warning(
+                        "[event] Unity Cup team '%s' not found in OCR results; falling back to bottom choice #%d (Team Carrot)",
+                        desired_team_text,
+                        pick
+                    )
+                    debug["unity_cup_team_search"]["no_match"] = True
+                    debug["unity_cup_team_search"]["fallback_to_bottom"] = pick
+                    debug["unity_cup_team_search"]["original_pick"] = original_pick
+            else:
+                logger_uma.warning("[event] Unity Cup event but no team text found in option data.")
+
         # 6) Validate number of options vs YOLO choices
         expected_n = len(best.rec.options or {})
         debug["expected_n_options"] = expected_n
@@ -347,63 +424,66 @@ class EventFlow:
             )
             return self._fallback_click_top(choices_sorted, debug)
 
-        if len(choices_sorted) != expected_n:
-            logger_uma.warning(
-                "[event] YOLO found %d choices but DB expects %d; waiting for options to render and retrying.",
-                len(choices_sorted),
-                expected_n,
-            )
-            # Retry: wait for UI to finish rendering and recapture
-            time.sleep(0.8)  # Increased wait time for slow-rendering options
-            retry_frame, _, retry_parsed = self.yolo_engine.recognize(
-                imgsz=832, conf=0.60, iou=0.45, tag="event_retry"
-            )
-            retry_choices = _choices(retry_parsed, conf_min=self.conf_min_choice)
-            retry_choices_sorted = _sort_top_to_bottom(retry_choices)
-            debug["retry_num_choices"] = len(retry_choices_sorted)
-
-            if len(retry_choices_sorted) == expected_n:
-                logger_uma.info(
-                    "[event] Retry successful: now found %d choices as expected.",
-                    expected_n,
-                )
-                choices_sorted = retry_choices_sorted
-            else:
+        # Skip validation checks for Unity Cup override since pick is already matched to visible choices
+        if not unity_cup_override:
+            if len(choices_sorted) != expected_n:
                 logger_uma.warning(
-                    "[event] Retry still found %d choices (expected %d).",
-                    len(retry_choices_sorted),
+                    "[event] YOLO found %d choices but DB expects %d; waiting for options to render and retrying.",
+                    len(choices_sorted),
                     expected_n,
                 )
-                # Use retry result if it has more detections
-                if len(retry_choices_sorted) > len(choices_sorted):
-                    choices_sorted = retry_choices_sorted
-                    debug["used_retry_choices"] = True
+                # Retry: wait for UI to finish rendering and recapture
+                time.sleep(0.8)  # Increased wait time for slow-rendering options
+                retry_frame, _, retry_parsed = self.yolo_engine.recognize(
+                    imgsz=832, conf=0.60, iou=0.45, tag="event_retry"
+                )
+                retry_choices = _choices(retry_parsed, conf_min=self.conf_min_choice)
+                retry_choices_sorted = _sort_top_to_bottom(retry_choices)
+                debug["retry_num_choices"] = len(retry_choices_sorted)
 
-                # Check if preferred option is within detected range
-                if pick <= len(choices_sorted):
+                if len(retry_choices_sorted) == expected_n:
                     logger_uma.info(
-                        "[event] Preferred option %d is within detected %d choices; proceeding.",
-                        pick,
-                        len(choices_sorted),
+                        "[event] Retry successful: now found %d choices as expected.",
+                        expected_n,
                     )
-                    debug["partial_match_fallback"] = True
+                    choices_sorted = retry_choices_sorted
                 else:
                     logger_uma.warning(
-                        "[event] Preferred option %d exceeds detected %d choices; fallback to top.",
-                        pick,
-                        len(choices_sorted),
+                        "[event] Retry still found %d choices (expected %d).",
+                        len(retry_choices_sorted),
+                        expected_n,
                     )
-                    return self._fallback_click_top(choices_sorted, debug)
+                    # Use retry result if it has more detections
+                    if len(retry_choices_sorted) > len(choices_sorted):
+                        choices_sorted = retry_choices_sorted
+                        debug["used_retry_choices"] = True
 
-        if pick < 1 or pick > expected_n:
-            logger_uma.warning(
-                "[event] Preference pick=%d out of range 1..%d; fallback to top.",
-                pick,
-                expected_n,
-            )
-            return self._fallback_click_top(choices_sorted, debug)
+                    # Check if preferred option is within detected range
+                    if pick <= len(choices_sorted):
+                        logger_uma.info(
+                            "[event] Preferred option %d is within detected %d choices; proceeding.",
+                            pick,
+                            len(choices_sorted),
+                        )
+                        debug["partial_match_fallback"] = True
+                    else:
+                        logger_uma.warning(
+                            "[event] Preferred option %d exceeds detected %d choices; fallback to top.",
+                            pick,
+                            len(choices_sorted),
+                        )
+                        return self._fallback_click_top(choices_sorted, debug)
+
+            if pick < 1 or pick > expected_n:
+                logger_uma.warning(
+                    "[event] Preference pick=%d out of range 1..%d; fallback to top.",
+                    pick,
+                    expected_n,
+                )
+                return self._fallback_click_top(choices_sorted, debug)
 
         # (7) If we know current energy, attempt to avoid overfilling it and honor reward priorities.
+        # Skip for Unity Cup override since pick is already determined by OCR matching
         adjusted_pick = pick
         avoid_overflow = True
         if hasattr(self.prefs, "should_avoid_energy"):
@@ -415,12 +495,23 @@ class EventFlow:
             avoid_overflow = getattr(self.prefs, "avoid_energy_overflow", True)
         debug["avoid_energy_overflow"] = avoid_overflow
 
-        if avoid_overflow and current_energy is not None and expected_n >= 1:
+        if not unity_cup_override and avoid_overflow and current_energy is not None and expected_n >= 1:
             candidate_order = [((pick - 1 + shift) % expected_n) + 1 for shift in range(expected_n)]
 
             option_categories: Dict[int, Set[str]] = {}
             option_energy_gain: Dict[int, int] = {}
             safe_candidates: List[int] = []
+
+            # Allow a small overcap window for PAL support dates (≤ +10)
+            pal_overcap_extra = 0
+            try:
+                if (
+                    str(getattr(best.rec, "type", "")).strip().lower() == "support"
+                    and str(getattr(best.rec, "attribute", "")).strip().upper() == "PAL"
+                ):
+                    pal_overcap_extra = 10
+            except Exception:
+                pal_overcap_extra = 0
 
             for option_num in range(1, expected_n + 1):
                 outcomes_raw = best.rec.options.get(str(option_num), []) or []
@@ -432,7 +523,7 @@ class EventFlow:
                 gain = max_positive_energy(outcomes)
                 option_energy_gain[option_num] = gain
 
-                if gain <= 0 or (current_energy + gain) <= max_energy_cap:
+                if gain <= 0 or (current_energy + gain) <= (max_energy_cap + pal_overcap_extra):
                     safe_candidates.append(option_num)
 
                 option_categories[option_num] = extract_reward_categories(outcomes)

@@ -92,10 +92,14 @@ const pickSupport = (
   fallback: SelectedSupport | null | undefined,
   fallbackPriority: RewardCategory[]
 ): SelectedSupport | null => {
+  // Explicit null means "clear this slot"; undefined means "keep fallback".
+  if (raw === null) return null
+  if (raw === undefined) return fallback ?? null
   if (!raw || typeof raw !== 'object') return fallback ?? null
   if (!('name' in raw) || typeof (raw as any).name !== 'string') return fallback ?? null
   if (!('rarity' in raw) || !isValidRarity((raw as any).rarity)) return fallback ?? null
   if (!('attribute' in raw) || !isValidAttr((raw as any).attribute)) return fallback ?? null
+
   const priority = normalizePriority((raw as any).priority)
   const rewardFallback = fallback?.rewardPriority ?? fallbackPriority
   const rewardPriority = normalizeRewardPriority(
@@ -122,9 +126,13 @@ const pickEntity = <T extends { name: string; avoidEnergyOverflow?: boolean; rew
   fallback: T | null,
   fallbackPriority: RewardCategory[]
 ): T | null => {
+  // Explicit null means "no entity"; undefined means "keep fallback".
+  if (raw === null) return null
+  if (raw === undefined) return fallback
   if (!raw || typeof raw !== 'object' || !('name' in raw)) return fallback
   const name = (raw as any).name
   if (typeof name !== 'string' || !name.trim()) return fallback
+
   const rewardFallback = fallback?.rewardPriority ?? fallbackPriority
   const rewardPriority = normalizeRewardPriority(
     (raw as any).rewardPriority ?? (raw as any).reward_priority,

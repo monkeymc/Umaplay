@@ -11,14 +11,27 @@ import subprocess
 import sys
 from pathlib import Path
 import shutil
+import queue
 
+from core.actions.ura.agent import AgentURA
+from core.actions.unity_cup.agent import AgentUnityCup
+from core.agent_scenario import AgentScenario
 from core.utils.logger import logger_uma, setup_uma_logging
 from core.settings import Settings
-from core.agent import Player
 from core.agent_nav import AgentNav
 
 from server.main import app
-from server.utils import load_config, ensure_config_exists, ensure_nav_exists, load_nav_prefs
+from server.utils import (
+    load_config,
+    ensure_config_exists,
+    ensure_nav_exists,
+    load_nav_prefs,
+    save_config,
+)
+from core.utils.abort import request_abort, clear_abort
+from core.utils.event_processor import UserPrefs
+from core.utils.preset_overlay import show_preset_overlay
+from core.ui.scenario_prompt import choose_active_scenario, ScenarioSelectionCancelled
 
 # Controllers & perception interfaces
 from core.controllers.base import IController
@@ -26,9 +39,8 @@ from core.perception.ocr.interface import OCRInterface
 from core.perception.yolo.interface import IDetector
 from core.controllers.steam import SteamController
 from core.controllers.android import ScrcpyController
-from core.utils.abort import request_abort, clear_abort
-from core.utils.event_processor import UserPrefs
-from core.utils.preset_overlay import show_preset_overlay
+from core.controllers.adb import ADBController
+from core.utils.tkthread import ensure_tk_loop
 
 try:
     # Optional; if your Bluestacks controller is a separate class
@@ -48,11 +60,24 @@ def make_controller_from_settings() -> IController:
     mode = Settings.MODE.lower().strip()
     window_title = Settings.resolve_window_title(mode)
 
+    logger_uma.debug(
+        f"[CTRL] Requested mode='{Settings.MODE}' normalized='{mode}' window_title='{window_title}'"
+    )
+
     if mode == "steam":
         logger_uma.info(f"[CTRL] Mode=steam, window_title='{window_title}'")
         return SteamController(window_title)
+    elif mode == "adb":
+        device = getattr(Settings, "ADB_DEVICE", None)
+        logger_uma.info(f"[CTRL] Mode=adb, device='{device}'")
+        return ADBController(device=device)
     elif mode == "bluestack":
-        # Use dedicated controller if available, else ScrcpyController as a windowed generic fallback
+        use_adb = getattr(Settings, "USE_ADB", False)
+        if use_adb:
+            device = getattr(Settings, "ADB_DEVICE", "localhost:5555")
+            logger_uma.info(f"[CTRL] Mode=bluestack (ADB), device='{device}'")
+            return ADBController(device=device, auto_connect=True)
+
         logger_uma.info(f"[CTRL] Mode=bluestack, window_title='{window_title}'")
         if HAS_BLUESTACKS_CTRL and BlueStacksController is not None:
             return BlueStacksController(window_title)  # type: ignore
@@ -64,9 +89,12 @@ def make_controller_from_settings() -> IController:
 
 
 def make_ocr_yolo_from_settings(
-    ctrl: IController, weights: str | None = None
+    ctrl: IController, weights: str | Path | None = None
 ) -> tuple[OCRInterface, IDetector]:
     """Build fresh OCR and YOLO engines based on current Settings."""
+    resolved_weights = weights if weights is not None else Settings.ACTIVE_YOLO_WEIGHTS
+    weights_str = str(resolved_weights) if resolved_weights is not None else None
+
     if Settings.USE_FAST_OCR:
         det_name = "PP-OCRv5_mobile_det"
         rec_name = "en_PP-OCRv5_mobile_rec"
@@ -82,9 +110,9 @@ def make_ocr_yolo_from_settings(
         from core.perception.yolo.yolo_remote import RemoteYOLOEngine
 
         ocr = RemoteOCREngine(base_url=Settings.EXTERNAL_PROCESSOR_URL)
-        if weights:
+        if weights_str:
             yolo_engine = RemoteYOLOEngine(
-                ctrl=ctrl, base_url=Settings.EXTERNAL_PROCESSOR_URL, weights=weights
+                ctrl=ctrl, base_url=Settings.EXTERNAL_PROCESSOR_URL, weights=weights_str
             )
         else:
             yolo_engine = RemoteYOLOEngine(
@@ -100,8 +128,8 @@ def make_ocr_yolo_from_settings(
         text_detection_model_name=det_name,
         text_recognition_model_name=rec_name,
     )
-    if weights:
-        yolo_engine = LocalYOLOEngine(ctrl=ctrl, weights=weights)
+    if weights_str:
+        yolo_engine = LocalYOLOEngine(ctrl=ctrl, weights=weights_str)
     else:
         yolo_engine = LocalYOLOEngine(ctrl=ctrl)
 
@@ -198,7 +226,7 @@ def cleanup_debug_training_if_needed():
 class BotState:
     def __init__(self):
         self.thread: threading.Thread | None = None
-        self.player: Player | None = None
+        self.agent_scenario: AgentScenario | None = None
         self.running: bool = False
         self._lock = threading.Lock()
 
@@ -234,14 +262,20 @@ class BotState:
             if not ctrl.focus():
                 # Helpful mode-aware error
                 mode = Settings.MODE.lower()
-                miss = (
-                    "Steam"
-                    if mode == "steam"
-                    else ("BlueStacks" if mode == "bluestack" else "SCRCPY")
-                )
-                logger_uma.error(
-                    f"[BOT] Could not find/focus the {miss} window (title='{Settings.resolve_window_title(mode)}')."
-                )
+                if mode == "adb" or (mode == "bluestack" and Settings.USE_ADB):
+                    logger_uma.error(
+                        f"[BOT] Could not connect to ADB device '{Settings.ADB_DEVICE}'. "
+                        "Ensure ADB is installed, the device is reachable (e.g. adb connect localhost:5555), and BlueStacks ADB is enabled."
+                    )
+                else:
+                    miss = (
+                        "Steam"
+                        if mode == "steam"
+                        else ("BlueStacks" if mode == "bluestack" else "SCRCPY")
+                    )
+                    logger_uma.error(
+                        f"[BOT] Could not find/focus the {miss} window (title='{Settings.resolve_window_title(mode)}')."
+                    )
                 return
 
             ocr, yolo_engine = make_ocr_yolo_from_settings(ctrl)
@@ -253,31 +287,50 @@ class BotState:
             #    UserPrefs.from_config() returns safe defaults and EventFlow will still
             #    pick the top option if a pick is invalid at runtime.
             event_prefs = UserPrefs.from_config(cfg or {})
+            
 
-            # 6) Instantiate Player with runtime knobs from Settings + presets + event prefs
-            self.player = Player(
-                ctrl=ctrl,
-                ocr=ocr,
-                yolo_engine=yolo_engine,
-                interval_stats_refresh=1,
-                minimum_skill_pts=preset_opts.get("minimum_skill_pts", Settings.MINIMUM_SKILL_PTS),
-                prioritize_g1=False,
-                auto_rest_minimum=Settings.AUTO_REST_MINIMUM,
-                plan_races=preset_opts["plan_races"],
-                skill_list=preset_opts["skill_list"],
-                select_style=preset_opts[
-                    "select_style"
-                ],  # "end"|"late"|"pace"|"front"|None
-                event_prefs=event_prefs,
-            )
+            if Settings.ACTIVE_SCENARIO == "unity_cup":
+                # Instantiate Player with runtime knobs from Settings + presets + event prefs
+                self.agent_scenario = AgentUnityCup(
+                    ctrl=ctrl,
+                    ocr=ocr,
+                    yolo_engine=yolo_engine,
+                    interval_stats_refresh=1,
+                    minimum_skill_pts=preset_opts.get("minimum_skill_pts", Settings.MINIMUM_SKILL_PTS),
+                    prioritize_g1=False,
+                    auto_rest_minimum=Settings.AUTO_REST_MINIMUM,
+                    plan_races=preset_opts["plan_races"],
+                    skill_list=preset_opts["skill_list"],
+                    select_style=preset_opts[
+                        "select_style"
+                    ],  # "end"|"late"|"pace"|"front"|None
+                    event_prefs=event_prefs,
+                )
+            else:
+                # Instantiate Player with runtime knobs from Settings + presets + event prefs
+                self.agent_scenario = AgentURA(
+                    ctrl=ctrl,
+                    ocr=ocr,
+                    yolo_engine=yolo_engine,
+                    interval_stats_refresh=1,
+                    minimum_skill_pts=preset_opts.get("minimum_skill_pts", Settings.MINIMUM_SKILL_PTS),
+                    prioritize_g1=False,
+                    auto_rest_minimum=Settings.AUTO_REST_MINIMUM,
+                    plan_races=preset_opts["plan_races"],
+                    skill_list=preset_opts["skill_list"],
+                    select_style=preset_opts[
+                        "select_style"
+                    ],  # "end"|"late"|"pace"|"front"|None
+                    event_prefs=event_prefs,
+                )
 
             def _runner():
                 re_init = False
                 try:
                     logger_uma.info("[BOT] Started.")
                     # if not none
-                    if self.player:
-                        self.player.run(
+                    if self.agent_scenario:
+                        self.agent_scenario.run(
                             delay=getattr(Settings, "MAIN_LOOP_DELAY", 0.4),
                             max_iterations=getattr(Settings, "MAX_ITERATIONS", None),
                         )
@@ -287,8 +340,8 @@ class BotState:
                             "Trying to recover from bot crash, connection to host was lost"
                         )
                         time.sleep(2)
-                        if self.player:
-                            self.player.run(
+                        if self.agent_scenario:
+                            self.agent_scenario.run(
                                 delay=getattr(Settings, "MAIN_LOOP_DELAY", 0.4),
                                 max_iterations=getattr(Settings, "MAX_ITERATIONS", None),
                             )
@@ -308,14 +361,14 @@ class BotState:
 
     def stop(self):
         with self._lock:
-            if not self.running or not self.player:
+            if not self.running or not self.agent_scenario:
                 logger_uma.info("[BOT] Not running.")
                 return
             logger_uma.info("[BOT] Stopping… (signal loop to exit)")
             request_abort()
-            self.player.is_running = False
+            self.agent_scenario.is_running = False
             try:
-                self.player.emergency_stop()
+                self.agent_scenario.emergency_stop()
             except Exception:
                 pass
 
@@ -365,14 +418,20 @@ class NavState:
             ctrl = make_controller_from_settings()
             if not ctrl.focus():
                 mode = Settings.MODE.lower()
-                miss = (
-                    "Steam"
-                    if mode == "steam"
-                    else ("BlueStacks" if mode == "bluestack" else "SCRCPY")
-                )
-                logger_uma.error(
-                    f"[AgentNav] Could not find/focus the {miss} window (title='{Settings.resolve_window_title(mode)}')."
-                )
+                if mode == "adb" or (mode == "bluestack" and Settings.USE_ADB):
+                    logger_uma.error(
+                        f"[AgentNav] Could not connect to ADB device '{Settings.ADB_DEVICE}'. "
+                        "Ensure ADB is installed, the device is reachable, and BlueStacks ADB is enabled."
+                    )
+                else:
+                    miss = (
+                        "Steam"
+                        if mode == "steam"
+                        else ("BlueStacks" if mode == "bluestack" else "SCRCPY")
+                    )
+                    logger_uma.error(
+                        f"[AgentNav] Could not find/focus the {miss} window (title='{Settings.resolve_window_title(mode)}')."
+                    )
                 return
 
             # OCR from settings, YOLO engine for NAV specifically
@@ -454,6 +513,7 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
 
     # Track which keys successfully registered hooks (to skip in polling)
     hooked_keys = set()
+    event_q: "queue.SimpleQueue[tuple[str, str]]" = queue.SimpleQueue()
     
     # Debounce across both hook & poll paths - INCREASED to prevent race condition
     # between hook (trigger_on_release) and polling (while key pressed)
@@ -476,19 +536,104 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
         except Exception:
             cfg = Settings._last_config or {}
         try:
-            presets = (cfg.get("presets") or [])
-            active_id = cfg.get("activePresetId")
+            # Read from scenario-aware structure
+            general = cfg.get("general") or {}
+            active_scenario = general.get("activeScenario", "ura")
+            scenarios = cfg.get("scenarios") or {}
+            scenario_branch = scenarios.get(active_scenario) or {}
+            presets = scenario_branch.get("presets") or []
+            active_id = scenario_branch.get("activePresetId")
+            
             preset = next((p for p in presets if p.get("id") == active_id), None)
             if not preset and presets:
                 preset = presets[0]
             name = (preset or {}).get("name") or "Unnamed preset"
+            scenario_label = active_scenario.replace("_", " ").title()
             duration = getattr(Settings, "PRESET_OVERLAY_DURATION", 5.0)
             show_preset_overlay(
-                f"Active preset: {name}",
+                f"Scenario: {scenario_label}\nActive preset: {name}",
                 duration=max(1.0, float(duration or 0.0)),
+                x=32,
+                y="center",
             )
         except Exception as exc:
             logger_uma.debug("[HOTKEY] Failed to display preset overlay: %s", exc)
+
+    def _select_scenario_before_start() -> bool:
+        try:
+            cfg = load_config() or {}
+        except Exception as exc:
+            logger_uma.warning(
+                f"[HOTKEY] Failed to load config for scenario selection: {exc}"
+            )
+            cfg = Settings._last_config or {}
+            if not isinstance(cfg, dict):
+                cfg = {}
+
+        general = cfg.get("general")
+        if not isinstance(general, dict):
+            general = {}
+            cfg["general"] = general
+
+        last = (general.get("activeScenario") or "ura").strip().lower()
+        if last not in {"ura", "unity_cup"}:
+            last = "ura"
+
+        scenario_confirmed = bool(general.get("scenarioConfirmed"))
+        if scenario_confirmed:
+            general["activeScenario"] = last
+            general["scenarioConfirmed"] = True
+            try:
+                Settings._last_config = dict(cfg)
+            except Exception:
+                Settings._last_config = None
+            try:
+                save_config(cfg)
+            except Exception as exc:
+                logger_uma.debug(
+                    "[HOTKEY] Skipped scenario prompt; failed to persist confirmation: %s",
+                    exc,
+                )
+            logger_uma.debug("[HOTKEY] Scenario already confirmed: %s", last)
+            return True
+
+        try:
+            choice = choose_active_scenario(last)
+        except ScenarioSelectionCancelled:
+            logger_uma.info("[HOTKEY] Scenario selection cancelled; start aborted.")
+            return False
+        choice = (choice or "ura").strip().lower()
+        if choice not in {"ura", "unity_cup"}:
+            choice = "ura"
+
+        general["activeScenario"] = choice
+        # Do not mark as confirmed when chosen via prompt; only Web UI sets this flag.
+        general["scenarioConfirmed"] = scenario_confirmed
+
+        try:
+            Settings._last_config = dict(cfg)
+        except Exception:
+            Settings._last_config = None
+
+        try:
+            save_config(cfg)
+        except Exception as exc:
+            logger_uma.warning(
+                f"[HOTKEY] Failed to persist scenario '{choice}': {exc}"
+            )
+
+        logger_uma.info(f"[HOTKEY] Scenario selected: {choice}")
+
+        if getattr(Settings, "SHOW_PRESET_OVERLAY", False):
+            try:
+                label = choice.replace("_", " ").title()
+                show_preset_overlay(f"Scenario: {label}")
+            except Exception as exc:
+                logger_uma.debug(
+                    "[HOTKEY] Failed to display scenario overlay: %s", exc
+                )
+
+        return True
 
     def _debounced_toggle(source: str):
         nonlocal last_ts_toggle
@@ -498,6 +643,11 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
             logger_uma.debug(f"[HOTKEY] Debounced toggle from {source}.")
             return
         last_ts_toggle = now
+
+        if not bot_state.running:
+            if not _select_scenario_before_start():
+                return
+
         _show_preset_overlay_if_needed()
         bot_state.toggle(source=source)
 
@@ -572,7 +722,7 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
             logger_uma.debug(f"[HOTKEY] Registering hook for {k}…")
             keyboard.add_hotkey(
                 k,
-                lambda key=k: _debounced_toggle(f"hook:{key}"),
+                lambda key=k: event_q.put(("toggle", f"hook:{key}")),
                 suppress=False,
                 trigger_on_release=True,
             )
@@ -585,12 +735,12 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
         except Exception as e:
             logger_uma.warning(f"[HOTKEY] Could not register '{k}': {e}")
 
-    for k, fn in [("F7", _debounced_team), ("F8", _debounced_daily), ("F9", _debounced_roulette)]:
+    for k, fn_name in [("F7", "team"), ("F8", "daily"), ("F9", "roulette")]:
         try:
             logger_uma.debug(f"[HOTKEY] Registering hook for {k}…")
             keyboard.add_hotkey(
                 k,
-                lambda key=k, cb=fn: cb(f"hook:{key}"),
+                lambda key=k, name=fn_name: event_q.put((name, f"hook:{key}")),
                 suppress=False,
                 trigger_on_release=True,
             )
@@ -610,6 +760,21 @@ def hotkey_loop(bot_state: BotState, nav_state: NavState):
     logger_uma.debug("[HOTKEY] Polling fallback thread running…")
     try:
         while True:
+            # Drain queued events from hook callbacks first
+            try:
+                while True:
+                    ev, source = event_q.get_nowait()
+                    if ev == "toggle":
+                        _debounced_toggle(source)
+                    elif ev == "team":
+                        _debounced_team(source)
+                    elif ev == "daily":
+                        _debounced_daily(source)
+                    elif ev == "roulette":
+                        _debounced_roulette(source)
+            except queue.Empty:
+                pass
+
             fired = False
             for k in keys_bot:
                 try:
@@ -683,18 +848,25 @@ if __name__ == "__main__":
     except Exception as e:
         logger_uma.warning(f"[SERVER] Could not cleanup debug training: {e}")
 
+    # Ensure shared Tk dispatcher loop is running before any UI usage
+    try:
+        ensure_tk_loop()
+    except Exception as exc:
+        logger_uma.warning("[INIT] Failed to start Tk loop: %s", exc)
+
     # Launch hotkey listener and server
     state = BotState()
     nav_state = NavState()
-    logger_uma.debug("[INIT] Spawning hotkey thread…")
-    threading.Thread(target=hotkey_loop, args=(state, nav_state), daemon=True).start()
+    logger_uma.debug("[INIT] Spawning server thread…")
+    srv_thread = threading.Thread(target=boot_server, daemon=True)
+    srv_thread.start()
 
     try:
-        boot_server()  # blocking
+        hotkey_loop(state, nav_state)
     except KeyboardInterrupt:
         pass
     finally:
-        logger_uma.debug("[SHUTDOWN] Stopping bot and joining thread…")
+        logger_uma.debug("[SHUTDOWN] Stopping bot and joining threads…")
         state.stop()
         if state.thread:
             state.thread.join(timeout=2.0)

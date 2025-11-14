@@ -702,6 +702,8 @@ class EventRecord:
     image_path: Optional[str]  # representative icon path (per name+rarity)
     phash64: Optional[int]  # 64-bit pHash int
     image_variants: Tuple[str, ...] = ()
+    # Optional: per-event kind from raw dataset (e.g., 'date', 'chain', 'random')
+    event_kind: Optional[str] = None
 
     @staticmethod
     def from_json_item(
@@ -717,6 +719,7 @@ class EventRecord:
         chain_step = ev_item.get("chain_step", None)
         default_pref = ev_item.get("default_preference", None)
         options = ev_item.get("options", {})
+        event_kind = ev_item.get("type")
 
         # Make options keys strings for JSON stability
         options_str_keys = {str(k): v for k, v in options.items()}
@@ -749,6 +752,7 @@ class EventRecord:
             image_path=(str(img_path) if img_path else None),
             phash64=phash,
             image_variants=variants_tuple,
+            event_kind=event_kind,
         )
 
 
@@ -814,6 +818,9 @@ def build_catalog() -> None:
     for parent in root:
         choice_events = parent.get("choice_events", []) or []
         for ev in choice_events:
+            # Skip events with only one outcome
+            if len(ev.get("options", {})) <= 1:
+                continue
             rec = EventRecord.from_json_item(parent, ev, set_data_to_file_and_phash)
             records.append(rec)
 
@@ -967,6 +974,11 @@ class UserPrefs:
     reward_priority_by_trainee: Dict[str, List[str]] = field(default_factory=dict)
     # Preferred trainee name from config (for portrait disambiguation)
     preferred_trainee_name: Optional[str] = None
+    weak_turn_sv: Optional[int] = None
+    race_precheck_sv: Optional[int] = None
+    lobby_precheck_enable: Optional[bool] = None
+    junior_minimal_mood: Optional[int] = None
+    goal_race_force_turns: Optional[int] = None
 
     @staticmethod
     def load(path: Path) -> "UserPrefs":
@@ -978,8 +990,11 @@ class UserPrefs:
                 default_by_type={"support": 1, "trainee": 1, "scenario": 1},
                 avoid_energy_overflow=True,
                 avoid_energy_overflow_by_support={},
-                avoid_energy_overflow_by_scenario={},
-                avoid_energy_overflow_by_trainee={},
+                weak_turn_sv=None,
+                race_precheck_sv=None,
+                lobby_precheck_enable=None,
+                junior_minimal_mood=None,
+                goal_race_force_turns=None,
             )
         with path.open("r", encoding="utf-8") as f:
             raw = json.load(f)
@@ -989,7 +1004,7 @@ class UserPrefs:
         if isinstance(patt_src, dict):
             patterns = list(patt_src.items())
         else:
-            # expect list of {"pattern": "support/Kitasan*/SSR/*", "pick": 2}
+            # expect list of {"pattern": "...", "pick": 2}
             patterns = [(d.get("pattern", ""), int(d.get("pick", 1))) for d in patt_src]
         default_by_type = raw.get("defaults", {})
         if not default_by_type:
@@ -997,13 +1012,88 @@ class UserPrefs:
         alias_overrides = _build_alias_overrides(overrides)
 
         avoid_energy_overflow = _coerce_bool(
-            raw.get("avoid_energy_overflow", raw.get("avoidEnergyOverflow", True)),
+            raw.get("avoidEnergyOverflow")
+            or raw.get("avoid_energy_overflow", True),
             default=True,
         )
 
         reward_priority = normalize_reward_priority_list(
-            raw.get("rewardPriority", raw.get("reward_priority"))
+            raw.get("rewardPriority") or raw.get("reward_priority")
         )
+
+        weak_turn_sv = raw.get("weakTurnSv")
+        race_precheck_sv = raw.get("racePrecheckSv")
+        lobby_precheck_enable = _coerce_bool(raw.get("lobbyPrecheckEnable"), default=None)
+        junior_minimal_mood = raw.get("juniorMinimalMood")
+        goal_race_force_turns = raw.get("goalRaceForceTurns")
+
+        avoid_energy_by_support: Dict[Tuple[str, str, str], bool] = {}
+        reward_priority_by_support: Dict[Tuple[str, str, str], List[str]] = {}
+        supports = raw.get("supports", []) or []
+        if isinstance(supports, list):
+            for entry in supports:
+                if not isinstance(entry, dict):
+                    continue
+                name = entry.get("name")
+                rarity = entry.get("rarity")
+                attribute = entry.get("attribute")
+                if not (name and rarity and attribute):
+                    continue
+                raw_flag = entry.get("avoidEnergyOverflow")
+                if raw_flag is None:
+                    raw_flag = entry.get("avoid_energy_overflow")
+                flag = _coerce_bool(raw_flag, default=True)
+                key = _support_key(name, attribute, rarity)
+                avoid_energy_by_support[key] = flag
+
+                raw_priority = entry.get("rewardPriority")
+                if raw_priority is None:
+                    raw_priority = entry.get("reward_priority")
+                if raw_priority is not None:
+                    priority_list = normalize_reward_priority_list(raw_priority)
+                    reward_priority_by_support[key] = priority_list
+
+        scenario_flags: Dict[str, bool] = {}
+        reward_priority_by_scenario: Dict[str, List[str]] = {}
+        scenario_entry = raw.get("scenario")
+        if isinstance(scenario_entry, dict):
+            name = scenario_entry.get("name")
+            if name:
+                raw_flag = scenario_entry.get("avoidEnergyOverflow")
+                if raw_flag is None:
+                    raw_flag = scenario_entry.get("avoid_energy_overflow")
+                scen_key = _scenario_key(str(name))
+                scenario_flags[scen_key] = _coerce_bool(raw_flag, default=True)
+
+                raw_priority = scenario_entry.get("rewardPriority")
+                if raw_priority is None:
+                    raw_priority = scenario_entry.get("reward_priority")
+                if raw_priority is not None:
+                    reward_priority_by_scenario[scen_key] = normalize_reward_priority_list(
+                        raw_priority
+                    )
+
+        trainee_flags: Dict[str, bool] = {}
+        reward_priority_by_trainee: Dict[str, List[str]] = {}
+        preferred_trainee_name: Optional[str] = None
+        trainee_entry = raw.get("trainee")
+        if isinstance(trainee_entry, dict):
+            name = trainee_entry.get("name")
+            if name:
+                preferred_trainee_name = str(name).strip()
+                raw_flag = trainee_entry.get("avoidEnergyOverflow")
+                if raw_flag is None:
+                    raw_flag = trainee_entry.get("avoid_energy_overflow")
+                trainee_key = _trainee_key(str(name))
+                trainee_flags[trainee_key] = _coerce_bool(raw_flag, default=True)
+
+                raw_priority = trainee_entry.get("rewardPriority")
+                if raw_priority is None:
+                    raw_priority = trainee_entry.get("reward_priority")
+                if raw_priority is not None:
+                    reward_priority_by_trainee[trainee_key] = normalize_reward_priority_list(
+                        raw_priority
+                    )
 
         return UserPrefs(
             overrides=overrides,
@@ -1011,28 +1101,31 @@ class UserPrefs:
             default_by_type=default_by_type,
             alias_overrides=alias_overrides,
             avoid_energy_overflow=avoid_energy_overflow,
-            avoid_energy_overflow_by_support={},
-            avoid_energy_overflow_by_scenario={},
-            avoid_energy_overflow_by_trainee={},
+            avoid_energy_overflow_by_support=avoid_energy_by_support,
+            avoid_energy_overflow_by_scenario=scenario_flags,
+            avoid_energy_overflow_by_trainee=trainee_flags,
             reward_priority=reward_priority,
-            reward_priority_by_support={},
-            reward_priority_by_scenario={},
-            reward_priority_by_trainee={},
+            reward_priority_by_support=reward_priority_by_support,
+            reward_priority_by_scenario=reward_priority_by_scenario,
+            reward_priority_by_trainee=reward_priority_by_trainee,
+            preferred_trainee_name=preferred_trainee_name,
+            weak_turn_sv=weak_turn_sv,
+            race_precheck_sv=race_precheck_sv,
+            lobby_precheck_enable=lobby_precheck_enable,
+            junior_minimal_mood=junior_minimal_mood,
+            goal_race_force_turns=goal_race_force_turns,
         )
 
     # ---- build UserPrefs from the active preset inside config.json ----
     @staticmethod
     def from_config(cfg: dict | None) -> "UserPrefs":
         """
-        Pull event prefs from config['presets'][active]['event_setup']['prefs'].
+        Pull event prefs from config['scenarios'][active]['presets'][active]['event_setup']['prefs'].
+        Falls back to legacy config['presets'] structure for backwards compatibility.
         If anything is missing or malformed, we return sensible defaults.
         """
         cfg = cfg or {}
-        presets = cfg.get("presets") or []
-        active_id = cfg.get("activePresetId")
-        preset = next((p for p in presets if p.get("id") == active_id), None) or (
-            presets[0] if presets else None
-        )
+        _, _, preset = Settings._get_active_preset_from_config(cfg)
         if not preset:
             # no presets at all
             return UserPrefs(
@@ -1041,6 +1134,11 @@ class UserPrefs:
                 default_by_type={"support": 1, "trainee": 1, "scenario": 1},
                 avoid_energy_overflow=True,
                 avoid_energy_overflow_by_support={},
+                weak_turn_sv=None,
+                race_precheck_sv=None,
+                lobby_precheck_enable=None,
+                junior_minimal_mood=None,
+                goal_race_force_turns=None,
             )
 
         setup = preset.get("event_setup") or {}
@@ -1278,6 +1376,126 @@ class Catalog:
             rows = json.load(f)
         recs = [EventRecord(**row) for row in rows]
         return Catalog(records=recs)
+
+    # Lightweight query: does the next "date/chain" step provide energy?
+    def next_chain_has_energy(
+        self,
+        *,
+        support_name: str,
+        next_step: int,
+        attribute: Optional[str] = None,
+        rarity: Optional[str] = None,
+    ) -> Optional[bool]:
+        name_norm = normalize_text(support_name)
+        attr_norm = normalize_text(attribute or "")
+        rar_norm = normalize_text(rarity or "")
+        if not name_norm or not isinstance(next_step, (int, float)):
+            return None
+        step = int(next_step)
+        # Prefer records tagged as 'date' or 'chain' kinds; fall back to any if missing
+        def _is_date_kind(r: EventRecord) -> bool:
+            k = (r.event_kind or "").strip().lower()
+            return k in {"date", "chain"}
+
+        pool = [
+            r
+            for r in self.records
+            if r.type == "support"
+            and normalize_text(r.name) == name_norm
+            and (not attr_norm or normalize_text(r.attribute) == attr_norm)
+            and (not rar_norm or normalize_text(r.rarity) == rar_norm)
+            and (r.chain_step or 1) == step
+        ]
+        if not pool:
+            return None
+        dated = [r for r in pool if _is_date_kind(r)]
+        use = dated if dated else pool
+        has_energy = False
+        for r in use:
+            cats = extract_reward_categories([r.options])
+            if "energy" in cats or max_positive_energy([r.options]) > 0:
+                has_energy = True
+                break
+        return has_energy
+
+# Cached raw dataset for fallback lookups
+_EVENTS_RAW: Optional[List[Dict[str, Any]]] = None
+
+def _load_events_raw() -> List[Dict[str, Any]]:
+    global _EVENTS_RAW
+    if _EVENTS_RAW is None:
+        try:
+            _EVENTS_RAW = json.loads(DATASETS_EVENTS.read_text(encoding="utf-8"))
+        except Exception:
+            _EVENTS_RAW = []
+    return _EVENTS_RAW
+
+def predict_next_chain_has_energy_from_raw(
+    *, support_name: str, next_step: int, attribute: Optional[str] = None, rarity: Optional[str] = None
+) -> Optional[bool]:
+    data = _load_events_raw()
+    name_norm = normalize_text(support_name)
+    attr_norm = normalize_text(attribute or "")
+    rar_norm = normalize_text(rarity or "")
+    if not name_norm or not isinstance(next_step, (int, float)):
+        return None
+    step = int(next_step)
+    matches = [
+        item for item in data
+        if str(item.get("type")) == "support"
+        and normalize_text(item.get("name")) == name_norm
+        and (not attr_norm or normalize_text(item.get("attribute")) == attr_norm)
+        and (not rar_norm or normalize_text(item.get("rarity")) == rar_norm)
+    ]
+    if not matches:
+        return None
+    allowed_kinds = {"date", "chain"}
+    has_energy = False
+    for parent in matches:
+        for ev in parent.get("choice_events", []) or []:
+            if (ev.get("chain_step") == step) and (str(ev.get("type")).strip().lower() in allowed_kinds):
+                cats = extract_reward_categories([ev.get("options", {})])
+                if "energy" in cats or max_positive_energy([ev.get("options", {})]) > 0:
+                    has_energy = True
+                    break
+        if has_energy:
+            break
+    return has_energy
+
+def predict_next_chain_max_energy_from_raw(
+    *, support_name: str, next_step: int, attribute: Optional[str] = None, rarity: Optional[str] = None
+) -> Optional[int]:
+    """Return the maximum positive energy from the next chain step (raw dataset).
+
+    This is a fast, in-process scan over datasets/in_game/events.json using cached
+    content. It considers only events of kind 'date' or 'chain' for support cards.
+    """
+    data = _load_events_raw()
+    name_norm = normalize_text(support_name)
+    attr_norm = normalize_text(attribute or "")
+    rar_norm = normalize_text(rarity or "")
+    if not name_norm or not isinstance(next_step, (int, float)):
+        return None
+    step = int(next_step)
+    matches = [
+        item for item in data
+        if str(item.get("type")) == "support"
+        and normalize_text(item.get("name")) == name_norm
+        and (not attr_norm or normalize_text(item.get("attribute")) == attr_norm)
+        and (not rar_norm or normalize_text(item.get("rarity")) == rar_norm)
+    ]
+    if not matches:
+        return None
+    allowed_kinds = {"date", "chain"}
+    max_energy = 0
+    found = False
+    for parent in matches:
+        for ev in parent.get("choice_events", []) or []:
+            if (ev.get("chain_step") == step) and (str(ev.get("type")).strip().lower() in allowed_kinds):
+                gain = max_positive_energy([ev.get("options", {})])
+                max_energy = max(max_energy, int(gain))
+                found = True
+    return (max_energy if found else None)
 
 
 # -----------------------------

@@ -1,7 +1,7 @@
 import {
   Accordion, AccordionDetails, AccordionSummary,
   FormControlLabel, MenuItem, Select, Slider, Box, Stack, Switch, TextField, Typography, Button, Snackbar, Alert,
-  Tooltip, IconButton, Avatar,
+  Tooltip, IconButton, Avatar, ToggleButton, ToggleButtonGroup,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -21,6 +21,7 @@ export default function GeneralForm() {
   const { config, setGeneral } = useConfigStore()
   const uiTheme = useConfigStore((s) => s.uiTheme)
   const setUiTheme = useConfigStore((s) => s.setUiTheme)
+  const setScenario = useConfigStore((s) => s.setScenario)
   const g = config.general
   const collapsed = useConfigStore((s) => s.uiGeneralCollapsed)
   const setCollapsed = useConfigStore((s) => s.setGeneralCollapsed)
@@ -40,14 +41,15 @@ export default function GeneralForm() {
     return () => { mounted = false }
   }, [])
   // small helper map for mode icons (place PNGs under /public/icons/)
-  const MODE_ICON: Record<'steam' | 'scrcpy' | 'bluestack', string> = {
+  const MODE_ICON: Record<'steam' | 'scrcpy' | 'bluestack' | 'adb', string> = {
     steam: '/icons/mode_steam.png',
     scrcpy: '/icons/mode_scrcpy.png',
     bluestack: '/icons/mode_bluestack.png',
+    adb: '/icons/mode_adb.png',
   }
 
   return (
-    <Section title="">
+    <Section title="" sx={{ maxWidth: 820, width: '100%' }}>
       {update && update.is_update_available && (
         <Alert severity="info" sx={{ mt: 1 }}>
           New version available: {update.latest}{' '}
@@ -75,6 +77,7 @@ export default function GeneralForm() {
                 ) : (
                   <KeyboardDoubleArrowLeftIcon fontSize="small" />
                 )}
+
               </IconButton>
             </Tooltip>
           </Stack>
@@ -97,6 +100,73 @@ export default function GeneralForm() {
           info="Toggle dark/light mode for this configuration UI. (Does not affect in-game visuals.)"
         />
         <FieldRow
+          label="Active scenario"
+          control={
+            <ToggleButtonGroup
+              size="small"
+              exclusive
+              value={g.activeScenario}
+              onChange={(_, value) => value && setScenario(value)}
+              sx={{
+                '& .MuiToggleButton-root': {
+                  px: 1.5,
+                  py: 0.75,
+                  textTransform: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  borderRadius: 1,
+                  borderColor: 'transparent',
+                },
+                '& .MuiToggleButton-root.Mui-selected': {
+                  backgroundColor: 'primary.main',
+                  color: 'primary.contrastText',
+                  borderColor: 'primary.main',
+                },
+                '& .MuiToggleButton-root.Mui-selected:hover': {
+                  backgroundColor: 'primary.main',
+                },
+              }}
+            >
+              <ToggleButton
+                value="ura"
+                aria-label="URA scenario"
+                onClick={() => setScenario('ura')}
+              >
+                <Box
+                  component="img"
+                  src="/scenarios/ura_icon.png"
+                  alt="URA"
+                  sx={{ width: 20, height: 20, borderRadius: 1 }}
+                />
+                <span>URA</span>
+              </ToggleButton>
+              <ToggleButton
+                value="unity_cup"
+                aria-label="Unity Cup scenario"
+                onClick={() => setScenario('unity_cup')}
+              >
+                <Box
+                  component="img"
+                  src="/scenarios/unity_cup_icon.png"
+                  alt="Unity Cup"
+                  sx={{ width: 20, height: 20, borderRadius: 1 }}
+                />
+                <span>Unity Cup</span>
+              </ToggleButton>
+            </ToggleButtonGroup>
+          }
+          info="Select which training scenario the runtime will execute. Event presets still manage their own scenario preferences in the Presets → Events section."
+        />
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: { xs: 0, sm: '72px' } }}>
+          <Box sx={{ width: 10, height: 10, borderRadius: 0.5, bgcolor: 'primary.main' }} />
+          <Typography variant="caption" color="text.secondary">
+            {`Active scenario: ${g.activeScenario === 'unity_cup' ? 'Unity Cup' : 'URA'}${g.scenarioConfirmed ? ' (saved – hotkey will skip the prompt)' : ' (will ask once when starting via hotkey)'}`}
+          </Typography>
+        </Box>
+
+
+        <FieldRow
           label="Mode"
           control={
             <Select
@@ -104,7 +174,7 @@ export default function GeneralForm() {
               value={g.mode}
               onChange={(e) => setGeneral({ mode: e.target.value as any })}
               renderValue={(val) => {
-                const m = val as 'steam' | 'scrcpy' | 'bluestack'
+                const m = val as 'steam' | 'scrcpy' | 'bluestack' | 'adb'
                 return (
                   <Stack direction="row" spacing={1} alignItems="center">
                     <Avatar
@@ -118,7 +188,7 @@ export default function GeneralForm() {
                 )
               }}
             >
-              {(['steam', 'scrcpy', 'bluestack'] as const).map((m) => (
+              {(['steam', 'scrcpy', 'bluestack', 'adb'] as const).map((m) => (
                 <MenuItem key={m} value={m}>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <Avatar
@@ -149,6 +219,55 @@ export default function GeneralForm() {
             }
             info="Exact (or unique substring) of the SCRCPY window title to focus and capture."
           />
+        )}
+
+        {g.mode === 'adb' && (
+          <FieldRow
+            label="ADB device"
+            control={
+              <TextField
+                size="small"
+                value={g.adbDevice ?? 'localhost:5555'}
+                onChange={(e) => setGeneral({ adbDevice: e.target.value })}
+                placeholder="localhost:5555"
+              />
+            }
+            info="ADB device identifier (e.g., localhost:5555). The bot will auto-connect when starting."
+          />
+        )}
+
+        {g.mode === 'bluestack' && (
+          <>
+            <FieldRow
+              label="Use ADB (no mouse control)"
+              control={
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={g.useAdb ?? false}
+                      onChange={(e) => setGeneral({ useAdb: e.target.checked })}
+                    />
+                  }
+                  label={g.useAdb ? 'Enabled' : 'Disabled'}
+                />
+              }
+              info="Use ADB commands instead of mouse control. Requires ADB installed and BlueStacks ADB enabled."
+            />
+            {g.useAdb && (
+              <FieldRow
+                label="ADB device"
+                control={
+                  <TextField
+                    size="small"
+                    value={g.adbDevice ?? 'localhost:5555'}
+                    onChange={(e) => setGeneral({ adbDevice: e.target.value })}
+                    placeholder="localhost:5555"
+                  />
+                }
+                info="ADB device identifier (e.g., localhost:5555)."
+              />
+            )}
+          </>
         )}
 
         <FieldRow
